@@ -1,12 +1,12 @@
 import { Routes } from '@angular/router';
-import { FaqComponent } from './faq/faq';
-import { TermsComponent } from './terms/terms';
-import { ReportsComponent } from './reports/reports';
+import { BookingsComponent } from './bookings/bookings';
+import { ProfileComponent } from './profile/profile';
+import { AvailabilityComponent } from './availability/availability';
 
 export const routes: Routes = [
-  { path: 'faq', component: FaqComponent },
-  { path: 'terms', component: TermsComponent },
-  { path: 'reports', component: ReportsComponent },
-  { path: '', redirectTo: 'faq', pathMatch: 'full' },
-  { path: '**', redirectTo: 'faq' }
+  { path: 'bookings', component: BookingsComponent },
+  { path: 'profile', component: ProfileComponent },
+  { path: 'availability', component: AvailabilityComponent },
+  { path: '', redirectTo: 'bookings', pathMatch: 'full' },
+  { path: '**', redirectTo: 'bookings' }
 ];

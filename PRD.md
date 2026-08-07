@@ -15,7 +15,7 @@ Red Taxis Webview is a hybrid driver portal system consisting of:
 - **Native Shell**: Flutter (Dart) with Riverpod for state management and `webview_flutter` for rendering the web pages.
 - **Web Portal**: Angular 21 with Vitest for testing.
 - **Hosting**:
-  - Web Portal is hosted on Vercel at [https://red-taxis-webview-yplz.vercel.app](https://red-taxis-webview-yplz.vercel.app).
+  - Web Portal is hosted on Vercel at [https://red-taxis-webview.vercel.app](https://red-taxis-webview.vercel.app).
   - Configured in Flutter via [constants.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/core/config/constants.dart).
 
 ---
@@ -27,9 +27,9 @@ Red Taxis Webview is a hybrid driver portal system consisting of:
   - `lib/core/widgets/` - Shared UI widgets.
   - `lib/features/` - Feature modules (Auth, Dashboard, Earnings, Shift, Trip, Webview).
 - `src/frontend/apps/driver-webview-app/` - The Angular frontend codebase.
-  - `src/app/faq/` - Frequently Asked Questions view.
-  - `src/app/terms/` - Terms and Agreement view.
-  - `src/app/reports/` - Weekly statements and reports view.
+  - `src/app/bookings/` - Driver bookings dashboard view.
+  - `src/app/profile/` - Profile and vehicle compliance details view.
+  - `src/app/availability/` - Weekly shift planner view.
   - `src/app/app.routes.ts` - Routing configuration for web pages.
 - `docs/` - System architecture and product requirements documents.
 
@@ -37,9 +37,9 @@ Red Taxis Webview is a hybrid driver portal system consisting of:
 
 ## 🔄 Integration Details (Flutter ↔ Webview)
 The Flutter app embeds the Angular app via three sub-routes configured in `BottomNavigationBar`:
-1. **Weekly Reports** ➔ `/reports`
-2. **Help & FAQs** ➔ `/faq`
-3. **Driver Terms** ➔ `/terms`
+1. Bookings ➔ `/bookings`
+2. Profile ➔ `/profile`
+3. Availability ➔ `/availability`
 
 ---
 
@@ -47,8 +47,8 @@ The Flutter app embeds the Angular app via three sub-routes configured in `Botto
 
 ### ✅ Completed Work
 - [x] **Project Repository Setup**: Git repository initialized and linked to GitHub remote `https://github.com/developer1379/red-taxis-webview.git`.
-- [x] **Angular Frontend Web App**: Ported or scaffolded with FAQ, Terms, and Reports pages.
-- [x] **Vercel Hosting**: Web app deployed to Vercel (`https://red-taxis-webview-yplz.vercel.app`).
+- [x] **Angular Frontend Web App**: Ported or scaffolded with Bookings, Profile, and Availability pages.
+- [x] **Vercel Hosting**: Web app deployed to Vercel (`https://red-taxis-webview.vercel.app`).
 - [x] **Flutter Base URL Setup**: Updated [constants.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/core/config/constants.dart) to point to the live Vercel URL for both development and production.
 - [x] **Mobile App Base Layout**: Bottom navigation shell with indexed stack tabs for Dashboard and the three Webview pages.
 - [x] **Trip State Machine (Mocked)**: Riverpod state notifier simulating trip lifecycles (Offered ➔ Accepted ➔ En Route ➔ Arrived ➔ On Trip ➔ Completed).
@@ -57,7 +57,7 @@ The Flutter app embeds the Angular app via three sub-routes configured in `Botto
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Authentication Integration**: Hook up `AuthNotifier` in the Flutter app to talk to the backend authentication APIs (currently using simulated/mock login).
-- [ ] **Secure Webview Token Passing**: Pass authentication tokens securely from Flutter shell to the Angular webview (e.g., via URL params, cookies, or JavaScript channels/postMessage) to load authenticated user statements in `/reports`.
+- [ ] **Secure Webview Token Passing**: Pass authentication tokens securely from Flutter shell to the Angular webview (e.g., via URL params, cookies, or JavaScript channels/postMessage) to load authenticated driver data in `/profile` and `/bookings`.
 - [ ] **Real Location Tracking**: Wire up the location service in `lib/core/location` to stream real GPS coordinates to the server.
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
