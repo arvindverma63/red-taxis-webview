@@ -290,7 +290,8 @@ export class AvailabilityComponent implements OnInit {
         console.warn('Staging API GetAvailabilities failed, using mock data:', err);
         return of(null);
       })
-    ).subscribe(data => {
+    ).subscribe(dataResponse => {
+      const data = dataResponse?.value || dataResponse;
       if (data && Array.isArray(data)) {
         // Map data from API (assuming structure like {dayName: string, status: string})
         data.forEach((apiDay: any) => {

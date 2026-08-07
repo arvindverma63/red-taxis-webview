@@ -423,8 +423,10 @@ export class ProfileComponent implements OnInit {
         console.warn('Staging API GetProfile failed, using mock data:', err);
         return of(null);
       })
-    ).subscribe(profile => {
-      if (profile) {
+    ).subscribe(profileResponse => {
+      if (profileResponse) {
+        const profile = profileResponse.value || profileResponse;
+        
         this.driverName = profile.fullName || profile.name || this.driverName;
         this.driverEmail = profile.email || this.driverEmail;
         this.driverPhone = profile.phone || profile.phoneNumber || this.driverPhone;
@@ -442,7 +444,9 @@ export class ProfileComponent implements OnInit {
         this.badgeNumber = profile.badgeNumber || profile.driverBadge || this.badgeNumber;
         this.rating = profile.rating || this.rating;
         this.tripsCount = profile.tripsCount || profile.trips || this.tripsCount;
-        if (profile.documents && Array.isArray(profile.documents)) {
+        
+        const docs = profile.documents || profileResponse.documents;
+        if (docs && Array.isArray(docs)) {
           this.documents = profile.documents.map((d: any) => ({
             name: d.name || d.title,
             status: d.status || 'Valid',

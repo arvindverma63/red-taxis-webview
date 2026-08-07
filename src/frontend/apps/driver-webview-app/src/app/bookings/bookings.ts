@@ -486,7 +486,8 @@ export class BookingsComponent implements OnInit {
     }).subscribe(results => {
       const allJobs: Booking[] = [];
       
-      const processJob = (job: any, defaultStatus: 'Upcoming' | 'Completed' | 'Cancelled'): Booking => {
+      const processJob = (jobResponse: any, defaultStatus: 'Upcoming' | 'Completed' | 'Cancelled'): Booking => {
+        const job = jobResponse.value || jobResponse;
         return {
           id: job.bookingNo || job.id || `BKG-${Math.floor(Math.random() * 100000)}`,
           pickup: job.pickupAddress || job.pickup || 'Unknown Pickup',
@@ -503,14 +504,18 @@ export class BookingsComponent implements OnInit {
         };
       };
 
-      if (results.todays && results.todays.length > 0) {
-        results.todays.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
+      const todaysList = results.todays?.value || results.todays || [];
+      const futureList = results.future?.value || results.future || [];
+      const completedList = results.completed?.value || results.completed || [];
+
+      if (Array.isArray(todaysList) && todaysList.length > 0) {
+        todaysList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
       }
-      if (results.future && results.future.length > 0) {
-        results.future.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
+      if (Array.isArray(futureList) && futureList.length > 0) {
+        futureList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
       }
-      if (results.completed && results.completed.length > 0) {
-        results.completed.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
+      if (Array.isArray(completedList) && completedList.length > 0) {
+        completedList.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
       }
 
       if (allJobs.length > 0) {
