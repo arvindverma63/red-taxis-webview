@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -98,7 +99,7 @@ interface DriverDoc {
           </mat-card-header>
           <mat-card-content class="section-body">
             <mat-list class="compact-list">
-              <mat-list-item *ngFor="let doc of documents" class="profile-list-item">
+              <mat-list-item *ngFor="let doc of documents" class="profile-list-item" (click)="navigateToUpload(doc.name)" style="cursor: pointer;">
                 <span 
                   class="material-symbols-outlined item-icon" 
                   matListItemIcon 
@@ -364,6 +365,8 @@ export class ProfileComponent {
   autoAccept = true;
   nightShifts = false;
 
+  constructor(private router: Router) {}
+
   documents: DriverDoc[] = [
     {
       name: 'Hackney Carriage / PHV License',
@@ -381,6 +384,10 @@ export class ProfileComponent {
       expiry: '04 Jun 2027'
     }
   ];
+
+  navigateToUpload(docName: string): void {
+    this.router.navigate(['/upload'], { queryParams: { doc: docName } });
+  }
 
   toggleAutoAccept(): void {
     this.autoAccept = !this.autoAccept;
