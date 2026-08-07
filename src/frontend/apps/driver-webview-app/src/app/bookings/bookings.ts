@@ -34,11 +34,6 @@ interface Booking {
   ],
   template: `
     <div class="material-container">
-      <header class="header">
-        <h1 class="mat-headline-medium">My Bookings</h1>
-        <p class="mat-body-medium">Manage and review your ride schedule.</p>
-      </header>
-
       <!-- Tabs -->
       <mat-tab-group (selectedTabChange)="onTabChange($event)" mat-stretch-tabs="false" class="full-width-tabs">
         <mat-tab *ngFor="let tab of tabs" [label]="tab">
@@ -148,18 +143,7 @@ interface Booking {
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
     }
-    .header {
-      margin-bottom: 16px;
-    }
-    .header h1 {
-      margin: 0 0 4px 0;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .header p {
-      margin: 0;
-      color: var(--text-secondary);
-    }
+
     
     .full-width-tabs {
       margin-top: 8px;
