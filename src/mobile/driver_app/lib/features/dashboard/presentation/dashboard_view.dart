@@ -7,11 +7,24 @@ import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
 
-class DriverDashboardView extends ConsumerWidget {
+class DriverDashboardView extends ConsumerStatefulWidget {
   const DriverDashboardView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DriverDashboardView> createState() => _DriverDashboardViewState();
+}
+
+class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(earningsProvider.notifier).loadEarnings();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final shift = ref.watch(shiftProvider);
     final earnings = ref.watch(earningsProvider);
     final isOnline = shift.status == ShiftStatus.online;
