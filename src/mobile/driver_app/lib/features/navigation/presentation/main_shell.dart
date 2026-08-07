@@ -8,6 +8,7 @@ import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/trip/presentation/job_offer_screen.dart';
 import 'package:driver_app/features/trip/presentation/active_trip_screen.dart';
 import 'package:driver_app/features/trip/presentation/trip_complete_screen.dart';
+import 'package:driver_app/features/auth/auth.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -22,6 +23,8 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   Widget build(BuildContext context) {
     final tripState = ref.watch(tripProvider);
+    final authState = ref.watch(authProvider);
+    final token = authState.token ?? '';
 
     // If there is an active booking, overlay the corresponding trip screen
     if (tripState.status != TripStatus.idle && tripState.currentTrip != null) {
@@ -45,9 +48,9 @@ class _MainShellState extends ConsumerState<MainShell> {
         index: _selectedIndex,
         children: [
           const DriverDashboardView(),
-          DriverWebviewScreen(url: AppConfig.bookingsUrl, title: 'My Bookings'),
-          DriverWebviewScreen(url: AppConfig.profileUrl, title: 'My Profile'),
-          DriverWebviewScreen(url: AppConfig.availabilityUrl, title: 'Weekly Availability'),
+          DriverWebviewScreen(url: '${AppConfig.bookingsUrl}?token=$token', title: 'My Bookings'),
+          DriverWebviewScreen(url: '${AppConfig.profileUrl}?token=$token', title: 'My Profile'),
+          DriverWebviewScreen(url: '${AppConfig.availabilityUrl}?token=$token', title: 'Weekly Availability'),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

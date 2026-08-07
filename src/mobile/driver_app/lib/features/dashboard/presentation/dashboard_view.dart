@@ -5,6 +5,7 @@ import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/features/trip/trip.dart';
+import 'package:driver_app/features/auth/auth.dart';
 
 class DriverDashboardView extends ConsumerWidget {
   const DriverDashboardView({super.key});
@@ -26,6 +27,13 @@ class DriverDashboardView extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Notifications feature coming soon.')),
               );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_outlined),
+            tooltip: 'Sign Out',
+            onPressed: () {
+              ref.read(authProvider.notifier).signOut();
             },
           ),
         ],
