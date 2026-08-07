@@ -35,7 +35,7 @@ interface Booking {
   template: `
     <div class="material-container">
       <!-- Tabs -->
-      <mat-tab-group (selectedTabChange)="onTabChange($event)" mat-stretch-tabs="false" class="full-width-tabs">
+      <mat-tab-group (selectedTabChange)="onTabChange($event)" mat-stretch-tabs="always" class="full-width-tabs">
         <mat-tab *ngFor="let tab of tabs" [label]="tab">
           <!-- Bookings List Inside Tab -->
           <div class="bookings-list">
@@ -147,6 +147,15 @@ interface Booking {
     
     .full-width-tabs {
       margin-top: 8px;
+    }
+    ::ng-deep .mat-mdc-tab-header-pagination {
+      display: none !important;
+    }
+    ::ng-deep .mat-mdc-tab-label-container {
+      overflow-x: auto !important;
+    }
+    ::ng-deep .mat-mdc-tab-label-container::-webkit-scrollbar {
+      display: none !important;
     }
     
     .bookings-list {
