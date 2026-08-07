@@ -9,7 +9,7 @@ class AppConfig {
 
   static String get webviewBaseUrl => useDevUrl ? devBaseUrl : prodBaseUrl;
 
-  static String get bookingsUrl => '$webviewBaseUrl/bookings';
-  static String get profileUrl => '$webviewBaseUrl/profile';
-  static String get availabilityUrl => '$webviewBaseUrl/availability';
+  static String get bookingsUrl => '$webviewBaseUrl/#/bookings';
+  static String get profileUrl => '$webviewBaseUrl/#/profile';
+  static String get availabilityUrl => '$webviewBaseUrl/#/availability';
 }
