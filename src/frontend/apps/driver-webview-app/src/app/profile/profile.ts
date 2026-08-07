@@ -143,6 +143,12 @@ interface DriverDoc {
             </div>
           </mat-card-content>
         </mat-card>
+
+        <!-- Logout Button -->
+        <button mat-flat-button color="warn" class="logout-btn" (click)="logout()">
+          <span class="material-symbols-outlined btn-icon">logout</span>
+          Sign Out / Clear Session
+        </button>
       </main>
     </div>
   `,
@@ -362,6 +368,20 @@ interface DriverDoc {
     .custom-toggle {
       transform: scale(0.9);
     }
+    .logout-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 12px !important;
+      font-weight: 700 !important;
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-icon {
+      font-size: 20px;
+    }
   `]
 })
 export class ProfileComponent implements OnInit {
@@ -434,5 +454,10 @@ export class ProfileComponent implements OnInit {
 
   toggleNightShifts(): void {
     this.nightShifts = !this.nightShifts;
+  }
+
+  logout(): void {
+    localStorage.removeItem('auth_token');
+    this.router.navigate(['/login']);
   }
 }

@@ -59,4 +59,8 @@ export class DriverService {
   uploadDocument(formData: FormData): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, { headers: this.getHeaders() });
   }
+
+  login(username: string, password: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password });
+  }
 }

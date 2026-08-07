@@ -3,12 +3,15 @@ import { BookingsComponent } from './bookings/bookings';
 import { ProfileComponent } from './profile/profile';
 import { AvailabilityComponent } from './availability/availability';
 import { DocumentUploadComponent } from './upload/upload';
+import { LoginComponent } from './login/login';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
-  { path: 'bookings', component: BookingsComponent },
-  { path: 'profile', component: ProfileComponent },
-  { path: 'availability', component: AvailabilityComponent },
-  { path: 'upload', component: DocumentUploadComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'bookings', component: BookingsComponent, canActivate: [authGuard] },
+  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
+  { path: 'availability', component: AvailabilityComponent, canActivate: [authGuard] },
+  { path: 'upload', component: DocumentUploadComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'bookings', pathMatch: 'full' },
   { path: '**', redirectTo: 'bookings' }
 ];
