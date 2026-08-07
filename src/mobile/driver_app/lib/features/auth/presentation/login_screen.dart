@@ -41,33 +41,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: AppTheme.lightBackground,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Logo
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryRed,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.local_taxi_outlined,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Animated Taxi Illustration Header
+              const AnimatedTaxiHeader(),
+              const SizedBox(height: 12),
+
+              // Title Branding
               const Text(
                 'RED TAXIS',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
+                  letterSpacing: 3,
                   color: AppTheme.textLightPrimary,
                 ),
               ),
@@ -75,15 +65,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 'Driver Partner Network',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+                  letterSpacing: 1.5,
                   color: AppTheme.textLightSecondary,
                 ),
               ),
               const SizedBox(height: 32),
 
-              // Card Form
+              // Login Input Form Card
               Card(
                 elevation: 0,
                 color: Colors.white,
@@ -92,23 +82,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   side: const BorderSide(color: Color(0xFFE0E0E0)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Error Messages Alert Box
                         if (authState.errorMessage != null) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.red.shade100),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline, color: Colors.red),
+                                const Icon(Icons.error_outline, color: Colors.red, size: 20),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -116,13 +107,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     style: TextStyle(
                                       color: Colors.red.shade800,
                                       fontSize: 13,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                         ],
                         
                         // Username Field
@@ -132,7 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textLightSecondary,
-                            letterSpacing: 0.5,
+                            letterSpacing: 0.8,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -141,7 +133,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             hintText: 'Enter your driver username',
-                            prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                            prefixIcon: const Icon(Icons.badge_outlined, size: 20, color: AppTheme.textLightSecondary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -150,7 +143,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                             ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppTheme.primaryRed, width: 1.5),
+                            ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            fillColor: const Color(0xFFFBFBFB),
+                            filled: true,
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -159,7 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 20),
 
                         // Password Field
                         const Text(
@@ -168,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textLightSecondary,
-                            letterSpacing: 0.5,
+                            letterSpacing: 0.8,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -177,11 +176,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             hintText: 'Enter your password',
-                            prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                            prefixIcon: const Icon(Icons.lock_outline, size: 20, color: AppTheme.textLightSecondary),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                 size: 20,
+                                color: AppTheme.textLightSecondary,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -197,7 +198,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                             ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppTheme.primaryRed, width: 1.5),
+                            ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            fillColor: const Color(0xFFFBFBFB),
+                            filled: true,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -206,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
 
                         // Submit Button
                         ElevatedButton(
@@ -214,7 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryRed,
                             foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(48),
+                            minimumSize: const Size.fromHeight(50),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -222,11 +229,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           child: isLoading
                               ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
+                                  width: 22,
+                                  height: 22,
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
-                                    strokeWidth: 2,
+                                    strokeWidth: 2.5,
                                   ),
                                 )
                               : const Row(
@@ -234,7 +241,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   children: [
                                     Icon(Icons.login, size: 18),
                                     SizedBox(width: 8),
-                                    Text('Sign In'),
+                                    Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                         ),
@@ -249,4 +256,126 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
+}
+
+class AnimatedTaxiHeader extends StatefulWidget {
+  const AnimatedTaxiHeader({super.key});
+
+  @override
+  State<AnimatedTaxiHeader> createState() => _AnimatedTaxiHeaderState();
+}
+
+class _AnimatedTaxiHeaderState extends State<AnimatedTaxiHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 5),
+      vsync: this,
+    )..repeat();
+    
+    _animation = Tween<double>(begin: -0.15, end: 1.15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 90,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          // Asphalt road strip
+          Positioned(
+            bottom: 12,
+            left: 10,
+            right: 10,
+            child: Container(
+              height: 24,
+              decoration: BoxDecoration(
+                color: const Color(0xFF37474F),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: CustomPaint(
+                painter: RoadLinePainter(),
+              ),
+            ),
+          ),
+          
+          // Start Location Pin (Green)
+          const Positioned(
+            bottom: 24,
+            left: 14,
+            child: Icon(
+              Icons.my_location,
+              color: Colors.green,
+              size: 16,
+            ),
+          ),
+
+          // Destination Location Pin (Red)
+          const Positioned(
+            bottom: 24,
+            right: 14,
+            child: Icon(
+              Icons.location_on,
+              color: AppTheme.primaryRed,
+              size: 20,
+            ),
+          ),
+
+          // Animated Taxi Icon Driving Across
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return Positioned(
+                bottom: 24,
+                left: MediaQuery.of(context).size.width * _animation.value,
+                child: const Icon(
+                  Icons.local_taxi,
+                  color: Colors.amber,
+                  size: 24,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RoadLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.amber.shade400
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    const dashWidth = 8.0;
+    const dashSpace = 8.0;
+    double startX = 24.0;
+    final y = size.height / 2;
+
+    while (startX < size.width - 24.0) {
+      canvas.drawLine(Offset(startX, y), Offset(startX + dashWidth, y), paint);
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
