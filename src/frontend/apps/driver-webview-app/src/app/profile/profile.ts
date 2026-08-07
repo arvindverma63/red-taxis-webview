@@ -31,6 +31,12 @@ interface DriverDoc {
   ],
   template: `
     <div class="material-container">
+      <!-- Staging Diagnostics Alert Banner -->
+      <div class="error-banner" *ngIf="apiError" style="background-color: #ffebee; color: #c62828; padding: 12px; margin: 0 0 16px 0; border-radius: 12px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(198, 40, 40, 0.15);">
+        <span class="material-symbols-outlined" style="font-size: 20px;">error</span>
+        <span>{{ apiError }}</span>
+      </div>
+
       <!-- Profile Header -->
       <mat-card class="profile-header-card">
         <mat-card-content class="header-content">
@@ -385,6 +391,7 @@ interface DriverDoc {
   `]
 })
 export class ProfileComponent implements OnInit {
+  apiError = '';
   driverName = 'Peter Parker';
   driverEmail = 'peter.parker@redtaxis.com';
   driverPhone = '+44 7911 123456';
@@ -420,6 +427,9 @@ export class ProfileComponent implements OnInit {
   ngOnInit(): void {
     this.driverService.getProfile().pipe(
       catchError(err => {
+        const token = localStorage.getItem('auth_token');
+        const tokenSnippet = token ? `(...${token.slice(-5)})` : 'None';
+        this.apiError = `Staging Link Failed (${err.status}): Token: ${tokenSnippet}. Fallback to offline developer data enabled.`;
         console.warn('Staging API GetProfile failed, using mock data:', err);
         return of(null);
       })
