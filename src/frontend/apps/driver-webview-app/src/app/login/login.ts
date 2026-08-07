@@ -78,7 +78,7 @@ import { of } from 'rxjs';
                 </div>
               </div>
 
-              <!-- Remember Me & Forgot Password -->
+              <!-- Remember Me -->
               <div class="form-row">
                 <label class="checkbox-label">
                   <input type="checkbox" checked class="custom-checkbox" />
@@ -105,7 +105,7 @@ import { of } from 'rxjs';
   `,
   styles: [`
     .login-container {
-      background: radial-gradient(circle at top right, #1F1B24 0%, #121214 100%);
+      background-color: var(--background-color);
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -118,11 +118,10 @@ import { of } from 'rxjs';
       max-width: 400px;
     }
     .login-card {
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      background-color: rgba(30, 30, 34, 0.75) !important;
-      backdrop-filter: blur(16px);
-      border-radius: 20px !important;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
+      border: 1px solid var(--border-color) !important;
+      background-color: var(--surface-color) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
       overflow: hidden;
     }
     .login-card-content {
@@ -143,21 +142,21 @@ import { of } from 'rxjs';
       justify-content: center;
       align-items: center;
       margin: 0 auto 12px auto;
-      box-shadow: 0 4px 12px rgba(229, 57, 85, 0.3);
+      box-shadow: 0 4px 12px rgba(229, 57, 85, 0.2);
     }
     .logo-icon {
       color: #FFFFFF;
       font-size: 32px;
     }
     .brand-title {
-      color: #FFFFFF;
+      color: var(--text-primary);
       font-size: 22px;
       font-weight: 900;
       margin: 0 0 4px 0;
       letter-spacing: 2px;
     }
     .brand-subtitle {
-      color: var(--text-dark-secondary);
+      color: var(--text-secondary);
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -167,8 +166,8 @@ import { of } from 'rxjs';
 
     /* Error Banner */
     .error-banner {
-      background-color: rgba(244, 67, 54, 0.1);
-      border: 1px solid rgba(244, 67, 54, 0.2);
+      background-color: rgba(244, 67, 54, 0.06);
+      border: 1px solid rgba(244, 67, 54, 0.15);
       border-radius: 8px;
       padding: 10px 14px;
       display: flex;
@@ -181,7 +180,7 @@ import { of } from 'rxjs';
       font-size: 20px;
     }
     .error-text {
-      color: #FF8A80;
+      color: #C62828;
       font-size: 12px;
       font-weight: 500;
       line-height: 1.4;
@@ -201,7 +200,7 @@ import { of } from 'rxjs';
     .input-label {
       font-size: 10px;
       font-weight: 800;
-      color: var(--text-dark-secondary);
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -213,7 +212,7 @@ import { of } from 'rxjs';
     .input-prefix {
       position: absolute;
       left: 12px;
-      color: var(--text-dark-secondary);
+      color: var(--text-secondary);
       font-size: 20px;
       pointer-events: none;
     }
@@ -221,10 +220,10 @@ import { of } from 'rxjs';
       width: 100%;
       height: 48px;
       padding: 0 16px 0 40px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border-color);
       border-radius: 10px;
-      background-color: rgba(255, 255, 255, 0.03);
-      color: #FFFFFF;
+      background-color: #FFFFFF;
+      color: var(--text-primary);
       font-size: 14px;
       font-family: inherit;
       outline: none;
@@ -232,13 +231,12 @@ import { of } from 'rxjs';
     }
     .form-input:focus {
       border-color: var(--primary-color);
-      background-color: rgba(255, 255, 255, 0.05);
       box-shadow: 0 0 0 1px var(--primary-color);
     }
     .visibility-btn {
       position: absolute;
       right: 8px;
-      color: var(--text-dark-secondary);
+      color: var(--text-secondary);
     }
 
     /* Remember session */
@@ -251,7 +249,7 @@ import { of } from 'rxjs';
       display: flex;
       align-items: center;
       gap: 8px;
-      color: var(--text-dark-secondary);
+      color: var(--text-secondary);
       font-size: 12px;
       cursor: pointer;
     }
@@ -293,7 +291,6 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // If a session exists, auto redirect
     const token = localStorage.getItem('auth_token');
     if (token) {
       this.router.navigate(['/bookings']);
@@ -315,7 +312,6 @@ export class LoginComponent implements OnInit {
           errorMsg = 'Incorrect security credentials. Access denied.';
         } else if (err.status === 0) {
           errorMsg = 'Staging server offline. Accessing simulation session...';
-          // Graceful fallback to simulator session
           setTimeout(() => {
             this.snackBar.open('Staging API offline. Active developer session simulation started!', 'Dismiss', {
               duration: 4000
@@ -337,7 +333,6 @@ export class LoginComponent implements OnInit {
         });
         this.router.navigate(['/bookings']);
       } else if (response) {
-        // Handle alternative response formats
         const token = response.token || response.jwt || response.value?.token;
         if (token) {
           localStorage.setItem('auth_token', token);
