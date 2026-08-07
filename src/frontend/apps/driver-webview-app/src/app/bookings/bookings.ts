@@ -130,13 +130,6 @@ interface Booking {
       background-color: var(--border-color);
       padding: 4px;
       border-radius: 12px;
-      margin-bottom: 16px;
-      gap: 4px;
-    }
-    @media(prefers-color-scheme: dark) {
-      .tabs-container {
-        background-color: #2D2D35;
-      }
     }
     .tab-btn {
       flex: 1;

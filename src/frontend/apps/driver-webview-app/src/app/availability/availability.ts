@@ -151,16 +151,6 @@ interface DayAvailability {
       border: 1px solid var(--border-color);
       color: var(--text-secondary);
     }
-    .preset-btn.outline:hover {
-      background-color: rgba(0,0,0,0.03);
-      color: var(--text-primary);
-    }
-    @media(prefers-color-scheme: dark) {
-      .preset-btn.outline:hover {
-        background-color: rgba(255,255,255,0.03);
-      }
-    }
-
     /* Schedule List */
     .schedule-grid {
       display: flex;

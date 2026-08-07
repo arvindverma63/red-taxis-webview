@@ -220,14 +220,6 @@ interface DriverDoc {
       display: inline-block;
       font-family: monospace;
       font-weight: bold;
-      border: 1px solid #FFC107;
-      width: fit-content;
-    }
-    @media(prefers-color-scheme: dark) {
-      .highlight-plate {
-        background-color: #FFE082;
-        color: #111;
-      }
     }
 
     /* Docs List */

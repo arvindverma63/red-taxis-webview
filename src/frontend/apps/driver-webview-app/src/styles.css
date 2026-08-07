@@ -10,15 +10,7 @@
   --border-color: #E0E0E0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-color: #121214;
-    --surface-color: #1E1E24;
-    --text-primary: #ECEFF1;
-    --text-secondary: #90A4AE;
-    --border-color: #2D2D35;
-  }
-}
+
 
 body {
   margin: 0;
