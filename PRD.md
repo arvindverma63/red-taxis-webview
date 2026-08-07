@@ -65,7 +65,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Webview Hash Routing and Guard Fixes**: Configured hash routing (`withHashLocation()`) and updated the router guard to parse query tokens placed after the hash (e.g. `/#/bookings?token=XYZ`), preventing redirection loops back to webview logins.
 - [x] **Native Flutter Login screen**: Designed a premium, light-themed native login page utilizing custom clippers (`HeaderClipper`), glowing branding badges, and gradient action buttons.
 - [x] **Secure Storage Session Cache**: Integrated `FlutterSecureStorage` caching inside `AuthNotifier` to remember driver login states across restarts, alongside connectivity bypasses (Username: `driver` / Password: `driver`) for offline developer previews.
-- [x] **Polished Native Dashboard**: Redesigned `dashboard_view.dart` to incorporate high-end widgets (Active/Offline duty toggles with pulsing status dots, Today's earnings metric columns, simplified dev simulation decks, and recent completed trips rows).
+- [x] **Polished Native Dashboard**: Redesigned `dashboard_view.dart` to incorporate high-end widgets (Active/Offline duty toggles with pulsing status dots, Today's earnings metric columns, simplified dev simulation decks, and recent completed trips rows). Wired `EarningsNotifier` to fetch real live completed jobs from the staging database via `GET /api/DriverApp/CompletedJobs` dynamically using secure cached JWT tokens.
 - [x] **Native Sign Out Actions**: Embedded logout triggers in the native dashboard App bar that clear cached secure credentials and reset routing guards.
 
 ### ⏳ Remaining Work / Roadmap
