@@ -60,6 +60,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> signIn(String username, String password) async {
     state = state.copyWith(status: AuthStatus.authenticating, errorMessage: null);
+
+    // Bypass check for local demonstration / testing
+    if (username.toLowerCase() == 'driver' && password == 'driver') {
+      await Future.delayed(const Duration(milliseconds: 1000));
+      const simToken = 'simulated_jwt_token_123';
+      await _storage.write(key: 'auth_token', value: simToken);
+      await _storage.write(key: 'auth_email', value: username);
+      state = const AuthState(status: AuthStatus.authenticated, token: simToken, email: 'peter.parker@redtaxis.com');
+      return;
+    }
+
     try {
       final response = await _dio.post(
         '/api/UserProfile/Login',
@@ -82,13 +93,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } on DioException catch (dioErr) {
       String errMsg = 'Authentication failed. Please verify credentials.';
       if (dioErr.type == DioExceptionType.connectionError || dioErr.type == DioExceptionType.connectionTimeout) {
-        errMsg = 'Staging server offline. Entering simulated session...';
-        await Future.delayed(const Duration(milliseconds: 1500));
-        const simToken = 'simulated_jwt_token_123';
-        await _storage.write(key: 'auth_token', value: simToken);
-        await _storage.write(key: 'auth_email', value: username);
-        state = const AuthState(status: AuthStatus.authenticated, token: simToken, email: 'peter.parker@redtaxis.com');
-        return;
+        errMsg = 'Staging server is currently unreachable. Please check your network connection or try test login (driver/driver).';
       } else if (dioErr.response?.statusCode == 400 || dioErr.response?.statusCode == 401) {
         errMsg = 'Incorrect username or password.';
       }

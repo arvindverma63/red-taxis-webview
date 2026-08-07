@@ -20,12 +20,24 @@ export class DriverService {
   }
 
   private getTokenFromUrl(): string | null {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    let urlParams = new URLSearchParams(window.location.search);
+    let token = urlParams.get('token');
     if (token) {
       localStorage.setItem('auth_token', token);
+      return token;
     }
-    return token;
+
+    const hash = window.location.hash;
+    if (hash.includes('?')) {
+      const queryString = hash.split('?')[1];
+      urlParams = new URLSearchParams(queryString);
+      token = urlParams.get('token');
+      if (token) {
+        localStorage.setItem('auth_token', token);
+        return token;
+      }
+    }
+    return null;
   }
 
   getProfile(): Observable<any> {
