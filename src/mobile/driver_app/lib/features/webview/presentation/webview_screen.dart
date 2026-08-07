@@ -25,6 +25,7 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..enableZoom(false)
+      ..clearCache()
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
