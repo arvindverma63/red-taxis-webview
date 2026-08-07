@@ -5,7 +5,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 
 interface Booking {
   id: string;
@@ -31,8 +30,7 @@ interface Booking {
     MatCardModule,
     MatChipsModule,
     MatDividerModule,
-    MatButtonModule,
-    MatIconModule
+    MatButtonModule
   ],
   template: `
     <div class="material-container">
@@ -47,7 +45,7 @@ interface Booking {
           <!-- Bookings List Inside Tab -->
           <div class="bookings-list">
             <div *ngIf="filteredBookings.length === 0" class="empty-state">
-              <mat-icon class="empty-icon">assignment_late</mat-icon>
+              <span class="material-symbols-outlined empty-icon">assignment_late</span>
               <p class="mat-body-medium">No {{ tab.toLowerCase() }} bookings found.</p>
             </div>
 
@@ -57,70 +55,86 @@ interface Booking {
               [class.expanded]="booking.expanded"
               (click)="toggleExpand(booking)"
             >
-              <mat-card-header>
-                <div mat-card-avatar class="time-avatar">
-                  <mat-icon>schedule</mat-icon>
+              <!-- Card Top Header -->
+              <div class="card-top">
+                <div class="booking-ref">
+                  <span class="ref-label">BOOKING ID</span>
+                  <span class="ref-val">{{ booking.id }}</span>
                 </div>
-                <mat-card-title class="card-title">
-                  {{ booking.time }}
-                  <span class="spacer"></span>
-                  <span class="fare-amount">£{{ booking.fare.toFixed(2) }}</span>
-                </mat-card-title>
-                <mat-card-subtitle class="card-subtitle">
-                  {{ booking.date }}
-                </mat-card-subtitle>
-              </mat-card-header>
-
-              <mat-card-content>
-                <div class="route-info">
-                  <div class="route-item">
-                    <mat-icon class="route-icon green-icon">play_circle_filled</mat-icon>
-                    <span class="route-text mat-body-medium">{{ booking.pickup }}</span>
-                  </div>
-                  <div class="route-item">
-                    <mat-icon class="route-icon red-icon">location_on</mat-icon>
-                    <span class="route-text mat-body-medium">{{ booking.dropoff }}</span>
-                  </div>
+                <div class="booking-price">
+                  £{{ booking.fare.toFixed(2) }}
                 </div>
+              </div>
 
-                <div class="badge-row">
-                  <mat-chip-set>
-                    <mat-chip class="status-chip" [ngClass]="booking.status.toLowerCase()">
-                      {{ booking.status }}
-                    </mat-chip>
-                    <mat-chip class="type-chip">
-                      {{ booking.paymentType }}
-                    </mat-chip>
-                  </mat-chip-set>
-                </div>
+              <mat-divider></mat-divider>
 
-                <!-- Expanded area -->
-                <div class="expanded-details" *ngIf="booking.expanded">
-                  <mat-divider></mat-divider>
-                  <div class="details-grid">
-                    <div class="detail-cell">
-                      <span class="lbl mat-caption">Booking ID</span>
-                      <span class="val mat-body-medium">{{ booking.id }}</span>
-                    </div>
-                    <div class="detail-cell">
-                      <span class="lbl mat-caption">Passenger</span>
-                      <span class="val mat-body-medium">{{ booking.passenger }}</span>
-                    </div>
-                    <div class="detail-cell">
-                      <span class="lbl mat-caption">Vehicle</span>
-                      <span class="val mat-body-medium">{{ booking.vehicleType }}</span>
+              <!-- Card Middle Route Timeline -->
+              <div class="card-middle">
+                <div class="timeline-container">
+                  <div class="timeline-line"></div>
+                  
+                  <div class="timeline-node">
+                    <span class="material-symbols-outlined node-icon green-icon">
+                      {{ booking.pickup.toLowerCase().includes('airport') ? 'flight_takeoff' : 'my_location' }}
+                    </span>
+                    <div class="node-content">
+                      <div class="time-address">
+                        <span class="node-time">{{ booking.time }}</span>
+                        <span class="node-address">{{ booking.pickup }}</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="detail-notes" *ngIf="booking.notes">
-                    <span class="lbl mat-caption">Notes</span>
-                    <p class="notes-txt mat-body-small">"{{ booking.notes }}"</p>
+
+                  <div class="timeline-node">
+                    <span class="material-symbols-outlined node-icon red-icon">location_on</span>
+                    <div class="node-content">
+                      <div class="time-address">
+                        <span class="node-time-placeholder"></span>
+                        <span class="node-address">{{ booking.dropoff }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </mat-card-content>
+              </div>
 
-              <mat-card-actions align="end" *ngIf="!booking.expanded">
-                <button mat-button color="primary">View Details</button>
-              </mat-card-actions>
+              <mat-divider></mat-divider>
+
+              <!-- Card Bottom Details & Toggles -->
+              <div class="card-bottom">
+                <span class="status-badge" [ngClass]="booking.status.toLowerCase()">
+                  {{ booking.status }}
+                </span>
+                <span class="payment-badge">
+                  {{ booking.paymentType }}
+                </span>
+                <span class="spacer"></span>
+                <span class="material-symbols-outlined expand-chevron" [class.rotated]="booking.expanded">
+                  expand_more
+                </span>
+              </div>
+
+              <!-- Expanded Details Section -->
+              <div class="expanded-details" *ngIf="booking.expanded" (click)="$event.stopPropagation()">
+                <mat-divider></mat-divider>
+                <div class="details-grid">
+                  <div class="detail-cell">
+                    <span class="detail-lbl">Passenger</span>
+                    <span class="detail-val">{{ booking.passenger }}</span>
+                  </div>
+                  <div class="detail-cell">
+                    <span class="detail-lbl">Vehicle Class</span>
+                    <span class="detail-val">{{ booking.vehicleType }}</span>
+                  </div>
+                  <div class="detail-cell">
+                    <span class="detail-lbl">Date</span>
+                    <span class="detail-val">{{ booking.date }}</span>
+                  </div>
+                </div>
+                <div class="detail-notes" *ngIf="booking.notes">
+                  <span class="detail-lbl">Driver Notes</span>
+                  <p class="notes-txt">"{{ booking.notes }}"</p>
+                </div>
+              </div>
             </mat-card>
           </div>
         </mat-tab>
@@ -132,6 +146,7 @@ interface Booking {
       padding: 16px;
       background-color: var(--background-color);
       min-height: 100vh;
+      font-family: 'Roboto', sans-serif;
     }
     .header {
       margin-bottom: 16px;
@@ -154,133 +169,215 @@ interface Booking {
       padding-top: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
     
+    /* Premium Booking Card Layout */
     .booking-mat-card {
       border: 1px solid var(--border-color);
-      box-shadow: none !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
       border-radius: 12px !important;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      background-color: var(--surface-color);
+      transition: all 0.2s ease-in-out;
     }
     .booking-mat-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.04) !important;
+      border-color: #CFD8DC;
     }
-    
-    .card-title {
+
+    /* Card Top Header */
+    .card-top {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .booking-ref {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ref-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+    }
+    .ref-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .booking-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary-color);
+    }
+
+    /* Route Timeline layout */
+    .card-middle {
+      padding: 16px;
+    }
+    .timeline-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .timeline-line {
+      position: absolute;
+      left: 11px;
+      top: 20px;
+      bottom: 20px;
+      width: 2px;
+      background-color: var(--border-color);
+      z-index: 1;
+    }
+    .timeline-node {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      z-index: 2;
+    }
+    .node-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: var(--surface-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .green-icon {
+      color: #4CAF50;
+    }
+    .red-icon {
+      color: var(--primary-color);
+    }
+    .node-content {
+      flex: 1;
+    }
+    .time-address {
       display: flex;
       align-items: center;
-      width: 100%;
-      font-size: 16px;
+      gap: 10px;
+    }
+    .node-time {
+      font-size: 13px;
       font-weight: 700;
+      color: var(--text-primary);
+      width: 40px;
+      flex-shrink: 0;
+    }
+    .node-time-placeholder {
+      width: 40px;
+      flex-shrink: 0;
+    }
+    .node-address {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Card Bottom */
+    .card-bottom {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-badge.completed {
+      background-color: rgba(76, 175, 80, 0.08);
+      color: #388E3C;
+    }
+    .status-badge.upcoming {
+      background-color: rgba(33, 150, 243, 0.08);
+      color: #1976D2;
+    }
+    .status-badge.cancelled {
+      background-color: rgba(244, 67, 54, 0.08);
+      color: #D32F2F;
+    }
+    .payment-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      background-color: #F8F9FA;
     }
     .spacer {
-      flex: 1 1 auto;
+      flex: 1;
     }
-    .fare-amount {
-      color: var(--primary-color);
-      font-weight: 800;
-      font-size: 18px;
-    }
-    .card-subtitle {
+    .expand-chevron {
       color: var(--text-secondary);
-      font-size: 12px;
+      transition: transform 0.2s ease-in-out;
+    }
+    .expand-chevron.rotated {
+      transform: rotate(180deg);
     }
 
-    .time-avatar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: rgba(0,0,0,0.03);
-      color: var(--text-secondary);
-      border-radius: 50%;
-    }
-
-    .route-info {
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .route-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .route-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-    .green-icon { color: #4CAF50; }
-    .red-icon { color: var(--primary-color); }
-    .route-text {
-      color: var(--text-primary);
-      font-size: 13px;
-    }
-
-    .badge-row {
-      margin-top: 12px;
-    }
-    .status-chip.completed {
-      background-color: rgba(76, 175, 80, 0.12) !important;
-      color: #388E3C !important;
-    }
-    .status-chip.upcoming {
-      background-color: rgba(33, 150, 243, 0.12) !important;
-      color: #1976D2 !important;
-    }
-    .status-chip.cancelled {
-      background-color: rgba(244, 67, 54, 0.12) !important;
-      color: #D32F2F !important;
-    }
-    .type-chip {
-      background-color: rgba(0,0,0,0.05) !important;
-      color: var(--text-secondary) !important;
-    }
-
+    /* Expanded Content */
     .expanded-details {
-      margin-top: 16px;
+      background-color: rgba(0, 0, 0, 0.01);
       display: flex;
       flex-direction: column;
-      gap: 12px;
     }
     .details-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 8px;
+      gap: 12px;
+      padding: 14px 16px;
     }
     .detail-cell {
       display: flex;
       flex-direction: column;
+      gap: 2px;
     }
-    .lbl {
+    .detail-lbl {
+      font-size: 9px;
+      font-weight: 700;
       color: var(--text-secondary);
-      font-size: 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
-    .val {
-      color: var(--text-primary);
-      font-weight: 600;
+    .detail-val {
       font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
     }
     .detail-notes {
+      padding: 0 16px 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
     }
     .notes-txt {
       margin: 0;
+      font-size: 12px;
       color: var(--text-secondary);
       font-style: italic;
-      font-size: 12px;
     }
 
     .empty-state {
       text-align: center;
-      padding: 32px;
+      padding: 40px 16px;
       color: var(--text-secondary);
     }
     .empty-icon {
