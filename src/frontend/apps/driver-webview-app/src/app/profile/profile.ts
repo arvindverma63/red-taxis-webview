@@ -428,8 +428,17 @@ export class ProfileComponent implements OnInit {
         this.driverName = profile.fullName || profile.name || this.driverName;
         this.driverEmail = profile.email || this.driverEmail;
         this.driverPhone = profile.phone || profile.phoneNumber || this.driverPhone;
-        this.vehicleModel = profile.vehicleModel || profile.carModel || this.vehicleModel;
-        this.plateNumber = profile.plateNumber || profile.registration || this.plateNumber;
+        
+        if (profile.vehicleMake && profile.vehicleModel) {
+          this.vehicleModel = `${profile.vehicleMake} ${profile.vehicleModel}`;
+          if (profile.vehicleColour) {
+            this.vehicleModel += ` (${profile.vehicleColour})`;
+          }
+        } else {
+          this.vehicleModel = profile.vehicleModel || profile.carModel || this.vehicleModel;
+        }
+
+        this.plateNumber = profile.regNo || profile.plateNumber || profile.registration || this.plateNumber;
         this.badgeNumber = profile.badgeNumber || profile.driverBadge || this.badgeNumber;
         this.rating = profile.rating || this.rating;
         this.tripsCount = profile.tripsCount || profile.trips || this.tripsCount;

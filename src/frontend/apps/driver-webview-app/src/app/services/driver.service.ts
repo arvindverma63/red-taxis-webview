@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class DriverService {
-  private baseUrl = 'https://staging-api.redtaxi.co.uk';
+  private baseUrl = '';
 
   constructor(private http: HttpClient) {}
 

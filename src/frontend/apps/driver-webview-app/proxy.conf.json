@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "https://staging-api.redtaxi.co.uk",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
