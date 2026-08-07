@@ -1,9 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
+import { DriverService } from '../services/driver.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 interface Booking {
   id: string;
@@ -12,7 +15,7 @@ interface Booking {
   time: string;
   date: string;
   fare: number;
-  paymentType: 'Cash' | 'Card' | 'Account';
+  paymentType: string;
   status: 'Completed' | 'Upcoming' | 'Cancelled';
   passenger: string;
   notes?: string;
@@ -415,7 +418,7 @@ interface Booking {
     }
   `]
 })
-export class BookingsComponent {
+export class BookingsComponent implements OnInit {
   tabs = ['All', 'Upcoming', 'Completed', 'Cancelled'];
   activeTab = 'All';
 
@@ -472,6 +475,49 @@ export class BookingsComponent {
       vehicleType: 'Executive MPV'
     }
   ];
+
+  constructor(private driverService: DriverService) {}
+
+  ngOnInit(): void {
+    forkJoin({
+      todays: this.driverService.getTodaysJobs().pipe(catchError(() => of([]))),
+      future: this.driverService.getFutureJobs().pipe(catchError(() => of([]))),
+      completed: this.driverService.getCompletedJobs().pipe(catchError(() => of([])))
+    }).subscribe(results => {
+      const allJobs: Booking[] = [];
+      
+      const processJob = (job: any, defaultStatus: 'Upcoming' | 'Completed' | 'Cancelled'): Booking => {
+        return {
+          id: job.bookingNo || job.id || `BKG-${Math.floor(Math.random() * 100000)}`,
+          pickup: job.pickupAddress || job.pickup || 'Unknown Pickup',
+          dropoff: job.dropoffAddress || job.dropoff || 'Unknown Dropoff',
+          time: job.bookingTime || job.time || '00:00',
+          date: job.bookingDate || job.date || 'Today',
+          fare: job.fare || job.amount || job.price || 0.00,
+          paymentType: job.paymentType || job.paymentMethod || 'Cash',
+          status: job.status || defaultStatus,
+          passenger: job.passengerName || job.passenger || 'Passenger',
+          notes: job.notes || job.comment || '',
+          vehicleType: job.vehicleType || 'Standard Saloon',
+          expanded: false
+        };
+      };
+
+      if (results.todays && results.todays.length > 0) {
+        results.todays.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
+      }
+      if (results.future && results.future.length > 0) {
+        results.future.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
+      }
+      if (results.completed && results.completed.length > 0) {
+        results.completed.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
+      }
+
+      if (allJobs.length > 0) {
+        this.bookings = allJobs;
+      }
+    });
+  }
 
   get filteredBookings(): Booking[] {
     if (this.activeTab === 'All') {

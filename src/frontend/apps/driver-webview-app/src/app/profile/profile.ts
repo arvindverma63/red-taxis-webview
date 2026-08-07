@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -7,6 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
+import { DriverService } from '../services/driver.service';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 interface DriverDoc {
   name: string;
@@ -37,12 +40,12 @@ interface DriverDoc {
             </div>
           </div>
           <div class="profile-identity">
-            <h2 class="mat-headline-small name-title">Peter Parker</h2>
+            <h2 class="mat-headline-small name-title">{{ driverName }}</h2>
             <span class="badge-pill role-badge">Red Taxis Driver</span>
             <div class="stats-row">
-              <span class="stat"><mat-icon class="star-icon">star</mat-icon> 4.95 Rating</span>
+              <span class="stat"><mat-icon class="star-icon">star</mat-icon> {{ rating }} Rating</span>
               <span class="divider-dot">•</span>
-              <span class="stat">2,410 Trips</span>
+              <span class="stat">{{ tripsCount | number }} Trips</span>
             </div>
           </div>
         </mat-card-content>
@@ -60,33 +63,33 @@ interface DriverDoc {
               <mat-list-item class="profile-list-item">
                 <span class="material-symbols-outlined item-icon" matListItemIcon>mail</span>
                 <span matListItemTitle class="item-lbl">Email</span>
-                <span matListItemLine class="item-val">peter.parker&#64;redtaxis.com</span>
+                <span matListItemLine class="item-val">{{ driverEmail }}</span>
               </mat-list-item>
               <mat-divider></mat-divider>
               <mat-list-item class="profile-list-item">
                 <span class="material-symbols-outlined item-icon" matListItemIcon>call</span>
                 <span matListItemTitle class="item-lbl">Phone</span>
-                <span matListItemLine class="item-val">+44 7911 123456</span>
+                <span matListItemLine class="item-val">{{ driverPhone }}</span>
               </mat-list-item>
               <mat-divider></mat-divider>
               <mat-list-item class="profile-list-item">
                 <span class="material-symbols-outlined item-icon" matListItemIcon>local_taxi</span>
                 <span matListItemTitle class="item-lbl">Vehicle Model</span>
-                <span matListItemLine class="item-val">Toyota Prius (Hybrid)</span>
+                <span matListItemLine class="item-val">{{ vehicleModel }}</span>
               </mat-list-item>
               <mat-divider></mat-divider>
               <mat-list-item class="profile-list-item">
                 <span class="material-symbols-outlined item-icon" matListItemIcon>license</span>
                 <span matListItemTitle class="item-lbl">Plate / Registration</span>
                 <span matListItemLine class="item-val">
-                  <span class="highlight-plate">LK17 WXY</span>
+                  <span class="highlight-plate">{{ plateNumber }}</span>
                 </span>
               </mat-list-item>
               <mat-divider></mat-divider>
               <mat-list-item class="profile-list-item">
                 <span class="material-symbols-outlined item-icon" matListItemIcon>badge</span>
                 <span matListItemTitle class="item-lbl">Driver Badge</span>
-                <span matListItemLine class="item-val font-semibold">TX-9981 (London Central)</span>
+                <span matListItemLine class="item-val font-semibold">{{ badgeNumber }}</span>
               </mat-list-item>
             </mat-list>
           </mat-card-content>
@@ -361,11 +364,18 @@ interface DriverDoc {
     }
   `]
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
+  driverName = 'Peter Parker';
+  driverEmail = 'peter.parker@redtaxis.com';
+  driverPhone = '+44 7911 123456';
+  vehicleModel = 'Toyota Prius (Hybrid)';
+  plateNumber = 'LK17 WXY';
+  badgeNumber = 'TX-9981 (London Central)';
+  rating = 4.95;
+  tripsCount = 2410;
+
   autoAccept = true;
   nightShifts = false;
-
-  constructor(private router: Router) {}
 
   documents: DriverDoc[] = [
     {
@@ -384,6 +394,35 @@ export class ProfileComponent {
       expiry: '04 Jun 2027'
     }
   ];
+
+  constructor(private router: Router, private driverService: DriverService) {}
+
+  ngOnInit(): void {
+    this.driverService.getProfile().pipe(
+      catchError(err => {
+        console.warn('Staging API GetProfile failed, using mock data:', err);
+        return of(null);
+      })
+    ).subscribe(profile => {
+      if (profile) {
+        this.driverName = profile.fullName || profile.name || this.driverName;
+        this.driverEmail = profile.email || this.driverEmail;
+        this.driverPhone = profile.phone || profile.phoneNumber || this.driverPhone;
+        this.vehicleModel = profile.vehicleModel || profile.carModel || this.vehicleModel;
+        this.plateNumber = profile.plateNumber || profile.registration || this.plateNumber;
+        this.badgeNumber = profile.badgeNumber || profile.driverBadge || this.badgeNumber;
+        this.rating = profile.rating || this.rating;
+        this.tripsCount = profile.tripsCount || profile.trips || this.tripsCount;
+        if (profile.documents && Array.isArray(profile.documents)) {
+          this.documents = profile.documents.map((d: any) => ({
+            name: d.name || d.title,
+            status: d.status || 'Valid',
+            expiry: d.expiry || d.expiryDate
+          }));
+        }
+      }
+    });
+  }
 
   navigateToUpload(docName: string): void {
     this.router.navigate(['/upload'], { queryParams: { doc: docName } });

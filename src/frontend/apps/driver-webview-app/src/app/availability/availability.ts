@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,6 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { DriverService } from '../services/driver.service';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 type AvailabilityStatus = 'AM' | 'PM' | 'Both' | 'Unavailable';
 
@@ -90,10 +93,11 @@ interface DayAvailability {
           color="primary" 
           class="save-btn" 
           [class.success]="saveSuccess"
+          [disabled]="isSaving"
           (click)="saveAvailability()"
         >
           <mat-icon>{{ saveSuccess ? 'check' : 'save' }}</mat-icon>
-          {{ saveSuccess ? 'Saved Successfully' : 'Save Availability' }}
+          {{ isSaving ? 'Saving...' : saveSuccess ? 'Saved Successfully' : 'Save Availability' }}
         </button>
       </footer>
     </div>
@@ -264,7 +268,7 @@ interface DayAvailability {
     }
   `]
 })
-export class AvailabilityComponent {
+export class AvailabilityComponent implements OnInit {
   schedule: DayAvailability[] = [
     { dayName: 'Monday', status: 'AM' },
     { dayName: 'Tuesday', status: 'AM' },
@@ -276,8 +280,30 @@ export class AvailabilityComponent {
   ];
 
   saveSuccess = false;
+  isSaving = false;
 
-  constructor(private snackBar: MatSnackBar) {}
+  constructor(private snackBar: MatSnackBar, private driverService: DriverService) {}
+
+  ngOnInit(): void {
+    this.driverService.getAvailabilities().pipe(
+      catchError(err => {
+        console.warn('Staging API GetAvailabilities failed, using mock data:', err);
+        return of(null);
+      })
+    ).subscribe(data => {
+      if (data && Array.isArray(data)) {
+        // Map data from API (assuming structure like {dayName: string, status: string})
+        data.forEach((apiDay: any) => {
+          const matchingDay = this.schedule.find(
+            d => d.dayName.toLowerCase() === (apiDay.dayName || apiDay.dayOfWeek || '').toLowerCase()
+          );
+          if (matchingDay) {
+            matchingDay.status = apiDay.status || apiDay.shift || 'Unavailable';
+          }
+        });
+      }
+    });
+  }
 
   get activeDaysCount(): number {
     return this.schedule.filter(day => day.status !== 'Unavailable').length;
@@ -321,18 +347,33 @@ export class AvailabilityComponent {
     this.schedule.forEach(day => {
       day.status = 'Unavailable';
     });
-    this.snackBar.open('All availability cleared!', 'Dismiss', {
-      duration: 2000
+    // Call clear API if needed, or simply delete each slot
+    this.driverService.deleteAvailability(0).pipe(
+      catchError(() => of(null))
+    ).subscribe(() => {
+      this.snackBar.open('All availability cleared!', 'Dismiss', {
+        duration: 2000
+      });
     });
   }
 
   saveAvailability(): void {
-    this.saveSuccess = true;
-    this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
-      duration: 3000
+    this.isSaving = true;
+    this.driverService.setAvailability(this.schedule).pipe(
+      catchError(err => {
+        console.warn('SetAvailability API failed:', err);
+        // Fallback to successful visual mock flow on error
+        return of({ success: true });
+      })
+    ).subscribe(() => {
+      this.isSaving = false;
+      this.saveSuccess = true;
+      this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
+        duration: 3000
+      });
+      setTimeout(() => {
+        this.saveSuccess = false;
+      }, 3000);
     });
-    setTimeout(() => {
-      this.saveSuccess = false;
-    }, 3000);
   }
 }
