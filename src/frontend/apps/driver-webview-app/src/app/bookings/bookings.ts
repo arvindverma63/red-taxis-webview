@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
@@ -26,7 +25,6 @@ interface Booking {
   standalone: true,
   imports: [
     CommonModule,
-    MatTabsModule,
     MatCardModule,
     MatChipsModule,
     MatDividerModule,
@@ -34,106 +32,114 @@ interface Booking {
   ],
   template: `
     <div class="material-container">
-      <!-- Tabs -->
-      <mat-tab-group (selectedTabChange)="onTabChange($event)" mat-stretch-tabs="always" class="full-width-tabs">
-        <mat-tab *ngFor="let tab of tabs" [label]="tab">
-          <!-- Bookings List Inside Tab -->
-          <div class="bookings-list">
-            <div *ngIf="filteredBookings.length === 0" class="empty-state">
-              <span class="material-symbols-outlined empty-icon">assignment_late</span>
-              <p class="mat-body-medium">No {{ tab.toLowerCase() }} bookings found.</p>
+      <!-- Tabs as Pills -->
+      <mat-chip-listbox class="full-width-pills" aria-label="Select booking filter">
+        <mat-chip-option 
+          *ngFor="let tab of tabs" 
+          [selected]="activeTab === tab"
+          (selectable)="true"
+          (selectionChange)="onChipSelectionChange(tab, $event.selected)"
+          class="pill-chip"
+        >
+          {{ tab }}
+        </mat-chip-option>
+      </mat-chip-listbox>
+
+      <!-- Bookings List -->
+      <div class="bookings-list">
+        <div *ngIf="filteredBookings.length === 0" class="empty-state">
+          <span class="material-symbols-outlined empty-icon">assignment_late</span>
+          <p class="mat-body-medium">No {{ activeTab.toLowerCase() }} bookings found.</p>
+        </div>
+
+        <mat-card 
+          *ngFor="let booking of filteredBookings" 
+          class="booking-mat-card" 
+          [class.expanded]="booking.expanded"
+          (click)="toggleExpand(booking)"
+        >
+          <!-- Card Top Header -->
+          <div class="card-top">
+            <div class="booking-ref">
+              <span class="ref-label">BOOKING ID</span>
+              <span class="ref-val">{{ booking.id }}</span>
             </div>
-
-            <mat-card 
-              *ngFor="let booking of filteredBookings" 
-              class="booking-mat-card" 
-              [class.expanded]="booking.expanded"
-              (click)="toggleExpand(booking)"
-            >
-              <!-- Card Top Header -->
-              <div class="card-top">
-                <div class="booking-ref">
-                  <span class="ref-label">BOOKING ID</span>
-                  <span class="ref-val">{{ booking.id }}</span>
-                </div>
-                <div class="booking-price">
-                  £{{ booking.fare.toFixed(2) }}
-                </div>
-              </div>
-
-              <mat-divider></mat-divider>
-
-              <!-- Card Middle Route Timeline -->
-              <div class="card-middle">
-                <div class="timeline-container">
-                  <div class="timeline-line"></div>
-                  
-                  <div class="timeline-node">
-                    <span class="material-symbols-outlined node-icon green-icon">
-                      {{ booking.pickup.toLowerCase().includes('airport') ? 'flight_takeoff' : 'my_location' }}
-                    </span>
-                    <div class="node-content">
-                      <div class="time-address">
-                        <span class="node-time">{{ booking.time }}</span>
-                        <span class="node-address">{{ booking.pickup }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="timeline-node">
-                    <span class="material-symbols-outlined node-icon red-icon">location_on</span>
-                    <div class="node-content">
-                      <div class="time-address">
-                        <span class="node-time-placeholder"></span>
-                        <span class="node-address">{{ booking.dropoff }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <mat-divider></mat-divider>
-
-              <!-- Card Bottom Details & Toggles -->
-              <div class="card-bottom">
-                <span class="status-badge" [ngClass]="booking.status.toLowerCase()">
-                  {{ booking.status }}
-                </span>
-                <span class="payment-badge">
-                  {{ booking.paymentType }}
-                </span>
-                <span class="spacer"></span>
-                <span class="material-symbols-outlined expand-chevron" [class.rotated]="booking.expanded">
-                  expand_more
-                </span>
-              </div>
-
-              <!-- Expanded Details Section -->
-              <div class="expanded-details" *ngIf="booking.expanded" (click)="$event.stopPropagation()">
-                <mat-divider></mat-divider>
-                <div class="details-grid">
-                  <div class="detail-cell">
-                    <span class="detail-lbl">Passenger</span>
-                    <span class="detail-val">{{ booking.passenger }}</span>
-                  </div>
-                  <div class="detail-cell">
-                    <span class="detail-lbl">Vehicle Class</span>
-                    <span class="detail-val">{{ booking.vehicleType }}</span>
-                  </div>
-                  <div class="detail-cell">
-                    <span class="detail-lbl">Date</span>
-                    <span class="detail-val">{{ booking.date }}</span>
-                  </div>
-                </div>
-                <div class="detail-notes" *ngIf="booking.notes">
-                  <span class="detail-lbl">Driver Notes</span>
-                  <p class="notes-txt">"{{ booking.notes }}"</p>
-                </div>
-              </div>
-            </mat-card>
+            <div class="booking-price">
+              £{{ booking.fare.toFixed(2) }}
+            </div>
           </div>
-        </mat-tab>
-      </mat-tab-group>
+
+          <mat-divider></mat-divider>
+
+          <!-- Card Middle Route Timeline -->
+          <div class="card-middle">
+            <div class="timeline-container">
+              <div class="timeline-line"></div>
+              
+              <div class="timeline-node">
+                <span class="material-symbols-outlined node-icon green-icon">
+                  {{ booking.pickup.toLowerCase().includes('airport') ? 'flight_takeoff' : 'my_location' }}
+                </span>
+                <div class="node-content">
+                  <div class="time-address">
+                    <span class="node-time">{{ booking.time }}</span>
+                    <span class="node-address">{{ booking.pickup }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="timeline-node">
+                <span class="material-symbols-outlined node-icon red-icon">location_on</span>
+                <div class="node-content">
+                  <div class="time-address">
+                    <span class="node-time-placeholder"></span>
+                    <span class="node-address">{{ booking.dropoff }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <!-- Card Bottom Details & Toggles -->
+          <div class="card-bottom">
+            <span class="status-badge" [ngClass]="booking.status.toLowerCase()">
+              {{ booking.status }}
+            </span>
+            <span class="payment-badge">
+              {{ booking.paymentType }}
+            </span>
+            <span class="spacer"></span>
+            <span class="material-symbols-outlined expand-chevron" [class.rotated]="booking.expanded">
+              expand_more
+            </span>
+          </div>
+
+          <!-- Expanded Details Section -->
+          <div class="expanded-details" *ngIf="booking.expanded" (click)="$event.stopPropagation()">
+            <mat-divider></mat-divider>
+            <div class="details-grid">
+              <div class="detail-cell">
+                <span class="detail-lbl">Passenger</span>
+                <span class="detail-val">{{ booking.passenger }}</span>
+              </div>
+              <div class="detail-cell">
+                <span class="detail-lbl">Vehicle Class</span>
+                <span class="detail-val">{{ booking.vehicleType }}</span>
+              </div>
+              <div class="detail-cell">
+                <span class="detail-lbl">Date</span>
+                <span class="detail-val">{{ booking.date }}</span>
+              </div>
+            </div>
+            <div class="detail-notes" *ngIf="booking.notes">
+              <span class="detail-lbl">Driver Notes</span>
+              <p class="notes-txt">"{{ booking.notes }}"</p>
+            </div>
+          </div>
+        </mat-card>
+      </div>
     </div>
   `,
   styles: [`
@@ -143,23 +149,48 @@ interface Booking {
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
     }
-
     
-    .full-width-tabs {
-      margin-top: 8px;
+    /* Pills Layout Override */
+    .full-width-pills {
+      margin-bottom: 12px;
+      display: flex;
+      width: 100%;
     }
-    ::ng-deep .mat-mdc-tab-header-pagination {
-      display: none !important;
+    ::ng-deep .full-width-pills .mat-mdc-chip-listbox-wrapper {
+      display: flex;
+      width: 100%;
+      gap: 8px;
     }
-    ::ng-deep .mat-mdc-tab-label-container {
-      overflow-x: auto !important;
+    ::ng-deep .pill-chip {
+      flex: 1;
+      border-radius: 20px !important;
+      min-height: 36px !important;
+      border: 1px solid var(--border-color) !important;
+      background-color: var(--surface-color) !important;
+      box-shadow: none !important;
     }
-    ::ng-deep .mat-mdc-tab-label-container::-webkit-scrollbar {
-      display: none !important;
+    ::ng-deep .pill-chip .mdc-evolution-chip__cell--primary,
+    ::ng-deep .pill-chip .mdc-evolution-chip__action {
+      justify-content: center;
+      width: 100%;
+      padding: 0 4px !important;
+    }
+    ::ng-deep .pill-chip.mat-mdc-chip-selected {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+    ::ng-deep .pill-chip.mat-mdc-chip-selected .mdc-evolution-chip__text-label {
+      color: #FFFFFF !important;
+      font-weight: 700 !important;
+    }
+    ::ng-deep .pill-chip .mdc-evolution-chip__text-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
     }
     
     .bookings-list {
-      padding-top: 16px;
+      padding-top: 8px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -446,8 +477,10 @@ export class BookingsComponent {
     return this.bookings.filter(b => b.status === this.activeTab);
   }
 
-  onTabChange(event: any): void {
-    this.activeTab = this.tabs[event.index];
+  onChipSelectionChange(tab: string, selected: boolean): void {
+    if (selected) {
+      this.activeTab = tab;
+    }
   }
 
   toggleExpand(booking: Booking): void {
