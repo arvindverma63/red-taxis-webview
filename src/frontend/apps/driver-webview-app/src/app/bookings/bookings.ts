@@ -33,7 +33,7 @@ interface Booking {
   template: `
     <div class="material-container">
       <!-- Tabs as Pills -->
-      <mat-chip-listbox class="full-width-pills" aria-label="Select booking filter">
+      <mat-chip-listbox class="full-width-pills" [hideSingleSelectionIndicator]="true" aria-label="Select booking filter">
         <mat-chip-option 
           *ngFor="let tab of tabs" 
           [selected]="activeTab === tab"
@@ -168,6 +168,9 @@ interface Booking {
       border: 1px solid var(--border-color) !important;
       background-color: var(--surface-color) !important;
       box-shadow: none !important;
+    }
+    ::ng-deep .pill-chip .mat-mdc-chip-checkmark {
+      display: none !important;
     }
     ::ng-deep .pill-chip .mdc-evolution-chip__cell--primary,
     ::ng-deep .pill-chip .mdc-evolution-chip__action {
