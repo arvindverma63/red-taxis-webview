@@ -1,5 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 interface ShiftSlot {
   name: 'AM' | 'PM' | 'Night';
@@ -15,91 +21,115 @@ interface DayAvailability {
 @Component({
   selector: 'app-availability',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatButtonToggleModule,
+    MatDividerModule,
+    MatSnackBarModule
+  ],
   template: `
-    <div class="webview-container">
+    <div class="material-container">
       <header class="header">
-        <h1>Weekly Availability</h1>
-        <p>Set your working hours for the upcoming week.</p>
+        <h1 class="mat-headline-medium">Weekly Availability</h1>
+        <p class="mat-body-medium">Set your working hours for the upcoming week.</p>
       </header>
 
       <!-- Summary & Actions -->
-      <div class="summary-card">
-        <div class="summary-stats">
-          <div class="stat">
-            <span class="label">Weekly Hours</span>
-            <span class="value">{{ totalHours }} hrs</span>
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="summary-stats">
+            <div class="stat">
+              <span class="label mat-caption">Weekly Hours</span>
+              <span class="value">{{ totalHours }} hrs</span>
+            </div>
+            <div class="stat">
+              <span class="label mat-caption">Shifts Booked</span>
+              <span class="value">{{ activeShiftsCount }} / 21</span>
+            </div>
           </div>
-          <div class="stat">
-            <span class="label">Shifts Booked</span>
-            <span class="value">{{ activeShiftsCount }} / 21</span>
-          </div>
-        </div>
 
-        <div class="presets-row">
-          <button class="preset-btn" (click)="applyPreset('weekdays')">Weekdays AM</button>
-          <button class="preset-btn" (click)="applyPreset('weekends')">Weekends PM</button>
-          <button class="preset-btn outline" (click)="clearAll()">Clear All</button>
-        </div>
-      </div>
+          <div class="presets-row">
+            <button mat-flat-button color="accent" class="preset-btn" (click)="applyPreset('weekdays')">
+              Weekdays AM
+            </button>
+            <button mat-flat-button color="accent" class="preset-btn" (click)="applyPreset('weekends')">
+              Weekends PM
+            </button>
+            <button mat-stroked-button class="preset-btn" (click)="clearAll()">
+              Clear All
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
 
       <!-- Weekly Schedule Grid -->
       <main class="schedule-grid">
-        <div *ngFor="let day of schedule; let dayIdx = index" class="day-card">
-          <span class="day-label">{{ day.dayName }}</span>
-          
-          <div class="slots-container">
-            <button 
-              *ngFor="let slot of day.slots; let slotIdx = index" 
-              class="slot-bubble"
-              [class.active]="slot.available"
-              (click)="toggleSlot(dayIdx, slotIdx)"
-            >
-              <span class="slot-name">{{ slot.name }}</span>
-              <span class="slot-time">{{ slot.time }}</span>
-            </button>
-          </div>
-        </div>
+        <mat-card *ngFor="let day of schedule; let dayIdx = index" class="day-card">
+          <mat-card-content class="day-card-content">
+            <span class="day-label mat-subtitle-1">{{ day.dayName }}</span>
+            
+            <div class="slots-container">
+              <mat-button-toggle-group multiple class="toggle-group-custom">
+                <mat-button-toggle 
+                  *ngFor="let slot of day.slots; let slotIdx = index" 
+                  [checked]="slot.available"
+                  (change)="onToggleChange(dayIdx, slotIdx, $event.source.checked)"
+                  class="slot-toggle"
+                >
+                  <div class="slot-label-wrapper">
+                    <span class="slot-name">{{ slot.name }}</span>
+                    <span class="slot-time">{{ slot.time }}</span>
+                  </div>
+                </mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+          </mat-card-content>
+        </mat-card>
       </main>
 
-      <!-- Save Button with click reaction -->
+      <!-- Sticky Save Bar -->
       <footer class="footer-actions">
         <button 
+          mat-raised-button 
+          color="primary" 
           class="save-btn" 
           [class.success]="saveSuccess"
           (click)="saveAvailability()"
         >
-          {{ saveSuccess ? '✓ Saved Successfully' : 'Save Availability' }}
+          <mat-icon>{{ saveSuccess ? 'check' : 'save' }}</mat-icon>
+          {{ saveSuccess ? 'Saved Successfully' : 'Save Availability' }}
         </button>
       </footer>
     </div>
   `,
   styles: [`
-    .webview-container {
+    .material-container {
       padding: 16px;
-      padding-bottom: 80px; /* Space for sticky footer save button */
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding-bottom: 88px; /* Space for sticky save button */
+      background-color: var(--background-color);
+      min-height: 100vh;
     }
     .header {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .header h1 {
-      font-size: 24px;
-      margin: 0 0 6px 0;
+      margin: 0 0 4px 0;
+      font-weight: 700;
       color: var(--text-primary);
     }
     .header p {
-      font-size: 14px;
       margin: 0;
       color: var(--text-secondary);
     }
 
     /* Summary Card */
     .summary-card {
-      background-color: var(--surface-color);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 16px;
+      box-shadow: none !important;
+      border-radius: 12px !important;
       margin-bottom: 20px;
     }
     .summary-stats {
@@ -116,12 +146,11 @@ interface DayAvailability {
       text-align: center;
     }
     .summary-stats .label {
-      font-size: 11px;
       color: var(--text-secondary);
       margin-bottom: 4px;
     }
     .summary-stats .value {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--text-primary);
     }
@@ -131,26 +160,10 @@ interface DayAvailability {
     }
     .preset-btn {
       flex: 1;
-      border: none;
-      background-color: rgba(229, 57, 85, 0.08);
-      color: var(--primary-color);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 8px 6px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-align: center;
+      font-size: 11px !important;
+      font-weight: bold;
     }
-    .preset-btn:hover {
-      background-color: var(--primary-color);
-      color: #FFFFFF;
-    }
-    .preset-btn.outline {
-      background: none;
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-    }
+
     /* Schedule List */
     .schedule-grid {
       display: flex;
@@ -158,55 +171,61 @@ interface DayAvailability {
       gap: 12px;
     }
     .day-card {
-      background-color: var(--surface-color);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 14px 16px;
+      box-shadow: none !important;
+      border-radius: 12px !important;
+    }
+    .day-card-content {
+      padding: 12px 16px !important;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
     }
     .day-label {
-      font-size: 14px;
       font-weight: 700;
       color: var(--text-primary);
     }
+    
     .slots-container {
+      width: 100%;
+    }
+    
+    .toggle-group-custom {
       display: flex;
+      width: 100%;
+      box-shadow: none !important;
+      border: none !important;
       gap: 8px;
     }
-    .slot-bubble {
+    
+    .slot-toggle {
       flex: 1;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-color) !important;
+      border-radius: 8px !important;
       background-color: var(--surface-color);
-      padding: 10px 4px;
-      border-radius: 10px;
+      height: 48px;
+    }
+    
+    .mat-button-toggle-checked {
+      background-color: rgba(76, 175, 80, 0.08) !important;
+      border-color: #4CAF50 !important;
+      color: #388E3C !important;
+    }
+    
+    .slot-label-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      line-height: 1.2;
+      padding: 4px 0;
     }
     .slot-name {
       font-size: 12px;
       font-weight: bold;
-      color: var(--text-primary);
-      margin-bottom: 2px;
     }
     .slot-time {
       font-size: 9px;
-      color: var(--text-secondary);
-    }
-    
-    .slot-bubble.active {
-      background-color: rgba(76, 175, 80, 0.08);
-      border-color: #4CAF50;
-    }
-    .slot-bubble.active .slot-name {
-      color: #4CAF50;
-    }
-    .slot-bubble.active .slot-time {
-      color: #388E3C;
+      opacity: 0.8;
     }
 
     /* Sticky Footer Save Button */
@@ -222,23 +241,14 @@ interface DayAvailability {
     }
     .save-btn {
       width: 100%;
-      border: none;
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-      color: #FFFFFF;
-      font-size: 15px;
-      font-weight: 700;
-      padding: 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(229, 57, 85, 0.2);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .save-btn:active {
-      transform: scale(0.98);
+      height: 48px;
+      border-radius: 8px !important;
+      font-size: 14px !important;
+      font-weight: bold !important;
     }
     .save-btn.success {
-      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+      background: #4CAF50 !important;
+      color: #FFFFFF !important;
     }
   `]
 })
@@ -304,6 +314,8 @@ export class AvailabilityComponent {
 
   saveSuccess = false;
 
+  constructor(private snackBar: MatSnackBar) {}
+
   get activeShiftsCount(): number {
     let count = 0;
     this.schedule.forEach(day => {
@@ -315,12 +327,12 @@ export class AvailabilityComponent {
   }
 
   get totalHours(): number {
-    return this.activeShiftsCount * 8; // Each shift is 8 hours
+    return this.activeShiftsCount * 8;
   }
 
-  toggleSlot(dayIdx: number, slotIdx: number): void {
-    this.schedule[dayIdx].slots[slotIdx].available = !this.schedule[dayIdx].slots[slotIdx].available;
-    this.saveSuccess = false; // Reset success state on edit
+  onToggleChange(dayIdx: number, slotIdx: number, checked: boolean): void {
+    this.schedule[dayIdx].slots[slotIdx].available = checked;
+    this.saveSuccess = false;
   }
 
   applyPreset(preset: 'weekdays' | 'weekends'): void {
@@ -329,10 +341,13 @@ export class AvailabilityComponent {
       const isWeekend = day.dayName === 'Saturday' || day.dayName === 'Sunday';
       
       if (preset === 'weekdays' && !isWeekend) {
-        day.slots[0].available = true; // Set AM available
+        day.slots[0].available = true;
       } else if (preset === 'weekends' && isWeekend) {
-        day.slots[1].available = true; // Set PM available
+        day.slots[1].available = true;
       }
+    });
+    this.snackBar.open(`${preset === 'weekdays' ? 'Weekdays AM' : 'Weekends PM'} preset applied!`, 'Dismiss', {
+      duration: 2000
     });
   }
 
@@ -343,10 +358,16 @@ export class AvailabilityComponent {
         slot.available = false;
       });
     });
+    this.snackBar.open('All availability cleared!', 'Dismiss', {
+      duration: 2000
+    });
   }
 
   saveAvailability(): void {
     this.saveSuccess = true;
+    this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
+      duration: 3000
+    });
     setTimeout(() => {
       this.saveSuccess = false;
     }, 3000);

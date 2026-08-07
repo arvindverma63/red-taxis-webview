@@ -1,5 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonModule } from '@angular/material/button';
 
 interface DriverDoc {
   name: string;
@@ -10,126 +16,152 @@ interface DriverDoc {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatListModule,
+    MatIconModule,
+    MatSlideToggleModule,
+    MatDividerModule,
+    MatButtonModule
+  ],
   template: `
-    <div class="webview-container">
+    <div class="material-container">
       <!-- Profile Header -->
-      <header class="profile-header-card">
-        <div class="avatar-container">
-          <div class="avatar-initials">PP</div>
-        </div>
-        <div class="profile-identity">
-          <h2>Peter Parker</h2>
-          <span class="badge-pill role-badge">Red Taxi Driver</span>
-          <div class="stats-row">
-            <span class="stat"><span class="star-icon">★</span> 4.95 Rating</span>
-            <span class="divider">•</span>
-            <span class="stat">2,410 Trips</span>
+      <mat-card class="profile-header-card">
+        <mat-card-content class="header-content">
+          <div class="avatar-container">
+            <div class="avatar-initials">PP</div>
           </div>
-        </div>
-      </header>
+          <div class="profile-identity">
+            <h2 class="mat-headline-small">Peter Parker</h2>
+            <span class="badge-pill role-badge">Red Taxi Driver</span>
+            <div class="stats-row">
+              <span class="stat"><mat-icon class="star-icon">star</mat-icon> 4.95 Rating</span>
+              <span class="divider">•</span>
+              <span class="stat">2,410 Trips</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
 
       <!-- Details List -->
       <main class="profile-content">
         <!-- Personal and Vehicle Details -->
-        <section class="info-section">
-          <h3>Account & Vehicle Details</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Email</span>
-              <span class="info-value">peter.parker&#64;redtaxis.com</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Phone</span>
-              <span class="info-value">+44 7911 123456</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Vehicle Model</span>
-              <span class="info-value">Toyota Prius (Hybrid)</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Plate / Registration</span>
-              <span class="info-value highlight-plate">LK17 WXY</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Driver Badge</span>
-              <span class="info-value">TX-9981 (London Central)</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Base Rate Commission</span>
-              <span class="info-value">12.5%</span>
-            </div>
-          </div>
-        </section>
+        <mat-card class="section-card">
+          <mat-card-header>
+            <mat-card-title>Account & Vehicle Details</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-list>
+              <mat-list-item>
+                <mat-icon matListItemIcon>email</mat-icon>
+                <span matListItemTitle class="item-lbl">Email</span>
+                <span matListItemLine class="item-val">peter.parker&#64;redtaxis.com</span>
+              </mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>
+                <mat-icon matListItemIcon>phone</mat-icon>
+                <span matListItemTitle class="item-lbl">Phone</span>
+                <span matListItemLine class="item-val">+44 7911 123456</span>
+              </mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>
+                <mat-icon matListItemIcon>directions_car</mat-icon>
+                <span matListItemTitle class="item-lbl">Vehicle Model</span>
+                <span matListItemLine class="item-val">Toyota Prius (Hybrid)</span>
+              </mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>
+                <mat-icon matListItemIcon>pin</mat-icon>
+                <span matListItemTitle class="item-lbl">Plate / Registration</span>
+                <span matListItemLine class="item-val">
+                  <span class="highlight-plate">LK17 WXY</span>
+                </span>
+              </mat-list-item>
+              <mat-divider></mat-divider>
+              <mat-list-item>
+                <mat-icon matListItemIcon>badge</mat-icon>
+                <span matListItemTitle class="item-lbl">Driver Badge</span>
+                <span matListItemLine class="item-val">TX-9981 (London Central)</span>
+              </mat-list-item>
+            </mat-list>
+          </mat-card-content>
+        </mat-card>
 
         <!-- Document Verification -->
-        <section class="info-section">
-          <h3>Compliance Documents</h3>
-          <div class="docs-list">
-            <div *ngFor="let doc of documents" class="doc-card">
-              <div class="doc-info">
-                <span class="doc-name">{{ doc.name }}</span>
-                <span class="doc-expiry">Expires {{ doc.expiry }}</span>
-              </div>
-              <span class="doc-status" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
-                {{ doc.status }}
-              </span>
-            </div>
-          </div>
-        </section>
+        <mat-card class="section-card">
+          <mat-card-header>
+            <mat-card-title>Compliance Documents</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-list>
+              <mat-list-item *ngFor="let doc of documents">
+                <mat-icon matListItemIcon [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
+                  {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : 'cancel' }}
+                </mat-icon>
+                <span matListItemTitle class="doc-title">{{ doc.name }}</span>
+                <span matListItemLine class="doc-subtitle">Expires {{ doc.expiry }}</span>
+                <span matListItemMeta class="status-lbl" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
+                  {{ doc.status }}
+                </span>
+              </mat-list-item>
+            </mat-list>
+          </mat-card-content>
+        </mat-card>
 
         <!-- Preferences -->
-        <section class="info-section">
-          <h3>Preferences</h3>
-          <div class="preferences-list">
-            <div class="preference-item">
+        <mat-card class="section-card">
+          <mat-card-header>
+            <mat-card-title>Preferences</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="pref-content">
+            <div class="preference-row">
               <div class="pref-text">
-                <span class="pref-title">Auto-Accept Job Offers</span>
-                <span class="pref-desc">Automatically accept incoming matching bookings.</span>
+                <span class="pref-title mat-subtitle-2">Auto-Accept Job Offers</span>
+                <span class="pref-desc mat-body-small">Automatically accept incoming matching bookings.</span>
               </div>
-              <label class="switch">
-                <input type="checkbox" [checked]="autoAccept" (change)="toggleAutoAccept()">
-                <span class="slider"></span>
-              </label>
+              <mat-slide-toggle [checked]="autoAccept" (change)="toggleAutoAccept()" color="primary"></mat-slide-toggle>
             </div>
-            <div class="preference-item">
+            <mat-divider></mat-divider>
+            <div class="preference-row">
               <div class="pref-text">
-                <span class="pref-title">Accept Night Shifts</span>
-                <span class="pref-desc">Receive notifications for trips between 22:00 and 06:00.</span>
+                <span class="pref-title mat-subtitle-2">Accept Night Shifts</span>
+                <span class="pref-desc mat-body-small">Receive notifications for trips between 22:00 and 06:00.</span>
               </div>
-              <label class="switch">
-                <input type="checkbox" [checked]="nightShifts" (change)="toggleNightShifts()">
-                <span class="slider"></span>
-              </label>
+              <mat-slide-toggle [checked]="nightShifts" (change)="toggleNightShifts()" color="primary"></mat-slide-toggle>
             </div>
-          </div>
-        </section>
+          </mat-card-content>
+        </mat-card>
       </main>
     </div>
   `,
   styles: [`
-    .webview-container {
+    .material-container {
       padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--background-color);
+      min-height: 100vh;
     }
 
-    /* Header Profile Card */
+    /* Profile Header Card */
     .profile-header-card {
       background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-      border-radius: 20px;
-      padding: 20px;
+      color: #FFFFFF;
+      border-radius: 16px !important;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(229, 57, 85, 0.15) !important;
+    }
+    .header-content {
       display: flex;
       align-items: center;
-      gap: 20px;
-      color: #FFFFFF;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 16px rgba(229, 57, 85, 0.15);
+      gap: 16px;
+      padding: 16px !important;
     }
     .avatar-container {
-      width: 72px;
-      height: 72px;
+      width: 64px;
+      height: 64px;
       background-color: rgba(255,255,255,0.2);
-      border: 3px solid rgba(255,255,255,0.4);
+      border: 2px solid rgba(255,255,255,0.4);
       border-radius: 50%;
       display: flex;
       justify-content: center;
@@ -137,80 +169,76 @@ interface DriverDoc {
       flex-shrink: 0;
     }
     .avatar-initials {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 800;
-      color: #FFFFFF;
     }
     .profile-identity h2 {
-      margin: 0 0 6px 0;
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
+      margin: 0 0 4px 0;
+      color: #FFFFFF;
+      font-weight: 700;
     }
     .badge-pill {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: bold;
-      padding: 3px 8px;
+      padding: 2px 8px;
       border-radius: 12px;
       text-transform: uppercase;
     }
     .role-badge {
       background-color: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.3);
-      color: #FFFFFF;
     }
     .stats-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-      font-size: 13px;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 12px;
       opacity: 0.9;
     }
     .star-icon {
       color: #FFD700;
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      vertical-align: middle;
     }
     .divider {
       opacity: 0.5;
     }
 
-    /* Profile Content Sections */
+    /* Section Cards */
     .profile-content {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
-    .info-section h3 {
+    .section-card {
+      border: 1px solid var(--border-color);
+      box-shadow: none !important;
+      border-radius: 12px !important;
+    }
+    .section-card mat-card-title {
       font-size: 15px;
       font-weight: 700;
-      margin: 0 0 12px 0;
       color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      padding: 16px 16px 0 16px;
     }
-    .info-grid {
-      background-color: var(--surface-color);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    .section-card mat-card-content {
+      padding: 8px 0 !important;
     }
-    .info-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .info-label {
-      font-size: 11px;
+
+    .item-lbl {
       color: var(--text-secondary);
+      font-size: 11px;
       font-weight: 500;
     }
-    .info-value {
-      font-size: 14px;
-      font-weight: 600;
+    .item-val {
       color: var(--text-primary);
+      font-weight: 600;
+      font-size: 13px;
     }
     .highlight-plate {
       background-color: #FFD54F;
@@ -220,75 +248,45 @@ interface DriverDoc {
       display: inline-block;
       font-family: monospace;
       font-weight: bold;
+      border: 1px solid #FFC107;
     }
 
-    /* Docs List */
-    .docs-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .doc-card {
-      background-color: var(--surface-color);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: all 0.2s ease;
-    }
-    .doc-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .doc-name {
+    /* Documents Styling */
+    .doc-title {
       font-size: 13px;
       font-weight: 600;
       color: var(--text-primary);
     }
-    .doc-expiry {
+    .doc-subtitle {
       font-size: 11px;
       color: var(--text-secondary);
     }
-    .doc-status {
+    .status-lbl {
       font-size: 11px;
       font-weight: 700;
-      padding: 4px 8px;
-      border-radius: 6px;
     }
-    .doc-status.valid {
-      background-color: rgba(76, 175, 80, 0.1);
+    mat-icon.valid, .status-lbl.valid {
       color: #4CAF50;
     }
-    .doc-status.expiring-soon {
-      background-color: rgba(255, 152, 0, 0.1);
+    mat-icon.expiring-soon, .status-lbl.expiring-soon {
       color: #FF9800;
     }
-    .doc-status.expired {
-      background-color: rgba(244, 67, 54, 0.1);
+    mat-icon.expired, .status-lbl.expired {
       color: #F44336;
     }
 
-    /* Preferences Switches */
-    .preferences-list {
-      background-color: var(--surface-color);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 8px 16px;
+    /* Preferences */
+    .pref-content {
+      padding: 8px 16px !important;
       display: flex;
       flex-direction: column;
+      gap: 12px;
     }
-    .preference-item {
+    .preference-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--border-color);
-    }
-    .preference-item:last-child {
-      border-bottom: none;
+      padding: 8px 0;
     }
     .pref-text {
       display: flex;
@@ -297,56 +295,11 @@ interface DriverDoc {
       padding-right: 16px;
     }
     .pref-title {
-      font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
     }
     .pref-desc {
-      font-size: 11px;
       color: var(--text-secondary);
-      line-height: 1.4;
-    }
-
-    /* Switch Slider Style */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 48px;
-      height: 26px;
-      flex-shrink: 0;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: var(--border-color);
-      transition: .3s;
-      border-radius: 34px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: var(--primary-color);
-    }
-    input:checked + .slider:before {
-      transform: translateX(22px);
     }
   `]
 })
