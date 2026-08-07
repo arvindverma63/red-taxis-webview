@@ -43,36 +43,41 @@ interface DayAvailability {
           </div>
 
           <div class="presets-row">
-            <button mat-flat-button color="accent" class="preset-btn" (click)="applyPreset('weekdays')">
+            <button mat-flat-button color="primary" class="preset-btn" (click)="applyPreset('weekdays')">
               Weekdays AM
             </button>
-            <button mat-flat-button color="accent" class="preset-btn" (click)="applyPreset('weekends')">
+            <button mat-flat-button color="primary" class="preset-btn" (click)="applyPreset('weekends')">
               Weekends PM
             </button>
-            <button mat-stroked-button class="preset-btn" (click)="clearAll()">
+            <button mat-stroked-button class="preset-btn clear-btn" (click)="clearAll()">
               Clear All
             </button>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <!-- Weekly Schedule Grid -->
-      <main class="schedule-grid">
-        <mat-card *ngFor="let day of schedule; let dayIdx = index" class="day-card">
-          <mat-card-content class="day-card-content">
-            <span class="day-label mat-subtitle-1">{{ day.dayName }}</span>
-            
-            <div class="slots-container">
-              <mat-button-toggle-group 
-                [value]="day.status" 
-                (change)="onStatusChange(dayIdx, $event.value)"
-                class="toggle-group-custom"
-              >
-                <mat-button-toggle value="AM" class="slot-toggle">AM</mat-button-toggle>
-                <mat-button-toggle value="PM" class="slot-toggle">PM</mat-button-toggle>
-                <mat-button-toggle value="Both" class="slot-toggle">Both</mat-button-toggle>
-                <mat-button-toggle value="Unavailable" class="slot-toggle red-toggle">None</mat-button-toggle>
-              </mat-button-toggle-group>
+      <!-- Weekly Schedule List (Single Card) -->
+      <main class="schedule-list-container">
+        <mat-card class="schedule-card">
+          <mat-card-content class="schedule-card-body">
+            <div *ngFor="let day of schedule; let dayIdx = index; let last = last" class="day-row">
+              <div class="day-info">
+                <span class="day-label">{{ day.dayName }}</span>
+              </div>
+              
+              <div class="slots-container">
+                <mat-button-toggle-group 
+                  [value]="day.status" 
+                  (change)="onStatusChange(dayIdx, $event.value)"
+                  class="toggle-group-custom"
+                >
+                  <mat-button-toggle value="AM" class="slot-toggle">AM</mat-button-toggle>
+                  <mat-button-toggle value="PM" class="slot-toggle">PM</mat-button-toggle>
+                  <mat-button-toggle value="Both" class="slot-toggle">Both</mat-button-toggle>
+                  <mat-button-toggle value="Unavailable" class="slot-toggle red-toggle">None</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+              <mat-divider *ngIf="!last" class="row-divider"></mat-divider>
             </div>
           </mat-card-content>
         </mat-card>
@@ -105,9 +110,9 @@ interface DayAvailability {
     /* Summary Card */
     .summary-card {
       border: 1px solid var(--border-color);
-      box-shadow: none !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
       border-radius: 12px !important;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .summary-stats {
       display: flex;
@@ -125,6 +130,9 @@ interface DayAvailability {
     .summary-stats .label {
       color: var(--text-secondary);
       margin-bottom: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .summary-stats .value {
       font-size: 20px;
@@ -138,60 +146,98 @@ interface DayAvailability {
     .preset-btn {
       flex: 1;
       font-size: 11px !important;
-      font-weight: bold;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
+      height: 36px;
+    }
+    .clear-btn {
+      border-color: var(--border-color) !important;
+      color: var(--text-secondary) !important;
     }
 
-    /* Schedule List */
-    .schedule-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    /* Weekly Schedule List inside Single Card */
+    .schedule-list-container {
+      margin-bottom: 16px;
     }
-    .day-card {
+    .schedule-card {
       border: 1px solid var(--border-color);
-      box-shadow: none !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
       border-radius: 12px !important;
+      background-color: var(--surface-color);
     }
-    .day-card-content {
-      padding: 12px 16px !important;
+    .schedule-card-body {
+      padding: 4px 0 !important;
+    }
+    .day-row {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      position: relative;
+    }
+    .day-info {
+      flex: 1;
+      padding-right: 12px;
     }
     .day-label {
       font-weight: 700;
       color: var(--text-primary);
+      font-size: 13px;
     }
     
     .slots-container {
-      width: 100%;
+      width: 220px;
+      flex-shrink: 0;
     }
     
+    /* Toggle Group Capsule Styles */
     .toggle-group-custom {
       display: flex;
       width: 100%;
       box-shadow: none !important;
       border: 1px solid var(--border-color) !important;
-      border-radius: 8px !important;
+      border-radius: 20px !important;
       overflow: hidden;
+      background-color: #F8F9FA;
     }
     
     .slot-toggle {
       flex: 1;
-      height: 40px;
-      line-height: 40px;
-      font-weight: 600;
-      font-size: 13px;
+      height: 32px;
+      line-height: 32px;
+      font-weight: 700;
+      font-size: 11px;
+      border: none !important;
+      border-left: 1px solid var(--border-color) !important;
+    }
+    .slot-toggle:first-of-type {
+      border-left: none !important;
     }
     
-    .mat-button-toggle-checked {
-      background-color: rgba(76, 175, 80, 0.08) !important;
-      color: #388E3C !important;
+    /* Hide the built-in Angular Material Checkmark icon */
+    ::ng-deep .toggle-group-custom .mat-button-toggle-checkmark {
+      display: none !important;
     }
     
-    .mat-button-toggle-checked.red-toggle {
-      background-color: rgba(244, 67, 54, 0.08) !important;
-      color: #D32F2F !important;
+    /* Selected State Styles */
+    ::ng-deep .toggle-group-custom .mat-button-toggle-checked {
+      background-color: var(--primary-color) !important;
+      color: #FFFFFF !important;
+    }
+    ::ng-deep .toggle-group-custom .mat-button-toggle-checked.red-toggle {
+      background-color: #E53935 !important;
+      color: #FFFFFF !important;
+    }
+    ::ng-deep .toggle-group-custom .mat-button-toggle-checked .mat-button-toggle-label-content {
+      color: #FFFFFF !important;
+    }
+    
+    .row-divider {
+      position: absolute;
+      bottom: 0;
+      left: 16px;
+      right: 16px;
+      width: auto;
     }
 
     /* Sticky Footer Save Button */
