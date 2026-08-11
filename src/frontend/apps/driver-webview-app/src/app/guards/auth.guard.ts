@@ -32,6 +32,7 @@ export const authGuard = () => {
     return true;
   }
   
-  router.navigate(['/login']);
+  const attemptedUrl = window.location.hash.split('?')[0].replace('#', '');
+  router.navigate(['/login'], { queryParams: { returnUrl: attemptedUrl } });
   return false;
 };

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -286,6 +286,7 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private driverService: DriverService,
     private snackBar: MatSnackBar
   ) {}
@@ -293,7 +294,8 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     const token = localStorage.getItem('auth_token');
     if (token) {
-      this.router.navigate(['/bookings']);
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/bookings';
+      this.router.navigate([returnUrl]);
     }
   }
 
@@ -317,7 +319,8 @@ export class LoginComponent implements OnInit {
               duration: 4000
             });
             localStorage.setItem('auth_token', 'simulated_jwt_token_123');
-            this.router.navigate(['/bookings']);
+            const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/bookings';
+            this.router.navigate([returnUrl]);
           }, 1500);
           return of(null);
         }
@@ -331,12 +334,14 @@ export class LoginComponent implements OnInit {
         this.snackBar.open('Signed in successfully!', 'Dismiss', {
           duration: 2000
         });
-        this.router.navigate(['/bookings']);
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/bookings';
+        this.router.navigate([returnUrl]);
       } else if (response) {
         const token = response.token || response.jwt || response.value?.token;
         if (token) {
           localStorage.setItem('auth_token', token);
-          this.router.navigate(['/bookings']);
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/bookings';
+          this.router.navigate([returnUrl]);
         }
       }
     });
