@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -422,7 +422,11 @@ export class ProfileComponent implements OnInit {
     }
   ];
 
-  constructor(private router: Router, private driverService: DriverService) {}
+  constructor(
+    private router: Router, 
+    private driverService: DriverService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.driverService.getProfile().pipe(
@@ -471,6 +475,7 @@ export class ProfileComponent implements OnInit {
             expiry: d.expiry || d.expiryDate
           }));
         }
+        this.cdr.detectChanges();
       }
     });
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -282,7 +282,7 @@ export class AvailabilityComponent implements OnInit {
   saveSuccess = false;
   isSaving = false;
 
-  constructor(private snackBar: MatSnackBar, private driverService: DriverService) {}
+  constructor(private snackBar: MatSnackBar, private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.driverService.getAvailabilities().pipe(
@@ -302,6 +302,7 @@ export class AvailabilityComponent implements OnInit {
             matchingDay.status = apiDay.status || apiDay.shift || 'Unavailable';
           }
         });
+        this.cdr.detectChanges();
       }
     });
   }

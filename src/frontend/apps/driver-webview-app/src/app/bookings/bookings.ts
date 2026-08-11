@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -476,7 +476,7 @@ export class BookingsComponent implements OnInit {
     }
   ];
 
-  constructor(private driverService: DriverService) {}
+  constructor(private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     forkJoin({
@@ -524,6 +524,7 @@ export class BookingsComponent implements OnInit {
       }
 
       this.bookings = allJobs;
+      this.cdr.detectChanges();
     });
   }
 
