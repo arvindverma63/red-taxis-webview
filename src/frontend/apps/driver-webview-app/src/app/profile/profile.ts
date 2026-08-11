@@ -438,14 +438,11 @@ export class ProfileComponent implements OnInit {
         return of(null);
       })
     ).subscribe(profileResponse => {
-      console.log('Profile Subscribe Callback executing. Response:', JSON.stringify(profileResponse));
       if (profileResponse) {
         const profile = profileResponse.value || profileResponse;
-        console.log('Parsed Profile Object:', JSON.stringify(profile));
         
         // When API call succeeds, we overwrite all static mock values
         this.driverName = profile.fullname || profile.fullName || profile.name || 'Not Registered';
-        console.log('Assigned driverName:', this.driverName);
         this.driverEmail = profile.email || 'Not Registered';
         this.driverPhone = profile.telephone || profile.phone || profile.phoneNumber || 'Not Registered';
         

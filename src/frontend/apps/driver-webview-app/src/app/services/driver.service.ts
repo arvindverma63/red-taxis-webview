@@ -45,7 +45,7 @@ export class DriverService {
     console.log('API Webview Request: GET /api/DriverApp/GetProfile');
     return this.http.get(`${this.baseUrl}/api/DriverApp/GetProfile`, { headers: this.getHeaders() }).pipe(
       tap({
-        next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetProfile success:', JSON.stringify(res)),
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetProfile success:', res),
         error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetProfile failed:', err)
       })
     );
