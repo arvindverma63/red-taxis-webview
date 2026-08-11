@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class DriverWebviewScreen extends StatefulWidget {
@@ -16,41 +17,45 @@ class DriverWebviewScreen extends StatefulWidget {
 }
 
 class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..enableZoom(false)
-      ..clearCache()
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            debugPrint("WebView Resource Error: ${error.description}");
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
+    if (!kIsWeb) {
+      _controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..enableZoom(false)
+        ..clearCache()
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageStarted: (String url) {
+              setState(() {
+                _isLoading = true;
+              });
+            },
+            onPageFinished: (String url) {
+              setState(() {
+                _isLoading = false;
+              });
+            },
+            onWebResourceError: (WebResourceError error) {
+              debugPrint("WebView Resource Error: ${error.description}");
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(widget.url));
+    } else {
+      _isLoading = false;
+    }
   }
 
   @override
   void didUpdateWidget(covariant DriverWebviewScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
-      _controller.loadRequest(Uri.parse(widget.url));
+    if (!kIsWeb && oldWidget.url != widget.url) {
+      _controller?.loadRequest(Uri.parse(widget.url));
     }
   }
 
@@ -61,21 +66,45 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
         title: Text(widget.title),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _controller.reload(),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(),
+          if (!kIsWeb)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _controller?.reload(),
             ),
         ],
       ),
+      body: kIsWeb
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.language, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Webview is not supported on Web',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Please run the Flutter app on an Android Emulator, iOS Simulator, or a physical mobile device to view this screen.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Stack(
+              children: [
+                WebViewWidget(controller: _controller!),
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+              ],
+            ),
     );
   }
 }
