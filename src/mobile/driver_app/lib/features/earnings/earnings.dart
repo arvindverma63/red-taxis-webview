@@ -39,13 +39,15 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
 
   EarningsNotifier()
       : super(const EarningsState(history: [], todayTotal: 0.0)) {
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        final client = HttpClient();
-        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-        return client;
-      },
-    );
+    if (!kIsWeb) {
+      _dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+          return client;
+        },
+      );
+    }
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,

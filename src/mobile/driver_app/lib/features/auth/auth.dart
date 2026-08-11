@@ -50,13 +50,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier() : super(const AuthState(status: AuthStatus.authenticating)) {
     // Ignore SSL certificate validation errors for local testing and emulators
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        final client = HttpClient();
-        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-        return client;
-      },
-    );
+    if (!kIsWeb) {
+      _dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+          return client;
+        },
+      );
+    }
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,

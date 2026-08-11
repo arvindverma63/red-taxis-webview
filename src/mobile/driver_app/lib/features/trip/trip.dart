@@ -56,13 +56,15 @@ class TripNotifier extends StateNotifier<TripState> {
   ));
 
   TripNotifier(this._ref) : super(const TripState(status: TripStatus.idle)) {
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        final client = HttpClient();
-        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-        return client;
-      },
-    );
+    if (!kIsWeb) {
+      _dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+          return client;
+        },
+      );
+    }
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
