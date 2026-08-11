@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:driver_app/features/auth/auth.dart';
@@ -62,7 +63,11 @@ class TripNotifier extends StateNotifier<TripState> {
         return client;
       },
     );
-
+    _dio.interceptors.add(LogInterceptor(
+      requestBody: true,
+      responseBody: true,
+      logPrint: (obj) => debugPrint('[Dio/Trip] $obj'),
+    ));
     // Listen to shiftProvider to start/stop polling
     _ref.listen<ShiftState>(shiftProvider, (previous, next) {
       if (next.status == ShiftStatus.online) {

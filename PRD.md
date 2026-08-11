@@ -72,6 +72,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Active Trip Lifecycle Integration**: Connected Riverpod trip notifier to poll live job offers (`GET /api/DriverApp/GetJobOffers`) and call corresponding backend routes (`JobOfferReply`, `Arrived`, `JobStatusReply`, `CompleteJob`) for accepting, declining, arriving, starting, and completing jobs.
 - [x] **Webview Profile Integration**: Corrected key mappings in `ProfileComponent` (supporting both camelCase and staging backend's lowercase keys `fullname`, `telephone`, `vehicleReg`, etc.) to dynamically load real profile data in the webview.
 - [x] **Webview Bookings API Integration**: Updated `BookingsComponent` to properly overwrite mock static lists when API calls succeed but return empty arrays (`[]`), ensuring the real database state is rendered correctly.
+- [x] **Webview Token Propagation didUpdateWidget Fix**: Implemented `didUpdateWidget` in the Flutter webview widget to ensure the WebViewController reloads and propagates the newly acquired token to the underlying Angular shell immediately upon successful authentication, resolving redirection loops to webview login screens and cross-origin preflight errors.
 - [x] **Vercel Reverse Proxy Rewrites**: Fixed `vercel.json` rewrites to proxy all webview `/api/*` network requests directly to the backend staging API (`https://staging-api.redtaxi.co.uk`).
 
 ### ⏳ Remaining Work / Roadmap

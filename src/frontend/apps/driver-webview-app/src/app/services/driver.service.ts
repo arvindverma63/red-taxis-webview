@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -41,38 +42,92 @@ export class DriverService {
   }
 
   getProfile(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/DriverApp/GetProfile`, { headers: this.getHeaders() });
+    console.log('API Webview Request: GET /api/DriverApp/GetProfile');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/GetProfile`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetProfile success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetProfile failed:', err)
+      })
+    );
   }
 
   getTodaysJobs(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/DriverApp/TodaysJobs`, { headers: this.getHeaders() });
+    console.log('API Webview Request: GET /api/DriverApp/TodaysJobs');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/TodaysJobs`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/TodaysJobs success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/TodaysJobs failed:', err)
+      })
+    );
   }
 
   getFutureJobs(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/DriverApp/FutureJobs`, { headers: this.getHeaders() });
+    console.log('API Webview Request: GET /api/DriverApp/FutureJobs');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/FutureJobs`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/FutureJobs success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/FutureJobs failed:', err)
+      })
+    );
   }
 
   getCompletedJobs(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/DriverApp/CompletedJobs`, { headers: this.getHeaders() });
+    console.log('API Webview Request: GET /api/DriverApp/CompletedJobs');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/CompletedJobs`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/CompletedJobs success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/CompletedJobs failed:', err)
+      })
+    );
   }
 
   getAvailabilities(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/DriverApp/Availabilities`, { headers: this.getHeaders() });
+    console.log('API Webview Request: GET /api/DriverApp/Availabilities');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/Availabilities`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/Availabilities success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/Availabilities failed:', err)
+      })
+    );
   }
 
   setAvailability(availabilityData: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/DriverApp/SetAvailability`, availabilityData, { headers: this.getHeaders() });
+    console.log('API Webview Request: POST /api/DriverApp/SetAvailability data:', availabilityData);
+    return this.http.post(`${this.baseUrl}/api/DriverApp/SetAvailability`, availabilityData, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/SetAvailability success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/SetAvailability failed:', err)
+      })
+    );
   }
 
   deleteAvailability(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/api/DriverApp/DeleteAvailability?id=${id}`, { headers: this.getHeaders() });
+    console.log(`API Webview Request: GET /api/DriverApp/DeleteAvailability?id=${id}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/DeleteAvailability?id=${id}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/DeleteAvailability success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/DeleteAvailability failed:', err)
+      })
+    );
   }
 
   uploadDocument(formData: FormData): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, { headers: this.getHeaders() });
+    console.log('API Webview Request: POST /api/DriverApp/UploadDocument');
+    return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/UploadDocument success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/UploadDocument failed:', err)
+      })
+    );
   }
 
   login(username: string, password: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password });
+    console.log(`API Webview Request: POST /api/UserProfile/Login username: ${username}`);
+    return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/UserProfile/Login success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/UserProfile/Login failed:', err)
+      })
+    );
   }
 }

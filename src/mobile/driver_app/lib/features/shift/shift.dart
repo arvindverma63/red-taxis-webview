@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:geolocator/geolocator.dart';
@@ -49,6 +50,11 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         return client;
       },
     );
+    _dio.interceptors.add(LogInterceptor(
+      requestBody: true,
+      responseBody: true,
+      logPrint: (obj) => debugPrint('[Dio/Shift] $obj'),
+    ));
   }
 
   Future<void> goOnline() async {

@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
 
@@ -56,6 +57,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return client;
       },
     );
+    _dio.interceptors.add(LogInterceptor(
+      requestBody: true,
+      responseBody: true,
+      logPrint: (obj) => debugPrint('[Dio/Auth] $obj'),
+    ));
     _tryAutoLogin();
   }
 
