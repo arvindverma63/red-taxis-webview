@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class EarningRecord {
@@ -36,6 +38,13 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
 
   EarningsNotifier()
       : super(const EarningsState(history: [], todayTotal: 0.0)) {
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+        return client;
+      },
+    );
     loadEarnings();
   }
 

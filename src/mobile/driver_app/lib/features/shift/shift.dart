@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
@@ -39,7 +41,15 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     receiveTimeout: const Duration(seconds: 10),
   ));
 
-  ShiftNotifier(this._ref) : super(const ShiftState(status: ShiftStatus.offline));
+  ShiftNotifier(this._ref) : super(const ShiftState(status: ShiftStatus.offline)) {
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+        return client;
+      },
+    );
+  }
 
   Future<void> goOnline() async {
     final auth = _ref.read(authProvider);

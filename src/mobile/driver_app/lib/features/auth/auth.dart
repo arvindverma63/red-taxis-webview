@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/io.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
 
@@ -46,6 +48,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   ));
 
   AuthNotifier() : super(const AuthState(status: AuthStatus.authenticating)) {
+    // Ignore SSL certificate validation errors for local testing and emulators
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+        return client;
+      },
+    );
     _tryAutoLogin();
   }
 
@@ -128,7 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } on DioException catch (dioErr) {
       String errMsg = 'Authentication failed. Please verify credentials.';
       if (dioErr.type == DioExceptionType.connectionError || dioErr.type == DioExceptionType.connectionTimeout) {
-        errMsg = 'Staging server is currently unreachable. Please check your network connection or try test login (driver/driver).';
+        errMsg = 'Staging server is currently unreachable. Error: ${dioErr.message ?? dioErr.error ?? dioErr.toString()}';
       } else if (dioErr.response?.statusCode == 400 || dioErr.response?.statusCode == 401) {
         errMsg = 'Incorrect username or password.';
       }

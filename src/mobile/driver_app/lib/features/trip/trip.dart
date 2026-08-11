@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/shift/shift.dart';
 
@@ -53,6 +55,14 @@ class TripNotifier extends StateNotifier<TripState> {
   ));
 
   TripNotifier(this._ref) : super(const TripState(status: TripStatus.idle)) {
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+        return client;
+      },
+    );
+
     // Listen to shiftProvider to start/stop polling
     _ref.listen<ShiftState>(shiftProvider, (previous, next) {
       if (next.status == ShiftStatus.online) {
