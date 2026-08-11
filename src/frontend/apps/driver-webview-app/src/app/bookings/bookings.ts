@@ -480,10 +480,15 @@ export class BookingsComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin({
-      todays: this.driverService.getTodaysJobs().pipe(catchError(() => of([]))),
-      future: this.driverService.getFutureJobs().pipe(catchError(() => of([]))),
-      completed: this.driverService.getCompletedJobs().pipe(catchError(() => of([])))
+      todays: this.driverService.getTodaysJobs().pipe(catchError(() => of(null))),
+      future: this.driverService.getFutureJobs().pipe(catchError(() => of(null))),
+      completed: this.driverService.getCompletedJobs().pipe(catchError(() => of(null)))
     }).subscribe(results => {
+      // If ALL APIs failed (returned null), keep using the static fallback bookings
+      if (results.todays === null && results.future === null && results.completed === null) {
+        return;
+      }
+
       const allJobs: Booking[] = [];
       
       const processJob = (jobResponse: any, defaultStatus: 'Upcoming' | 'Completed' | 'Cancelled'): Booking => {
@@ -518,9 +523,7 @@ export class BookingsComponent implements OnInit {
         completedList.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
       }
 
-      if (allJobs.length > 0) {
-        this.bookings = allJobs;
-      }
+      this.bookings = allJobs;
     });
   }
 

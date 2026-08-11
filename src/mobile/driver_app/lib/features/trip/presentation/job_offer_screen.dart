@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:driver_app/core/theme/theme.dart';
-import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/core/widgets/slide_to_accept.dart';
 import 'package:driver_app/features/trip/trip.dart';
 

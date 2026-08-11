@@ -437,27 +437,31 @@ export class ProfileComponent implements OnInit {
       if (profileResponse) {
         const profile = profileResponse.value || profileResponse;
         
-        this.driverName = profile.fullName || profile.name || this.driverName;
+        this.driverName = profile.fullname || profile.fullName || profile.name || this.driverName;
         this.driverEmail = profile.email || this.driverEmail;
-        this.driverPhone = profile.phone || profile.phoneNumber || this.driverPhone;
+        this.driverPhone = profile.telephone || profile.phone || profile.phoneNumber || this.driverPhone;
         
-        if (profile.vehicleMake && profile.vehicleModel) {
-          this.vehicleModel = `${profile.vehicleMake} ${profile.vehicleModel}`;
-          if (profile.vehicleColour) {
-            this.vehicleModel += ` (${profile.vehicleColour})`;
+        const vehicleMake = profile.vehicleMake || profile.make;
+        const vehicleModel = profile.vehicleModel || profile.model || profile.carModel;
+        const vehicleColour = profile.vehicleColour || profile.colour || profile.color;
+
+        if (vehicleMake && vehicleModel) {
+          this.vehicleModel = `${vehicleMake} ${vehicleModel}`;
+          if (vehicleColour) {
+            this.vehicleModel += ` (${vehicleColour})`;
           }
         } else {
-          this.vehicleModel = profile.vehicleModel || profile.carModel || this.vehicleModel;
+          this.vehicleModel = vehicleModel || this.vehicleModel;
         }
 
-        this.plateNumber = profile.regNo || profile.plateNumber || profile.registration || this.plateNumber;
+        this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || this.plateNumber;
         this.badgeNumber = profile.badgeNumber || profile.driverBadge || this.badgeNumber;
         this.rating = profile.rating || this.rating;
         this.tripsCount = profile.tripsCount || profile.trips || this.tripsCount;
         
         const docs = profile.documents || profileResponse.documents;
         if (docs && Array.isArray(docs)) {
-          this.documents = profile.documents.map((d: any) => ({
+          this.documents = docs.map((d: any) => ({
             name: d.name || d.title,
             status: d.status || 'Valid',
             expiry: d.expiry || d.expiryDate

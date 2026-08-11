@@ -42,7 +42,7 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
   Future<void> loadEarnings() async {
     try {
       final token = await _storage.read(key: 'auth_token');
-      if (token == null || token == 'simulated_jwt_token_123') {
+      if (token == null) {
         _loadMockEarnings();
         return;
       }
@@ -57,6 +57,10 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
       );
 
       final List<dynamic> data = response.data ?? [];
+      if (data.isEmpty) {
+        _loadMockEarnings();
+        return;
+      }
       final List<EarningRecord> records = [];
 
       for (var job in data) {

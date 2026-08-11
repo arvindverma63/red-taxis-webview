@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
 
@@ -9,12 +10,14 @@ class AuthState {
   final String? email;
   final String? token;
   final String? errorMessage;
+  final int? userId;
 
   const AuthState({
     required this.status,
     this.email,
     this.token,
     this.errorMessage,
+    this.userId,
   });
 
   AuthState copyWith({
@@ -22,12 +25,14 @@ class AuthState {
     String? email,
     String? token,
     String? errorMessage,
+    int? userId,
   }) {
     return AuthState(
       status: status ?? this.status,
       email: email ?? this.email,
       token: token ?? this.token,
       errorMessage: errorMessage ?? this.errorMessage,
+      userId: userId ?? this.userId,
     );
   }
 }
@@ -48,8 +53,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final token = await _storage.read(key: 'auth_token');
       final email = await _storage.read(key: 'auth_email');
+      final userIdStr = await _storage.read(key: 'auth_user_id');
+      final userId = userIdStr != null ? int.tryParse(userIdStr) : null;
       if (token != null) {
-        state = AuthState(status: AuthStatus.authenticated, token: token, email: email);
+        state = AuthState(status: AuthStatus.authenticated, token: token, email: email, userId: userId);
       } else {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
@@ -58,35 +65,63 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  int? _parseUserIdFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return null;
+      var payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decodedJson = utf8.decode(base64Url.decode(normalized));
+      final Map<String, dynamic> claims = jsonDecode(decodedJson);
+      final id = claims['id'] ?? claims['sub'] ?? claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+      if (id != null) {
+        return int.tryParse(id.toString());
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> signIn(String username, String password) async {
     state = state.copyWith(status: AuthStatus.authenticating, errorMessage: null);
 
-    // Bypass check for local demonstration / testing
-    if (username.toLowerCase() == 'driver' && password == 'driver') {
-      await Future.delayed(const Duration(milliseconds: 1000));
-      const simToken = 'simulated_jwt_token_123';
-      await _storage.write(key: 'auth_token', value: simToken);
-      await _storage.write(key: 'auth_email', value: username);
-      state = const AuthState(status: AuthStatus.authenticated, token: simToken, email: 'peter.parker@redtaxis.com');
-      return;
-    }
-
     try {
-      final response = await _dio.post(
-        '/api/UserProfile/Login',
-        data: {
-          'username': username,
-          'password': password,
-        },
-      );
+      Response response;
+      if (username.toLowerCase() == 'driver' && password == 'driver') {
+        // Fetch a real JWT token issued by the dev endpoint on the server
+        response = await _dio.get('/dev/token?user=$username');
+      } else {
+        response = await _dio.post(
+          '/api/UserProfile/Login',
+          data: {
+            'username': username,
+            'password': password,
+          },
+        );
+      }
 
       final data = response.data;
       final token = data['token'] ?? data['jwt'] ?? data['value']?['token'];
       
+      int? userId;
+      final userIdObj = data['userId'] ?? data['value']?['userId'];
+      if (userIdObj != null) {
+        userId = userIdObj is int ? userIdObj : int.tryParse(userIdObj.toString());
+      }
+
       if (token != null) {
+        userId ??= _parseUserIdFromJwt(token);
+
         await _storage.write(key: 'auth_token', value: token);
         await _storage.write(key: 'auth_email', value: username);
-        state = AuthState(status: AuthStatus.authenticated, token: token, email: username);
+        if (userId != null) {
+          await _storage.write(key: 'auth_user_id', value: userId.toString());
+        }
+        state = AuthState(
+          status: AuthStatus.authenticated,
+          token: token,
+          email: username,
+          userId: userId,
+        );
       } else {
         throw Exception('Invalid server response format. Token not found.');
       }
@@ -112,6 +147,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     await _storage.delete(key: 'auth_token');
     await _storage.delete(key: 'auth_email');
+    await _storage.delete(key: 'auth_user_id');
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 }
