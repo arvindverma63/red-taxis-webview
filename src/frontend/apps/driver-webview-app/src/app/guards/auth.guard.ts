@@ -26,7 +26,7 @@ export const authGuard = () => {
     return null;
   };
 
-  const token = localStorage.getItem('auth_token') || extractToken();
+  const token = extractToken() || localStorage.getItem('auth_token');
   
   if (token) {
     return true;

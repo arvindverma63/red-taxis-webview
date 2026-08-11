@@ -13,7 +13,7 @@ export class DriverService {
 
   private getHeaders(): HttpHeaders {
     let headers = new HttpHeaders();
-    const token = localStorage.getItem('auth_token') || this.getTokenFromUrl();
+    const token = this.getTokenFromUrl() || localStorage.getItem('auth_token');
     if (token) {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
