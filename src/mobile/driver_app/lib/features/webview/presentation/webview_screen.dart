@@ -47,6 +47,14 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant DriverWebviewScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _controller.loadRequest(Uri.parse(widget.url));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
