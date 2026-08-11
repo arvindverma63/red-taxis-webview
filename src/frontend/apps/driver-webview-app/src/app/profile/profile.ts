@@ -437,27 +437,28 @@ export class ProfileComponent implements OnInit {
       if (profileResponse) {
         const profile = profileResponse.value || profileResponse;
         
-        this.driverName = profile.fullname || profile.fullName || profile.name || this.driverName;
-        this.driverEmail = profile.email || this.driverEmail;
-        this.driverPhone = profile.telephone || profile.phone || profile.phoneNumber || this.driverPhone;
+        // When API call succeeds, we overwrite all static mock values
+        this.driverName = profile.fullname || profile.fullName || profile.name || 'Not Registered';
+        this.driverEmail = profile.email || 'Not Registered';
+        this.driverPhone = profile.telephone || profile.phone || profile.phoneNumber || 'Not Registered';
         
-        const vehicleMake = profile.vehicleMake || profile.make;
-        const vehicleModel = profile.vehicleModel || profile.model || profile.carModel;
-        const vehicleColour = profile.vehicleColour || profile.colour || profile.color;
+        const vehicleMake = profile.vehicleMake || profile.make || '';
+        const vehicleModel = profile.vehicleModel || profile.model || profile.carModel || '';
+        const vehicleColour = profile.vehicleColour || profile.colour || profile.color || '';
 
-        if (vehicleMake && vehicleModel) {
-          this.vehicleModel = `${vehicleMake} ${vehicleModel}`;
+        if (vehicleMake || vehicleModel) {
+          this.vehicleModel = `${vehicleMake} ${vehicleModel}`.trim();
           if (vehicleColour) {
             this.vehicleModel += ` (${vehicleColour})`;
           }
         } else {
-          this.vehicleModel = vehicleModel || this.vehicleModel;
+          this.vehicleModel = 'No Vehicle Registered';
         }
 
-        this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || this.plateNumber;
-        this.badgeNumber = profile.badgeNumber || profile.driverBadge || this.badgeNumber;
-        this.rating = profile.rating || this.rating;
-        this.tripsCount = profile.tripsCount || profile.trips || this.tripsCount;
+        this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || 'No Plate';
+        this.badgeNumber = profile.badgeNumber || profile.driverBadge || 'No Badge';
+        this.rating = profile.rating || 5.0;
+        this.tripsCount = profile.tripsCount || 0;
         
         const docs = profile.documents || profileResponse.documents;
         if (docs && Array.isArray(docs)) {
