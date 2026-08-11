@@ -48,9 +48,9 @@ class _MainShellState extends ConsumerState<MainShell> {
         index: _selectedIndex,
         children: [
           const DriverDashboardView(),
-          DriverWebviewScreen(url: '${AppConfig.bookingsUrl}?token=$token', title: 'My Bookings'),
-          DriverWebviewScreen(url: '${AppConfig.profileUrl}?token=$token', title: 'My Profile'),
-          DriverWebviewScreen(url: '${AppConfig.availabilityUrl}?token=$token', title: 'Weekly Availability'),
+          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
+          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
+          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
