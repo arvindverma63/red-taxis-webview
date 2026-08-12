@@ -138,7 +138,7 @@ interface DayAvailability {
       background-color: var(--background-color, #F8F9FA); /* Light gray background */
       color: var(--text-primary, #263238);
       min-height: 100vh;
-      font-family: 'Roboto', sans-serif;
+      font-family: inherit;
     }
 
     .app-header {
