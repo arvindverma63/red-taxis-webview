@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -46,16 +46,45 @@ import { HttpEventType } from '@angular/common/http';
       <!-- Upload & Cropping Section -->
       <main class="upload-section">
         <!-- 1. Selection State -->
-        <div class="selection-workspace animated-fade-in" *ngIf="!selectedFile">
+        <div class="selection-workspace animated-fade-in" *ngIf="!selectedFile && !isCameraActive">
           <mat-card class="action-card">
             <mat-card-content class="action-content">
               <span class="material-symbols-outlined camera-main-icon">photo_camera</span>
               <p class="select-helper-text">Select or snap a photo of your compliance document to verify and crop it.</p>
-              <button mat-flat-button color="primary" class="select-action-btn" (click)="fileInput.click()">
-                <mat-icon>add_photo_alternate</mat-icon> Select Image File
-              </button>
+              
+              <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                <button mat-flat-button color="primary" class="select-action-btn" (click)="triggerFileSelect()">
+                  <mat-icon>add_photo_alternate</mat-icon> Select Image File
+                </button>
+                
+                <button mat-flat-button color="accent" class="camera-action-btn" (click)="startCamera()">
+                  <mat-icon>videocam</mat-icon> Live Camera Capture
+                </button>
+              </div>
             </mat-card-content>
           </mat-card>
+        </div>
+
+        <!-- 2. Live Camera Capture State -->
+        <div class="camera-workspace animated-fade-in" *ngIf="isCameraActive">
+          <div class="camera-player-outer">
+            <div class="camera-player-container">
+              <video #videoElement autoplay playsinline class="camera-video"></video>
+              <div class="camera-guide-overlay">
+                <div class="guide-box"></div>
+                <span class="guide-text">Align document borders here</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="camera-controls-row">
+            <button mat-stroked-button color="warn" (click)="stopCamera()" class="cam-cancel-btn">
+              <mat-icon>close</mat-icon> Cancel
+            </button>
+            <button mat-fab color="primary" (click)="capturePhoto()" class="cam-shutter-btn">
+              <mat-icon>photo_camera</mat-icon>
+            </button>
+          </div>
         </div>
 
         <input 
@@ -66,8 +95,8 @@ import { HttpEventType } from '@angular/common/http';
           style="display: none;" 
         />
 
-        <!-- 2. Cropping State -->
-        <div class="crop-workspace animated-fade-in" *ngIf="selectedFile && !isCropped">
+        <!-- 3. Cropping State -->
+        <div class="crop-workspace animated-fade-in" *ngIf="selectedFile && !isCropped && !isCameraActive">
           <div class="crop-container-outer">
             <div class="crop-container" #cropContainer>
               <img [src]="imageSrc" class="crop-image" #cropImg (load)="onImageLoaded()" [style.transform]="'rotate(' + rotationAngle + 'deg)'" />
@@ -118,7 +147,7 @@ import { HttpEventType } from '@angular/common/http';
         </div>
 
         <!-- 3. Cropped Verified State -->
-        <div class="cropped-locked-workspace animated-fade-in" *ngIf="selectedFile && isCropped">
+        <div class="cropped-locked-workspace animated-fade-in" *ngIf="selectedFile && isCropped && !isCameraActive">
           <mat-card class="preview-result-card">
             <mat-card-header class="preview-header">
               <mat-card-title class="preview-title">Legibility & Borders Verification</mat-card-title>
@@ -513,11 +542,96 @@ import { HttpEventType } from '@angular/common/http';
     .btn-icon {
       font-size: 20px;
     }
+
+    /* Camera Workspace Styles */
+    .camera-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .camera-player-outer {
+      background-color: #000000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .camera-player-container {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      height: 280px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .camera-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .camera-guide-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+    .guide-box {
+      width: 85%;
+      height: 65%;
+      border: 2px dashed rgba(255, 255, 255, 0.65);
+      border-radius: 8px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+    }
+    .guide-text {
+      position: absolute;
+      bottom: 12px;
+      font-size: 11px;
+      color: #FFFFFF;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+    .camera-controls-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .cam-cancel-btn {
+      height: 44px;
+      border-radius: 8px !important;
+      font-weight: 700 !important;
+      padding: 0 16px !important;
+    }
+    .cam-shutter-btn {
+      width: 60px;
+      height: 60px;
+      background-color: #E53935 !important;
+      color: #FFFFFF !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50% !important;
+    }
   `]
 })
-export class DocumentUploadComponent implements OnInit {
+export class DocumentUploadComponent implements OnInit, OnDestroy {
   @ViewChild('cropImg') cropImg!: ElementRef<HTMLImageElement>;
   @ViewChild('cropContainer') cropContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
 
   Number = Number;
   docName = 'Hackney Carriage / PHV License';
@@ -525,6 +639,10 @@ export class DocumentUploadComponent implements OnInit {
   selectedFile: File | null = null;
   uploadProgress = 0;
   isSubmitting = false;
+
+  // Camera State variables
+  isCameraActive = false;
+  cameraStream: MediaStream | null = null;
 
   // Cropper State variables
   imageSrc: string | null = null;
@@ -571,6 +689,89 @@ export class DocumentUploadComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/profile']);
+  }
+
+  triggerFileSelect(): void {
+    if (this.fileInput) {
+      this.fileInput.nativeElement.click();
+    }
+  }
+
+  startCamera(): void {
+    this.isCameraActive = true;
+    this.selectedFile = null;
+    this.imageSrc = null;
+    this.croppedFile = null;
+    this.isCropped = false;
+    this.cdr.detectChanges();
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    }).then(stream => {
+      this.cameraStream = stream;
+      if (this.videoElement) {
+        this.videoElement.nativeElement.srcObject = stream;
+      }
+      this.cdr.detectChanges();
+    }).catch(err => {
+      console.error('[Camera] Access failed:', err);
+      this.isCameraActive = false;
+      this.snackBar.open('Failed to access device camera. Please check permissions or select an image file instead.', 'Dismiss', {
+        duration: 5000
+      });
+      this.cdr.detectChanges();
+    });
+  }
+
+  capturePhoto(): void {
+    if (!this.cameraStream || !this.videoElement) return;
+    const video = this.videoElement.nativeElement;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      this.imageSrc = dataUrl;
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const timestamp = new Date().getTime();
+          this.selectedFile = new File([blob], `camera_scan_${timestamp}.jpg`, { type: 'image/jpeg' });
+          this.isCropped = false;
+          this.croppedFile = null;
+          this.isCameraActive = false;
+          this.stopCameraStream();
+          
+          this.cropBoxX = 15;
+          this.cropBoxY = 15;
+          this.cropBoxW = 70;
+          this.cropBoxH = 70;
+          this.cdr.detectChanges();
+        }
+      }, 'image/jpeg', 0.95);
+    }
+  }
+
+  stopCamera(): void {
+    this.isCameraActive = false;
+    this.stopCameraStream();
+    this.cdr.detectChanges();
+  }
+
+  private stopCameraStream(): void {
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(track => track.stop());
+      this.cameraStream = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopCameraStream();
   }
 
   onFileSelected(event: Event): void {
