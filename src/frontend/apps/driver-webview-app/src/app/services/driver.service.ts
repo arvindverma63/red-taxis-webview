@@ -116,7 +116,8 @@ export class DriverService {
     return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, {
       headers: this.getHeaders(),
       reportProgress: true,
-      observe: 'events'
+      observe: 'events',
+      responseType: 'text'
     }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: POST /api/DriverApp/UploadDocument success event:', JSON.stringify(res)),
