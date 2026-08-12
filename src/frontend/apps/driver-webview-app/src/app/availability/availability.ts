@@ -740,11 +740,11 @@ export class AvailabilityComponent implements OnInit {
     console.log('[Availability] Fetching availabilities via GET /api/DriverApp/Availabilities...');
     this.driverService.getAvailabilities().pipe(
       catchError(err => {
-        console.error('[Availability] Staging API GetAvailabilities failed:', err);
+        console.error('[Availability] Staging API GetAvailabilities failed:', JSON.stringify(err));
         return of(null);
       })
     ).subscribe(dataResponse => {
-      console.log('[Availability] Raw GET /api/DriverApp/Availabilities response:', dataResponse);
+      console.log('[Availability] Raw GET /api/DriverApp/Availabilities response:', JSON.stringify(dataResponse));
       const data = dataResponse?.drivers || dataResponse?.value?.drivers || dataResponse;
       
       if (data && Array.isArray(data)) {
@@ -775,7 +775,7 @@ export class AvailabilityComponent implements OnInit {
             }
           }
         });
-        console.log('[Availability] Mapped schedule for active week:', this.schedule);
+        console.log('[Availability] Mapped schedule for active week:', JSON.stringify(this.schedule));
       }
       this.cdr.detectChanges();
     });
@@ -938,17 +938,17 @@ export class AvailabilityComponent implements OnInit {
         });
       }
     });
-    console.log('[Availability] New availability slots to set:', createRequests);
+    console.log('[Availability] New availability slots to set:', JSON.stringify(createRequests));
 
     const deleteObs = deleteIds.map(id => {
       console.log(`[Availability] Issuing DELETE request for slot ID ${id}`);
       return this.driverService.deleteAvailability(id).pipe(catchError(() => of(null)));
     });
     const saveObs = createRequests.map(req => {
-      console.log('[Availability] Issuing POST request to SetAvailability with payload:', req);
+      console.log('[Availability] Issuing POST request to SetAvailability with payload:', JSON.stringify(req));
       return this.driverService.setAvailability(req).pipe(
         catchError(err => {
-          console.error('[Availability] SetAvailability request failed:', err);
+          console.error('[Availability] SetAvailability request failed:', JSON.stringify(err));
           return of(null);
         })
       );
@@ -959,17 +959,42 @@ export class AvailabilityComponent implements OnInit {
     runDeletes.pipe(
       switchMap(delResults => {
         if (deleteIds.length > 0) {
-          console.log('[Availability] Deletions completed. Responses:', delResults);
+          console.log('[Availability] Deletions completed. Responses:', JSON.stringify(delResults));
         }
         return saveObs.length > 0 ? forkJoin(saveObs) : of([]);
       })
     ).subscribe(saveResults => {
-      console.log('[Availability] All SetAvailability operations resolved. Responses:', saveResults);
-      this.isSaving = false;
-      this.saveSuccess = true;
-      this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
-        duration: 3000
+      console.log('[Availability] All SetAvailability operations resolved. Responses:', JSON.stringify(saveResults));
+      
+      // Check if any operation failed (returned null)
+      const failedIndices: number[] = [];
+      saveResults.forEach((res, idx) => {
+        if (res === null || (res && res.success === false)) {
+          failedIndices.push(idx);
+        }
       });
+
+      this.isSaving = false;
+
+      if (failedIndices.length > 0) {
+        const failedDays = failedIndices.map(idx => {
+          const req = createRequests[idx];
+          const dateObj = new Date(req.date);
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          return dayNames[dateObj.getDay()];
+        }).join(', ');
+        
+        console.error('[Availability] Failed to save shifts for: ' + failedDays);
+        this.snackBar.open(`Error: Failed to save shifts for ${failedDays}. Check for overlaps.`, 'Dismiss', {
+          duration: 5000
+        });
+      } else {
+        this.saveSuccess = true;
+        this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
+          duration: 3000
+        });
+      }
+
       this.ngOnInit();
       setTimeout(() => {
         this.saveSuccess = false;
