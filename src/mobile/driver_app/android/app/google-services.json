@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "211474359223",
+    "project_id": "red-taxi-6b302",
+    "storage_bucket": "red-taxi-6b302.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:211474359223:android:a484ed98fcf2a0cac2fe32",
+        "android_client_info": {
+          "package_name": "com.redtaxis.driver.driver_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYKaEJNl_hDHj2Hvf28bTM6vsJm7WtMgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

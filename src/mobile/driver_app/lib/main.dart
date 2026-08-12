@@ -5,8 +5,38 @@ import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/auth/presentation/login_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
-void main() {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint("Handling a background message: ${message.messageId}");
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    
+    final messaging = FirebaseMessaging.instance;
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    debugPrint('User notification permission status: ${settings.authorizationStatus}');
+    
+    final token = await messaging.getToken();
+    debugPrint('FCM Token: $token');
+    
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Foreground FCM message received: ${message.notification?.title}');
+    });
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
+
   runApp(
     const ProviderScope(
       child: DriverApp(),
