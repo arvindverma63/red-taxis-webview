@@ -38,11 +38,7 @@ interface DayAvailability {
   ],
   template: `
     <div class="material-container">
-      <!-- Header / Brand -->
-      <header class="app-header">
-        <h1 class="page-title">Shift Availability</h1>
-        <p class="page-subtitle">Configure your weekly working schedule</p>
-      </header>
+
 
       <!-- Week Selector -->
       <mat-card class="week-selector-card">
