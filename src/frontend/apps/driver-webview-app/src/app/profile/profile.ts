@@ -940,7 +940,7 @@ export class ProfileComponent implements OnInit {
                 if (docItem) {
                   docItem.expiry = this.formatExpiryDate(exp.expiryDate);
                   docItem.status = this.getDocumentStatus(exp.expiryDate);
-                  docItem.url = exp.documentUrl || exp.fileUrl || exp.url || exp.documentPath || exp.path || null;
+                  docItem.url = exp.documentUrl || exp.fileUrl || exp.url || exp.documentPath || exp.path || exp.filePath || exp.file || exp.document || localStorage.getItem('pending_upload_url_' + docType) || null;
                   // Expiry loaded successfully, so clear any client-side pending flag
                   localStorage.removeItem('pending_upload_' + docType);
                 }
