@@ -105,14 +105,15 @@ interface DayAvailability {
               <span class="day-date-sub">{{ getDayDateFormatted(dayIdx) }}</span>
             </div>
             
-            <mat-button-toggle-group 
-              [value]="day.status" 
-              (change)="onStatusChange(dayIdx, $event.value)"
-              class="toggle-group-custom"
-            >
-              <mat-button-toggle value="Available" class="slot-toggle green-toggle">Active</mat-button-toggle>
-              <mat-button-toggle value="Unavailable" class="slot-toggle red-toggle">None</mat-button-toggle>
-            </mat-button-toggle-group>
+            <div class="custom-toggle-switch" [class.is-active]="day.status === 'Available'">
+              <div class="switch-slider"></div>
+              <button type="button" class="switch-btn active-btn" (click)="onStatusChange(dayIdx, 'Available')">
+                <span class="btn-text">Active</span>
+              </button>
+              <button type="button" class="switch-btn none-btn" (click)="onStatusChange(dayIdx, 'Unavailable')">
+                <span class="btn-text">None</span>
+              </button>
+            </div>
           </div>
 
           <!-- Custom Time Range pickers (shown only if status is Active) -->
@@ -386,51 +387,78 @@ interface DayAvailability {
       margin-top: 2px;
     }
 
-    /* Toggle Group Capsule Styles */
-    .toggle-group-custom {
+    /* Custom Toggle Switch Capsule Styles */
+    .custom-toggle-switch {
       display: flex;
-      width: 140px;
-      box-shadow: none !important;
-      border: 1px solid var(--border-color, #E0E0E0) !important;
-      border-radius: 20px !important;
-      overflow: hidden;
-      background-color: #F8F9FA !important;
-    }
-
-    .slot-toggle {
-      flex: 1;
+      position: relative;
+      width: 130px;
       height: 32px;
-      line-height: 32px;
-      font-weight: 800;
+      background-color: #ECEFF1;
+      border-radius: 16px;
+      padding: 2px;
+      border: 1px solid var(--border-color, #E0E0E0);
+      overflow: hidden;
+    }
+
+    .switch-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 61px;
+      height: 26px;
+      border-radius: 13px;
+      z-index: 1;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+    }
+
+    /* Active State Slider position (left) */
+    .custom-toggle-switch.is-active .switch-slider {
+      transform: translateX(0);
+      background-color: #E53935; /* Custom Active color is brand red */
+    }
+
+    /* None State Slider position (right) */
+    .custom-toggle-switch:not(.is-active) .switch-slider {
+      transform: translateX(61px);
+      background-color: #78909C; /* Gray-blue when None */
+    }
+
+    .switch-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      height: 100%;
+      z-index: 2;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .switch-btn .btn-text {
       font-size: 11px;
-      border: none !important;
-      border-left: 1px solid var(--border-color, #E0E0E0) !important;
-      color: #546E7A !important;
-      background: transparent !important;
-    }
-    .slot-toggle:first-of-type {
-      border-left: none !important;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.25s ease;
     }
 
-    /* Hide the built-in Angular Material Checkmark icon */
-    ::ng-deep .toggle-group-custom .mat-button-toggle-checkmark {
-      display: none !important;
+    /* Active button text color when Active */
+    .custom-toggle-switch.is-active .active-btn .btn-text {
+      color: #FFFFFF;
+    }
+    .custom-toggle-switch.is-active .none-btn .btn-text {
+      color: #78909C;
     }
 
-    /* Selected State Styles */
-    ::ng-deep .toggle-group-custom .mat-button-toggle-checked {
-      color: #FFFFFF !important;
+    /* None button text color when None */
+    .custom-toggle-switch:not(.is-active) .active-btn .btn-text {
+      color: #78909C;
     }
-    ::ng-deep .toggle-group-custom .mat-button-toggle-checked.green-toggle {
-      background-color: #E53935 !important; /* Custom Active color is brand red */
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    ::ng-deep .toggle-group-custom .mat-button-toggle-checked.red-toggle {
-      background-color: #ECEFF1 !important; /* None color is very light grey */
-      color: #546E7A !important;
-    }
-    ::ng-deep .toggle-group-custom .mat-button-toggle-checked.red-toggle .mat-button-toggle-label-content {
-      color: #546E7A !important;
+    .custom-toggle-switch:not(.is-active) .none-btn .btn-text {
+      color: #FFFFFF;
     }
 
     .card-body-row {
