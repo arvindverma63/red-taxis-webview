@@ -125,12 +125,12 @@ interface DayAvailability {
               <div class="time-select-group">
                 <span class="input-prefix">From</span>
                 <div class="select-inputs-row">
-                  <select [value]="getHour(day.fromTime)" (change)="onHourChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let h of hoursList" [value]="h">{{ h }}</option>
+                  <select (change)="onHourChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let h of hoursList" [value]="h" [selected]="h === getHour(day.fromTime)">{{ h }}</option>
                   </select>
                   <span class="time-separator">:</span>
-                  <select [value]="getMinute(day.fromTime)" (change)="onMinuteChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let m of minutesList" [value]="m">{{ m }}</option>
+                  <select (change)="onMinuteChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let m of minutesList" [value]="m" [selected]="m === getMinute(day.fromTime)">{{ m }}</option>
                   </select>
                 </div>
               </div>
@@ -140,12 +140,12 @@ interface DayAvailability {
               <div class="time-select-group">
                 <span class="input-prefix">To</span>
                 <div class="select-inputs-row">
-                  <select [value]="getHour(day.toTime)" (change)="onHourChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let h of hoursList" [value]="h">{{ h }}</option>
+                  <select (change)="onHourChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let h of hoursList" [value]="h" [selected]="h === getHour(day.toTime)">{{ h }}</option>
                   </select>
                   <span class="time-separator">:</span>
-                  <select [value]="getMinute(day.toTime)" (change)="onMinuteChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let m of minutesList" [value]="m">{{ m }}</option>
+                  <select (change)="onMinuteChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let m of minutesList" [value]="m" [selected]="m === getMinute(day.toTime)">{{ m }}</option>
                   </select>
                 </div>
               </div>
