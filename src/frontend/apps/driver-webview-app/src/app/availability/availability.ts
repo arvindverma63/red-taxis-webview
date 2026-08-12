@@ -607,6 +607,22 @@ export class AvailabilityComponent implements OnInit {
     console.log(`[Availability] Minute changed for dayIdx ${dayIdx}, field ${field}: ${this.schedule[dayIdx][field]}`);
   }
 
+  parseLocalDate(dateStr: string): Date {
+    if (!dateStr) return new Date();
+    // Split by 'T' to get date part (YYYY-MM-DD)
+    const datePart = dateStr.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Construct local date at midnight
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
+  }
+
+  formatDateToLocalDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}T00:00:00`;
+  }
+
   constructor(private snackBar: MatSnackBar, private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
   private getUserIdFromToken(): number {
@@ -726,8 +742,7 @@ export class AvailabilityComponent implements OnInit {
 
         data.forEach((apiDay: any) => {
           if (!apiDay.date) return;
-          const slotDate = new Date(apiDay.date);
-          slotDate.setHours(0, 0, 0, 0);
+          const slotDate = this.parseLocalDate(apiDay.date);
           
           // Calculate difference in days from the selected week's Monday
           const diffTime = slotDate.getTime() - monday.getTime();
@@ -908,7 +923,7 @@ export class AvailabilityComponent implements OnInit {
         
         createRequests.push({
           userId,
-          date: date.toISOString(),
+          date: this.formatDateToLocalDateString(date),
           from: day.fromTime,
           to: day.toTime,
           type: 1
