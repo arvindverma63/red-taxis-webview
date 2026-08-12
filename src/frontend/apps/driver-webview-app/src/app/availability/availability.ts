@@ -600,8 +600,10 @@ export class AvailabilityComponent implements OnInit {
 
   ngOnInit(): void {
     const userId = this.getUserIdFromToken();
+    console.log('[Availability] ngOnInit triggered. Active week range:', this.weekStartFormatted, 'to', this.weekEndFormatted);
+    console.log('[Availability] Decoded userId from auth token:', userId);
     if (!userId) {
-      console.warn('Driver UserId could not be parsed from token.');
+      console.warn('[Availability] Driver UserId could not be parsed from token.');
     }
 
     // Pre-populate with default schedule structure
@@ -615,12 +617,14 @@ export class AvailabilityComponent implements OnInit {
       { dayName: 'Sunday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] }
     ];
 
+    console.log('[Availability] Fetching availabilities via GET /api/DriverApp/Availabilities...');
     this.driverService.getAvailabilities().pipe(
       catchError(err => {
-        console.warn('Staging API GetAvailabilities failed, using mock data:', err);
+        console.error('[Availability] Staging API GetAvailabilities failed:', err);
         return of(null);
       })
     ).subscribe(dataResponse => {
+      console.log('[Availability] Raw GET /api/DriverApp/Availabilities response:', dataResponse);
       const data = dataResponse?.drivers || dataResponse?.value?.drivers || dataResponse;
       
       if (data && Array.isArray(data)) {
@@ -654,6 +658,7 @@ export class AvailabilityComponent implements OnInit {
             }
           }
         });
+        console.log('[Availability] Mapped schedule for active week:', this.schedule);
       }
       this.cdr.detectChanges();
     });
@@ -728,10 +733,21 @@ export class AvailabilityComponent implements OnInit {
       day.toTime = '16:00';
     });
 
+    console.log('[Availability] clearAll triggered. Slot IDs marked for deletion:', deleteIds);
+
     if (deleteIds.length > 0) {
       this.isSaving = true;
-      const deleteObs = deleteIds.map(id => this.driverService.deleteAvailability(id).pipe(catchError(() => of(null))));
-      forkJoin(deleteObs).subscribe(() => {
+      const deleteObs = deleteIds.map(id => {
+        console.log(`[Availability] Sending request GET /api/DriverApp/DeleteAvailability?id=${id}`);
+        return this.driverService.deleteAvailability(id).pipe(
+          catchError(err => {
+            console.error(`[Availability] Delete failed for ID ${id}:`, err);
+            return of(null);
+          })
+        );
+      });
+      forkJoin(deleteObs).subscribe(results => {
+        console.log('[Availability] All deleteAvailability requests completed. Response values:', results);
         this.isSaving = false;
         this.snackBar.open('All availability for selected week cleared!', 'Dismiss', {
           duration: 2000
@@ -739,6 +755,7 @@ export class AvailabilityComponent implements OnInit {
         this.cdr.detectChanges();
       });
     } else {
+      console.log('[Availability] No slots found to clear.');
       this.snackBar.open('No availability to clear on selected week.', 'Dismiss', {
         duration: 2000
       });
@@ -747,6 +764,7 @@ export class AvailabilityComponent implements OnInit {
 
   saveAvailability(): void {
     const userId = this.getUserIdFromToken();
+    console.log('[Availability] saveAvailability triggered. Target user ID:', userId);
     if (!userId) {
       this.snackBar.open('Error: User session expired or invalid.', 'Dismiss', {
         duration: 3000
@@ -767,6 +785,7 @@ export class AvailabilityComponent implements OnInit {
     });
 
     if (validationError) {
+      console.warn('[Availability] Time validation failed:', validationError);
       this.snackBar.open(validationError, 'Dismiss', {
         duration: 4000
       });
@@ -782,6 +801,7 @@ export class AvailabilityComponent implements OnInit {
         deleteIds.push(...day.slotIds);
       }
     });
+    console.log('[Availability] Existing slots marked for cleanup before saving:', deleteIds);
 
     // Determine Monday of current selected week
     const monday = this.mondayDate;
@@ -801,17 +821,33 @@ export class AvailabilityComponent implements OnInit {
         });
       }
     });
+    console.log('[Availability] New availability slots to set:', createRequests);
 
-    const deleteObs = deleteIds.map(id => this.driverService.deleteAvailability(id).pipe(catchError(() => of(null))));
-    const saveObs = createRequests.map(req => this.driverService.setAvailability(req).pipe(catchError(() => of(null))));
+    const deleteObs = deleteIds.map(id => {
+      console.log(`[Availability] Issuing DELETE request for slot ID ${id}`);
+      return this.driverService.deleteAvailability(id).pipe(catchError(() => of(null)));
+    });
+    const saveObs = createRequests.map(req => {
+      console.log('[Availability] Issuing POST request to SetAvailability with payload:', req);
+      return this.driverService.setAvailability(req).pipe(
+        catchError(err => {
+          console.error('[Availability] SetAvailability request failed:', err);
+          return of(null);
+        })
+      );
+    });
 
     const runDeletes = deleteObs.length > 0 ? forkJoin(deleteObs) : of([]);
 
     runDeletes.pipe(
-      switchMap(() => {
+      switchMap(delResults => {
+        if (deleteIds.length > 0) {
+          console.log('[Availability] Deletions completed. Responses:', delResults);
+        }
         return saveObs.length > 0 ? forkJoin(saveObs) : of([]);
       })
-    ).subscribe(() => {
+    ).subscribe(saveResults => {
+      console.log('[Availability] All SetAvailability operations resolved. Responses:', saveResults);
       this.isSaving = false;
       this.saveSuccess = true;
       this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
