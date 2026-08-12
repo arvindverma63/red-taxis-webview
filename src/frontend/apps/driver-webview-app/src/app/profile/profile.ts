@@ -14,7 +14,7 @@ import { of } from 'rxjs';
 interface DriverDoc {
   type: number;
   name: string;
-  status: 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing';
+  status: 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing' | 'Pending Verification';
   expiry: string;
 }
 
@@ -141,28 +141,50 @@ interface DriverDoc {
 
           <!-- Document Verification -->
           <mat-card class="section-card">
-            <mat-card-header class="section-header">
-              <mat-card-title class="section-title">Compliance Documents</mat-card-title>
+            <mat-card-header class="section-header" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 16px 16px 8px 16px !important;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <mat-card-title class="section-title" style="margin: 0 !important;">Compliance Documents</mat-card-title>
+                <span class="progress-badge">{{ getVerifiedCount() }} of {{ documents.length }} Verified</span>
+              </div>
+              <div class="compliance-progress-bar">
+                <div class="compliance-progress-fill" [style.width.%]="(getVerifiedCount() / documents.length) * 100"></div>
+              </div>
             </mat-card-header>
-            <mat-card-content class="section-body">
-              <mat-nav-list class="compact-list">
-                <a mat-list-item *ngFor="let doc of documents" (click)="navigateToUpload(doc.type, doc.name)" class="profile-list-item clickable-item" style="cursor: pointer; display: block;">
-                  <span 
-                    class="material-symbols-outlined item-icon" 
-                    matListItemIcon 
-                    [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
-                  >
-                    {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : doc.status === 'Expired' ? 'cancel' : 'help' }}
-                  </span>
-                  <span matListItemTitle class="doc-title">{{ doc.name }}</span>
-                  <span matListItemLine class="doc-subtitle">
-                    {{ doc.expiry === 'Not Uploaded' ? 'Not Uploaded yet' : 'Expires ' + doc.expiry }}
-                  </span>
-                  <span matListItemMeta class="status-lbl" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
-                    {{ doc.status }}
-                  </span>
-                </a>
-              </mat-nav-list>
+            <mat-card-content class="section-body" style="padding: 8px 16px 16px 16px !important;">
+              <div class="document-grid">
+                <div 
+                  *ngFor="let doc of documents" 
+                  (click)="navigateToUpload(doc.type, doc.name)" 
+                  class="doc-row-card clickable-item"
+                  [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
+                >
+                  <div class="doc-row-left-accent" [ngClass]="doc.status.toLowerCase().replace(' ', '-')"></div>
+                  
+                  <div class="doc-row-content">
+                    <div style="display: flex; align-items: center; gap: 12px; overflow: hidden; flex: 1;">
+                      <span 
+                        class="material-symbols-outlined doc-row-icon"
+                        [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
+                      >
+                        {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : doc.status === 'Expired' ? 'cancel' : doc.status === 'Pending Verification' ? 'hourglass_top' : 'help_clinic' }}
+                      </span>
+                      <div class="doc-meta-info" style="display: flex; flex-direction: column; overflow: hidden;">
+                        <span class="doc-row-title">{{ doc.name }}</span>
+                        <span class="doc-row-subtitle">
+                          {{ doc.expiry === 'Not Uploaded' ? 'Not Uploaded yet' : doc.expiry === 'Under Review' ? 'Under Review' : 'Expires ' + doc.expiry }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                      <span class="status-chip-badge" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
+                        {{ doc.status }}
+                      </span>
+                      <span class="material-symbols-outlined doc-chevron">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </mat-card-content>
           </mat-card>
 
@@ -354,40 +376,148 @@ interface DriverDoc {
       letter-spacing: 0.5px;
     }
 
-    /* Documents Styling */
-    .doc-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 2px;
+    /* Documents Grid & Cards Styling */
+    .progress-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary-color);
+      background-color: rgba(33, 150, 243, 0.08);
+      padding: 2px 8px;
+      border-radius: 8px;
+      letter-spacing: 0.2px;
     }
-    .doc-subtitle {
+    .compliance-progress-bar {
+      width: 100%;
+      height: 6px;
+      background-color: #ECEFF1;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .compliance-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #81C784);
+      transition: width 0.3s ease;
+      border-radius: 3px;
+    }
+    .document-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .doc-row-card {
+      position: relative;
+      overflow: hidden;
+      background-color: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      display: flex;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+    .doc-row-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+      border-color: rgba(33, 150, 243, 0.3);
+    }
+    .doc-row-left-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+    }
+    .doc-row-left-accent.valid {
+      background-color: #388E3C;
+    }
+    .doc-row-left-accent.expiring-soon {
+      background-color: #F57C00;
+    }
+    .doc-row-left-accent.expired {
+      background-color: #D32F2F;
+    }
+    .doc-row-left-accent.pending-verification {
+      background-color: #1976D2;
+    }
+    .doc-row-left-accent.missing {
+      background-color: #CFD8DC;
+    }
+
+    .doc-row-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 12px 14px 12px 18px;
+    }
+    .doc-row-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .doc-row-icon.valid {
+      color: #388E3C;
+    }
+    .doc-row-icon.expiring-soon {
+      color: #F57C00;
+    }
+    .doc-row-icon.expired {
+      color: #D32F2F;
+    }
+    .doc-row-icon.pending-verification {
+      color: #1976D2;
+    }
+    .doc-row-icon.missing {
+      color: #90A4AE;
+    }
+
+    .doc-row-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .doc-row-subtitle {
       font-size: 11px;
       color: var(--text-secondary);
+      margin-top: 2px;
     }
-    .status-lbl {
+    .status-chip-badge {
       font-size: 9px;
       font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
-    .status-lbl.valid {
+    .status-chip-badge.valid {
       background-color: rgba(76, 175, 80, 0.08);
       color: #388E3C;
     }
-    .status-lbl.expiring-soon {
+    .status-chip-badge.expiring-soon {
       background-color: rgba(255, 152, 0, 0.08);
       color: #F57C00;
     }
-    .status-lbl.expired {
+    .status-chip-badge.expired {
       background-color: rgba(244, 67, 54, 0.08);
       color: #D32F2F;
     }
-    .status-lbl.missing {
+    .status-chip-badge.pending-verification {
+      background-color: rgba(33, 150, 243, 0.08);
+      color: #1976D2;
+    }
+    .status-chip-badge.missing {
       background-color: rgba(144, 164, 174, 0.08);
       color: #546E7A;
+    }
+    .doc-chevron {
+      color: #B0BEC5;
+      font-size: 20px;
     }
 
     /* Preferences */
@@ -579,20 +709,42 @@ export class ProfileComponent implements OnInit {
                 if (docItem) {
                   docItem.expiry = this.formatExpiryDate(exp.expiryDate);
                   docItem.status = this.getDocumentStatus(exp.expiryDate);
+                  // Expiry loaded successfully, so clear any client-side pending flag
+                  localStorage.removeItem('pending_upload_' + docType);
                 }
               });
             }
           },
           complete: () => {
+            // Apply temporary local pending verification flags for newly uploaded files
+            this.documents.forEach(doc => {
+              const isPending = localStorage.getItem('pending_upload_' + doc.type) === 'true';
+              if (isPending && (doc.status === 'Missing' || doc.expiry === 'Not Uploaded')) {
+                doc.status = 'Pending Verification';
+                doc.expiry = 'Under Review';
+              }
+            });
             this.isLoading = false;
             this.cdr.detectChanges();
           }
         });
       } else {
+        // Fallback checks even if userId is not resolved
+        this.documents.forEach(doc => {
+          const isPending = localStorage.getItem('pending_upload_' + doc.type) === 'true';
+          if (isPending && (doc.status === 'Missing' || doc.expiry === 'Not Uploaded')) {
+            doc.status = 'Pending Verification';
+            doc.expiry = 'Under Review';
+          }
+        });
         this.isLoading = false;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  getVerifiedCount(): number {
+    return this.documents.filter(d => d.status === 'Valid').length;
   }
 
   getUserIdFromToken(): number | null {

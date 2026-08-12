@@ -1041,6 +1041,14 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
       } else if (event.type === HttpEventType.Response) {
         this.isSubmitting = false;
         this.uploadProgress = 100;
+        
+        // Save pending status locally to display instant feedback in profile listing
+        try {
+          localStorage.setItem('pending_upload_' + this.docType, 'true');
+        } catch (e) {
+          console.warn('Failed to write to localStorage:', e);
+        }
+
         this.snackBar.open('Document uploaded for verification successfully!', 'Dismiss', {
           duration: 3000
         });
