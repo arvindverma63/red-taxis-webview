@@ -38,128 +38,165 @@ interface DriverDoc {
         <span>{{ apiError }}</span>
       </div>
 
-      <!-- Profile Header -->
-      <mat-card class="profile-header-card" [style.background]="getBackgroundStyle()">
-        <mat-card-content class="header-content">
-          <div class="avatar-container">
-            <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : 'rgba(255, 255, 255, 0.15)'">
-              <span class="material-symbols-outlined person-avatar-icon">person</span>
-            </div>
+      <!-- Loading Skeleton Loader -->
+      <div *ngIf="isLoading" class="skeleton-container animated-fade-in">
+        <!-- Skeleton Header Card -->
+        <mat-card class="section-card" style="padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; background-color: #FFFFFF; border: 1px solid var(--border-color); border-radius: 12px;">
+          <div class="skeleton skeleton-avatar"></div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="skeleton skeleton-text title"></div>
+            <div class="skeleton skeleton-text subtitle" style="width: 90px; height: 12px;"></div>
           </div>
-          <div class="profile-identity">
-            <h2 class="mat-headline-small name-title">{{ driverName }}</h2>
-            <span class="badge-pill role-badge">Red Taxis Driver</span>
-            <div class="stats-row" *ngIf="lastLogin">
-              <span class="stat"><mat-icon class="star-icon">schedule</mat-icon> Last Login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
-            </div>
+        </mat-card>
+
+        <!-- Skeleton Details Card -->
+        <mat-card class="section-card" style="padding: 16px; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 12px; background-color: #FFFFFF;">
+          <div style="margin-bottom: 16px;" *ngFor="let i of [1, 2, 3, 4]">
+            <div class="skeleton skeleton-text lbl" style="margin-bottom: 4px;"></div>
+            <div class="skeleton skeleton-text val"></div>
           </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Details List -->
-      <main class="profile-content">
-        <!-- Personal and Vehicle Details -->
-        <mat-card class="section-card">
-          <mat-card-header class="section-header">
-            <mat-card-title class="section-title">Account & Vehicle Details</mat-card-title>
-          </mat-card-header>
-          <mat-card-content class="section-body">
-            <mat-list class="compact-list">
-              <mat-list-item class="profile-list-item">
-                <span class="material-symbols-outlined item-icon" matListItemIcon>mail</span>
-                <span matListItemTitle class="item-lbl">Email</span>
-                <span matListItemLine class="item-val">{{ driverEmail }}</span>
-              </mat-list-item>
-              <mat-divider></mat-divider>
-              <mat-list-item class="profile-list-item">
-                <span class="material-symbols-outlined item-icon" matListItemIcon>call</span>
-                <span matListItemTitle class="item-lbl">Phone</span>
-                <span matListItemLine class="item-val">{{ driverPhone }}</span>
-              </mat-list-item>
-              <mat-divider></mat-divider>
-              <mat-list-item class="profile-list-item">
-                <span class="material-symbols-outlined item-icon" matListItemIcon>local_taxi</span>
-                <span matListItemTitle class="item-lbl">Vehicle Info</span>
-                <span matListItemLine class="item-val">{{ vehicleModel }}</span>
-              </mat-list-item>
-              <mat-divider></mat-divider>
-              <mat-list-item class="profile-list-item">
-                <span class="material-symbols-outlined item-icon" matListItemIcon>license</span>
-                <span matListItemTitle class="item-lbl">Plate / Registration</span>
-                <span matListItemLine class="item-val">
-                  <span class="highlight-plate">{{ plateNumber }}</span>
-                </span>
-              </mat-list-item>
-              <mat-divider *ngIf="colorCode"></mat-divider>
-              <mat-list-item class="profile-list-item" *ngIf="colorCode">
-                <span class="material-symbols-outlined item-icon" matListItemIcon>palette</span>
-                <span matListItemTitle class="item-lbl">Theme Color</span>
-                <span matListItemLine class="item-val font-semibold" style="display: flex; align-items: center; gap: 8px;">
-                  <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #ECEFF1;" [style.background-color]="colorCode.startsWith('#') ? colorCode : '#' + colorCode"></span>
-                  <span>{{ colorCode }}</span>
-                </span>
-              </mat-list-item>
-            </mat-list>
-          </mat-card-content>
         </mat-card>
 
-        <!-- Document Verification -->
-        <mat-card class="section-card">
-          <mat-card-header class="section-header">
-            <mat-card-title class="section-title">Compliance Documents</mat-card-title>
-          </mat-card-header>
-          <mat-card-content class="section-body">
-            <mat-list class="compact-list">
-              <mat-list-item *ngFor="let doc of documents" class="profile-list-item" (click)="navigateToUpload(doc.type, doc.name)" style="cursor: pointer;">
-                <span 
-                  class="material-symbols-outlined item-icon" 
-                  matListItemIcon 
-                  [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
-                >
-                  {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : doc.status === 'Expired' ? 'cancel' : 'help' }}
-                </span>
-                <span matListItemTitle class="doc-title">{{ doc.name }}</span>
-                <span matListItemLine class="doc-subtitle">
-                  {{ doc.expiry === 'Not Uploaded' ? 'Not Uploaded yet' : 'Expires ' + doc.expiry }}
-                </span>
-                <span matListItemMeta class="status-lbl" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
-                  {{ doc.status }}
-                </span>
-              </mat-list-item>
-            </mat-list>
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Preferences -->
-        <mat-card class="section-card">
-          <mat-card-header class="section-header">
-            <mat-card-title class="section-title">Preferences</mat-card-title>
-          </mat-card-header>
-          <mat-card-content class="pref-content">
-            <div class="preference-row">
-              <div class="pref-text">
-                <span class="pref-title">Auto-Accept Job Offers</span>
-                <span class="pref-desc">Automatically accept incoming matching bookings.</span>
+        <!-- Skeleton Compliance Card -->
+        <mat-card class="section-card" style="padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background-color: #FFFFFF;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;" *ngFor="let i of [1, 2, 3]">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="skeleton" style="width: 24px; height: 24px; border-radius: 50%;"></div>
+              <div>
+                <div class="skeleton" style="width: 140px; height: 12px; margin-bottom: 4px;"></div>
+                <div class="skeleton" style="width: 80px; height: 10px;"></div>
               </div>
-              <mat-slide-toggle [checked]="autoAccept" (change)="toggleAutoAccept()" color="primary" class="custom-toggle"></mat-slide-toggle>
             </div>
-            <mat-divider></mat-divider>
-            <div class="preference-row">
-              <div class="pref-text">
-                <span class="pref-title">Accept Night Shifts</span>
-                <span class="pref-desc">Receive notifications for trips between 22:00 and 06:00.</span>
+            <div class="skeleton" style="width: 60px; height: 20px; border-radius: 10px;"></div>
+          </div>
+        </mat-card>
+      </div>
+
+      <!-- Loaded Content -->
+      <div *ngIf="!isLoading" class="profile-loaded-content animated-fade-in">
+        <!-- Profile Header -->
+        <mat-card class="profile-header-card" [style.background]="getBackgroundStyle()">
+          <mat-card-content class="header-content">
+            <div class="avatar-container">
+              <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : 'rgba(255, 255, 255, 0.15)'">
+                <span class="material-symbols-outlined person-avatar-icon">person</span>
               </div>
-              <mat-slide-toggle [checked]="nightShifts" (change)="toggleNightShifts()" color="primary" class="custom-toggle"></mat-slide-toggle>
+            </div>
+            <div class="profile-identity">
+              <h2 class="mat-headline-small name-title">{{ driverName }}</h2>
+              <span class="badge-pill role-badge">Red Taxis Driver</span>
+              <div class="stats-row" *ngIf="lastLogin">
+                <span class="stat"><mat-icon class="star-icon">schedule</mat-icon> Last Login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
+              </div>
             </div>
           </mat-card-content>
         </mat-card>
 
-        <!-- Logout Button -->
-        <button mat-flat-button color="warn" class="logout-btn" (click)="logout()">
-          <span class="material-symbols-outlined btn-icon">logout</span>
-          Sign Out / Clear Session
-        </button>
-      </main>
+        <!-- Details List -->
+        <main class="profile-content">
+          <!-- Personal and Vehicle Details -->
+          <mat-card class="section-card">
+            <mat-card-header class="section-header">
+              <mat-card-title class="section-title">Account & Vehicle Details</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="section-body">
+              <mat-list class="compact-list">
+                <mat-list-item class="profile-list-item">
+                  <span class="material-symbols-outlined item-icon" matListItemIcon>mail</span>
+                  <span matListItemTitle class="item-lbl">Email</span>
+                  <span matListItemLine class="item-val">{{ driverEmail }}</span>
+                </mat-list-item>
+                <mat-divider></mat-divider>
+                <mat-list-item class="profile-list-item">
+                  <span class="material-symbols-outlined item-icon" matListItemIcon>call</span>
+                  <span matListItemTitle class="item-lbl">Phone</span>
+                  <span matListItemLine class="item-val">{{ driverPhone }}</span>
+                </mat-list-item>
+                <mat-divider></mat-divider>
+                <mat-list-item class="profile-list-item">
+                  <span class="material-symbols-outlined item-icon" matListItemIcon>local_taxi</span>
+                  <span matListItemTitle class="item-lbl">Vehicle Info</span>
+                  <span matListItemLine class="item-val">{{ vehicleModel }}</span>
+                </mat-list-item>
+                <mat-divider></mat-divider>
+                <mat-list-item class="profile-list-item">
+                  <span class="material-symbols-outlined item-icon" matListItemIcon>license</span>
+                  <span matListItemTitle class="item-lbl">Plate / Registration</span>
+                  <span matListItemLine class="item-val">
+                    <span class="highlight-plate">{{ plateNumber }}</span>
+                  </span>
+                </mat-list-item>
+                <mat-divider *ngIf="colorCode"></mat-divider>
+                <mat-list-item class="profile-list-item" *ngIf="colorCode">
+                  <span class="material-symbols-outlined item-icon" matListItemIcon>palette</span>
+                  <span matListItemTitle class="item-lbl">Theme Color</span>
+                  <span matListItemLine class="item-val font-semibold" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #ECEFF1;" [style.background-color]="colorCode.startsWith('#') ? colorCode : '#' + colorCode"></span>
+                    <span>{{ colorCode }}</span>
+                  </span>
+                </mat-list-item>
+              </mat-list>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Document Verification -->
+          <mat-card class="section-card">
+            <mat-card-header class="section-header">
+              <mat-card-title class="section-title">Compliance Documents</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="section-body">
+              <mat-nav-list class="compact-list">
+                <a mat-list-item *ngFor="let doc of documents" (click)="navigateToUpload(doc.type, doc.name)" class="profile-list-item clickable-item" style="cursor: pointer; display: block;">
+                  <span 
+                    class="material-symbols-outlined item-icon" 
+                    matListItemIcon 
+                    [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
+                  >
+                    {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : doc.status === 'Expired' ? 'cancel' : 'help' }}
+                  </span>
+                  <span matListItemTitle class="doc-title">{{ doc.name }}</span>
+                  <span matListItemLine class="doc-subtitle">
+                    {{ doc.expiry === 'Not Uploaded' ? 'Not Uploaded yet' : 'Expires ' + doc.expiry }}
+                  </span>
+                  <span matListItemMeta class="status-lbl" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
+                    {{ doc.status }}
+                  </span>
+                </a>
+              </mat-nav-list>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Preferences -->
+          <mat-card class="section-card">
+            <mat-card-header class="section-header">
+              <mat-card-title class="section-title">Preferences</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="pref-content">
+              <div class="preference-row">
+                <div class="pref-text">
+                  <span class="pref-title">Auto-Accept Job Offers</span>
+                  <span class="pref-desc">Automatically accept incoming matching bookings.</span>
+                </div>
+                <mat-slide-toggle [checked]="autoAccept" (change)="toggleAutoAccept()" color="primary" class="custom-toggle"></mat-slide-toggle>
+              </div>
+              <mat-divider></mat-divider>
+              <div class="preference-row">
+                <div class="pref-text">
+                  <span class="pref-title">Accept Night Shifts</span>
+                  <span class="pref-desc">Receive notifications for trips between 22:00 and 06:00.</span>
+                </div>
+                <mat-slide-toggle [checked]="nightShifts" (change)="toggleNightShifts()" color="primary" class="custom-toggle"></mat-slide-toggle>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Logout Button -->
+          <button mat-flat-button color="warn" class="logout-btn" (click)="logout()">
+            <span class="material-symbols-outlined btn-icon">logout</span>
+            Sign Out / Clear Session
+          </button>
+        </main>
+      </div>
     </div>
   `,
   styles: [`
@@ -399,9 +436,61 @@ interface DriverDoc {
     .btn-icon {
       font-size: 20px;
     }
+
+    /* Skeleton Loading & Interactive Styles */
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #F0F2F5 25%, #E4E6EB 50%, #F0F2F5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .skeleton-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+    }
+
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+    }
+    .skeleton-text.title {
+      height: 20px;
+      width: 150px;
+    }
+    .skeleton-text.subtitle {
+      width: 100px;
+    }
+    .skeleton-text.lbl {
+      height: 10px;
+      width: 60px;
+    }
+    .skeleton-text.val {
+      height: 14px;
+      width: 180px;
+    }
+
+    .clickable-item {
+      transition: background-color 0.15s ease-in-out;
+    }
+    .clickable-item:hover, .clickable-item:active {
+      background-color: rgba(0, 0, 0, 0.03) !important;
+    }
   `]
 })
 export class ProfileComponent implements OnInit {
+  isLoading = true;
   apiError = '';
   driverName = 'Peter Parker';
   driverEmail = 'peter.parker@redtaxis.com';
@@ -433,6 +522,7 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.isLoading = true;
     const userId = this.getUserIdFromToken();
     console.log('[Profile] Decoded current driver userId from JWT:', userId);
 
@@ -468,7 +558,6 @@ export class ProfileComponent implements OnInit {
         }
 
         this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || 'No Plate';
-        this.cdr.detectChanges();
       }
 
       // Fetch dynamic compliance expiries if userId is resolved
@@ -478,22 +567,30 @@ export class ProfileComponent implements OnInit {
             console.warn('[Profile] Failed to fetch document expiries from staging:', err);
             return of(null);
           })
-        ).subscribe(expirysResponse => {
-          if (expirysResponse && expirysResponse.success && Array.isArray(expirysResponse.value)) {
-            const myExpirys = expirysResponse.value.filter((e: any) => e.userId === userId);
-            console.log(`[Profile] Found ${myExpirys.length} document expiry database entries for userId ${userId}`);
-            
-            myExpirys.forEach((exp: any) => {
-              const docType = exp.documentType;
-              const docItem = this.documents.find(d => d.type === docType);
-              if (docItem) {
-                docItem.expiry = this.formatExpiryDate(exp.expiryDate);
-                docItem.status = this.getDocumentStatus(exp.expiryDate);
-              }
-            });
+        ).subscribe({
+          next: (expirysResponse) => {
+            if (expirysResponse && expirysResponse.success && Array.isArray(expirysResponse.value)) {
+              const myExpirys = expirysResponse.value.filter((e: any) => e.userId === userId);
+              console.log(`[Profile] Found ${myExpirys.length} document expiry database entries for userId ${userId}`);
+              
+              myExpirys.forEach((exp: any) => {
+                const docType = exp.documentType;
+                const docItem = this.documents.find(d => d.type === docType);
+                if (docItem) {
+                  docItem.expiry = this.formatExpiryDate(exp.expiryDate);
+                  docItem.status = this.getDocumentStatus(exp.expiryDate);
+                }
+              });
+            }
+          },
+          complete: () => {
+            this.isLoading = false;
             this.cdr.detectChanges();
           }
         });
+      } else {
+        this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
