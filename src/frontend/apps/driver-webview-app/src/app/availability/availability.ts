@@ -40,26 +40,46 @@ interface DayAvailability {
         <p class="page-subtitle">Configure your weekly working schedule</p>
       </header>
 
-      <!-- Summary & Actions -->
+      <!-- Week Selector -->
+      <mat-card class="week-selector-card">
+        <mat-card-content class="week-selector-content">
+          <button mat-icon-button (click)="changeWeek(-1)" [disabled]="isSaving" class="week-nav-btn">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <div class="week-label-wrapper">
+            <mat-icon class="calendar-icon">calendar_today</mat-icon>
+            <span class="week-range-text">{{ weekStartFormatted }} – {{ weekEndFormatted }}</span>
+            <span *ngIf="currentWeekOffset === 0" class="current-week-badge">Current Week</span>
+            <span *ngIf="currentWeekOffset === 1" class="current-week-badge future">Next Week</span>
+            <span *ngIf="currentWeekOffset > 1" class="current-week-badge future">Week +{{currentWeekOffset}}</span>
+            <span *ngIf="currentWeekOffset < 0" class="current-week-badge past">Past Week</span>
+          </div>
+          <button mat-icon-button (click)="changeWeek(1)" [disabled]="isSaving" class="week-nav-btn">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Summary Stats & Presets -->
       <mat-card class="summary-card">
-        <mat-card-content>
+        <mat-card-content class="summary-content">
           <div class="summary-stats">
             <div class="stat">
-              <span class="label mat-caption">Weekly Hours</span>
+              <span class="label">Hours Planned</span>
               <span class="value">{{ totalHours }} hrs</span>
             </div>
             <div class="stat">
-              <span class="label mat-caption">Days Active</span>
+              <span class="label">Days Selected</span>
               <span class="value active-highlight">{{ activeDaysCount }} / 7</span>
             </div>
           </div>
 
           <div class="presets-row">
             <button mat-flat-button class="preset-btn red-btn" (click)="applyPreset('weekdays')">
-              Weekdays AM (08:00-16:00)
+              Weekdays AM (08-16)
             </button>
             <button mat-flat-button class="preset-btn red-btn" (click)="applyPreset('weekends')">
-              Weekends PM (16:00-23:59)
+              Weekends PM (16-24)
             </button>
             <button mat-stroked-button class="preset-btn clear-btn" (click)="clearAll()">
               Clear All
@@ -68,52 +88,52 @@ interface DayAvailability {
         </mat-card-content>
       </mat-card>
 
-      <!-- Weekly Schedule List (Single Card) -->
+      <!-- Weekly Schedule Cards (Multiple Cards) -->
       <main class="schedule-list-container">
-        <mat-card class="schedule-card">
-          <mat-card-content class="schedule-card-body">
-            <div *ngFor="let day of schedule; let dayIdx = index; let last = last" class="day-row" [class.active-row]="day.status === 'Available'">
-              <div class="day-info-section">
-                <span class="day-label">{{ day.dayName }}</span>
-              </div>
-              
-              <div class="controls-section">
-                <!-- Status Toggle -->
-                <mat-button-toggle-group 
-                  [value]="day.status" 
-                  (change)="onStatusChange(dayIdx, $event.value)"
-                  class="toggle-group-custom"
-                >
-                  <mat-button-toggle value="Available" class="slot-toggle green-toggle">Active</mat-button-toggle>
-                  <mat-button-toggle value="Unavailable" class="slot-toggle red-toggle">None</mat-button-toggle>
-                </mat-button-toggle-group>
-
-                <!-- Custom Time Pickers (only shown if Active) -->
-                <div *ngIf="day.status === 'Available'" class="time-pickers-row animated-fade-in">
-                  <div class="time-input-wrapper">
-                    <span class="input-prefix">From</span>
-                    <input 
-                      type="time" 
-                      [value]="day.fromTime" 
-                      (change)="onTimeChange(dayIdx, 'fromTime', $any($event.target).value)" 
-                      class="custom-time-input"
-                    />
-                  </div>
-                  <div class="time-input-wrapper">
-                    <span class="input-prefix">To</span>
-                    <input 
-                      type="time" 
-                      [value]="day.toTime" 
-                      (change)="onTimeChange(dayIdx, 'toTime', $any($event.target).value)" 
-                      class="custom-time-input"
-                    />
-                  </div>
-                </div>
-              </div>
-              <mat-divider *ngIf="!last" class="row-divider"></mat-divider>
+        <div *ngFor="let day of schedule; let dayIdx = index" 
+             class="schedule-day-card" 
+             [class.active-card]="day.status === 'Available'">
+          
+          <div class="card-header-row">
+            <div class="day-title-wrapper">
+              <span class="day-name-label">{{ day.dayName }}</span>
+              <span class="day-date-sub">{{ getDayDateFormatted(dayIdx) }}</span>
             </div>
-          </mat-card-content>
-        </mat-card>
+            
+            <mat-button-toggle-group 
+              [value]="day.status" 
+              (change)="onStatusChange(dayIdx, $event.value)"
+              class="toggle-group-custom"
+            >
+              <mat-button-toggle value="Available" class="slot-toggle green-toggle">Active</mat-button-toggle>
+              <mat-button-toggle value="Unavailable" class="slot-toggle red-toggle">None</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+
+          <!-- Custom Time Range pickers (shown only if status is Active) -->
+          <div *ngIf="day.status === 'Available'" class="card-body-row animated-fade-in">
+            <div class="time-pickers-container">
+              <div class="time-input-wrapper">
+                <span class="input-prefix">From</span>
+                <input 
+                  type="time" 
+                  [value]="day.fromTime" 
+                  (change)="onTimeChange(dayIdx, 'fromTime', $any($event.target).value)" 
+                  class="custom-time-input"
+                />
+              </div>
+              <div class="time-input-wrapper">
+                <span class="input-prefix">To</span>
+                <input 
+                  type="time" 
+                  [value]="day.toTime" 
+                  (change)="onTimeChange(dayIdx, 'toTime', $any($event.target).value)" 
+                  class="custom-time-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
 
       <!-- Sticky Save Bar -->
@@ -161,21 +181,82 @@ interface DayAvailability {
       margin: 4px 0 0 0;
     }
 
+    /* Week Selector Card */
+    .week-selector-card {
+      background-color: var(--surface-color, #FFFFFF);
+      border: 1px solid var(--border-color, #E0E0E0);
+      border-radius: 12px !important;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+    }
+
+    .week-selector-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px !important;
+    }
+
+    .week-nav-btn {
+      color: #546E7A;
+    }
+
+    .week-label-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .calendar-icon {
+      color: #E53935;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .week-range-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #121212;
+    }
+
+    .current-week-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background-color: #ECEFF1;
+      color: #546E7A;
+      text-transform: uppercase;
+    }
+    .current-week-badge.future {
+      background-color: rgba(229, 57, 53, 0.08);
+      color: #E53935;
+    }
+    .current-week-badge.past {
+      background-color: #ECEFF1;
+      color: #90A4AE;
+    }
+
     /* Summary Card */
     .summary-card {
       background-color: var(--surface-color, #FFFFFF); /* White card */
       border: 1px solid var(--border-color, #E0E0E0);
-      border-radius: 16px !important;
+      border-radius: 12px !important;
       margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+    }
+
+    .summary-content {
+      padding: 12px 16px !important;
     }
 
     .summary-stats {
       display: flex;
       justify-content: space-around;
       border-bottom: 1px solid var(--border-color, #E0E0E0);
-      padding-bottom: 14px;
-      margin-bottom: 14px;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
     }
 
     .summary-stats .stat {
@@ -240,66 +321,74 @@ interface DayAvailability {
 
     /* Weekly Schedule List inside Single Card */
     .schedule-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
       margin-bottom: 20px;
     }
 
-    .schedule-card {
+    .schedule-day-card {
       background-color: var(--surface-color, #FFFFFF);
       border: 1px solid var(--border-color, #E0E0E0);
-      border-radius: 16px !important;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+      padding: 14px 16px;
+      transition: all 0.2s ease-in-out;
+    }
+    
+    .schedule-day-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.04) !important;
+      border-color: #CFD8DC;
     }
 
-    .schedule-card-body {
-      padding: 0 !important;
+    .schedule-day-card.active-card {
+      background-color: rgba(229, 57, 53, 0.01);
+      border-color: rgba(229, 57, 53, 0.2);
     }
 
-    .day-row {
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-title-wrapper {
       display: flex;
       flex-direction: column;
-      padding: 16px;
-      position: relative;
-      background-color: transparent;
-      transition: background-color 0.2s ease;
-    }
-    .day-row.active-row {
-      background-color: rgba(229, 57, 53, 0.02); /* Extremely subtle red tint */
     }
 
-    .day-info-section {
-      margin-bottom: 10px;
-    }
-
-    .day-label {
+    .day-name-label {
       font-weight: 800;
       color: #121212;
       font-size: 14px;
       letter-spacing: 0.3px;
     }
 
-    .controls-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .day-date-sub {
+      font-size: 11px;
+      color: #78909C;
+      font-weight: 600;
+      margin-top: 2px;
     }
 
     /* Toggle Group Capsule Styles */
     .toggle-group-custom {
       display: flex;
-      width: 100%;
+      width: 140px;
       box-shadow: none !important;
       border: 1px solid var(--border-color, #E0E0E0) !important;
-      border-radius: 10px !important;
+      border-radius: 20px !important;
       overflow: hidden;
       background-color: #F8F9FA !important;
     }
 
     .slot-toggle {
       flex: 1;
-      height: 36px;
-      line-height: 36px;
+      height: 32px;
+      line-height: 32px;
       font-weight: 800;
-      font-size: 12px;
+      font-size: 11px;
       border: none !important;
       border-left: 1px solid var(--border-color, #E0E0E0) !important;
       color: #546E7A !important;
@@ -330,8 +419,14 @@ interface DayAvailability {
       color: #546E7A !important;
     }
 
+    .card-body-row {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
     /* Time Range Picker Inputs */
-    .time-pickers-row {
+    .time-pickers-container {
       display: flex;
       gap: 12px;
       align-items: center;
@@ -378,15 +473,6 @@ interface DayAvailability {
     .custom-time-input::-webkit-calendar-picker-indicator {
       filter: invert(0.2) sepia(1) saturate(5) hue-rotate(320deg); /* Style time icon to be brand red */
       cursor: pointer;
-    }
-
-    .row-divider {
-      position: absolute;
-      bottom: 0;
-      left: 16px;
-      right: 16px;
-      width: auto;
-      border-color: var(--border-color, #E0E0E0) !important;
     }
 
     /* Sticky Footer Save Button */
@@ -451,16 +537,8 @@ interface DayAvailability {
   `]
 })
 export class AvailabilityComponent implements OnInit {
-  schedule: DayAvailability[] = [
-    { dayName: 'Monday', status: 'Available', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-    { dayName: 'Tuesday', status: 'Available', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-    { dayName: 'Wednesday', status: 'Available', fromTime: '08:00', toTime: '23:59', slotIds: [] },
-    { dayName: 'Thursday', status: 'Available', fromTime: '08:00', toTime: '23:59', slotIds: [] },
-    { dayName: 'Friday', status: 'Available', fromTime: '16:00', toTime: '23:59', slotIds: [] },
-    { dayName: 'Saturday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-    { dayName: 'Sunday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] }
-  ];
-
+  schedule: DayAvailability[] = [];
+  currentWeekOffset = 0;
   saveSuccess = false;
   isSaving = false;
 
@@ -481,11 +559,61 @@ export class AvailabilityComponent implements OnInit {
     }
   }
 
+  get mondayDate(): Date {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + distanceToMonday + (this.currentWeekOffset * 7));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
+
+  get weekStartFormatted(): string {
+    return this.formatDateLabel(this.mondayDate);
+  }
+
+  get weekEndFormatted(): string {
+    const date = new Date(this.mondayDate);
+    date.setDate(date.getDate() + 6);
+    return this.formatDateLabel(date);
+  }
+
+  formatDateLabel(date: Date): string {
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  }
+
+  getDayDateFormatted(dayIdx: number): string {
+    const date = new Date(this.mondayDate);
+    date.setDate(date.getDate() + dayIdx);
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  }
+
+  changeWeek(offsetChange: number): void {
+    if (this.isSaving) return;
+    this.currentWeekOffset += offsetChange;
+    this.saveSuccess = false;
+    this.ngOnInit();
+  }
+
   ngOnInit(): void {
     const userId = this.getUserIdFromToken();
     if (!userId) {
       console.warn('Driver UserId could not be parsed from token.');
     }
+
+    // Pre-populate with default schedule structure
+    this.schedule = [
+      { dayName: 'Monday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
+      { dayName: 'Tuesday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
+      { dayName: 'Wednesday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
+      { dayName: 'Thursday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
+      { dayName: 'Friday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
+      { dayName: 'Saturday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
+      { dayName: 'Sunday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] }
+    ];
 
     this.driverService.getAvailabilities().pipe(
       catchError(err => {
@@ -496,26 +624,14 @@ export class AvailabilityComponent implements OnInit {
       const data = dataResponse?.drivers || dataResponse?.value?.drivers || dataResponse;
       
       if (data && Array.isArray(data)) {
-        // Reset all days to Unavailable and clear slotIds
-        this.schedule.forEach(day => {
-          day.status = 'Unavailable';
-          day.slotIds = [];
-        });
-
-        // Determine Monday of the current week
-        const today = new Date();
-        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
-        const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + distanceToMonday);
-        monday.setHours(0, 0, 0, 0);
+        const monday = this.mondayDate;
 
         data.forEach((apiDay: any) => {
           if (!apiDay.date) return;
           const slotDate = new Date(apiDay.date);
           slotDate.setHours(0, 0, 0, 0);
           
-          // Calculate difference in days from Monday
+          // Calculate difference in days from the selected week's Monday
           const diffTime = slotDate.getTime() - monday.getTime();
           const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
           
@@ -530,7 +646,7 @@ export class AvailabilityComponent implements OnInit {
                 dayItem.slotIds.push(apiDay.id);
               }
               
-              // Set times
+              // Set custom times
               const fromStr = apiDay.from || apiDay.fromTime || '08:00:00';
               const toStr = apiDay.to || apiDay.toTime || '16:00:00';
               dayItem.fromTime = fromStr.slice(0, 5);
@@ -538,9 +654,8 @@ export class AvailabilityComponent implements OnInit {
             }
           }
         });
-        
-        this.cdr.detectChanges();
       }
+      this.cdr.detectChanges();
     });
   }
 
@@ -618,13 +733,13 @@ export class AvailabilityComponent implements OnInit {
       const deleteObs = deleteIds.map(id => this.driverService.deleteAvailability(id).pipe(catchError(() => of(null))));
       forkJoin(deleteObs).subscribe(() => {
         this.isSaving = false;
-        this.snackBar.open('All availability cleared!', 'Dismiss', {
+        this.snackBar.open('All availability for selected week cleared!', 'Dismiss', {
           duration: 2000
         });
         this.cdr.detectChanges();
       });
     } else {
-      this.snackBar.open('No availability to clear.', 'Dismiss', {
+      this.snackBar.open('No availability to clear on selected week.', 'Dismiss', {
         duration: 2000
       });
     }
@@ -660,7 +775,7 @@ export class AvailabilityComponent implements OnInit {
 
     this.isSaving = true;
 
-    // Collect all existing slots to delete
+    // Collect all existing slots for this week to delete
     const deleteIds: number[] = [];
     this.schedule.forEach(day => {
       if (day.slotIds && day.slotIds.length > 0) {
@@ -668,13 +783,8 @@ export class AvailabilityComponent implements OnInit {
       }
     });
 
-    // Determine Monday of current week
-    const today = new Date();
-    const currentDay = today.getDay();
-    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + distanceToMonday);
-    monday.setHours(0, 0, 0, 0);
+    // Determine Monday of current selected week
+    const monday = this.mondayDate;
 
     const createRequests: any[] = [];
     this.schedule.forEach((day, idx) => {
