@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
 
 class DriverWebviewScreen extends StatefulWidget {
@@ -27,8 +28,18 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
   void initState() {
     super.initState();
     if (!kIsWeb) {
+      late final PlatformWebViewControllerCreationParams params;
+      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+        params = WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
+          mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+        );
+      } else {
+        params = const PlatformWebViewControllerCreationParams();
+      }
+
       final controller = WebViewController.fromPlatformCreationParams(
-        const PlatformWebViewControllerCreationParams(),
+        params,
         onPermissionRequest: (WebViewPermissionRequest request) async {
           debugPrint("WebView permission requested: $request");
           final status = await Permission.camera.request();
@@ -61,8 +72,9 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
         );
 
       if (controller.platform is AndroidWebViewController) {
-        (controller.platform as AndroidWebViewController)
-            .setOnShowFileSelector((params) async {
+        final androidController = controller.platform as AndroidWebViewController;
+        androidController.setMediaPlaybackRequiresUserGesture(false);
+        androidController.setOnShowFileSelector((params) async {
           debugPrint("WebView File Selector requested: mode=${params.mode}");
           try {
             final result = await FilePicker.platform.pickFiles(
