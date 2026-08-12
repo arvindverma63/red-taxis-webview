@@ -33,7 +33,7 @@ interface DayAvailability {
     MatSnackBarModule
   ],
   template: `
-    <div class="material-container dark-theme">
+    <div class="material-container">
       <!-- Header / Brand -->
       <header class="app-header">
         <h1 class="page-title">Shift Availability</h1>
@@ -41,7 +41,7 @@ interface DayAvailability {
       </header>
 
       <!-- Summary & Actions -->
-      <mat-card class="summary-card dark-card">
+      <mat-card class="summary-card">
         <mat-card-content>
           <div class="summary-stats">
             <div class="stat">
@@ -70,7 +70,7 @@ interface DayAvailability {
 
       <!-- Weekly Schedule List (Single Card) -->
       <main class="schedule-list-container">
-        <mat-card class="schedule-card dark-card">
+        <mat-card class="schedule-card">
           <mat-card-content class="schedule-card-body">
             <div *ngFor="let day of schedule; let dayIdx = index; let last = last" class="day-row" [class.active-row]="day.status === 'Available'">
               <div class="day-info-section">
@@ -132,11 +132,11 @@ interface DayAvailability {
     </div>
   `,
   styles: [`
-    .material-container.dark-theme {
+    .material-container {
       padding: 16px;
       padding-bottom: 96px; /* Space for sticky footer save bar */
-      background-color: #121212; /* Black background */
-      color: #E0E0E0;
+      background-color: var(--background-color, #F8F9FA); /* Light gray background */
+      color: var(--text-primary, #263238);
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
     }
@@ -149,32 +149,31 @@ interface DayAvailability {
     .page-title {
       font-size: 22px;
       font-weight: 800;
-      color: #FFFFFF;
+      color: #121212; /* Pitch black */
       margin: 0;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      text-shadow: 0 0 10px rgba(229, 57, 53, 0.3); /* Red glow effect */
     }
 
     .page-subtitle {
       font-size: 12px;
-      color: #8E8E93;
+      color: #546E7A; /* Slate grey */
       margin: 4px 0 0 0;
     }
 
     /* Summary Card */
-    .summary-card.dark-card {
-      background-color: #1C1C1E; /* Very dark charcoal */
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .summary-card {
+      background-color: var(--surface-color, #FFFFFF); /* White card */
+      border: 1px solid var(--border-color, #E0E0E0);
       border-radius: 16px !important;
       margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
     }
 
     .summary-stats {
       display: flex;
       justify-content: space-around;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid var(--border-color, #E0E0E0);
       padding-bottom: 14px;
       margin-bottom: 14px;
     }
@@ -186,7 +185,7 @@ interface DayAvailability {
     }
 
     .summary-stats .label {
-      color: #8E8E93;
+      color: #546E7A;
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
@@ -197,12 +196,11 @@ interface DayAvailability {
     .summary-stats .value {
       font-size: 22px;
       font-weight: 900;
-      color: #FFFFFF;
+      color: #121212;
     }
 
     .active-highlight {
       color: #E53935 !important; /* Brand red */
-      text-shadow: 0 0 8px rgba(229, 57, 53, 0.4);
     }
 
     .presets-row {
@@ -227,17 +225,17 @@ interface DayAvailability {
     }
     .preset-btn.red-btn:hover {
       background-color: #B71C1C !important;
-      box-shadow: 0 0 10px rgba(229, 57, 53, 0.4) !important;
+      box-shadow: 0 2px 8px rgba(229, 57, 53, 0.2) !important;
     }
 
     .clear-btn {
-      border: 1px solid rgba(255, 255, 255, 0.15) !important;
-      color: #AEAEB2 !important;
+      border: 1px solid var(--border-color, #E0E0E0) !important;
+      color: #546E7A !important;
       background: transparent !important;
     }
     .clear-btn:hover {
-      background-color: rgba(255, 255, 255, 0.05) !important;
-      color: #FFFFFF !important;
+      background-color: rgba(0, 0, 0, 0.03) !important;
+      color: #121212 !important;
     }
 
     /* Weekly Schedule List inside Single Card */
@@ -245,11 +243,11 @@ interface DayAvailability {
       margin-bottom: 20px;
     }
 
-    .schedule-card.dark-card {
-      background-color: #1C1C1E;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .schedule-card {
+      background-color: var(--surface-color, #FFFFFF);
+      border: 1px solid var(--border-color, #E0E0E0);
       border-radius: 16px !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
     }
 
     .schedule-card-body {
@@ -265,7 +263,7 @@ interface DayAvailability {
       transition: background-color 0.2s ease;
     }
     .day-row.active-row {
-      background-color: rgba(229, 57, 53, 0.03); /* Extremely subtle red tint */
+      background-color: rgba(229, 57, 53, 0.02); /* Extremely subtle red tint */
     }
 
     .day-info-section {
@@ -274,7 +272,7 @@ interface DayAvailability {
 
     .day-label {
       font-weight: 800;
-      color: #FFFFFF;
+      color: #121212;
       font-size: 14px;
       letter-spacing: 0.3px;
     }
@@ -290,10 +288,10 @@ interface DayAvailability {
       display: flex;
       width: 100%;
       box-shadow: none !important;
-      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border: 1px solid var(--border-color, #E0E0E0) !important;
       border-radius: 10px !important;
       overflow: hidden;
-      background-color: #2C2C2E !important;
+      background-color: #F8F9FA !important;
     }
 
     .slot-toggle {
@@ -303,8 +301,8 @@ interface DayAvailability {
       font-weight: 800;
       font-size: 12px;
       border: none !important;
-      border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
-      color: #AEAEB2 !important;
+      border-left: 1px solid var(--border-color, #E0E0E0) !important;
+      color: #546E7A !important;
       background: transparent !important;
     }
     .slot-toggle:first-of-type {
@@ -322,13 +320,14 @@ interface DayAvailability {
     }
     ::ng-deep .toggle-group-custom .mat-button-toggle-checked.green-toggle {
       background-color: #E53935 !important; /* Custom Active color is brand red */
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
     }
     ::ng-deep .toggle-group-custom .mat-button-toggle-checked.red-toggle {
-      background-color: #3A3A3C !important; /* None color is dark grey */
+      background-color: #ECEFF1 !important; /* None color is very light grey */
+      color: #546E7A !important;
     }
-    ::ng-deep .toggle-group-custom .mat-button-toggle-checked .mat-button-toggle-label-content {
-      color: #FFFFFF !important;
+    ::ng-deep .toggle-group-custom .mat-button-toggle-checked.red-toggle .mat-button-toggle-label-content {
+      color: #546E7A !important;
     }
 
     /* Time Range Picker Inputs */
@@ -343,8 +342,8 @@ interface DayAvailability {
       flex: 1;
       display: flex;
       align-items: center;
-      background-color: #2C2C2E;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background-color: #F8F9FA;
+      border: 1px solid var(--border-color, #E0E0E0);
       border-radius: 8px;
       padding: 0 10px;
       height: 38px;
@@ -352,11 +351,11 @@ interface DayAvailability {
     }
     .time-input-wrapper:focus-within {
       border-color: #E53935;
-      box-shadow: 0 0 6px rgba(229, 57, 53, 0.3);
+      box-shadow: 0 0 6px rgba(229, 57, 53, 0.15);
     }
 
     .input-prefix {
-      color: #8E8E93;
+      color: #546E7A;
       font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
@@ -368,7 +367,7 @@ interface DayAvailability {
     .custom-time-input {
       background: transparent;
       border: none;
-      color: #FFFFFF;
+      color: #121212;
       font-size: 13px;
       font-weight: 700;
       width: 100%;
@@ -377,7 +376,7 @@ interface DayAvailability {
 
     /* Webkit time picker icon overrides */
     .custom-time-input::-webkit-calendar-picker-indicator {
-      filter: invert(1) sepia(1) saturate(5) hue-rotate(320deg); /* Style time icon to be brand red */
+      filter: invert(0.2) sepia(1) saturate(5) hue-rotate(320deg); /* Style time icon to be brand red */
       cursor: pointer;
     }
 
@@ -387,7 +386,7 @@ interface DayAvailability {
       left: 16px;
       right: 16px;
       width: auto;
-      border-color: rgba(255, 255, 255, 0.08) !important;
+      border-color: var(--border-color, #E0E0E0) !important;
     }
 
     /* Sticky Footer Save Button */
@@ -397,10 +396,10 @@ interface DayAvailability {
       left: 0;
       right: 0;
       padding: 16px;
-      background-color: #121212;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background-color: var(--background-color, #F8F9FA);
+      border-top: 1px solid var(--border-color, #E0E0E0);
       z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
     }
 
     .save-btn {
@@ -418,7 +417,7 @@ interface DayAvailability {
     }
     .save-btn:not([disabled]):hover {
       background-color: #B71C1C !important;
-      box-shadow: 0 0 15px rgba(229, 57, 53, 0.5) !important;
+      box-shadow: 0 2px 10px rgba(229, 57, 53, 0.3) !important;
     }
 
     .save-btn.success {
