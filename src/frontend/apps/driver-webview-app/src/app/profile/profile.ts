@@ -95,50 +95,87 @@ interface DriverDoc {
 
         <!-- Details List -->
         <main class="profile-content">
-          <!-- Personal and Vehicle Details -->
-          <mat-card class="section-card">
-            <mat-card-header class="section-header">
-              <mat-card-title class="section-title">Account & Vehicle Details</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="section-body">
-              <mat-list class="compact-list">
-                <mat-list-item class="profile-list-item">
-                  <span class="material-symbols-outlined item-icon" matListItemIcon>mail</span>
-                  <span matListItemTitle class="item-lbl">Email</span>
-                  <span matListItemLine class="item-val">{{ driverEmail }}</span>
-                </mat-list-item>
-                <mat-divider></mat-divider>
-                <mat-list-item class="profile-list-item">
-                  <span class="material-symbols-outlined item-icon" matListItemIcon>call</span>
-                  <span matListItemTitle class="item-lbl">Phone</span>
-                  <span matListItemLine class="item-val">{{ driverPhone }}</span>
-                </mat-list-item>
-                <mat-divider></mat-divider>
-                <mat-list-item class="profile-list-item">
-                  <span class="material-symbols-outlined item-icon" matListItemIcon>local_taxi</span>
-                  <span matListItemTitle class="item-lbl">Vehicle Info</span>
-                  <span matListItemLine class="item-val">{{ vehicleModel }}</span>
-                </mat-list-item>
-                <mat-divider></mat-divider>
-                <mat-list-item class="profile-list-item">
-                  <span class="material-symbols-outlined item-icon" matListItemIcon>license</span>
-                  <span matListItemTitle class="item-lbl">Plate / Registration</span>
-                  <span matListItemLine class="item-val">
-                    <span class="highlight-plate">{{ plateNumber }}</span>
-                  </span>
-                </mat-list-item>
-                <mat-divider *ngIf="colorCode"></mat-divider>
-                <mat-list-item class="profile-list-item" *ngIf="colorCode">
-                  <span class="material-symbols-outlined item-icon" matListItemIcon>palette</span>
-                  <span matListItemTitle class="item-lbl">Theme Color</span>
-                  <span matListItemLine class="item-val font-semibold" style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #ECEFF1;" [style.background-color]="colorCode.startsWith('#') ? colorCode : '#' + colorCode"></span>
-                    <span>{{ colorCode }}</span>
-                  </span>
-                </mat-list-item>
-              </mat-list>
-            </mat-card-content>
-          </mat-card>
+          <!-- Account & Vehicle Details Redesign -->
+          <div class="details-dashboard-grid">
+            <!-- Left Info Block: Account Profile -->
+            <mat-card class="details-block-card">
+              <mat-card-header class="block-header">
+                <span class="material-symbols-outlined block-header-icon">account_circle</span>
+                <mat-card-title class="block-title">Driver Profile</mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="block-content">
+                <div class="info-row">
+                  <div class="info-icon-wrapper">
+                    <span class="material-symbols-outlined info-icon">mail</span>
+                  </div>
+                  <div class="info-text">
+                    <span class="info-label">Email Address</span>
+                    <span class="info-value">{{ driverEmail }}</span>
+                  </div>
+                </div>
+                <div class="info-divider"></div>
+                <div class="info-row">
+                  <div class="info-icon-wrapper">
+                    <span class="material-symbols-outlined info-icon">call</span>
+                  </div>
+                  <div class="info-text">
+                    <span class="info-label">Contact Number</span>
+                    <span class="info-value">{{ driverPhone }}</span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Right Info Block: Vehicle Information -->
+            <mat-card class="details-block-card">
+              <mat-card-header class="block-header">
+                <span class="material-symbols-outlined block-header-icon">local_taxi</span>
+                <mat-card-title class="block-title">Vehicle Details</mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="block-content">
+                <!-- Vehicle Model -->
+                <div class="info-row">
+                  <div class="info-icon-wrapper">
+                    <span class="material-symbols-outlined info-icon font-taxi">airport_shuttle</span>
+                  </div>
+                  <div class="info-text">
+                    <span class="info-label">Assigned Vehicle</span>
+                    <span class="info-value" [ngClass]="{'empty-state-text': vehicleModel === 'No Vehicle Registered'}">
+                      {{ vehicleModel }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="info-divider"></div>
+                
+                <!-- Plate & Theme color grid -->
+                <div class="vehicle-sub-grid">
+                  <!-- Plate -->
+                  <div class="sub-info-block">
+                    <span class="info-label">License Plate</span>
+                    <div class="uk-license-plate" *ngIf="plateNumber && plateNumber !== 'No Plate'; else noPlateBadge">
+                      <div class="plate-eu-strip">
+                        <span class="plate-eu-text">UK</span>
+                      </div>
+                      <span class="plate-number-text">{{ plateNumber }}</span>
+                    </div>
+                    <ng-template #noPlateBadge>
+                      <span class="empty-badge">Unassigned</span>
+                    </ng-template>
+                  </div>
+                  
+                  <!-- Theme Color -->
+                  <div class="sub-info-block" *ngIf="colorCode">
+                    <span class="info-label">System Theme</span>
+                    <div class="color-palette-tag">
+                      <span class="color-tag-dot" [style.background-color]="colorCode.startsWith('#') ? colorCode : '#' + colorCode"></span>
+                      <span class="color-tag-hex">{{ colorCode }}</span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
 
           <!-- Document Verification -->
           <mat-card class="section-card">
@@ -665,6 +702,193 @@ interface DriverDoc {
     }
     .clickable-item:hover, .clickable-item:active {
       background-color: rgba(0, 0, 0, 0.03) !important;
+    }
+
+    /* Account & Vehicle Details Redesign */
+    .details-dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .details-block-card {
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+      border-radius: 16px !important;
+      background-color: var(--surface-color);
+      overflow: hidden;
+    }
+    .block-header {
+      padding: 16px 16px 8px 16px !important;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .block-header-icon {
+      font-size: 20px;
+      color: var(--primary-color);
+    }
+    .block-title {
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 0 !important;
+    }
+    .block-content {
+      padding: 8px 16px 16px 16px !important;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .info-icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background-color: rgba(33, 150, 243, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .info-icon {
+      font-size: 18px;
+      color: var(--primary-color);
+    }
+    .info-icon.font-taxi {
+      color: #FFB300;
+    }
+    .info-text {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .info-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      margin-top: 1px;
+    }
+    .info-value.empty-state-text {
+      color: #90A4AE;
+      font-weight: 500;
+      font-style: italic;
+    }
+    .info-divider {
+      height: 1px;
+      background-color: #ECEFF1;
+      width: 100%;
+    }
+    
+    /* Vehicle Details Grid */
+    .vehicle-sub-grid {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      margin-top: 4px;
+    }
+    .sub-info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    
+    /* UK License Plate */
+    .uk-license-plate {
+      display: inline-flex;
+      align-items: center;
+      background-color: #FFCC00;
+      border: 1.5px solid #1A1A1A;
+      border-radius: 6px;
+      padding: 4px 10px 4px 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      height: 28px;
+      align-self: flex-start;
+    }
+    .plate-eu-strip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 12px;
+      background-color: #003399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .plate-eu-text {
+      font-size: 6px;
+      color: #FFFFFF;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      transform: scale(0.85);
+    }
+    .plate-number-text {
+      font-family: 'Courier New', monospace;
+      font-weight: 900;
+      font-size: 12px;
+      color: #1A1A1A;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .empty-badge {
+      background-color: #ECEFF1;
+      color: #78909C;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      align-self: flex-start;
+    }
+    
+    /* Color tag */
+    .color-palette-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #F8F9FA;
+      border: 1px solid #ECEFF1;
+      border-radius: 8px;
+      padding: 4px 10px;
+      height: 28px;
+      align-self: flex-start;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .color-tag-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid #ECEFF1;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .color-tag-hex {
+      font-size: 11px;
+      font-weight: 700;
+      color: #455A64;
+      font-family: monospace;
     }
 
     /* Preview Modal Styles */
