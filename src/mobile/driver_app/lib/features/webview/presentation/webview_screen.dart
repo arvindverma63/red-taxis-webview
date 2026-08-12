@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:file_picker/file_picker.dart';
 
 class DriverWebviewScreen extends StatefulWidget {
   final String url;
@@ -56,9 +58,33 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
               debugPrint("WebView Resource Error: ${error.description}");
             },
           ),
-        )
-        ..loadRequest(Uri.parse(widget.url));
+        );
 
+      if (controller.platform is AndroidWebViewController) {
+        (controller.platform as AndroidWebViewController)
+            .setOnShowFileSelector((params) async {
+          debugPrint("WebView File Selector requested: mode=${params.mode}");
+          try {
+            final result = await FilePicker.platform.pickFiles(
+              type: FileType.any,
+              allowMultiple: params.mode == FileSelectorMode.openMultiple,
+            );
+            if (result != null && result.files.isNotEmpty) {
+              final paths = result.files
+                  .map((file) => file.path)
+                  .whereType<String>()
+                  .toList();
+              debugPrint("WebView File Selector selected: $paths");
+              return paths;
+            }
+          } catch (e) {
+            debugPrint("WebView File Selector error: $e");
+          }
+          return <String>[];
+        });
+      }
+
+      controller.loadRequest(Uri.parse(widget.url));
       _controller = controller;
     } else {
       _isLoading = false;
