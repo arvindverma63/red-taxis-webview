@@ -85,8 +85,9 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
               final paths = result.files
                   .map((file) => file.path)
                   .whereType<String>()
+                  .map((path) => Uri.file(path).toString())
                   .toList();
-              debugPrint("WebView File Selector selected: $paths");
+              debugPrint("WebView File Selector selected URIs: $paths");
               return paths;
             }
           } catch (e) {
