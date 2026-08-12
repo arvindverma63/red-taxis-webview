@@ -583,12 +583,22 @@ export class AvailabilityComponent implements OnInit {
 
   getHour(timeStr: string): string {
     if (!timeStr) return '08';
-    return timeStr.split(':')[0] || '08';
+    const hr = timeStr.split(':')[0] || '08';
+    return hr.padStart(2, '0');
   }
 
   getMinute(timeStr: string): string {
     if (!timeStr) return '00';
-    return timeStr.split(':')[1] || '00';
+    const min = timeStr.split(':')[1] || '00';
+    return min.padStart(2, '0');
+  }
+
+  formatTimeSpan(timeStr: string): string {
+    if (!timeStr) return '08:00';
+    const parts = timeStr.split(':');
+    const hr = (parts[0] || '08').padStart(2, '0');
+    const min = (parts[1] || '00').padStart(2, '0');
+    return `${hr}:${min}`;
   }
 
   onHourChange(dayIdx: number, field: 'fromTime' | 'toTime', hr: string): void {
@@ -760,10 +770,8 @@ export class AvailabilityComponent implements OnInit {
               }
               
               // Set custom times
-              const fromStr = apiDay.from || apiDay.fromTime || '08:00:00';
-              const toStr = apiDay.to || apiDay.toTime || '16:00:00';
-              dayItem.fromTime = fromStr.slice(0, 5);
-              dayItem.toTime = toStr.slice(0, 5);
+              dayItem.fromTime = this.formatTimeSpan(apiDay.from || apiDay.fromTime);
+              dayItem.toTime = this.formatTimeSpan(apiDay.to || apiDay.toTime);
             }
           }
         });
