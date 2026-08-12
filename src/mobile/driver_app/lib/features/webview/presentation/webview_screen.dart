@@ -24,7 +24,13 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
   void initState() {
     super.initState();
     if (!kIsWeb) {
-      _controller = WebViewController()
+      final controller = WebViewController.fromPlatformCreationParams(
+        const PlatformWebViewControllerCreationParams(),
+        onPermissionRequest: (WebViewPermissionRequest request) {
+          debugPrint("WebView permission requested: $request");
+          request.grant();
+        },
+      )
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..enableZoom(false)
         ..clearCache()
@@ -46,6 +52,8 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
           ),
         )
         ..loadRequest(Uri.parse(widget.url));
+
+      _controller = controller;
     } else {
       _isLoading = false;
     }
