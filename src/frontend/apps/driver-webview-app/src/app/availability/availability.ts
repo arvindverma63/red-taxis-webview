@@ -6,6 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { DriverService } from '../services/driver.service';
 import { catchError, switchMap } from 'rxjs/operators';
 import { of, forkJoin } from 'rxjs';
@@ -30,7 +32,9 @@ interface DayAvailability {
     MatIconModule,
     MatButtonToggleModule,
     MatDividerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   template: `
     <div class="material-container">
@@ -46,7 +50,11 @@ interface DayAvailability {
           <button mat-icon-button (click)="changeWeek(-1)" [disabled]="isSaving" class="week-nav-btn">
             <mat-icon>chevron_left</mat-icon>
           </button>
-          <div class="week-label-wrapper">
+          
+          <input [matDatepicker]="picker" (dateChange)="onDateSelected($event.value)" style="display: none;">
+          <mat-datepicker #picker></mat-datepicker>
+          
+          <div class="week-label-wrapper" (click)="picker.open()" style="cursor: pointer;">
             <mat-icon class="calendar-icon">calendar_today</mat-icon>
             <span class="week-range-text">{{ weekStartFormatted }} – {{ weekEndFormatted }}</span>
             <span *ngIf="currentWeekOffset === 0" class="current-week-badge">Current Week</span>
@@ -54,6 +62,7 @@ interface DayAvailability {
             <span *ngIf="currentWeekOffset > 1" class="current-week-badge future">Week +{{currentWeekOffset}}</span>
             <span *ngIf="currentWeekOffset < 0" class="current-week-badge past">Past Week</span>
           </div>
+          
           <button mat-icon-button (click)="changeWeek(1)" [disabled]="isSaving" class="week-nav-btn">
             <mat-icon>chevron_right</mat-icon>
           </button>
@@ -113,23 +122,32 @@ interface DayAvailability {
           <!-- Custom Time Range pickers (shown only if status is Active) -->
           <div *ngIf="day.status === 'Available'" class="card-body-row animated-fade-in">
             <div class="time-pickers-container">
-              <div class="time-input-wrapper">
+              <div class="time-select-group">
                 <span class="input-prefix">From</span>
-                <input 
-                  type="time" 
-                  [value]="day.fromTime" 
-                  (change)="onTimeChange(dayIdx, 'fromTime', $any($event.target).value)" 
-                  class="custom-time-input"
-                />
+                <div class="select-inputs-row">
+                  <select [value]="getHour(day.fromTime)" (change)="onHourChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let h of hoursList" [value]="h">{{ h }}</option>
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select [value]="getMinute(day.fromTime)" (change)="onMinuteChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let m of minutesList" [value]="m">{{ m }}</option>
+                  </select>
+                </div>
               </div>
-              <div class="time-input-wrapper">
+              
+              <span class="range-separator">–</span>
+
+              <div class="time-select-group">
                 <span class="input-prefix">To</span>
-                <input 
-                  type="time" 
-                  [value]="day.toTime" 
-                  (change)="onTimeChange(dayIdx, 'toTime', $any($event.target).value)" 
-                  class="custom-time-input"
-                />
+                <div class="select-inputs-row">
+                  <select [value]="getHour(day.toTime)" (change)="onHourChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let h of hoursList" [value]="h">{{ h }}</option>
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select [value]="getMinute(day.toTime)" (change)="onMinuteChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
+                    <option *ngFor="let m of minutesList" [value]="m">{{ m }}</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -433,18 +451,41 @@ interface DayAvailability {
       justify-content: space-between;
     }
 
-    .time-input-wrapper {
+    .time-select-group {
       flex: 1;
       display: flex;
       align-items: center;
+      gap: 8px;
+    }
+
+    .select-inputs-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .custom-time-select {
+      flex: 1;
       background-color: #F8F9FA;
       border: 1px solid var(--border-color, #E0E0E0);
       border-radius: 8px;
-      padding: 0 10px;
+      padding: 0 8px;
       height: 38px;
-      transition: border-color 0.2s ease;
+      font-size: 13px;
+      font-weight: 700;
+      color: #121212;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      appearance: none; /* Hide default browser arrow if desired, or let standard browser styling handle it */
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='%23546E7A' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 4px center;
+      padding-right: 20px;
     }
-    .time-input-wrapper:focus-within {
+    .custom-time-select:focus {
       border-color: #E53935;
       box-shadow: 0 0 6px rgba(229, 57, 53, 0.15);
     }
@@ -454,25 +495,20 @@ interface DayAvailability {
       font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      margin-right: 8px;
       width: 32px;
       flex-shrink: 0;
     }
 
-    .custom-time-input {
-      background: transparent;
-      border: none;
-      color: #121212;
-      font-size: 13px;
-      font-weight: 700;
-      width: 100%;
-      outline: none;
+    .time-separator {
+      color: #546E7A;
+      font-weight: 800;
+      font-size: 14px;
     }
 
-    /* Webkit time picker icon overrides */
-    .custom-time-input::-webkit-calendar-picker-indicator {
-      filter: invert(0.2) sepia(1) saturate(5) hue-rotate(320deg); /* Style time icon to be brand red */
-      cursor: pointer;
+    .range-separator {
+      color: #90A4AE;
+      font-weight: 800;
+      margin: 0 4px;
     }
 
     /* Sticky Footer Save Button */
@@ -542,6 +578,35 @@ export class AvailabilityComponent implements OnInit {
   saveSuccess = false;
   isSaving = false;
 
+  hoursList = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  minutesList = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+
+  getHour(timeStr: string): string {
+    if (!timeStr) return '08';
+    return timeStr.split(':')[0] || '08';
+  }
+
+  getMinute(timeStr: string): string {
+    if (!timeStr) return '00';
+    return timeStr.split(':')[1] || '00';
+  }
+
+  onHourChange(dayIdx: number, field: 'fromTime' | 'toTime', hr: string): void {
+    const current = this.schedule[dayIdx][field] || '08:00';
+    const min = current.split(':')[1] || '00';
+    this.schedule[dayIdx][field] = `${hr}:${min}`;
+    this.saveSuccess = false;
+    console.log(`[Availability] Hour changed for dayIdx ${dayIdx}, field ${field}: ${this.schedule[dayIdx][field]}`);
+  }
+
+  onMinuteChange(dayIdx: number, field: 'fromTime' | 'toTime', min: string): void {
+    const current = this.schedule[dayIdx][field] || '08:00';
+    const hr = current.split(':')[0] || '08';
+    this.schedule[dayIdx][field] = `${hr}:${min}`;
+    this.saveSuccess = false;
+    console.log(`[Availability] Minute changed for dayIdx ${dayIdx}, field ${field}: ${this.schedule[dayIdx][field]}`);
+  }
+
   constructor(private snackBar: MatSnackBar, private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
   private getUserIdFromToken(): number {
@@ -594,6 +659,35 @@ export class AvailabilityComponent implements OnInit {
   changeWeek(offsetChange: number): void {
     if (this.isSaving) return;
     this.currentWeekOffset += offsetChange;
+    this.saveSuccess = false;
+    this.ngOnInit();
+  }
+
+  onDateSelected(selectedDate: Date): void {
+    if (!selectedDate || this.isSaving) return;
+    console.log('[Availability] Selected date from calendar picker:', selectedDate);
+
+    // Calculate the Monday of the week containing selectedDate
+    const currentDay = selectedDate.getDay();
+    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const selectedMonday = new Date(selectedDate);
+    selectedMonday.setDate(selectedDate.getDate() + distanceToMonday);
+    selectedMonday.setHours(0, 0, 0, 0);
+
+    // Calculate current week's Monday (offset = 0)
+    const today = new Date();
+    const todayDay = today.getDay();
+    const todayDistanceToMonday = todayDay === 0 ? -6 : 1 - todayDay;
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() + todayDistanceToMonday);
+    currentMonday.setHours(0, 0, 0, 0);
+
+    // Calculate currentWeekOffset based on difference in weeks
+    const diffTime = selectedMonday.getTime() - currentMonday.getTime();
+    const diffWeeks = Math.round(diffTime / (1000 * 60 * 60 * 24 * 7));
+    
+    console.log(`[Availability] Computed week offset from datepicker: ${diffWeeks}`);
+    this.currentWeekOffset = diffWeeks;
     this.saveSuccess = false;
     this.ngOnInit();
   }
