@@ -12,8 +12,9 @@ import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 interface DriverDoc {
+  type: number;
   name: string;
-  status: 'Valid' | 'Expiring Soon' | 'Expired';
+  status: 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing';
   expiry: string;
 }
 
@@ -38,20 +39,18 @@ interface DriverDoc {
       </div>
 
       <!-- Profile Header -->
-      <mat-card class="profile-header-card">
+      <mat-card class="profile-header-card" [style.background]="getBackgroundStyle()">
         <mat-card-content class="header-content">
           <div class="avatar-container">
-            <div class="avatar-circle">
+            <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : 'rgba(255, 255, 255, 0.15)'">
               <span class="material-symbols-outlined person-avatar-icon">person</span>
             </div>
           </div>
           <div class="profile-identity">
             <h2 class="mat-headline-small name-title">{{ driverName }}</h2>
             <span class="badge-pill role-badge">Red Taxis Driver</span>
-            <div class="stats-row">
-              <span class="stat"><mat-icon class="star-icon">star</mat-icon> {{ rating }} Rating</span>
-              <span class="divider-dot">•</span>
-              <span class="stat">{{ tripsCount | number }} Trips</span>
+            <div class="stats-row" *ngIf="lastLogin">
+              <span class="stat"><mat-icon class="star-icon">schedule</mat-icon> Last Login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
             </div>
           </div>
         </mat-card-content>
@@ -80,7 +79,7 @@ interface DriverDoc {
               <mat-divider></mat-divider>
               <mat-list-item class="profile-list-item">
                 <span class="material-symbols-outlined item-icon" matListItemIcon>local_taxi</span>
-                <span matListItemTitle class="item-lbl">Vehicle Model</span>
+                <span matListItemTitle class="item-lbl">Vehicle Info</span>
                 <span matListItemLine class="item-val">{{ vehicleModel }}</span>
               </mat-list-item>
               <mat-divider></mat-divider>
@@ -91,11 +90,14 @@ interface DriverDoc {
                   <span class="highlight-plate">{{ plateNumber }}</span>
                 </span>
               </mat-list-item>
-              <mat-divider></mat-divider>
-              <mat-list-item class="profile-list-item">
-                <span class="material-symbols-outlined item-icon" matListItemIcon>badge</span>
-                <span matListItemTitle class="item-lbl">Driver Badge</span>
-                <span matListItemLine class="item-val font-semibold">{{ badgeNumber }}</span>
+              <mat-divider *ngIf="colorCode"></mat-divider>
+              <mat-list-item class="profile-list-item" *ngIf="colorCode">
+                <span class="material-symbols-outlined item-icon" matListItemIcon>palette</span>
+                <span matListItemTitle class="item-lbl">Theme Color</span>
+                <span matListItemLine class="item-val font-semibold" style="display: flex; align-items: center; gap: 8px;">
+                  <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #ECEFF1;" [style.background-color]="colorCode.startsWith('#') ? colorCode : '#' + colorCode"></span>
+                  <span>{{ colorCode }}</span>
+                </span>
               </mat-list-item>
             </mat-list>
           </mat-card-content>
@@ -108,16 +110,18 @@ interface DriverDoc {
           </mat-card-header>
           <mat-card-content class="section-body">
             <mat-list class="compact-list">
-              <mat-list-item *ngFor="let doc of documents" class="profile-list-item" (click)="navigateToUpload(doc.name)" style="cursor: pointer;">
+              <mat-list-item *ngFor="let doc of documents" class="profile-list-item" (click)="navigateToUpload(doc.type, doc.name)" style="cursor: pointer;">
                 <span 
                   class="material-symbols-outlined item-icon" 
                   matListItemIcon 
                   [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
                 >
-                  {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : 'cancel' }}
+                  {{ doc.status === 'Valid' ? 'check_circle' : doc.status === 'Expiring Soon' ? 'warning' : doc.status === 'Expired' ? 'cancel' : 'help' }}
                 </span>
                 <span matListItemTitle class="doc-title">{{ doc.name }}</span>
-                <span matListItemLine class="doc-subtitle">Expires {{ doc.expiry }}</span>
+                <span matListItemLine class="doc-subtitle">
+                  {{ doc.expiry === 'Not Uploaded' ? 'Not Uploaded yet' : 'Expires ' + doc.expiry }}
+                </span>
                 <span matListItemMeta class="status-lbl" [ngClass]="doc.status.toLowerCase().replace(' ', '-')">
                   {{ doc.status }}
                 </span>
@@ -277,8 +281,11 @@ interface DriverDoc {
     .item-icon.expiring-soon {
       color: #FF9800;
     }
-    .item-icon.expired {
+     .item-icon.expired {
       color: #F44336;
+    }
+    .item-icon.missing {
+      color: #90A4AE;
     }
 
     .item-lbl {
@@ -341,6 +348,10 @@ interface DriverDoc {
       background-color: rgba(244, 67, 54, 0.08);
       color: #D32F2F;
     }
+    .status-lbl.missing {
+      background-color: rgba(144, 164, 174, 0.08);
+      color: #546E7A;
+    }
 
     /* Preferences */
     .pref-content {
@@ -397,29 +408,22 @@ export class ProfileComponent implements OnInit {
   driverPhone = '+44 7911 123456';
   vehicleModel = 'Toyota Prius (Hybrid)';
   plateNumber = 'LK17 WXY';
-  badgeNumber = 'TX-9981 (London Central)';
-  rating = 4.95;
-  tripsCount = 2410;
+  colorCode = '';
+  lastLogin: string | null = null;
 
   autoAccept = true;
   nightShifts = false;
 
   documents: DriverDoc[] = [
-    {
-      name: 'Hackney Carriage / PHV License',
-      status: 'Valid',
-      expiry: '12 Dec 2027'
-    },
-    {
-      name: 'Private Hire Motor Insurance',
-      status: 'Expiring Soon',
-      expiry: '15 Sep 2026'
-    },
-    {
-      name: 'Vehicle MOT Test Certificate',
-      status: 'Valid',
-      expiry: '04 Jun 2027'
-    }
+    { type: 0, name: 'Private Hire Motor Insurance', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 1, name: 'Vehicle MOT Test Certificate', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 2, name: 'DBS Certificate / Check', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 3, name: 'Vehicle Badge / License', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 4, name: 'Driver Licence (Front & Back)', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 5, name: 'Safe Guarding Certificate', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 6, name: 'First Aid Certificate', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 7, name: 'Driver Profile Photo', status: 'Missing', expiry: 'Not Uploaded' },
+    { type: 8, name: 'Hackney Carriage / PHV Driver Badge', status: 'Missing', expiry: 'Not Uploaded' }
   ];
 
   constructor(
@@ -429,6 +433,9 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const userId = this.getUserIdFromToken();
+    console.log('[Profile] Decoded current driver userId from JWT:', userId);
+
     this.driverService.getProfile().pipe(
       catchError(err => {
         const token = localStorage.getItem('auth_token');
@@ -441,10 +448,11 @@ export class ProfileComponent implements OnInit {
       if (profileResponse) {
         const profile = profileResponse.value || profileResponse;
         
-        // When API call succeeds, we overwrite all static mock values
         this.driverName = profile.fullname || profile.fullName || profile.name || 'Not Registered';
         this.driverEmail = profile.email || 'Not Registered';
         this.driverPhone = profile.telephone || profile.phone || profile.phoneNumber || 'Not Registered';
+        this.colorCode = profile.colorCode || '';
+        this.lastLogin = profile.lastLogin || null;
         
         const vehicleMake = profile.vehicleMake || profile.make || '';
         const vehicleModel = profile.vehicleModel || profile.model || profile.carModel || '';
@@ -460,25 +468,99 @@ export class ProfileComponent implements OnInit {
         }
 
         this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || 'No Plate';
-        this.badgeNumber = profile.badgeNumber || profile.driverBadge || 'No Badge';
-        this.rating = profile.rating || 5.0;
-        this.tripsCount = profile.tripsCount || 0;
-        
-        const docs = profile.documents || profileResponse.documents;
-        if (docs && Array.isArray(docs)) {
-          this.documents = docs.map((d: any) => ({
-            name: d.name || d.title,
-            status: d.status || 'Valid',
-            expiry: d.expiry || d.expiryDate
-          }));
-        }
         this.cdr.detectChanges();
+      }
+
+      // Fetch dynamic compliance expiries if userId is resolved
+      if (userId) {
+        this.driverService.getDriverExpirys().pipe(
+          catchError(err => {
+            console.warn('[Profile] Failed to fetch document expiries from staging:', err);
+            return of(null);
+          })
+        ).subscribe(expirysResponse => {
+          if (expirysResponse && expirysResponse.success && Array.isArray(expirysResponse.value)) {
+            const myExpirys = expirysResponse.value.filter((e: any) => e.userId === userId);
+            console.log(`[Profile] Found ${myExpirys.length} document expiry database entries for userId ${userId}`);
+            
+            myExpirys.forEach((exp: any) => {
+              const docType = exp.documentType;
+              const docItem = this.documents.find(d => d.type === docType);
+              if (docItem) {
+                docItem.expiry = this.formatExpiryDate(exp.expiryDate);
+                docItem.status = this.getDocumentStatus(exp.expiryDate);
+              }
+            });
+            this.cdr.detectChanges();
+          }
+        });
       }
     });
   }
 
-  navigateToUpload(docName: string): void {
-    this.router.navigate(['/upload'], { queryParams: { doc: docName } });
+  getUserIdFromToken(): number | null {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return null;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        let base64Url = parts[1];
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        const payload = JSON.parse(atob(base64));
+        const userId = payload.id || payload.nameid;
+        return userId ? Number(userId) : null;
+      }
+    } catch (e) {
+      console.error('Failed to parse JWT token for userId:', e);
+    }
+    return null;
+  }
+
+  getDocumentStatus(expiryDateStr: string): 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing' {
+    if (!expiryDateStr) return 'Missing';
+    const expiry = new Date(expiryDateStr);
+    if (isNaN(expiry.getTime())) return 'Missing';
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    expiry.setHours(0,0,0,0);
+    
+    if (expiry < today) {
+      return 'Expired';
+    }
+    
+    const diffTime = expiry.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 30) {
+      return 'Expiring Soon';
+    }
+    
+    return 'Valid';
+  }
+
+  formatExpiryDate(dateStr: string): string {
+    if (!dateStr) return 'Not Uploaded';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Not Uploaded';
+    const day = d.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  getBackgroundStyle(): string {
+    if (!this.colorCode) {
+      return 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%)';
+    }
+    const color = this.colorCode.startsWith('#') ? this.colorCode : `#${this.colorCode}`;
+    return `linear-gradient(135deg, ${color} 0%, #1A237E 100%)`;
+  }
+
+  navigateToUpload(type: number, name: string): void {
+    this.router.navigate(['/upload'], { queryParams: { type, name } });
   }
 
   toggleAutoAccept(): void {

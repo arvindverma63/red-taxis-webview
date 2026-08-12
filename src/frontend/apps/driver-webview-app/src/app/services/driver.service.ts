@@ -113,10 +113,24 @@ export class DriverService {
 
   uploadDocument(formData: FormData): Observable<any> {
     console.log('API Webview Request: POST /api/DriverApp/UploadDocument');
-    return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, { headers: this.getHeaders() }).pipe(
+    return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, {
+      headers: this.getHeaders(),
+      reportProgress: true,
+      observe: 'events'
+    }).pipe(
       tap({
-        next: (res) => console.log('API Webview Response: POST /api/DriverApp/UploadDocument success:', res),
-        error: (err) => console.error('API Webview Error: POST /api/DriverApp/UploadDocument failed:', err)
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/UploadDocument success event:', JSON.stringify(res)),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/UploadDocument failed:', JSON.stringify(err))
+      })
+    );
+  }
+
+  getDriverExpirys(): Observable<any> {
+    console.log('API Webview Request: GET /api/AdminUI/GetDriverExpirys');
+    return this.http.get(`${this.baseUrl}/api/AdminUI/GetDriverExpirys`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/AdminUI/GetDriverExpirys success:', JSON.stringify(res)),
+        error: (err) => console.error('API Webview Error: GET /api/AdminUI/GetDriverExpirys failed:', JSON.stringify(err))
       })
     );
   }

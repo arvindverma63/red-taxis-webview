@@ -9,6 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DriverService } from '../services/driver.service';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
 
 @Component({
   selector: 'app-document-upload',
@@ -88,31 +89,7 @@ import { of } from 'rxjs';
           <span class="progress-text">Uploading... {{ uploadProgress }}%</span>
         </div>
 
-        <!-- Document Expiry Form Fields -->
-        <mat-card class="form-card">
-          <mat-card-content class="form-content">
-            <div class="input-group">
-              <label class="input-label">Document Number / ID</label>
-              <input 
-                type="text" 
-                placeholder="e.g. LIC-12345-AB" 
-                class="form-input" 
-                [value]="docId" 
-                (input)="docId = $any($event.target).value"
-              />
-            </div>
 
-            <div class="input-group">
-              <label class="input-label">Expiry Date</label>
-              <input 
-                type="date" 
-                class="form-input" 
-                [value]="expiryDate" 
-                (input)="expiryDate = $any($event.target).value"
-              />
-            </div>
-          </mat-card-content>
-        </mat-card>
       </main>
 
       <!-- Submit Footer -->
@@ -360,6 +337,7 @@ import { of } from 'rxjs';
 })
 export class DocumentUploadComponent implements OnInit {
   docName = 'Hackney Carriage / PHV License';
+  docType = 0;
   docId = '';
   expiryDate = '';
   isDragOver = false;
@@ -376,8 +354,11 @@ export class DocumentUploadComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      if (params['doc']) {
-        this.docName = params['doc'];
+      if (params['name']) {
+        this.docName = params['name'];
+      }
+      if (params['type'] !== undefined) {
+        this.docType = Number(params['type']);
       }
     });
   }
@@ -418,20 +399,6 @@ export class DocumentUploadComponent implements OnInit {
       return;
     }
     this.selectedFile = file;
-    this.simulateUpload();
-  }
-
-  simulateUpload(): void {
-    this.uploadProgress = 0;
-    const interval = setInterval(() => {
-      this.uploadProgress += 20;
-      if (this.uploadProgress >= 100) {
-        clearInterval(interval);
-        this.snackBar.open('File uploaded successfully to local storage.', 'Dismiss', {
-          duration: 2000
-        });
-      }
-    }, 150);
   }
 
   clearSelectedFile(): void {
@@ -451,26 +418,41 @@ export class DocumentUploadComponent implements OnInit {
     if (!this.selectedFile) return;
 
     this.isSubmitting = true;
+    this.uploadProgress = 0;
     
     // Construct FormData matching real API expectations
     const formData = new FormData();
     formData.append('file', this.selectedFile);
-    formData.append('documentType', this.docName);
-    formData.append('documentId', this.docId);
-    formData.append('expiryDate', this.expiryDate);
+    formData.append('type', this.docType.toString());
 
     this.driverService.uploadDocument(formData).pipe(
       catchError(err => {
-        console.warn('UploadDocument API failed:', err);
-        // Fallback to successful submission mock on error
-        return of({ success: true });
+        console.error('[Upload] Real upload failed:', err);
+        this.snackBar.open(`Error: Failed to upload file. ${err.error || err.statusText || 'Connection error'}`, 'Dismiss', {
+          duration: 5000
+        });
+        this.isSubmitting = false;
+        this.uploadProgress = 0;
+        return of(null);
       })
-    ).subscribe(() => {
-      this.isSubmitting = false;
-      this.snackBar.open('Document submitted for verification successfully!', 'Dismiss', {
-        duration: 3000
-      });
-      this.router.navigate(['/profile']);
+    ).subscribe(event => {
+      if (!event) return;
+
+      if (event.type === HttpEventType.UploadProgress) {
+        if (event.total) {
+          this.uploadProgress = Math.round((100 * event.loaded) / event.total);
+        }
+      } else if (event.type === HttpEventType.Response) {
+        this.isSubmitting = false;
+        this.uploadProgress = 100;
+        this.snackBar.open('Document uploaded for verification successfully!', 'Dismiss', {
+          duration: 3000
+        });
+        
+        setTimeout(() => {
+          this.router.navigate(['/profile']);
+        }, 1500);
+      }
     });
   }
 }
