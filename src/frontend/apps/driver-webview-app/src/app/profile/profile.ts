@@ -16,6 +16,7 @@ interface DriverDoc {
   name: string;
   status: 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing' | 'Pending Verification';
   expiry: string;
+  url?: string | null;
 }
 
 @Component({
@@ -154,7 +155,7 @@ interface DriverDoc {
               <div class="document-grid">
                 <div 
                   *ngFor="let doc of documents" 
-                  (click)="navigateToUpload(doc.type, doc.name)" 
+                  (click)="onDocClick(doc)" 
                   class="doc-row-card clickable-item"
                   [ngClass]="doc.status.toLowerCase().replace(' ', '-')"
                 >
@@ -218,6 +219,54 @@ interface DriverDoc {
             Sign Out / Clear Session
           </button>
         </main>
+      </div>
+
+      <!-- Premium Glassmorphism Preview Modal -->
+      <div class="preview-backdrop" *ngIf="isPreviewOpen && previewDoc" (click)="closePreview()">
+        <div class="preview-modal-card" (click)="$event.stopPropagation()">
+          <header class="preview-header">
+            <h3 class="preview-title">{{ previewDoc.name }}</h3>
+            <button class="close-modal-btn" (click)="closePreview()">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </header>
+          
+          <main class="preview-body">
+            <!-- Status Badge Row -->
+            <div class="preview-status-row" [ngClass]="previewDoc.status.toLowerCase().replace(' ', '-')">
+              <span class="material-symbols-outlined status-icon">
+                {{ previewDoc.status === 'Valid' ? 'check_circle' : previewDoc.status === 'Expiring Soon' ? 'warning' : previewDoc.status === 'Expired' ? 'cancel' : 'hourglass_top' }}
+              </span>
+              <div class="status-details">
+                <span class="status-title">Status: {{ previewDoc.status }}</span>
+                <span class="status-subtitle">
+                  {{ previewDoc.expiry === 'Under Review' ? 'Under Review' : 'Expires ' + previewDoc.expiry }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Image View -->
+            <div class="preview-image-container">
+              <ng-container *ngIf="previewDoc.url; else noPreview">
+                <img [src]="previewDoc.url" alt="Document Preview" class="preview-image" (load)="onPreviewImageLoaded()" />
+                <div class="preview-shimmer" *ngIf="isPreviewLoading"></div>
+              </ng-container>
+              <ng-template #noPreview>
+                <div class="no-preview-placeholder">
+                  <span class="material-symbols-outlined placeholder-icon">description</span>
+                  <span class="placeholder-text">Document submitted. Preview will be available once verification completes.</span>
+                </div>
+              </ng-template>
+            </div>
+          </main>
+          
+          <footer class="preview-footer">
+            <button mat-stroked-button class="close-btn" (click)="closePreview()">Close</button>
+            <button mat-flat-button color="primary" class="reupload-btn" (click)="reuploadFromPreview()">
+              <span class="material-symbols-outlined">cloud_upload</span> Update Document
+            </button>
+          </footer>
+        </div>
       </div>
     </div>
   `,
@@ -617,6 +666,184 @@ interface DriverDoc {
     .clickable-item:hover, .clickable-item:active {
       background-color: rgba(0, 0, 0, 0.03) !important;
     }
+
+    /* Preview Modal Styles */
+    .preview-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .preview-modal-card {
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 420px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      overflow: hidden;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleUp {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .preview-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ECEFF1;
+    }
+    .preview-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .close-modal-btn {
+      background: none;
+      border: none;
+      color: #90A4AE;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background-color 0.2s;
+    }
+    .close-modal-btn:hover {
+      background-color: #F5F7F8;
+      color: #455A64;
+    }
+    .preview-body {
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .preview-status-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+    }
+    .preview-status-row.valid {
+      background-color: rgba(76, 175, 80, 0.06);
+      border: 1px solid rgba(76, 175, 80, 0.15);
+    }
+    .preview-status-row.valid .status-icon { color: #388E3C; }
+    .preview-status-row.valid .status-title { color: #2E7D32; }
+    
+    .preview-status-row.expiring-soon {
+      background-color: rgba(255, 152, 0, 0.06);
+      border: 1px solid rgba(255, 152, 0, 0.15);
+    }
+    .preview-status-row.expiring-soon .status-icon { color: #F57C00; }
+    .preview-status-row.expiring-soon .status-title { color: #EF6C00; }
+    
+    .preview-status-row.expired {
+      background-color: rgba(244, 67, 54, 0.06);
+      border: 1px solid rgba(244, 67, 54, 0.15);
+    }
+    .preview-status-row.expired .status-icon { color: #D32F2F; }
+    .preview-status-row.expired .status-title { color: #C62828; }
+    
+    .preview-status-row.pending-verification {
+      background-color: rgba(33, 150, 243, 0.06);
+      border: 1px solid rgba(33, 150, 243, 0.15);
+    }
+    .preview-status-row.pending-verification .status-icon { color: #1976D2; }
+    .preview-status-row.pending-verification .status-title { color: #1565C0; }
+
+    .status-icon {
+      font-size: 24px;
+    }
+    .status-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .status-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .status-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+    .preview-image-container {
+      width: 100%;
+      height: 240px;
+      background-color: #F8F9FA;
+      border-radius: 12px;
+      border: 1px solid #ECEFF1;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .preview-shimmer {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, #F0F2F5 25%, #E4E6EB 50%, #F0F2F5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+    }
+    .no-preview-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 24px;
+      gap: 12px;
+    }
+    .placeholder-icon {
+      font-size: 48px;
+      color: #B0BEC5;
+    }
+    .placeholder-text {
+      font-size: 12px;
+      color: #78909C;
+      line-height: 1.5;
+    }
+    .preview-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #ECEFF1;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .preview-footer button {
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+    }
   `]
 })
 export class ProfileComponent implements OnInit {
@@ -632,6 +859,10 @@ export class ProfileComponent implements OnInit {
 
   autoAccept = true;
   nightShifts = false;
+
+  isPreviewOpen = false;
+  previewDoc: DriverDoc | null = null;
+  isPreviewLoading = true;
 
   documents: DriverDoc[] = [
     { type: 0, name: 'Private Hire Motor Insurance', status: 'Missing', expiry: 'Not Uploaded' },
@@ -709,6 +940,7 @@ export class ProfileComponent implements OnInit {
                 if (docItem) {
                   docItem.expiry = this.formatExpiryDate(exp.expiryDate);
                   docItem.status = this.getDocumentStatus(exp.expiryDate);
+                  docItem.url = exp.documentUrl || exp.fileUrl || exp.url || exp.documentPath || exp.path || null;
                   // Expiry loaded successfully, so clear any client-side pending flag
                   localStorage.removeItem('pending_upload_' + docType);
                 }
@@ -722,6 +954,7 @@ export class ProfileComponent implements OnInit {
               if (isPending && (doc.status === 'Missing' || doc.expiry === 'Not Uploaded')) {
                 doc.status = 'Pending Verification';
                 doc.expiry = 'Under Review';
+                doc.url = localStorage.getItem('pending_upload_url_' + doc.type) || null;
               }
             });
             this.isLoading = false;
@@ -735,6 +968,7 @@ export class ProfileComponent implements OnInit {
           if (isPending && (doc.status === 'Missing' || doc.expiry === 'Not Uploaded')) {
             doc.status = 'Pending Verification';
             doc.expiry = 'Under Review';
+            doc.url = localStorage.getItem('pending_upload_url_' + doc.type) || null;
           }
         });
         this.isLoading = false;
@@ -810,6 +1044,41 @@ export class ProfileComponent implements OnInit {
 
   navigateToUpload(type: number, name: string): void {
     this.router.navigate(['/upload'], { queryParams: { type, name } });
+  }
+
+  onDocClick(doc: DriverDoc): void {
+    if (doc.status === 'Missing') {
+      this.navigateToUpload(doc.type, doc.name);
+    } else {
+      this.openPreview(doc);
+    }
+  }
+
+  openPreview(doc: DriverDoc): void {
+    this.previewDoc = doc;
+    this.isPreviewLoading = true;
+    this.isPreviewOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closePreview(): void {
+    this.isPreviewOpen = false;
+    this.previewDoc = null;
+    this.cdr.detectChanges();
+  }
+
+  onPreviewImageLoaded(): void {
+    this.isPreviewLoading = false;
+    this.cdr.detectChanges();
+  }
+
+  reuploadFromPreview(): void {
+    if (this.previewDoc) {
+      const type = this.previewDoc.type;
+      const name = this.previewDoc.name;
+      this.closePreview();
+      this.navigateToUpload(type, name);
+    }
   }
 
   toggleAutoAccept(): void {
