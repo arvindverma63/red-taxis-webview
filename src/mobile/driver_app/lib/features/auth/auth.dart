@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
 
@@ -75,6 +76,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final userId = userIdStr != null ? int.tryParse(userIdStr) : null;
       if (token != null) {
         state = AuthState(status: AuthStatus.authenticated, token: token, email: email, userId: userId);
+        updateFcmToken();
       } else {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
@@ -140,6 +142,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           email: username,
           userId: userId,
         );
+        updateFcmToken();
       } else {
         throw Exception('Invalid server response format. Token not found.');
       }
@@ -159,6 +162,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.unauthenticated,
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  Future<void> updateFcmToken() async {
+    final token = state.token;
+    if (token == null) return;
+
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken == null) return;
+
+      debugPrint('[Auth] Updating FCM Token to backend: $fcmToken');
+      final response = await _dio.post(
+        '/api/DriverApp/UpdateFCM',
+        data: {
+          'token': fcmToken,
+          'fcmToken': fcmToken,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      debugPrint('[Auth] FCM Token update response status: ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[Auth] Failed to update FCM Token to backend: $e');
     }
   }
 
