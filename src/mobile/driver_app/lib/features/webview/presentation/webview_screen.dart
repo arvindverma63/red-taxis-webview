@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class DriverWebviewScreen extends StatefulWidget {
   final String url;
@@ -26,9 +27,14 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
     if (!kIsWeb) {
       final controller = WebViewController.fromPlatformCreationParams(
         const PlatformWebViewControllerCreationParams(),
-        onPermissionRequest: (WebViewPermissionRequest request) {
+        onPermissionRequest: (WebViewPermissionRequest request) async {
           debugPrint("WebView permission requested: $request");
-          request.grant();
+          final status = await Permission.camera.request();
+          if (status.isGranted) {
+            request.grant();
+          } else {
+            debugPrint("WebView permission denied natively");
+          }
         },
       )
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
