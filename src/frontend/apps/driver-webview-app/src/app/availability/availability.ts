@@ -7,14 +7,15 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DriverService } from '../services/driver.service';
-import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+import { of, forkJoin } from 'rxjs';
 
 type AvailabilityStatus = 'AM' | 'PM' | 'Both' | 'Unavailable';
 
 interface DayAvailability {
   dayName: string;
   status: AvailabilityStatus;
+  slotIds?: number[];
 }
 
 @Component({
@@ -270,13 +271,13 @@ interface DayAvailability {
 })
 export class AvailabilityComponent implements OnInit {
   schedule: DayAvailability[] = [
-    { dayName: 'Monday', status: 'AM' },
-    { dayName: 'Tuesday', status: 'AM' },
-    { dayName: 'Wednesday', status: 'Both' },
-    { dayName: 'Thursday', status: 'Both' },
-    { dayName: 'Friday', status: 'PM' },
-    { dayName: 'Saturday', status: 'Unavailable' },
-    { dayName: 'Sunday', status: 'Unavailable' }
+    { dayName: 'Monday', status: 'AM', slotIds: [] },
+    { dayName: 'Tuesday', status: 'AM', slotIds: [] },
+    { dayName: 'Wednesday', status: 'Both', slotIds: [] },
+    { dayName: 'Thursday', status: 'Both', slotIds: [] },
+    { dayName: 'Friday', status: 'PM', slotIds: [] },
+    { dayName: 'Saturday', status: 'Unavailable', slotIds: [] },
+    { dayName: 'Sunday', status: 'Unavailable', slotIds: [] }
   ];
 
   saveSuccess = false;
@@ -284,24 +285,94 @@ export class AvailabilityComponent implements OnInit {
 
   constructor(private snackBar: MatSnackBar, private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
+  private getUserIdFromToken(): number {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return 0;
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return 0;
+      const payloadDecoded = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(payloadDecoded);
+      return parseInt(payload.id || payload.userId || '0', 10);
+    } catch (e) {
+      console.error('Error decoding JWT token:', e);
+      return 0;
+    }
+  }
+
   ngOnInit(): void {
+    const userId = this.getUserIdFromToken();
+    if (!userId) {
+      console.warn('Driver UserId could not be parsed from token.');
+    }
+
     this.driverService.getAvailabilities().pipe(
       catchError(err => {
         console.warn('Staging API GetAvailabilities failed, using mock data:', err);
         return of(null);
       })
     ).subscribe(dataResponse => {
-      const data = dataResponse?.value || dataResponse;
+      const data = dataResponse?.drivers || dataResponse?.value?.drivers || dataResponse;
+      
       if (data && Array.isArray(data)) {
-        // Map data from API (assuming structure like {dayName: string, status: string})
+        // Reset all days to Unavailable and clear slotIds
+        this.schedule.forEach(day => {
+          day.status = 'Unavailable';
+          day.slotIds = [];
+        });
+
+        // Determine Monday of the current week
+        const today = new Date();
+        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + distanceToMonday);
+        monday.setHours(0, 0, 0, 0);
+
         data.forEach((apiDay: any) => {
-          const matchingDay = this.schedule.find(
-            d => d.dayName.toLowerCase() === (apiDay.dayName || apiDay.dayOfWeek || '').toLowerCase()
-          );
-          if (matchingDay) {
-            matchingDay.status = apiDay.status || apiDay.shift || 'Unavailable';
+          if (!apiDay.date) return;
+          const slotDate = new Date(apiDay.date);
+          slotDate.setHours(0, 0, 0, 0);
+          
+          // Calculate difference in days from Monday
+          const diffTime = slotDate.getTime() - monday.getTime();
+          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays >= 0 && diffDays < 7) {
+            const dayItem = this.schedule[diffDays];
+            if (dayItem) {
+              if (!dayItem.slotIds) {
+                dayItem.slotIds = [];
+              }
+              if (apiDay.id) {
+                dayItem.slotIds.push(apiDay.id);
+              }
+
+              // Determine status based on times
+              const fromStr = apiDay.from || apiDay.fromTime || '';
+              const toStr = apiDay.to || apiDay.toTime || '';
+              const isAm = fromStr.startsWith('08:');
+              const isPm = fromStr.startsWith('16:') || toStr.startsWith('23:59') || toStr.startsWith('24:');
+              
+              if (dayItem.status === 'Unavailable') {
+                if (isAm && toStr.startsWith('16:')) {
+                  dayItem.status = 'AM';
+                } else if (fromStr.startsWith('16:') && (toStr.startsWith('23:59') || toStr.startsWith('24:') || toStr.startsWith('00:00'))) {
+                  dayItem.status = 'PM';
+                } else if (isAm && (toStr.startsWith('23:59') || toStr.startsWith('24:') || toStr.startsWith('00:00'))) {
+                  dayItem.status = 'Both';
+                } else {
+                  dayItem.status = 'AM';
+                }
+              } else if (dayItem.status === 'AM' && isPm) {
+                dayItem.status = 'Both';
+              } else if (dayItem.status === 'PM' && isAm) {
+                dayItem.status = 'Both';
+              }
+            }
           }
         });
+        
         this.cdr.detectChanges();
       }
     });
@@ -346,26 +417,101 @@ export class AvailabilityComponent implements OnInit {
 
   clearAll(): void {
     this.saveSuccess = false;
+    const deleteIds: number[] = [];
     this.schedule.forEach(day => {
+      if (day.slotIds && day.slotIds.length > 0) {
+        deleteIds.push(...day.slotIds);
+      }
       day.status = 'Unavailable';
+      day.slotIds = [];
     });
-    // Call clear API if needed, or simply delete each slot
-    this.driverService.deleteAvailability(0).pipe(
-      catchError(() => of(null))
-    ).subscribe(() => {
-      this.snackBar.open('All availability cleared!', 'Dismiss', {
+
+    if (deleteIds.length > 0) {
+      this.isSaving = true;
+      const deleteObs = deleteIds.map(id => this.driverService.deleteAvailability(id).pipe(catchError(() => of(null))));
+      forkJoin(deleteObs).subscribe(() => {
+        this.isSaving = false;
+        this.snackBar.open('All availability cleared!', 'Dismiss', {
+          duration: 2000
+        });
+        this.cdr.detectChanges();
+      });
+    } else {
+      this.snackBar.open('No availability to clear.', 'Dismiss', {
         duration: 2000
       });
-    });
+    }
   }
 
   saveAvailability(): void {
+    const userId = this.getUserIdFromToken();
+    if (!userId) {
+      this.snackBar.open('Error: User session expired or invalid.', 'Dismiss', {
+        duration: 3000
+      });
+      return;
+    }
+
     this.isSaving = true;
-    this.driverService.setAvailability(this.schedule).pipe(
-      catchError(err => {
-        console.warn('SetAvailability API failed:', err);
-        // Fallback to successful visual mock flow on error
-        return of({ success: true });
+
+    // Collect all existing slots to delete
+    const deleteIds: number[] = [];
+    this.schedule.forEach(day => {
+      if (day.slotIds && day.slotIds.length > 0) {
+        deleteIds.push(...day.slotIds);
+      }
+    });
+
+    // Determine Monday of current week
+    const today = new Date();
+    const currentDay = today.getDay();
+    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + distanceToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const createRequests: any[] = [];
+    this.schedule.forEach((day, idx) => {
+      if (day.status !== 'Unavailable') {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + idx);
+        
+        if (day.status === 'AM') {
+          createRequests.push({
+            userId,
+            date: date.toISOString(),
+            from: '08:00',
+            to: '16:00',
+            type: 1
+          });
+        } else if (day.status === 'PM') {
+          createRequests.push({
+            userId,
+            date: date.toISOString(),
+            from: '16:00',
+            to: '23:59',
+            type: 1
+          });
+        } else if (day.status === 'Both') {
+          createRequests.push({
+            userId,
+            date: date.toISOString(),
+            from: '08:00',
+            to: '23:59',
+            type: 1
+          });
+        }
+      }
+    });
+
+    const deleteObs = deleteIds.map(id => this.driverService.deleteAvailability(id).pipe(catchError(() => of(null))));
+    const saveObs = createRequests.map(req => this.driverService.setAvailability(req).pipe(catchError(() => of(null))));
+
+    const runDeletes = deleteObs.length > 0 ? forkJoin(deleteObs) : of([]);
+
+    runDeletes.pipe(
+      switchMap(() => {
+        return saveObs.length > 0 ? forkJoin(saveObs) : of([]);
       })
     ).subscribe(() => {
       this.isSaving = false;
@@ -373,8 +519,10 @@ export class AvailabilityComponent implements OnInit {
       this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
         duration: 3000
       });
+      this.ngOnInit();
       setTimeout(() => {
         this.saveSuccess = false;
+        this.cdr.detectChanges();
       }, 3000);
     });
   }
