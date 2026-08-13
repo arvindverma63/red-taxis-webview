@@ -217,68 +217,154 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Drawer(
       backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drawer Header with brand logo & partner details
-          UserAccountsDrawerHeader(
+          // Custom Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 64, 24, 24),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppTheme.primaryRed, AppTheme.primaryDarkRed],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(32),
+              ),
             ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : 'D',
-                style: const TextStyle(
-                  fontSize: 24.0,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryRed,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'D',
+                      style: const TextStyle(
+                        fontSize: 26.0,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryRed,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            accountName: Text(
-              name.toUpperCase(),
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 15,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-            accountEmail: Text(
-              email,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-              ),
+                const SizedBox(height: 16),
+                Text(
+                  name.toUpperCase(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Verified Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.verified, color: Colors.white, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'Verified Driver',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 24),
+          
           // Drawer tab list options
-          _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
-          _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings'),
-          _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile'),
-          _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability'),
-          const Divider(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+                _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings'),
+                _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile'),
+                _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability'),
+              ],
+            ),
+          ),
+          
           const Spacer(),
-          ListTile(
-            leading: const Icon(Icons.logout_outlined, color: Colors.grey),
-            title: const Text(
-              'Sign Out',
+          
+          // Sign Out Button Card at bottom
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.logout_outlined, size: 18),
+              label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade700,
+                side: BorderSide(color: Colors.red.shade100, width: 1.5),
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                backgroundColor: Colors.red.shade50.withValues(alpha: 0.3),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                ref.read(authProvider.notifier).signOut();
+              },
+            ),
+          ),
+          
+          // Tiny Brand Footer
+          Center(
+            child: Text(
+              'RED TAXIS PARTNER v1.0.0',
               style: TextStyle(
-                color: Colors.grey,
+                color: Colors.grey.shade400,
+                fontSize: 9,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                letterSpacing: 1.5,
               ),
             ),
-            onTap: () {
-              Navigator.of(context).pop();
-              ref.read(authProvider.notifier).signOut();
-            },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -286,27 +372,34 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   Widget _buildDrawerItem(int index, IconData inactiveIcon, IconData activeIcon, String title) {
     final isActive = _selectedIndex == index;
-    return ListTile(
-      leading: Icon(
-        isActive ? activeIcon : inactiveIcon,
-        color: isActive ? AppTheme.primaryRed : Colors.grey[700],
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isActive ? AppTheme.primaryRed : Colors.grey[800],
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          fontSize: 14,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: ListTile(
+        leading: Icon(
+          isActive ? activeIcon : inactiveIcon,
+          color: isActive ? AppTheme.primaryRed : Colors.grey[700],
+          size: 22,
         ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? AppTheme.primaryRed : Colors.grey[800],
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        selected: isActive,
+        selectedTileColor: AppTheme.primaryRed.withValues(alpha: 0.08),
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+          Navigator.of(context).pop();
+        },
       ),
-      selected: isActive,
-      selectedTileColor: AppTheme.primaryRed.withValues(alpha: 0.08),
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-        Navigator.of(context).pop();
-      },
     );
   }
 }
