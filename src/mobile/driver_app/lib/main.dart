@@ -11,7 +11,12 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  debugPrint("Handling a background message: ${message.messageId}");
+  debugPrint("================ FCM BACKGROUND MESSAGE ================");
+  debugPrint("Message ID: ${message.messageId}");
+  debugPrint("Title: ${message.notification?.title}");
+  debugPrint("Body: ${message.notification?.body}");
+  debugPrint("Data: ${message.data}");
+  debugPrint("========================================================");
 }
 
 // Global high importance channel definition for Android heads-up alerts
@@ -68,7 +73,12 @@ void main() async {
     debugPrint('FCM Token: $token');
     
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Foreground FCM message received: ${message.notification?.title}');
+      debugPrint("================ FCM FOREGROUND MESSAGE ================");
+      debugPrint("Message ID: ${message.messageId}");
+      debugPrint("Title: ${message.notification?.title}");
+      debugPrint("Body: ${message.notification?.body}");
+      debugPrint("Data: ${message.data}");
+      debugPrint("========================================================");
       final notification = message.notification;
       
       // If notification payload exists, show native heads-up banner on Android/iOS
