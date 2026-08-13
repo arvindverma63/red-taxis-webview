@@ -27,11 +27,15 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: lightSurface,
         elevation: 0,
-        iconTheme: IconThemeData(color: textLightPrimary),
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: textLightPrimary, size: 22),
+        actionsIconTheme: IconThemeData(color: textLightSecondary, size: 22),
         titleTextStyle: TextStyle(
           color: textLightPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.15,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -65,11 +69,15 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: darkSurface,
         elevation: 0,
-        iconTheme: IconThemeData(color: textDarkPrimary),
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: textDarkPrimary, size: 22),
+        actionsIconTheme: IconThemeData(color: textDarkSecondary, size: 22),
         titleTextStyle: TextStyle(
           color: textDarkPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.15,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(

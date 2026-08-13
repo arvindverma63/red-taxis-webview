@@ -89,6 +89,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Remote Job Offer Screen Cutover & Redesign**: Migrated the native Flutter job offer UI to a remotely customizable Angular component (`#/job-offer`), bridged natively using a `FlutterChannel` Javascript interface. Redesigned it with a premium, light-themed ticket layout matching the rest of the application's clean design system.
 - [x] **Remote Active Booking Progress & Completion Cutover**: Migrated the En Route to Pickup, Arrived at Pickup, Passenger Onboard (On Trip), and Trip Complete screens from native Flutter views to remotely managed and styled Angular components (`#/active-trip` and `#/trip-complete`), supporting bidirectionally bridged navigation/utility controls.
 - [x] **Hybrid Dashboard Cutover**: Migrated the driver dashboard stats and completed trips to a remotely managed WebView, while rendering the main AppBar header and Go Online / Offline control card natively in Flutter (maintaining location tracking and background GPS services 100% native).
+- [x] **Premium Bottom Tab Navigation**: Replaced the simple old-fashioned Material bottom bar with an animated, floating capsule-docked navigation bar. The active item displays an expanding colored background pill with smooth scale/width transitions, and inactive items are represented clean and spacious.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
