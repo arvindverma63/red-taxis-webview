@@ -86,7 +86,7 @@ The Angular router guards and services parse the `token` parameter directly from
   - Fixed a template expectation bug in the Angular unit tests spec (`app.spec.ts`), bringing tests to 100% green passing status.
   - Cleared all linter warnings from the Flutter codebase.
 - [x] **Logging Security Hardening**: Wrapped raw telemetry, credentials, and token logging in standard Flutter HTTP interceptors behind `if (kDebugMode)` to block sensitive PII/token leaking in production release logs.
-- [x] **Remote Job Offer Screen Cutover**: Migrated the native Flutter job offer UI to a remotely customizable Angular component (`#/job-offer`), bridged natively using a `FlutterChannel` Javascript interface.
+- [x] **Remote Job Offer Screen Cutover & Redesign**: Migrated the native Flutter job offer UI to a remotely customizable Angular component (`#/job-offer`), bridged natively using a `FlutterChannel` Javascript interface. Redesigned it with a premium, light-themed ticket layout matching the rest of the application's clean design system.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
