@@ -92,7 +92,6 @@ void main() async {
               channel.id,
               channel.name,
               channelDescription: channel.description,
-              icon: '@mipmap/ic_launcher',
               importance: Importance.high,
               priority: Priority.high,
               playSound: true,
