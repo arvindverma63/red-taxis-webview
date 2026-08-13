@@ -35,6 +35,31 @@ interface ExpenseItem {
         </button>
       </div>
 
+      <!-- Date Range Filters Row (shown when list is active) -->
+      <div class="filters-row animated-fade-in" *ngIf="!isFormOpen">
+        <button 
+          class="filter-pill" 
+          [class.active]="activeFilterDays === 7" 
+          (click)="setFilter(7)"
+        >
+          Last 7 Days
+        </button>
+        <button 
+          class="filter-pill" 
+          [class.active]="activeFilterDays === 30" 
+          (click)="setFilter(30)"
+        >
+          Last 30 Days
+        </button>
+        <button 
+          class="filter-pill" 
+          [class.active]="activeFilterDays === 90" 
+          (click)="setFilter(90)"
+        >
+          Last 90 Days
+        </button>
+      </div>
+
       <!-- Loading skeleton -->
       <div *ngIf="isLoading" class="skeleton-container animated-fade-in">
         <div class="skeleton-card" *ngFor="let i of [1, 2, 3]">
@@ -48,7 +73,7 @@ interface ExpenseItem {
       <div *ngIf="!isLoading && !isFormOpen" class="expenses-list-container animated-fade-in">
         <div *ngIf="expenses.length === 0" class="empty-state">
           <span class="material-symbols-outlined empty-icon">receipt_long</span>
-          <p class="empty-txt">No expenses logged yet.</p>
+          <p class="empty-txt">No expenses logged in this period.</p>
           <button mat-stroked-button class="empty-btn" (click)="openAddForm()">Log your first expense</button>
         </div>
 
@@ -156,7 +181,7 @@ interface ExpenseItem {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .nav-title {
       font-size: 18px;
@@ -171,6 +196,37 @@ interface ExpenseItem {
       font-weight: 800 !important;
       height: 38px;
       font-size: 12.5px !important;
+    }
+
+    /* Date Filter Pills */
+    .filters-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .filter-pill {
+      border: 1px solid #ECEFF1;
+      background-color: #FFFFFF;
+      color: #546E7A;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .filter-pill:hover {
+      border-color: #CFD8DC;
+    }
+    .filter-pill.active {
+      background-color: #E53935 !important;
+      color: #FFFFFF !important;
+      border-color: #E53935 !important;
+      box-shadow: 0 4px 10px rgba(229, 57, 53, 0.15);
     }
 
     /* Skeleton Loading */
@@ -464,6 +520,7 @@ export class ExpensesComponent implements OnInit {
   isSubmitting = false;
   
   userId: number | null = null;
+  activeFilterDays = 30; // Default to 30 days filter
 
   // Claim Form state variables
   category = 0; // Default to Fuel (integer value 0)
@@ -544,8 +601,9 @@ export class ExpensesComponent implements OnInit {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    const fromDate = new Date(Date.now() - 90 * 86400000).toISOString(); // last 90 days
-    const toDate = new Date().toISOString(); // now
+    // Dynamically calculate the From and To dates based on the active range filter
+    const fromDate = new Date(Date.now() - this.activeFilterDays * 86400000).toISOString(); 
+    const toDate = new Date().toISOString(); 
 
     this.driverService.getExpenses(this.userId, fromDate, toDate).subscribe({
       next: (res: any) => {
@@ -567,6 +625,11 @@ export class ExpensesComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  setFilter(days: number): void {
+    this.activeFilterDays = days;
+    this.loadExpenses();
   }
 
   fallbackMockData(): void {
