@@ -179,8 +179,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await _dio.post(
         '/api/DriverApp/UpdateFCM',
         data: {
-          'token': fcmToken,
-          'fcmToken': fcmToken,
+          'fcm': fcmToken,
         },
         options: Options(
           headers: {
