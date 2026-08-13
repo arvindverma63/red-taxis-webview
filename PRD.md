@@ -88,7 +88,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Logging Security Hardening**: Wrapped raw telemetry, credentials, and token logging in standard Flutter HTTP interceptors behind `if (kDebugMode)` to block sensitive PII/token leaking in production release logs.
 - [x] **Remote Job Offer Screen Cutover & Redesign**: Migrated the native Flutter job offer UI to a remotely customizable Angular component (`#/job-offer`), bridged natively using a `FlutterChannel` Javascript interface. Redesigned it with a premium, light-themed ticket layout matching the rest of the application's clean design system.
 - [x] **Remote Active Booking Progress & Completion Cutover**: Migrated the En Route to Pickup, Arrived at Pickup, Passenger Onboard (On Trip), and Trip Complete screens from native Flutter views to remotely managed and styled Angular components (`#/active-trip` and `#/trip-complete`), supporting bidirectionally bridged navigation/utility controls.
-- [x] **Remote Dashboard Cutover**: Migrated the main dashboard statistics and controls to a remote WebView page (`#/dashboard`), maintaining the native location tracking and background GPS services untouched.
+- [x] **Hybrid Dashboard Cutover**: Migrated the driver dashboard stats and completed trips to a remotely managed WebView, while rendering the main AppBar header and Go Online / Offline control card natively in Flutter (maintaining location tracking and background GPS services 100% native).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.

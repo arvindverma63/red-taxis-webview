@@ -17,40 +17,6 @@ interface CompletedJob {
   imports: [CommonModule],
   template: `
     <div class="dashboard-container">
-      <!-- App Header Title -->
-      <div class="dash-header">
-        <h1 class="dash-title">Driver Dashboard</h1>
-        <p class="dash-subtitle">Real-time shift summary and telemetry overview</p>
-      </div>
-
-      <!-- Online / Offline Shift Toggle Card -->
-      <div class="dash-card shift-card">
-        <div class="card-status-header">
-          <div class="status-indicator">
-            <span class="pulse-dot" [ngClass]="isOnline ? 'online' : 'offline'"></span>
-            <span class="status-text" [ngClass]="isOnline ? 'online' : 'offline'">
-              {{ isOnline ? 'ONLINE' : 'OFFLINE' }}
-            </span>
-          </div>
-          <span class="duty-lbl">{{ isOnline ? 'On Duty' : 'Off Duty' }}</span>
-        </div>
-        
-        <p class="shift-desc">
-          {{ isOnline 
-              ? 'You are active on the network and waiting to accept incoming ride offers. Your live GPS coordinates are streaming natively.' 
-              : 'Go online to start receiving booking requests in your area.' }}
-        </p>
-
-        <button 
-          class="shift-toggle-btn" 
-          [ngClass]="isOnline ? 'offline' : 'online'" 
-          (click)="toggleShift()"
-        >
-          <span class="btn-icon">{{ isOnline ? '⚡' : '▶' }}</span>
-          {{ isOnline ? 'Go Offline' : 'Go Online' }}
-        </button>
-      </div>
-
       <!-- Developer Simulation Deck Card (Only visible when Online) -->
       <div class="dash-card sim-card" *ngIf="isOnline">
         <div class="card-title-row">
@@ -127,30 +93,12 @@ interface CompletedJob {
     .dashboard-container {
       background-color: #F8F9FA;
       min-height: 100vh;
-      padding: 24px 20px 48px 20px;
+      padding: 8px 16px 48px 16px;
       font-family: 'Roboto', sans-serif;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
       box-sizing: border-box;
-    }
-
-    .dash-header {
-      margin-bottom: 4px;
-    }
-
-    .dash-title {
-      font-size: 26px;
-      font-weight: 900;
-      color: #263238;
-      margin: 0 0 6px 0;
-    }
-
-    .dash-subtitle {
-      margin: 0;
-      font-size: 13px;
-      color: #78909C;
-      line-height: 1.4;
     }
 
     /* Common Card Styling */
@@ -158,127 +106,27 @@ interface CompletedJob {
       background-color: #FFFFFF;
       border-radius: 16px;
       padding: 20px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.02);
-      border: 1px solid rgba(0,0,0,0.03);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.015);
+      border: 1px solid rgba(0,0,0,0.025);
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dash-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.035);
+      border-color: rgba(211, 47, 47, 0.08);
     }
 
     .section-title {
       margin: 0 0 16px 0;
-      font-size: 15px;
-      font-weight: 900;
-      color: #37474F;
-      letter-spacing: 0.2px;
-    }
-
-    /* Shift toggle card */
-    .card-status-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .pulse-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-
-    .pulse-dot.online {
-      background-color: #2E7D32;
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
-      animation: pulseGreen 1.8s infinite;
-    }
-
-    .pulse-dot.offline {
-      background-color: #90A4AE;
-    }
-
-    @keyframes pulseGreen {
-      0% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
-      }
-      70% {
-        transform: scale(1);
-        box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
-      }
-      100% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-      }
-    }
-
-    .status-text {
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 1px;
-    }
-
-    .status-text.online { color: #2E7D32; }
-    .status-text.offline { color: #78909C; }
-
-    .duty-lbl {
-      font-size: 14px;
-      font-weight: 700;
-      color: #37474F;
-    }
-
-    .shift-desc {
-      margin: 0 0 18px 0;
       font-size: 13px;
-      color: #546E7A;
-      line-height: 1.5;
-    }
-
-    .shift-toggle-btn {
-      width: 100%;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 800;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-      transition: all 0.2s ease;
-    }
-
-    .shift-toggle-btn.online {
-      background-color: #D32F2F;
-      color: #FFFFFF;
-      box-shadow: 0 4px 12px rgba(211, 47, 47, 0.2);
-    }
-
-    .shift-toggle-btn.online:active {
-      background-color: #B71C1C;
-    }
-
-    .shift-toggle-btn.offline {
-      background-color: #37474F;
-      color: #FFFFFF;
-      box-shadow: 0 4px 12px rgba(55, 71, 79, 0.2);
-    }
-
-    .shift-toggle-btn.offline:active {
-      background-color: #263238;
-    }
-
-    .btn-icon {
-      font-size: 12px;
+      font-weight: 900;
+      color: #37474F;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
     }
 
     /* Simulation Deck card styling */
