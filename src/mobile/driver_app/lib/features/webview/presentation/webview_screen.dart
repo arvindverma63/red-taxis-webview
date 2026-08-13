@@ -7,6 +7,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:driver_app/features/trip/trip.dart';
+import 'package:driver_app/features/earnings/earnings.dart';
 
 class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;
@@ -63,6 +64,33 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               ref.read(tripProvider.notifier).acceptJob();
             } else if (message.message == 'job_rejected') {
               ref.read(tripProvider.notifier).rejectJob();
+            } else if (message.message == 'arrived_at_pickup') {
+              ref.read(tripProvider.notifier).markArrived();
+            } else if (message.message == 'start_trip') {
+              ref.read(tripProvider.notifier).startTrip();
+            } else if (message.message == 'complete_trip') {
+              ref.read(tripProvider.notifier).completeTrip();
+            } else if (message.message == 'return_to_dashboard') {
+              final currentTrip = ref.read(tripProvider).currentTrip;
+              if (currentTrip != null) {
+                ref.read(earningsProvider.notifier).addRecord(
+                  EarningRecord(
+                    id: currentTrip.id,
+                    date: DateTime.now(),
+                    amount: currentTrip.fare,
+                    tripDescription: 'Pickup: ${currentTrip.pickupAddress}, Dropoff: ${currentTrip.dropoffAddress}',
+                  ),
+                );
+              }
+              ref.read(tripProvider.notifier).finishShiftItem();
+            } else if (message.message == 'call_customer') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Dialing passenger... (Mock)')),
+              );
+            } else if (message.message == 'navigate') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Launching navigation map routing... (Mock)')),
+              );
             }
           },
         )
