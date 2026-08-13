@@ -12,7 +12,7 @@ interface ExpenseItem {
   category: number | string;
   amount: number;
   description?: string;
-  status: 'Approved' | 'Pending' | 'Rejected';
+  status: any;
 }
 
 @Component({
@@ -27,10 +27,9 @@ interface ExpenseItem {
   ],
   template: `
     <div class="material-container">
-      <!-- Header Nav -->
-      <div class="nav-header">
-        <span class="nav-title">Expenses Log</span>
-        <button mat-flat-button class="new-expense-btn" (click)="openAddForm()" *ngIf="!isFormOpen">
+      <!-- Header Nav (Only Action Button, Title is handled by App Header) -->
+      <div class="nav-header" *ngIf="!isFormOpen">
+        <button mat-flat-button class="new-expense-btn" (click)="openAddForm()">
           <mat-icon>add</mat-icon> Add Expense
         </button>
       </div>
@@ -87,8 +86,8 @@ interface ExpenseItem {
             
             <div class="expense-right">
               <span class="expense-amount">£{{ item.amount.toFixed(2) }}</span>
-              <span class="status-badge" [ngClass]="item.status.toLowerCase()">
-                {{ item.status }}
+              <span class="status-badge" [ngClass]="getStatusClass(item.status)">
+                {{ getStatusName(item.status) }}
               </span>
             </div>
           </div>
@@ -159,8 +158,8 @@ interface ExpenseItem {
             </div>
             <div class="modal-details-row">
               <span class="modal-lbl">Claim Status:</span>
-              <span class="status-badge" [ngClass]="activeItem.status.toLowerCase()">
-                {{ activeItem.status }}
+              <span class="status-badge" [ngClass]="getStatusClass(activeItem.status)">
+                {{ getStatusName(activeItem.status) }}
               </span>
             </div>
           </div>
@@ -179,15 +178,8 @@ interface ExpenseItem {
 
     .nav-header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      justify-content: flex-end;
       margin-bottom: 16px;
-    }
-    .nav-title {
-      font-size: 18px;
-      font-weight: 900;
-      color: #263238;
-      letter-spacing: 0.15px;
     }
     .new-expense-btn {
       background-color: #E53935 !important;
@@ -520,7 +512,7 @@ export class ExpensesComponent implements OnInit {
   isSubmitting = false;
   
   userId: number | null = null;
-  activeFilterDays = 30; // Default to 30 days filter
+  activeFilterDays = 90; // Default to 90 days filter
 
   // Claim Form state variables
   category = 0; // Default to Fuel (integer value 0)
@@ -601,7 +593,6 @@ export class ExpensesComponent implements OnInit {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    // Dynamically calculate the From and To dates based on the active range filter
     const fromDate = new Date(Date.now() - this.activeFilterDays * 86400000).toISOString(); 
     const toDate = new Date().toISOString(); 
 
@@ -651,6 +642,29 @@ export class ExpensesComponent implements OnInit {
       case 5: return 'Congestion Charge';
       default: return 'Miscellaneous';
     }
+  }
+
+  getStatusName(statusVal: any): string {
+    if (statusVal === undefined || statusVal === null) return 'Pending';
+    if (typeof statusVal === 'number') {
+      switch (statusVal) {
+        case 0: return 'Pending';
+        case 1: return 'Approved';
+        case 2: return 'Rejected';
+        default: return 'Pending';
+      }
+    }
+    // If it's a string, return it formatted
+    const strVal = String(statusVal).trim();
+    if (!strVal) return 'Pending';
+    return strVal.charAt(0).toUpperCase() + strVal.slice(1).toLowerCase();
+  }
+
+  getStatusClass(statusVal: any): string {
+    const name = this.getStatusName(statusVal).toLowerCase();
+    if (name === 'approved' || name === '1') return 'approved';
+    if (name === 'rejected' || name === '2') return 'rejected';
+    return 'pending';
   }
 
   openAddForm(): void {
