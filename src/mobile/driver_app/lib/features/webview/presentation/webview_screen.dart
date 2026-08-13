@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/features/shift/shift.dart';
 
 class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;
@@ -91,6 +92,30 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
             } else if (message.message == 'navigate') {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Launching navigation map routing... (Mock)')),
+              );
+            } else if (message.message == 'go_online') {
+              ref.read(shiftProvider.notifier).goOnline();
+            } else if (message.message == 'go_offline') {
+              ref.read(shiftProvider.notifier).goOffline();
+            } else if (message.message == 'simulate_cash_booking') {
+              ref.read(tripProvider.notifier).offerJob(
+                const TripDetails(
+                  id: 'sim-cash-booking',
+                  pickupAddress: 'Heathrow Airport Terminal 5',
+                  dropoffAddress: 'Red Taxi Office, London Central',
+                  fare: 45.00,
+                  paymentType: 'Cash',
+                ),
+              );
+            } else if (message.message == 'simulate_card_booking') {
+              ref.read(tripProvider.notifier).offerJob(
+                const TripDetails(
+                  id: 'sim-card-booking',
+                  pickupAddress: 'Wembley Stadium Gate A',
+                  dropoffAddress: 'Hilton London Metropole',
+                  fare: 28.50,
+                  paymentType: 'Card',
+                ),
               );
             }
           },
