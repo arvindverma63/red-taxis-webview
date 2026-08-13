@@ -136,6 +136,26 @@ export class DriverService {
     );
   }
 
+  getJobOffers(): Observable<any> {
+    console.log('API Webview Request: GET /api/DriverApp/GetJobOffers');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/GetJobOffers`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetJobOffers success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetJobOffers failed:', err)
+      })
+    );
+  }
+
+  replyJobOffer(jobId: number, response: number): Observable<any> {
+    console.log(`API Webview Request: GET /api/DriverApp/JobOfferReply?jobno=${jobId}&response=${response}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/JobOfferReply?jobno=${jobId}&response=${response}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/JobOfferReply success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/JobOfferReply failed:', err)
+      })
+    );
+  }
+
   login(username: string, password: string): Observable<any> {
     console.log(`API Webview Request: POST /api/UserProfile/Login username: ${username}`);
     return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password }).pipe(
