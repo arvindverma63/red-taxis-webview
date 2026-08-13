@@ -6,6 +6,7 @@ import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/webview/presentation/webview_screen.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -16,6 +17,57 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotificationHandlers();
+  }
+
+  void _initializeNotificationHandlers() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint("FCM Foreground message received: ${message.data}");
+      _handleNotificationPayload(message.data);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint("FCM message clicked: ${message.data}");
+      _handleNotificationPayload(message.data);
+    });
+
+    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint("FCM initial message: ${message.data}");
+        _handleNotificationPayload(message.data);
+      }
+    });
+  }
+
+  void _handleNotificationPayload(Map<String, dynamic> data) {
+    if (data['type'] == 'NEW_JOB_OFFER') {
+      final id = data['jobId'] ?? '';
+      final fare = double.tryParse(data['fare'] ?? '0.0') ?? 0.0;
+      final pickup = data['pickupAddress'] ?? 'Unknown Pickup';
+      final dropoff = data['dropoffAddress'] ?? 'Unknown Dropoff';
+      final paymentType = data['paymentType'] ?? 'Cash';
+      final vehicleType = data['vehicleType'] ?? 'Standard Saloon';
+      final passenger = data['passengerName'] ?? 'Passenger';
+      final notes = data['notes'] ?? '';
+
+      if (id.isNotEmpty) {
+        ref.read(tripProvider.notifier).offerJob(TripDetails(
+          id: id,
+          pickupAddress: pickup,
+          dropoffAddress: dropoff,
+          fare: fare,
+          paymentType: paymentType,
+          vehicleType: vehicleType,
+          passenger: passenger,
+          notes: notes,
+        ));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
