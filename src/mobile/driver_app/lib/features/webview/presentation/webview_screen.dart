@@ -8,6 +8,7 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/earnings/earnings.dart';
+import 'package:driver_app/core/theme/theme.dart';
 
 class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;
@@ -194,8 +195,15 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               children: [
                 WebViewWidget(controller: _controller!),
                 if (_isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(),
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 3,
+                    child: LinearProgressIndicator(
+                      color: AppTheme.primaryRed,
+                      backgroundColor: Colors.transparent,
+                    ),
                   ),
               ],
             ),
