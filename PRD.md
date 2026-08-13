@@ -94,6 +94,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Profile Screen Simplification**: Removed the redundant Preferences card containing Auto-Accept and Night Shift toggles, and the duplicate "Sign Out / Clear Session" button on the profile page, aligning actions with the primary native sidebar controls.
 - [x] **FCM Update Payload Alignment**: Fixed the `UpdateFCM` API endpoint payload keys inside `auth.dart` to send the correct payload key `{ "fcm": fcmToken }` as expected by the backend DTO.
 - [x] **FCM Foreground Presentation Config**: Configured `setForegroundNotificationPresentationOptions` in `main.dart` to display heads-up banners, badges, and play sounds for push notifications received when the app is active in the foreground.
+- [x] **Android Local Notification Channel Integration**: Integrated `flutter_local_notifications` inside `main.dart` to programmatically build a high-importance channel (`high_importance_channel`) for Android, and mapped this channel ID metadata to `AndroidManifest.xml` to trigger heads-up alerts when foreground messages arrive.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
