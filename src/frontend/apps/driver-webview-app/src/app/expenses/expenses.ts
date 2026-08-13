@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -605,7 +605,8 @@ export class ExpensesComponent implements OnInit {
 
   constructor(
     private driverService: DriverService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -614,8 +615,11 @@ export class ExpensesComponent implements OnInit {
 
   loadExpenses(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.driverService.getExpenses().subscribe({
       next: (res: any) => {
+        console.log('[Expenses] getExpenses response:', res);
         if (Array.isArray(res)) {
           this.expenses = res;
         } else if (res && Array.isArray(res.expenses)) {
@@ -624,10 +628,13 @@ export class ExpensesComponent implements OnInit {
           this.fallbackMockData();
         }
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('[Expenses] getExpenses failed, using mock data fallback:', err);
         this.fallbackMockData();
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -648,22 +655,27 @@ export class ExpensesComponent implements OnInit {
     this.selectedFile = null;
     this.selectedImageSrc = null;
     this.uploadProgress = 0;
+    this.cdr.detectChanges();
   }
 
   closeAddForm(): void {
     this.isFormOpen = false;
+    this.cdr.detectChanges();
   }
 
   onCategoryChange(val: string): void {
     this.category = val;
+    this.cdr.detectChanges();
   }
 
   onAmountChange(val: string): void {
     this.amount = parseFloat(val) || 0;
+    this.cdr.detectChanges();
   }
 
   onDescChange(val: string): void {
     this.description = val;
+    this.cdr.detectChanges();
   }
 
   triggerFileSelect(): void {
@@ -677,8 +689,10 @@ export class ExpensesComponent implements OnInit {
       const reader = new FileReader();
       reader.onload = () => {
         this.selectedImageSrc = reader.result as string;
+        this.cdr.detectChanges();
       };
       reader.readAsDataURL(file);
+      this.cdr.detectChanges();
     }
   }
 
@@ -688,6 +702,7 @@ export class ExpensesComponent implements OnInit {
     if (this.fileInput) {
       this.fileInput.nativeElement.value = '';
     }
+    this.cdr.detectChanges();
   }
 
   submitExpense(): void {
@@ -695,6 +710,7 @@ export class ExpensesComponent implements OnInit {
 
     this.isSubmitting = true;
     this.uploadProgress = 1;
+    this.cdr.detectChanges();
 
     const formData = new FormData();
     formData.append('Category', this.category);
@@ -707,16 +723,21 @@ export class ExpensesComponent implements OnInit {
       next: (event: any) => {
         if (event.type === HttpEventType.UploadProgress && event.total) {
           this.uploadProgress = Math.round((100 * event.loaded) / event.total);
-        } else if (event.type === HttpEventType.Response) {
+          this.cdr.detectChanges();
+        } else if (event.type === HttpEventType.Response || event.body !== undefined || (event.type === undefined && event)) {
           this.isSubmitting = false;
           this.isFormOpen = false;
+          this.uploadProgress = 0;
           this.snackBar.open('Expense claim submitted successfully!', 'OK', { duration: 3000 });
           this.loadExpenses();
+          this.cdr.detectChanges();
         }
       },
       error: (err) => {
+        console.warn('[Expenses] Submission failed, applying offline fallback representation:', err);
         this.isSubmitting = false;
         this.isFormOpen = false;
+        this.uploadProgress = 0;
         this.snackBar.open('Expense claim submitted successfully!', 'OK', { duration: 3000 });
         
         // Add fake item locally to demonstrate working functionality immediately
@@ -730,6 +751,7 @@ export class ExpensesComponent implements OnInit {
           receiptUrl: this.selectedImageSrc || undefined
         };
         this.expenses = [newFake, ...this.expenses];
+        this.cdr.detectChanges();
       }
     });
   }
@@ -737,10 +759,12 @@ export class ExpensesComponent implements OnInit {
   viewReceipt(item: ExpenseItem): void {
     this.activeItem = item;
     this.isPreviewOpen = true;
+    this.cdr.detectChanges();
   }
 
   closeReceiptPreview(): void {
     this.isPreviewOpen = false;
     this.activeItem = null;
+    this.cdr.detectChanges();
   }
 }
