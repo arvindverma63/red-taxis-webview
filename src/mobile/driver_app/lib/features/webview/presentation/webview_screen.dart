@@ -183,6 +183,16 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            );
+          },
+        ),
         title: Text(widget.title),
         centerTitle: false,
         actions: [

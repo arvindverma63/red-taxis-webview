@@ -106,6 +106,16 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            );
+          },
+        ),
         title: const Text('Red Taxis Dashboard'),
         centerTitle: false,
         actions: [

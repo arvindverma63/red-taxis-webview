@@ -115,6 +115,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     }
 
     return Scaffold(
+      drawer: _buildDrawer(context),
       body: IndexedStack(
         index: _selectedIndex,
         children: [
@@ -203,6 +204,106 @@ class _MainShellState extends ConsumerState<MainShell> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final email = authState.email ?? 'Partner Driver';
+    final name = email.contains('@') ? email.split('@')[0] : email;
+
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          // Drawer Header with brand logo & partner details
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryRed, AppTheme.primaryDarkRed],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'D',
+                style: const TextStyle(
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryRed,
+                ),
+              ),
+            ),
+            accountName: Text(
+              name.toUpperCase(),
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            accountEmail: Text(
+              email,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          // Drawer tab list options
+          _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+          _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings'),
+          _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile'),
+          _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability'),
+          const Divider(height: 32),
+          const Spacer(),
+          ListTile(
+            leading: const Icon(Icons.logout_outlined, color: Colors.grey),
+            title: const Text(
+              'Sign Out',
+              style: TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              ref.read(authProvider.notifier).signOut();
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(int index, IconData inactiveIcon, IconData activeIcon, String title) {
+    final isActive = _selectedIndex == index;
+    return ListTile(
+      leading: Icon(
+        isActive ? activeIcon : inactiveIcon,
+        color: isActive ? AppTheme.primaryRed : Colors.grey[700],
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isActive ? AppTheme.primaryRed : Colors.grey[800],
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          fontSize: 14,
+        ),
+      ),
+      selected: isActive,
+      selectedTileColor: AppTheme.primaryRed.withValues(alpha: 0.08),
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+        Navigator.of(context).pop();
+      },
     );
   }
 }
