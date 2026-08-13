@@ -27,6 +27,12 @@ void main() async {
     );
     debugPrint('User notification permission status: ${settings.authorizationStatus}');
     
+    await messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    
     final token = await messaging.getToken();
     debugPrint('FCM Token: $token');
     
