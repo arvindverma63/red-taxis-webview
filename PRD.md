@@ -97,6 +97,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Android Local Notification Channel Integration**: Integrated `flutter_local_notifications` inside `main.dart` to programmatically build a high-importance channel (`high_importance_channel`) for Android, and mapped this channel ID metadata to `AndroidManifest.xml` to trigger heads-up alerts when foreground messages arrive.
 - [x] **Document Upload Theme Alignment**: Re-styled the document upload workspace inside `upload.ts`, overriding default prebuilt theme colors with custom styles matching the brand palette. Applied dark slate styling to file selections, brand red to video/camera shutters and crops, and formatted the submit footer actions inside a high-contrast card shadow.
 - [x] **Expenses Portal Claim Integration**: Developed a brand-aligned Expenses claim list and logger component (`expenses.ts`) in Angular. Integrated the `GetExpenses` and `AddExpense` backend API calls. Mapped the route (`#/expenses`) to the new screen, and added a native navigation button in the Flutter drawer sidebar list.
+- [x] **Zone Change Detection Fix for WebView**: Integrated `ChangeDetectorRef` inside `expenses.ts` to trigger manual UI updates on async HTTP response events and progress updates, resolving WebView rendering delays.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
