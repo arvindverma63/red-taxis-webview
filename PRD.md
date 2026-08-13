@@ -98,6 +98,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Document Upload Theme Alignment**: Re-styled the document upload workspace inside `upload.ts`, overriding default prebuilt theme colors with custom styles matching the brand palette. Applied dark slate styling to file selections, brand red to video/camera shutters and crops, and formatted the submit footer actions inside a high-contrast card shadow.
 - [x] **Expenses Portal Claim Integration**: Developed a brand-aligned Expenses claim list and logger component (`expenses.ts`) in Angular. Integrated the `GetExpenses` and `AddExpense` backend API calls. Mapped the route (`#/expenses`) to the new screen, and added a native navigation button in the Flutter drawer sidebar list.
 - [x] **Zone Change Detection Fix for WebView**: Integrated `ChangeDetectorRef` inside `expenses.ts` to trigger manual UI updates on async HTTP response events and progress updates, resolving WebView rendering delays.
+- [x] **AddExpense JSON Schema Alignment**: Aligned the expense submission layout and model to match the exact Swagger JSON contract shown in Scalar. Removed the obsolete file selection controls and replaced the multipart upload logic with a clean `application/json` post payload containing `userId`, `date`, `category`, `description` and `amount`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
