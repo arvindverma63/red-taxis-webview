@@ -93,6 +93,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Professional Sidebar Navigation**: Implemented a redesigned native Flutter drawer sidebar featuring curved borders, a custom red-to-dark-red gradient header block, a glowing circular avatar, and a "Verified Driver" badge. Replaced the flat list tiles with floating, rounded pill-shaped menu cards featuring selection backgrounds, and styled the logout action as an outlined red capsule button.
 - [x] **Profile Screen Simplification**: Removed the redundant Preferences card containing Auto-Accept and Night Shift toggles, and the duplicate "Sign Out / Clear Session" button on the profile page, aligning actions with the primary native sidebar controls.
 - [x] **FCM Update Payload Alignment**: Fixed the `UpdateFCM` API endpoint payload keys inside `auth.dart` to send the correct payload key `{ "fcm": fcmToken }` as expected by the backend DTO.
+- [x] **FCM Foreground Presentation Config**: Configured `setForegroundNotificationPresentationOptions` in `main.dart` to display heads-up banners, badges, and play sounds for push notifications received when the app is active in the foreground.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
