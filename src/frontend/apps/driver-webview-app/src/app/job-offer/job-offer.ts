@@ -184,7 +184,7 @@ interface JobDetails {
       background-color: #FFFFFF;
       border-radius: 28px 28px 0 0;
       box-shadow: 0 -12px 36px rgba(0,0,0,0.12);
-      padding: 16px 20px 32px 20px; /* Safe padding for system nav */
+      padding: 16px 20px 64px 20px; /* Safe padding for system nav */
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -576,6 +576,7 @@ interface JobDetails {
       font-weight: 800;
       cursor: pointer;
       padding: 6px 16px;
+      margin-bottom: 24px; /* Ensure button sits safely above navigation bars */
       letter-spacing: 0.5px;
       transition: color 0.2s ease;
     }
