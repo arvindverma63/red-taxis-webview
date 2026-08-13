@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/shift/shift.dart';
 
 class DriverWebviewScreen extends ConsumerStatefulWidget {
@@ -183,14 +184,10 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
         title: Text(widget.title),

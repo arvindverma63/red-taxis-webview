@@ -11,6 +11,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
+  static final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   ConsumerState<MainShell> createState() => _MainShellState();
 }
@@ -115,6 +117,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     }
 
     return Scaffold(
+      key: MainShell.scaffoldKey,
       drawer: _buildDrawer(context),
       body: IndexedStack(
         index: _selectedIndex,

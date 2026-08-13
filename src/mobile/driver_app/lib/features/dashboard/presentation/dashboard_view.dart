@@ -7,6 +7,7 @@ import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
+import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 
 class DriverDashboardView extends ConsumerStatefulWidget {
   const DriverDashboardView({super.key});
@@ -106,14 +107,10 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
         title: const Text('Red Taxis Dashboard'),
