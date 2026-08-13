@@ -483,28 +483,54 @@ export class ExpensesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadDriverProfile();
+    this.resolveUserId();
   }
 
-  loadDriverProfile(): void {
+  getUserIdFromToken(): number | null {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return null;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        const userId = payload.id || payload.nameid || payload.userId;
+        return userId ? Number(userId) : null;
+      }
+    } catch (e) {
+      console.error('[Expenses] Failed to parse JWT token for userId:', e);
+    }
+    return null;
+  }
+
+  resolveUserId(): void {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    this.driverService.getProfile().subscribe({
-      next: (res: any) => {
-        const profile = res?.value || res;
-        if (profile) {
-          this.userId = profile.id || profile.userId || profile.driverId || null;
-          console.log('[Expenses] Logged in driver userId:', this.userId);
+    this.userId = this.getUserIdFromToken();
+    console.log('[Expenses] Resolved driver userId from JWT:', this.userId);
+
+    if (this.userId) {
+      this.loadExpenses();
+    } else {
+      // Fallback check getProfile
+      this.driverService.getProfile().subscribe({
+        next: (res: any) => {
+          const profile = res?.value || res;
+          if (profile) {
+            this.userId = profile.id || profile.userId || profile.driverId || 1;
+            console.log('[Expenses] Resolved driver userId from profile fallback:', this.userId);
+          } else {
+            this.userId = 1;
+          }
+          this.loadExpenses();
+        },
+        error: (err) => {
+          console.error('[Expenses] Profile fallback failed, default to 1:', err);
+          this.userId = 1;
+          this.loadExpenses();
         }
-        this.loadExpenses();
-      },
-      error: (err) => {
-        console.error('[Expenses] Failed to load driver profile, using default:', err);
-        this.userId = 1; 
-        this.loadExpenses();
-      }
-    });
+      });
+    }
   }
 
   loadExpenses(): void {
