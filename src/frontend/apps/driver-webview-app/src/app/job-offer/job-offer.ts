@@ -18,25 +18,34 @@ interface JobDetails {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="dark-container">
+    <div class="light-container">
       <!-- Muted Header Tag -->
       <div class="offer-header">
-        <span class="header-tag">NEW BOOKING OFFER</span>
+        <span class="header-tag">NEW BOOKING REQUEST</span>
         <div class="divider-line"></div>
       </div>
 
       <!-- Circular Timer and Progress -->
       <div class="timer-section">
         <div class="circle-timer">
-          <svg class="progress-ring" width="100" height="100">
+          <svg class="progress-ring" width="110" height="110">
+            <circle
+              class="progress-ring-track"
+              stroke="#ECEFF1"
+              stroke-width="4"
+              fill="transparent"
+              r="48"
+              cx="55"
+              cy="55"
+            />
             <circle
               class="progress-ring-circle"
               stroke="#D32F2F"
-              stroke-width="5"
+              stroke-width="4"
               fill="transparent"
-              r="44"
-              cx="50"
-              cy="50"
+              r="48"
+              cx="55"
+              cy="55"
               [style.strokeDashoffset]="strokeDashoffset"
             />
           </svg>
@@ -49,32 +58,45 @@ interface JobDetails {
 
       <!-- Main Clean Details Box -->
       <div class="details-card" *ngIf="job">
-        <div class="fare-header">
+        <!-- Ticket Header -->
+        <div class="ticket-header">
           <span class="fare-label">ESTIMATED FARE</span>
           <span class="fare-val">£{{ job.fare.toFixed(2) }}</span>
-        </div>
-
-        <div class="badge-row">
+          
           <span class="payment-badge" [ngClass]="job.paymentType.toLowerCase()">
             {{ job.paymentType }}
           </span>
         </div>
 
-        <div class="route-section">
-          <div class="route-timeline">
-            <div class="timeline-line"></div>
-            <div class="timeline-dot green"></div>
-            <div class="timeline-dot red"></div>
-          </div>
-          
-          <div class="route-addresses">
-            <div class="address-node">
-              <span class="addr-label">PICKUP</span>
-              <span class="addr-text">{{ job.pickup }}</span>
+        <!-- Ticket Tear Separator Line -->
+        <div class="ticket-stub-line">
+          <div class="stub-notch left"></div>
+          <div class="stub-dash"></div>
+          <div class="stub-notch right"></div>
+        </div>
+
+        <!-- Ticket Body -->
+        <div class="ticket-body">
+          <div class="route-section">
+            <div class="route-timeline">
+              <div class="timeline-dot green">
+                <div class="dot-inner"></div>
+              </div>
+              <div class="timeline-line"></div>
+              <div class="timeline-dot red">
+                <div class="dot-inner"></div>
+              </div>
             </div>
-            <div class="address-node">
-              <span class="addr-label">DROPOFF</span>
-              <span class="addr-text">{{ job.dropoff }}</span>
+            
+            <div class="route-addresses">
+              <div class="address-node">
+                <span class="addr-label">PICKUP LOCATION</span>
+                <span class="addr-text">{{ job.pickup }}</span>
+              </div>
+              <div class="address-node">
+                <span class="addr-label">DROPOFF LOCATION</span>
+                <span class="addr-text">{{ job.dropoff }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -92,14 +114,14 @@ interface JobDetails {
     </div>
   `,
   styles: [`
-    .dark-container {
-      background-color: #0E0F12;
-      color: #FFFFFF;
+    .light-container {
+      background: linear-gradient(135deg, #F8F9FA 0%, #ECEFF1 100%);
+      color: #37474F;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 32px 24px;
+      padding: 28px 20px;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
     }
@@ -109,37 +131,40 @@ interface JobDetails {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     .header-tag {
       font-size: 11px;
-      font-weight: 700;
-      color: #90A4AE;
+      font-weight: 800;
+      color: #78909C;
       letter-spacing: 2px;
     }
 
     .divider-line {
       width: 40px;
-      height: 2px;
+      height: 3px;
       background-color: #D32F2F;
-      border-radius: 1px;
+      border-radius: 2px;
     }
 
     /* Timer styles */
     .timer-section {
       display: flex;
       justify-content: center;
-      margin: 20px 0;
+      margin: 10px 0;
     }
 
     .circle-timer {
       position: relative;
-      width: 100px;
-      height: 100px;
+      width: 110px;
+      height: 110px;
       display: flex;
       justify-content: center;
       align-items: center;
+      background-color: #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
 
     .progress-ring {
@@ -150,7 +175,7 @@ interface JobDetails {
     }
 
     .progress-ring-circle {
-      stroke-dasharray: 276.46; /* 2 * PI * r (r=44) */
+      stroke-dasharray: 301.59; /* 2 * PI * r (r=48) */
       transition: stroke-dashoffset 0.1s linear;
     }
 
@@ -161,83 +186,115 @@ interface JobDetails {
     }
 
     .seconds-num {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 900;
       line-height: 1;
-      color: #FFFFFF;
+      color: #263238;
     }
 
     .seconds-lbl {
       font-size: 9px;
       font-weight: 700;
-      color: #78909C;
+      color: #90A4AE;
       letter-spacing: 0.5px;
       margin-top: 2px;
     }
 
-    /* Card Layout */
+    /* Ticket Card Layout */
     .details-card {
-      background-color: #16181E;
-      border-radius: 20px;
-      border: 1px solid #242831;
-      padding: 24px;
+      background-color: #FFFFFF;
+      border-radius: 24px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+      border: 1px solid rgba(0,0,0,0.02);
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      overflow: hidden;
     }
 
-    .fare-header {
+    .ticket-header {
+      padding: 24px 24px 20px 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
     }
 
     .fare-label {
       font-size: 10px;
-      font-weight: 700;
-      color: #78909C;
+      font-weight: 800;
+      color: #90A4AE;
       letter-spacing: 1px;
     }
 
     .fare-val {
-      font-size: 40px;
+      font-size: 44px;
       font-weight: 900;
-      color: #4CAF50;
-    }
-
-    .badge-row {
-      display: flex;
-      justify-content: center;
+      color: #2E7D32;
+      line-height: 1.1;
     }
 
     .payment-badge {
       font-size: 10px;
       font-weight: 800;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 20px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     .payment-badge.cash {
-      background-color: rgba(76, 175, 80, 0.12);
-      color: #4CAF50;
-      border: 1px solid rgba(76, 175, 80, 0.25);
+      background-color: rgba(76, 175, 80, 0.08);
+      color: #2E7D32;
+      border: 1px solid rgba(76, 175, 80, 0.15);
     }
 
     .payment-badge.card,
     .payment-badge.account {
-      background-color: rgba(33, 150, 243, 0.12);
-      color: #2196F3;
-      border: 1px solid rgba(33, 150, 243, 0.25);
+      background-color: rgba(33, 150, 243, 0.08);
+      color: #1565C0;
+      border: 1px solid rgba(33, 150, 243, 0.15);
+    }
+
+    /* Ticket Tear line */
+    .ticket-stub-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 16px;
+      position: relative;
+    }
+
+    .stub-notch {
+      width: 16px;
+      height: 16px;
+      background-color: #ECEFF1;
+      border-radius: 50%;
+    }
+
+    .stub-notch.left {
+      margin-left: -8px;
+    }
+
+    .stub-notch.right {
+      margin-right: -8px;
+    }
+
+    .stub-dash {
+      flex: 1;
+      border-top: 2px dashed #ECEFF1;
+      margin: 0 4px;
+      height: 1px;
+    }
+
+    /* Ticket Body */
+    .ticket-body {
+      padding: 20px 24px 24px 24px;
     }
 
     /* Route Timeline */
     .route-section {
       display: flex;
       gap: 16px;
-      margin-top: 6px;
     }
 
     .route-timeline {
@@ -245,33 +302,49 @@ interface JobDetails {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 12px;
+      width: 14px;
     }
 
     .timeline-line {
       position: absolute;
-      top: 6px;
-      bottom: 6px;
+      top: 14px;
+      bottom: 14px;
       width: 2px;
-      background-color: #2D323E;
+      background-color: #CFD8DC;
     }
 
     .timeline-dot {
-      width: 8px;
-      height: 8px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #FFFFFF;
     }
 
     .timeline-dot.green {
-      background-color: #4CAF50;
-      margin-top: 4px;
+      border: 2.5px solid #4CAF50;
     }
 
     .timeline-dot.red {
-      background-color: #F44336;
+      border: 2.5px solid #D32F2F;
       margin-top: auto;
-      margin-bottom: 4px;
+    }
+
+    .dot-inner {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+    }
+
+    .timeline-dot.green .dot-inner {
+      background-color: #4CAF50;
+    }
+
+    .timeline-dot.red .dot-inner {
+      background-color: #D32F2F;
     }
 
     .route-addresses {
@@ -289,18 +362,15 @@ interface JobDetails {
 
     .addr-label {
       font-size: 8px;
-      font-weight: 700;
-      color: #78909C;
+      font-weight: 800;
+      color: #90A4AE;
       letter-spacing: 0.5px;
     }
 
     .addr-text {
       font-size: 14px;
       font-weight: 700;
-      color: #ECEFF1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: normal;
+      color: #37474F;
       line-height: 1.4;
     }
 
@@ -309,6 +379,7 @@ interface JobDetails {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      width: 100%;
       align-items: center;
     }
 
@@ -316,7 +387,7 @@ interface JobDetails {
       width: 100%;
       background-color: #2E7D32;
       color: #FFFFFF;
-      font-weight: 700;
+      font-weight: 800;
       font-size: 16px;
       padding: 16px;
       border: none;
@@ -324,6 +395,7 @@ interface JobDetails {
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
       transition: all 0.2s ease;
+      letter-spacing: 0.5px;
     }
 
     .accept-btn:active {
@@ -332,24 +404,24 @@ interface JobDetails {
     }
 
     .decline-btn {
-      background: none;
+      background-color: transparent;
       border: none;
-      color: #B0BEC5;
+      color: #78909C;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       padding: 8px 16px;
-      text-decoration: none;
+      transition: color 0.2s ease;
     }
 
     .decline-btn:active {
-      color: #F44336;
+      color: #D32F2F;
     }
   `]
 })
 export class JobOfferComponent implements OnInit, OnDestroy {
   secondsRemaining = 15;
-  strokeDasharray = 276.46; // 2 * PI * 44
+  strokeDasharray = 301.59; // 2 * PI * 48
   job: JobDetails | null = null;
   
   private timerSub: Subscription | null = null;
