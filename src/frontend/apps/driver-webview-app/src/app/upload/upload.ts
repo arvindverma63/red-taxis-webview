@@ -207,11 +207,11 @@ import { HttpEventType } from '@angular/common/http';
   `,
   styles: [`
     .material-container {
-      padding: 16px;
-      padding-bottom: 88px; /* Space for sticky submit button */
+      padding: 16px 16px 88px 16px;
       background-color: var(--background-color);
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
+      box-sizing: border-box;
     }
 
     /* Header Nav */
@@ -219,49 +219,50 @@ import { HttpEventType } from '@angular/common/http';
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .back-btn {
       color: var(--text-primary);
     }
     .nav-title {
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 18px;
+      font-weight: 900;
       color: var(--text-primary);
+      letter-spacing: 0.15px;
     }
 
     /* Doc Info Card */
     .doc-info-card {
-      border: 1px solid var(--border-color);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-      border-radius: 12px !important;
+      border: 1px solid rgba(0, 0, 0, 0.025);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.01) !important;
+      border-radius: 16px !important;
       background-color: var(--surface-color);
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .info-content {
       display: flex;
       align-items: flex-start;
       gap: 14px;
-      padding: 14px 16px !important;
+      padding: 18px 20px !important;
     }
     .doc-card-icon {
-      font-size: 28px;
+      font-size: 32px;
       color: var(--primary-color);
     }
     .doc-details {
       flex: 1;
     }
     .doc-name {
-      margin: 0 0 4px 0;
-      font-size: 14px;
-      font-weight: 700;
+      margin: 0 0 6px 0;
+      font-size: 15px;
+      font-weight: 900;
       color: var(--text-primary);
     }
     .doc-helper {
       margin: 0;
-      font-size: 11px;
+      font-size: 11.5px;
       color: var(--text-secondary);
-      line-height: 1.4;
+      line-height: 1.5;
     }
 
     /* Upload & Cropping Section */
@@ -282,29 +283,51 @@ import { HttpEventType } from '@angular/common/http';
 
     /* Selection Card */
     .action-card {
-      border: 1px solid var(--border-color);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-      border-radius: 12px !important;
+      border: 1px solid rgba(0, 0, 0, 0.025);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.01) !important;
+      border-radius: 16px !important;
       background-color: var(--surface-color);
       text-align: center;
-      padding: 32px 16px !important;
+      padding: 48px 24px !important;
     }
     .camera-main-icon {
-      font-size: 48px;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
+      font-size: 56px;
+      color: #CFD8DC;
+      margin-bottom: 16px;
     }
     .select-helper-text {
-      font-size: 13px;
+      font-size: 13.5px;
       color: var(--text-secondary);
-      margin-bottom: 20px;
-      line-height: 1.5;
+      margin-bottom: 28px;
+      line-height: 1.6;
     }
     .select-action-btn {
-      height: 44px;
-      border-radius: 8px !important;
-      font-weight: 700 !important;
+      height: 48px;
+      background-color: #37474F !important;
+      color: #FFFFFF !important;
+      border-radius: 12px !important;
+      font-weight: 800 !important;
       padding: 0 24px !important;
+      box-shadow: 0 4px 12px rgba(55, 71, 79, 0.15) !important;
+      transition: all 0.2s ease !important;
+    }
+    .select-action-btn:hover {
+      background-color: #263238 !important;
+      transform: translateY(-1px);
+    }
+    .camera-action-btn {
+      height: 48px;
+      background-color: var(--primary-color) !important;
+      color: #FFFFFF !important;
+      border-radius: 12px !important;
+      font-weight: 800 !important;
+      padding: 0 24px !important;
+      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.15) !important;
+      transition: all 0.2s ease !important;
+    }
+    .camera-action-btn:hover {
+      background-color: var(--primary-dark) !important;
+      transform: translateY(-1px);
     }
 
     /* Cropping Workspace */
@@ -339,7 +362,7 @@ import { HttpEventType } from '@angular/common/http';
     }
     .crop-overlay-box {
       position: absolute;
-      border: 2px dashed #FF3D00;
+      border: 2px dashed var(--primary-color);
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
       cursor: move;
       box-sizing: border-box;
@@ -351,7 +374,7 @@ import { HttpEventType } from '@angular/common/http';
       position: absolute;
       width: 16px;
       height: 16px;
-      background-color: #FF3D00;
+      background-color: var(--primary-color);
       border: 2px solid #FFFFFF;
       border-radius: 50%;
       box-sizing: border-box;
@@ -387,7 +410,7 @@ import { HttpEventType } from '@angular/common/http';
       color: var(--text-primary);
     }
     .rotate-btn {
-      font-weight: 600;
+      font-weight: 850;
       color: var(--primary-color);
       font-size: 12px;
     }
@@ -417,9 +440,11 @@ import { HttpEventType } from '@angular/common/http';
     }
     .crop-apply-btn {
       width: 100%;
-      height: 40px;
-      border-radius: 8px !important;
-      font-weight: 700 !important;
+      height: 44px;
+      background-color: var(--primary-color) !important;
+      color: #FFFFFF !important;
+      border-radius: 12px !important;
+      font-weight: 800 !important;
       margin-top: 8px;
     }
 
@@ -489,8 +514,10 @@ import { HttpEventType } from '@angular/common/http';
     }
     .reset-btn {
       font-size: 12px !important;
-      font-weight: 600 !important;
-      border-radius: 8px !important;
+      font-weight: 800 !important;
+      border-radius: 12px !important;
+      border-color: #ECEFF1 !important;
+      color: #546E7A !important;
     }
 
     /* Progress bar */
@@ -530,14 +557,23 @@ import { HttpEventType } from '@angular/common/http';
     }
     .submit-btn {
       width: 100%;
-      height: 48px;
-      border-radius: 8px !important;
-      font-size: 14px !important;
-      font-weight: bold !important;
+      height: 50px;
+      background-color: var(--primary-color) !important;
+      color: #FFFFFF !important;
+      border-radius: 14px !important;
+      font-size: 15px !important;
+      font-weight: 800 !important;
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 6px;
+      box-shadow: 0 4px 18px rgba(229, 57, 53, 0.2) !important;
+      transition: all 0.25s ease !important;
+    }
+    .submit-btn:disabled {
+      background-color: #ECEFF1 !important;
+      color: #90A4AE !important;
+      box-shadow: none !important;
     }
     .btn-icon {
       font-size: 20px;
