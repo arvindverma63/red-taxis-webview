@@ -119,7 +119,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/#/dashboard?token=$token&shiftStatus=${shift.status.name}', title: 'Red Taxis Dashboard'),
+          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard', title: 'Red Taxis Dashboard'),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
