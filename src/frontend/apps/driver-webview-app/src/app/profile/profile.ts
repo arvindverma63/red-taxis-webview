@@ -226,35 +226,6 @@ interface DriverDoc {
             </mat-card-content>
           </mat-card>
 
-          <!-- Preferences -->
-          <mat-card class="section-card">
-            <mat-card-header class="section-header">
-              <mat-card-title class="section-title">Preferences</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="pref-content">
-              <div class="preference-row">
-                <div class="pref-text">
-                  <span class="pref-title">Auto-Accept Job Offers</span>
-                  <span class="pref-desc">Automatically accept incoming matching bookings.</span>
-                </div>
-                <mat-slide-toggle [checked]="autoAccept" (change)="toggleAutoAccept()" color="primary" class="custom-toggle"></mat-slide-toggle>
-              </div>
-              <mat-divider></mat-divider>
-              <div class="preference-row">
-                <div class="pref-text">
-                  <span class="pref-title">Accept Night Shifts</span>
-                  <span class="pref-desc">Receive notifications for trips between 22:00 and 06:00.</span>
-                </div>
-                <mat-slide-toggle [checked]="nightShifts" (change)="toggleNightShifts()" color="primary" class="custom-toggle"></mat-slide-toggle>
-              </div>
-            </mat-card-content>
-          </mat-card>
-
-          <!-- Logout Button -->
-          <button mat-flat-button color="warn" class="logout-btn" (click)="logout()">
-            <span class="material-symbols-outlined btn-icon">logout</span>
-            Sign Out / Clear Session
-          </button>
         </main>
       </div>
 
@@ -1081,8 +1052,7 @@ export class ProfileComponent implements OnInit {
   colorCode = '';
   lastLogin: string | null = null;
 
-  autoAccept = true;
-  nightShifts = false;
+
 
   isPreviewOpen = false;
   previewDoc: DriverDoc | null = null;
@@ -1305,16 +1275,5 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  toggleAutoAccept(): void {
-    this.autoAccept = !this.autoAccept;
-  }
 
-  toggleNightShifts(): void {
-    this.nightShifts = !this.nightShifts;
-  }
-
-  logout(): void {
-    localStorage.removeItem('auth_token');
-    this.router.navigate(['/login']);
-  }
 }
