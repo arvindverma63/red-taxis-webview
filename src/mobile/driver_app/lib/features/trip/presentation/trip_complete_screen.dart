@@ -21,7 +21,7 @@ class TripCompleteScreen extends ConsumerWidget {
       backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 32.0, bottom: 56.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
