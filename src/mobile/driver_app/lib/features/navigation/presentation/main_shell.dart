@@ -32,8 +32,11 @@ class _MainShellState extends ConsumerState<MainShell> {
         case TripStatus.offered:
           final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
           final encodedDropoff = Uri.encodeComponent(trip.dropoffAddress);
+          final encodedVehicle = Uri.encodeComponent(trip.vehicleType);
+          final encodedPassenger = Uri.encodeComponent(trip.passenger);
+          final encodedNotes = Uri.encodeComponent(trip.notes);
           return DriverWebviewScreen(
-            url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}',
+            url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
             title: 'New Job Offer',
           );
         case TripStatus.enRouteToPickup:

@@ -15,6 +15,9 @@ class TripDetails {
   final String dropoffAddress;
   final double fare;
   final String paymentType;
+  final String vehicleType;
+  final String passenger;
+  final String notes;
 
   const TripDetails({
     required this.id,
@@ -22,6 +25,9 @@ class TripDetails {
     required this.dropoffAddress,
     required this.fare,
     required this.paymentType,
+    this.vehicleType = 'Standard Saloon',
+    this.passenger = 'Passenger',
+    this.notes = '',
   });
 }
 
@@ -122,6 +128,9 @@ class TripNotifier extends StateNotifier<TripState> {
         final dropoff = job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? 'Unknown Dropoff';
         final paymentType = job['paymentType'] ?? job['paymentMethod'] ?? 'Cash';
         final id = (job['bookingNo'] ?? job['id'] ?? '').toString();
+        final vehicleType = job['vehicleType'] ?? 'Standard Saloon';
+        final passenger = job['passengerName'] ?? job['passenger'] ?? 'Passenger';
+        final notes = job['notes'] ?? job['comment'] ?? '';
 
         offerJob(TripDetails(
           id: id,
@@ -129,6 +138,9 @@ class TripNotifier extends StateNotifier<TripState> {
           dropoffAddress: dropoff,
           fare: fare,
           paymentType: paymentType,
+          vehicleType: vehicleType,
+          passenger: passenger,
+          notes: notes,
         ));
       }
     } catch (e) {
