@@ -514,7 +514,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Monitor query parameters for token changes and active shift state
     this.routeSub = this.route.queryParams.subscribe(params => {
-      const shiftStatusParam = params['shiftStatus'];
+      let shiftStatusParam = params['shiftStatus'];
+      if (!shiftStatusParam) {
+        const urlParams = new URLSearchParams(window.location.search);
+        shiftStatusParam = urlParams.get('shiftStatus');
+        
+        if (!shiftStatusParam) {
+          const hash = window.location.hash;
+          if (hash.includes('?')) {
+            const queryParams = new URLSearchParams(hash.split('?')[1]);
+            shiftStatusParam = queryParams.get('shiftStatus');
+          }
+        }
+      }
       this.isOnline = shiftStatusParam === 'online';
       this.cdr.detectChanges();
     });
