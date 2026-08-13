@@ -10,7 +10,7 @@ import { HttpEventType } from '@angular/common/http';
 interface ExpenseItem {
   id: number;
   date: string;
-  category: string;
+  category: number | string;
   amount: number;
   description?: string;
   status: 'Approved' | 'Pending' | 'Rejected';
@@ -57,7 +57,7 @@ interface ExpenseItem {
         <div class="expense-items" *ngIf="expenses.length > 0">
           <div class="expense-row-card" *ngFor="let item of expenses" (click)="viewReceipt(item)">
             <div class="expense-left">
-              <span class="category-pill">{{ item.category }}</span>
+              <span class="category-pill">{{ getCategoryName(item.category) }}</span>
               <span class="expense-date">{{ item.date | date:'dd MMM yyyy' }}</span>
               <span class="expense-desc" *ngIf="item.description">{{ item.description }}</span>
             </div>
@@ -80,13 +80,13 @@ interface ExpenseItem {
           <div class="form-group">
             <label class="form-lbl">Expense Category</label>
             <select class="form-select" (change)="onCategoryChange($any($event.target).value)">
-              <option value="Fuel">⛽ Fuel</option>
-              <option value="Tolls">🛣️ Tolls</option>
-              <option value="Parking">🅿️ Parking</option>
-              <option value="Maintenance">🔧 Maintenance</option>
-              <option value="Cleaning">🧼 Cleaning</option>
-              <option value="Congestion Charge">🚦 Congestion Charge</option>
-              <option value="Miscellaneous">📦 Miscellaneous</option>
+              <option value="0">⛽ Fuel</option>
+              <option value="1">🛣️ Tolls</option>
+              <option value="2">🅿️ Parking</option>
+              <option value="3">🔧 Maintenance</option>
+              <option value="4">🧼 Cleaning</option>
+              <option value="5">🚦 Congestion Charge</option>
+              <option value="6">📦 Miscellaneous</option>
             </select>
           </div>
 
@@ -141,7 +141,7 @@ interface ExpenseItem {
       <div class="modal-backdrop" *ngIf="isPreviewOpen && activeItem" (click)="closeReceiptPreview()">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h4 class="modal-title">{{ activeItem.category }} Claim</h4>
+            <h4 class="modal-title">{{ getCategoryName(activeItem.category) }} Claim</h4>
             <button class="modal-close-btn" (click)="closeReceiptPreview()">
               <span class="material-symbols-outlined">close</span>
             </button>
@@ -590,8 +590,10 @@ export class ExpensesComponent implements OnInit {
   isSubmitting = false;
   uploadProgress = 0;
   
+  userId: number | null = null;
+
   // Claim Form state variables
-  category = 'Fuel';
+  category = 0; // Default to Fuel (integer value 0)
   amount = 0;
   description = '';
   selectedFile: File | null = null;
@@ -610,14 +612,47 @@ export class ExpensesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadExpenses();
+    this.loadDriverProfile();
   }
 
-  loadExpenses(): void {
+  loadDriverProfile(): void {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    this.driverService.getExpenses().subscribe({
+    this.driverService.getProfile().subscribe({
+      next: (res: any) => {
+        const profile = res?.value || res;
+        if (profile) {
+          this.userId = profile.id || profile.userId || profile.driverId || null;
+          console.log('[Expenses] Logged in driver userId:', this.userId);
+        }
+        this.loadExpenses();
+      },
+      error: (err) => {
+        console.error('[Expenses] Failed to load driver profile, using default:', err);
+        // Fallback for demo/offline
+        this.userId = 1; 
+        this.loadExpenses();
+      }
+    });
+  }
+
+  loadExpenses(): void {
+    if (!this.userId) {
+      console.warn('[Expenses] userId not loaded yet, skipping getExpenses');
+      this.isLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.isLoading = true;
+    this.cdr.detectChanges();
+
+    // Calculate dates matching the int32 / date-time formats from Scalar spec
+    const fromDate = new Date(Date.now() - 90 * 86400000).toISOString(); // last 90 days
+    const toDate = new Date().toISOString(); // now
+
+    this.driverService.getExpenses(this.userId, fromDate, toDate).subscribe({
       next: (res: any) => {
         console.log('[Expenses] getExpenses response:', res);
         if (Array.isArray(res)) {
@@ -641,15 +676,28 @@ export class ExpensesComponent implements OnInit {
 
   fallbackMockData(): void {
     this.expenses = [
-      { id: 1, date: new Date(Date.now() - 86400000 * 2).toISOString(), category: 'Fuel', amount: 45.50, description: 'Weekly fuel top-up', status: 'Approved', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' },
-      { id: 2, date: new Date(Date.now() - 86400000 * 5).toISOString(), category: 'Tolls', amount: 6.80, description: 'M6 Toll gate charge', status: 'Approved', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' },
-      { id: 3, date: new Date().toISOString(), category: 'Cleaning', amount: 15.00, description: 'Inside/out taxi wash', status: 'Pending', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' }
+      { id: 1, date: new Date(Date.now() - 86400000 * 2).toISOString(), category: 0, amount: 45.50, description: 'Weekly fuel top-up', status: 'Approved', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' },
+      { id: 2, date: new Date(Date.now() - 86400000 * 5).toISOString(), category: 1, amount: 6.80, description: 'M6 Toll gate charge', status: 'Approved', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' },
+      { id: 3, date: new Date().toISOString(), category: 4, amount: 15.00, description: 'Inside/out taxi wash', status: 'Pending', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' }
     ];
+  }
+
+  getCategoryName(catVal: number | string): string {
+    const val = Number(catVal);
+    switch (val) {
+      case 0: return 'Fuel';
+      case 1: return 'Tolls';
+      case 2: return 'Parking';
+      case 3: return 'Maintenance';
+      case 4: return 'Cleaning';
+      case 5: return 'Congestion Charge';
+      default: return 'Miscellaneous';
+    }
   }
 
   openAddForm(): void {
     this.isFormOpen = true;
-    this.category = 'Fuel';
+    this.category = 0;
     this.amount = 0;
     this.description = '';
     this.selectedFile = null;
@@ -664,7 +712,7 @@ export class ExpensesComponent implements OnInit {
   }
 
   onCategoryChange(val: string): void {
-    this.category = val;
+    this.category = parseInt(val, 10) || 0;
     this.cdr.detectChanges();
   }
 
@@ -706,17 +754,18 @@ export class ExpensesComponent implements OnInit {
   }
 
   submitExpense(): void {
-    if (this.amount <= 0 || !this.selectedFile) return;
+    if (this.amount <= 0 || !this.selectedFile || !this.userId) return;
 
     this.isSubmitting = true;
     this.uploadProgress = 1;
     this.cdr.detectChanges();
 
     const formData = new FormData();
-    formData.append('Category', this.category);
-    formData.append('Amount', this.amount.toString());
-    formData.append('Description', this.description);
-    formData.append('Date', new Date().toISOString());
+    formData.append('userId', this.userId.toString());
+    formData.append('date', new Date().toISOString());
+    formData.append('category', this.category.toString()); // Sends integer string e.g. "0"
+    formData.append('description', this.description);
+    formData.append('amount', this.amount.toString());
     formData.append('image', this.selectedFile);
 
     this.driverService.addExpense(formData).subscribe({

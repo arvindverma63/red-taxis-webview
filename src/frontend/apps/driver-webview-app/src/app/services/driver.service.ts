@@ -136,9 +136,9 @@ export class DriverService {
     );
   }
 
-  getExpenses(): Observable<any> {
-    console.log('API Webview Request: GET /api/DriverApp/GetExpenses');
-    return this.http.get(`${this.baseUrl}/api/DriverApp/GetExpenses`, { headers: this.getHeaders() }).pipe(
+  getExpenses(userId: number, from: string, to: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/DriverApp/GetExpenses?UserId=${userId}&From=${from}&To=${to}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/GetExpenses?UserId=${userId}&From=${from}&To=${to}`, { headers: this.getHeaders() }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetExpenses success:', res),
         error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetExpenses failed:', err)
