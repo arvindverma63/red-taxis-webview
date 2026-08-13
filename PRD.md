@@ -91,6 +91,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Hybrid Dashboard Cutover**: Migrated the driver dashboard stats and completed trips to a remotely managed WebView, while rendering the main AppBar header and Go Online / Offline control card natively in Flutter (maintaining location tracking and background GPS services 100% native).
 - [x] **Premium Bottom Tab Navigation**: Replaced the simple old-fashioned Material bottom bar with an animated, floating capsule-docked navigation bar. The active item displays an expanding colored background pill with smooth scale/width transitions, and inactive items are represented clean and spacious.
 - [x] **Professional Sidebar Navigation**: Implemented a redesigned native Flutter drawer sidebar featuring curved borders, a custom red-to-dark-red gradient header block, a glowing circular avatar, and a "Verified Driver" badge. Replaced the flat list tiles with floating, rounded pill-shaped menu cards featuring selection backgrounds, and styled the logout action as an outlined red capsule button.
+- [x] **Profile Screen Simplification**: Removed the redundant Preferences card containing Auto-Accept and Night Shift toggles, and the duplicate "Sign Out / Clear Session" button on the profile page, aligning actions with the primary native sidebar controls.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Native Back Button Handling**: Capture back navigation inside Webviews so users don't exit the app accidentally.
