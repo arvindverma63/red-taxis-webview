@@ -146,17 +146,14 @@ export class DriverService {
     );
   }
 
-  addExpense(formData: FormData): Observable<any> {
-    console.log('API Webview Request: POST /api/DriverApp/AddExpense');
-    return this.http.post(`${this.baseUrl}/api/DriverApp/AddExpense`, formData, {
-      headers: this.getHeaders(),
-      reportProgress: true,
-      observe: 'events',
-      responseType: 'text'
-    }).pipe(
+  addExpense(expenseData: any): Observable<any> {
+    console.log('API Webview Request: POST /api/DriverApp/AddExpense data:', JSON.stringify(expenseData));
+    let headers = this.getHeaders();
+    headers = headers.set('Content-Type', 'application/json');
+    return this.http.post(`${this.baseUrl}/api/DriverApp/AddExpense`, expenseData, { headers }).pipe(
       tap({
-        next: (res) => console.log('API Webview Response: POST /api/DriverApp/AddExpense success event:', JSON.stringify(res)),
-        error: (err) => console.error('API Webview Error: POST /api/DriverApp/AddExpense failed:', JSON.stringify(err))
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/AddExpense success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/AddExpense failed:', err)
       })
     );
   }

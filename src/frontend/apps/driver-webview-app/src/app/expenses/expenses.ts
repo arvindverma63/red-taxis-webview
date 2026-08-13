@@ -1,11 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DriverService } from '../services/driver.service';
-import { HttpEventType } from '@angular/common/http';
 
 interface ExpenseItem {
   id: number;
@@ -14,7 +13,6 @@ interface ExpenseItem {
   amount: number;
   description?: string;
   status: 'Approved' | 'Pending' | 'Rejected';
-  receiptUrl?: string;
 }
 
 @Component({
@@ -100,44 +98,19 @@ interface ExpenseItem {
             <textarea placeholder="Write brief description..." class="form-textarea" (input)="onDescChange($any($event.target).value)"></textarea>
           </div>
 
-          <!-- Receipt Image Selector -->
-          <div class="form-group">
-            <label class="form-lbl">Receipt Image</label>
-            
-            <div *ngIf="!selectedImageSrc" class="photo-select-box" (click)="triggerFileSelect()">
-              <span class="material-symbols-outlined camera-icon">photo_camera</span>
-              <span class="photo-select-txt">Select or Take Receipt Photo</span>
-            </div>
-
-            <div *ngIf="selectedImageSrc" class="photo-preview-box">
-              <img [src]="selectedImageSrc" class="photo-preview-img" />
-              <button mat-mini-fab color="warn" class="photo-remove-btn" (click)="clearImage()">
-                <mat-icon>close</mat-icon>
-              </button>
-            </div>
-
-            <input #fileInput type="file" accept="image/*" style="display: none;" (change)="onFileSelected($event)" />
-          </div>
-
-          <!-- Progress bar -->
-          <div class="progress-wrapper" *ngIf="uploadProgress > 0 && uploadProgress < 100">
-            <div class="progress-bar-fill" [style.width.%]="uploadProgress"></div>
-            <span class="progress-txt">Submitting Expense... {{ uploadProgress }}%</span>
-          </div>
-
           <!-- Form Buttons -->
           <div class="form-actions-row">
             <button mat-stroked-button class="cancel-btn" (click)="closeAddForm()" [disabled]="isSubmitting">
               Cancel
             </button>
-            <button mat-flat-button class="submit-action-btn" (click)="submitExpense()" [disabled]="isSubmitting || !selectedFile || amount <= 0">
+            <button mat-flat-button class="submit-action-btn" (click)="submitExpense()" [disabled]="isSubmitting || amount <= 0">
               {{ isSubmitting ? 'Submitting...' : 'Submit Claim' }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Receipt Preview Modal Overlay -->
+      <!-- Claim Preview Modal Overlay -->
       <div class="modal-backdrop" *ngIf="isPreviewOpen && activeItem" (click)="closeReceiptPreview()">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
@@ -164,10 +137,6 @@ interface ExpenseItem {
               <span class="status-badge" [ngClass]="activeItem.status.toLowerCase()">
                 {{ activeItem.status }}
               </span>
-            </div>
-            
-            <div class="receipt-preview-img-container" *ngIf="activeItem.receiptUrl">
-              <img [src]="activeItem.receiptUrl" class="receipt-preview-img" />
             </div>
           </div>
         </div>
@@ -379,83 +348,6 @@ interface ExpenseItem {
       resize: none;
     }
 
-    /* Image Box Selector */
-    .photo-select-box {
-      border: 2px dashed #CFD8DC;
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      background-color: #FCFDFD;
-      transition: all 0.2s ease;
-    }
-    .photo-select-box:hover {
-      border-color: #E53935;
-      background-color: #FFFFFF;
-    }
-    .camera-icon {
-      font-size: 32px;
-      color: #B0BEC5;
-    }
-    .photo-select-txt {
-      font-size: 12px;
-      font-weight: 700;
-      color: #78909C;
-    }
-    .photo-preview-box {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #ECEFF1;
-      max-height: 180px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #F8F9FA;
-    }
-    .photo-preview-img {
-      max-width: 100%;
-      max-height: 180px;
-      object-fit: contain;
-    }
-    .photo-remove-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background-color: rgba(211, 47, 47, 0.9) !important;
-      color: #FFFFFF !important;
-      width: 32px !important;
-      height: 32px !important;
-      line-height: 32px !important;
-    }
-
-    /* Progress bar */
-    .progress-wrapper {
-      margin-bottom: 20px;
-      height: 4px;
-      background-color: #ECEFF1;
-      border-radius: 2px;
-      overflow: hidden;
-      position: relative;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background-color: #E53935;
-      transition: width 0.1s ease;
-    }
-    .progress-txt {
-      font-size: 9px;
-      color: #90A4AE;
-      font-weight: 700;
-      position: absolute;
-      top: 6px;
-      right: 0;
-    }
-
     .form-actions-row {
       display: flex;
       gap: 12px;
@@ -559,22 +451,6 @@ interface ExpenseItem {
     .modal-val.bold {
       font-size: 15px;
     }
-    .receipt-preview-img-container {
-      margin-top: 16px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #ECEFF1;
-      max-height: 200px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #F8F9FA;
-    }
-    .receipt-preview-img {
-      max-width: 100%;
-      max-height: 200px;
-      object-fit: contain;
-    }
 
     /* Animation utility */
     .animated-fade-in {
@@ -583,12 +459,9 @@ interface ExpenseItem {
   `]
 })
 export class ExpensesComponent implements OnInit {
-  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
-  
   isLoading = true;
   isFormOpen = false;
   isSubmitting = false;
-  uploadProgress = 0;
   
   userId: number | null = null;
 
@@ -596,8 +469,6 @@ export class ExpensesComponent implements OnInit {
   category = 0; // Default to Fuel (integer value 0)
   amount = 0;
   description = '';
-  selectedFile: File | null = null;
-  selectedImageSrc: string | null = null;
 
   // Receipt Modal state variables
   isPreviewOpen = false;
@@ -630,7 +501,6 @@ export class ExpensesComponent implements OnInit {
       },
       error: (err) => {
         console.error('[Expenses] Failed to load driver profile, using default:', err);
-        // Fallback for demo/offline
         this.userId = 1; 
         this.loadExpenses();
       }
@@ -648,7 +518,6 @@ export class ExpensesComponent implements OnInit {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    // Calculate dates matching the int32 / date-time formats from Scalar spec
     const fromDate = new Date(Date.now() - 90 * 86400000).toISOString(); // last 90 days
     const toDate = new Date().toISOString(); // now
 
@@ -676,9 +545,9 @@ export class ExpensesComponent implements OnInit {
 
   fallbackMockData(): void {
     this.expenses = [
-      { id: 1, date: new Date(Date.now() - 86400000 * 2).toISOString(), category: 0, amount: 45.50, description: 'Weekly fuel top-up', status: 'Approved', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' },
-      { id: 2, date: new Date(Date.now() - 86400000 * 5).toISOString(), category: 1, amount: 6.80, description: 'M6 Toll gate charge', status: 'Approved', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' },
-      { id: 3, date: new Date().toISOString(), category: 4, amount: 15.00, description: 'Inside/out taxi wash', status: 'Pending', receiptUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=400' }
+      { id: 1, date: new Date(Date.now() - 86400000 * 2).toISOString(), category: 0, amount: 45.50, description: 'Weekly fuel top-up', status: 'Approved' },
+      { id: 2, date: new Date(Date.now() - 86400000 * 5).toISOString(), category: 1, amount: 6.80, description: 'M6 Toll gate charge', status: 'Approved' },
+      { id: 3, date: new Date().toISOString(), category: 4, amount: 15.00, description: 'Inside/out taxi wash', status: 'Pending' }
     ];
   }
 
@@ -700,9 +569,7 @@ export class ExpensesComponent implements OnInit {
     this.category = 0;
     this.amount = 0;
     this.description = '';
-    this.selectedFile = null;
-    this.selectedImageSrc = null;
-    this.uploadProgress = 0;
+    this.isSubmitting = false;
     this.cdr.detectChanges();
   }
 
@@ -726,67 +593,32 @@ export class ExpensesComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  triggerFileSelect(): void {
-    this.fileInput.nativeElement.click();
-  }
-
-  onFileSelected(event: any): void {
-    const file = event.target.files?.[0];
-    if (file) {
-      this.selectedFile = file;
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.selectedImageSrc = reader.result as string;
-        this.cdr.detectChanges();
-      };
-      reader.readAsDataURL(file);
-      this.cdr.detectChanges();
-    }
-  }
-
-  clearImage(): void {
-    this.selectedFile = null;
-    this.selectedImageSrc = null;
-    if (this.fileInput) {
-      this.fileInput.nativeElement.value = '';
-    }
-    this.cdr.detectChanges();
-  }
-
   submitExpense(): void {
-    if (this.amount <= 0 || !this.selectedFile || !this.userId) return;
+    if (this.amount <= 0 || !this.userId) return;
 
     this.isSubmitting = true;
-    this.uploadProgress = 1;
     this.cdr.detectChanges();
 
-    const formData = new FormData();
-    formData.append('userId', this.userId.toString());
-    formData.append('date', new Date().toISOString());
-    formData.append('category', this.category.toString()); // Sends integer string e.g. "0"
-    formData.append('description', this.description);
-    formData.append('amount', this.amount.toString());
-    formData.append('image', this.selectedFile);
+    const payload = {
+      userId: this.userId,
+      date: new Date().toISOString(),
+      category: this.category,
+      description: this.description,
+      amount: this.amount
+    };
 
-    this.driverService.addExpense(formData).subscribe({
-      next: (event: any) => {
-        if (event.type === HttpEventType.UploadProgress && event.total) {
-          this.uploadProgress = Math.round((100 * event.loaded) / event.total);
-          this.cdr.detectChanges();
-        } else if (event.type === HttpEventType.Response || event.body !== undefined || (event.type === undefined && event)) {
-          this.isSubmitting = false;
-          this.isFormOpen = false;
-          this.uploadProgress = 0;
-          this.snackBar.open('Expense claim submitted successfully!', 'OK', { duration: 3000 });
-          this.loadExpenses();
-          this.cdr.detectChanges();
-        }
+    this.driverService.addExpense(payload).subscribe({
+      next: (res: any) => {
+        this.isSubmitting = false;
+        this.isFormOpen = false;
+        this.snackBar.open('Expense claim submitted successfully!', 'OK', { duration: 3000 });
+        this.loadExpenses();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.warn('[Expenses] Submission failed, applying offline fallback representation:', err);
         this.isSubmitting = false;
         this.isFormOpen = false;
-        this.uploadProgress = 0;
         this.snackBar.open('Expense claim submitted successfully!', 'OK', { duration: 3000 });
         
         // Add fake item locally to demonstrate working functionality immediately
@@ -796,8 +628,7 @@ export class ExpensesComponent implements OnInit {
           category: this.category,
           amount: this.amount,
           description: this.description,
-          status: 'Pending',
-          receiptUrl: this.selectedImageSrc || undefined
+          status: 'Pending'
         };
         this.expenses = [newFake, ...this.expenses];
         this.cdr.detectChanges();
