@@ -8,6 +8,7 @@ import { JobOfferComponent } from './job-offer/job-offer';
 import { ActiveTripComponent } from './active-trip/active-trip';
 import { TripCompleteComponent } from './trip-complete/trip-complete';
 import { DashboardComponent } from './dashboard/dashboard';
+import { ExpensesComponent } from './expenses/expenses';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -20,6 +21,7 @@ export const routes: Routes = [
   { path: 'active-trip', component: ActiveTripComponent, canActivate: [authGuard] },
   { path: 'trip-complete', component: TripCompleteComponent, canActivate: [authGuard] },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'expenses', component: ExpensesComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'bookings', pathMatch: 'full' },
   { path: '**', redirectTo: 'bookings' }
 ];

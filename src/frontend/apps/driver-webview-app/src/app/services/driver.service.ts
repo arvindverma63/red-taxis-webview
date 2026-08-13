@@ -136,6 +136,31 @@ export class DriverService {
     );
   }
 
+  getExpenses(): Observable<any> {
+    console.log('API Webview Request: GET /api/DriverApp/GetExpenses');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/GetExpenses`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetExpenses success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetExpenses failed:', err)
+      })
+    );
+  }
+
+  addExpense(formData: FormData): Observable<any> {
+    console.log('API Webview Request: POST /api/DriverApp/AddExpense');
+    return this.http.post(`${this.baseUrl}/api/DriverApp/AddExpense`, formData, {
+      headers: this.getHeaders(),
+      reportProgress: true,
+      observe: 'events',
+      responseType: 'text'
+    }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/AddExpense success event:', JSON.stringify(res)),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/AddExpense failed:', JSON.stringify(err))
+      })
+    );
+  }
+
   getJobOffers(): Observable<any> {
     console.log('API Webview Request: GET /api/DriverApp/GetJobOffers');
     return this.http.get(`${this.baseUrl}/api/DriverApp/GetJobOffers`, { headers: this.getHeaders() }).pipe(
