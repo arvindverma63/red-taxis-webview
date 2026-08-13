@@ -549,7 +549,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             let timeStr = 'Completed today';
             if (item.completedAt || item.date) {
               const d = new Date(item.completedAt || item.date);
-              timeStr = `${d.getHours()}:${d.getMinutes().toString().padLeft(2, '0')}`;
+              timeStr = `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
             }
 
             return {
@@ -609,11 +609,4 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
   }
-}
-
-// Quick string polyfill helper for time padding
-if (!String.prototype.padLeft) {
-  (String.prototype as any).padLeft = function (length: number, character: string) {
-    return this.padStart(length, character);
-  };
 }
