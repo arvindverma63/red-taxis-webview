@@ -5,7 +5,6 @@ import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/webview/presentation/webview_screen.dart';
 import 'package:driver_app/features/trip/trip.dart';
-import 'package:driver_app/features/trip/presentation/job_offer_screen.dart';
 import 'package:driver_app/features/trip/presentation/active_trip_screen.dart';
 import 'package:driver_app/features/trip/presentation/trip_complete_screen.dart';
 import 'package:driver_app/features/auth/auth.dart';
@@ -31,7 +30,12 @@ class _MainShellState extends ConsumerState<MainShell> {
       final trip = tripState.currentTrip!;
       switch (tripState.status) {
         case TripStatus.offered:
-          return JobOfferScreen(trip: trip);
+          final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
+          final encodedDropoff = Uri.encodeComponent(trip.dropoffAddress);
+          return DriverWebviewScreen(
+            url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}',
+            title: 'New Job Offer',
+          );
         case TripStatus.enRouteToPickup:
         case TripStatus.arrived:
         case TripStatus.onTrip:

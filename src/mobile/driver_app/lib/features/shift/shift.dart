@@ -52,11 +52,13 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         },
       );
     }
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => debugPrint('[Dio/Shift] $obj'),
-    ));
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => debugPrint('[Dio/Shift] $obj'),
+      ));
+    }
   }
 
   Future<void> goOnline() async {

@@ -60,11 +60,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         },
       );
     }
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => debugPrint('[Dio/Auth] $obj'),
-    ));
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => debugPrint('[Dio/Auth] $obj'),
+      ));
+    }
     _tryAutoLogin();
   }
 

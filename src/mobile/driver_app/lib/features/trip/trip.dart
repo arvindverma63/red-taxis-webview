@@ -65,11 +65,13 @@ class TripNotifier extends StateNotifier<TripState> {
         },
       );
     }
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => debugPrint('[Dio/Trip] $obj'),
-    ));
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => debugPrint('[Dio/Trip] $obj'),
+      ));
+    }
     // Listen to shiftProvider to start/stop polling
     _ref.listen<ShiftState>(shiftProvider, (previous, next) {
       if (next.status == ShiftStatus.online) {

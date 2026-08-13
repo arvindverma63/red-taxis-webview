@@ -136,9 +136,9 @@ class TripCompleteScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                         ),
-                        child: Column(
+                        child: const Column(
                           children: [
-                            const Row(
+                            Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.credit_card, color: Colors.blue),
@@ -153,8 +153,8 @@ class TripCompleteScreen extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
+                            SizedBox(height: 8),
+                            Text(
                               'Payment is handled via Card/Account. Do NOT collect cash from the customer.',
                               textAlign: TextAlign.center,
                               style: TextStyle(

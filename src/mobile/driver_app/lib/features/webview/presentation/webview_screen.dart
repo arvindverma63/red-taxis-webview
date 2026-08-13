@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:driver_app/features/trip/trip.dart';
 
-class DriverWebviewScreen extends StatefulWidget {
+class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;
   final String title;
 
@@ -17,10 +19,10 @@ class DriverWebviewScreen extends StatefulWidget {
   });
 
   @override
-  State<DriverWebviewScreen> createState() => _DriverWebviewScreenState();
+  ConsumerState<DriverWebviewScreen> createState() => _DriverWebviewScreenState();
 }
 
-class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
+class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   WebViewController? _controller;
   bool _isLoading = true;
 
@@ -53,6 +55,17 @@ class _DriverWebviewScreenState extends State<DriverWebviewScreen> {
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..enableZoom(false)
         ..clearCache()
+        ..addJavaScriptChannel(
+          'FlutterChannel',
+          onMessageReceived: (JavaScriptMessage message) {
+            debugPrint("FlutterChannel message received: ${message.message}");
+            if (message.message == 'job_accepted') {
+              ref.read(tripProvider.notifier).acceptJob();
+            } else if (message.message == 'job_rejected') {
+              ref.read(tripProvider.notifier).rejectJob();
+            }
+          },
+        )
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (String url) {

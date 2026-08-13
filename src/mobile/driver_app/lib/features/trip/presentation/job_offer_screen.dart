@@ -247,7 +247,7 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                                     Container(
                                       width: 2,
                                       height: 50,
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         color: Colors.grey,
                                       ),
                                     ),
