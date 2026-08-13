@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:driver_app/core/config/constants.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/features/webview/presentation/webview_screen.dart';
+import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
-import 'package:driver_app/features/shift/shift.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -73,7 +73,6 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final tripState = ref.watch(tripProvider);
     final authState = ref.watch(authProvider);
-    final shift = ref.watch(shiftProvider);
     final token = authState.token ?? '';
 
     // If there is an active booking, overlay the corresponding trip screen
@@ -119,7 +118,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard', title: 'Red Taxis Dashboard'),
+          const DriverDashboardView(),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
