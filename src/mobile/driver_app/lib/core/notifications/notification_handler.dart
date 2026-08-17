@@ -97,7 +97,15 @@ class NotificationNavigationHandler {
       }
     }
 
-    debugPrint("NotificationNavigationHandler: notificationType='$notificationType', deepLink='$deepLink', bookingId='$bookingId'");
+    final guid = (data['notificationId'] ??
+            data['notification_id'] ??
+            data['guid'] ??
+            data['Guid'] ??
+            '')
+        .toString()
+        .trim();
+
+    debugPrint("NotificationNavigationHandler: notificationType='$notificationType', deepLink='$deepLink', bookingId='$bookingId', guid='$guid'");
 
     // Check for Job Offer / Booking Allocation payload
     final isBookingOffer = notificationType.contains('booking') ||
@@ -116,11 +124,13 @@ class NotificationNavigationHandler {
       final passenger = data['passengerName'] ?? data['passenger'] ?? 'Passenger';
       final notes = data['notes'] ?? '';
 
-      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId'");
+      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId', guid='$guid'");
       targetRef.read(tripProvider.notifier).fetchAndOfferJob(
             bookingId,
+            guid: guid,
             fallbackDetails: TripDetails(
               id: bookingId,
+              guid: guid,
               pickupAddress: pickup.toString(),
               dropoffAddress: dropoff.toString(),
               fare: fare,

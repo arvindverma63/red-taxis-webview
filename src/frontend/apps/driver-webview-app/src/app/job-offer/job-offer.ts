@@ -22,8 +22,6 @@ interface JobDetails {
   imports: [CommonModule],
   template: `
     <div class="light-container">
-      <!-- Ambient map backdrop overlay handled by container CSS -->
-      
       <!-- Bottom Sheet Drawer -->
       <div class="bottom-sheet" *ngIf="job">
         <!-- Header Grabber Bar -->
@@ -133,7 +131,7 @@ interface JobDetails {
 
         <!-- Slider and Action Buttons at the very bottom -->
         <div class="action-footer">
-          <!-- Slide to Accept widget with tap support -->
+          <!-- Slide / Tap to Accept widget -->
           <div class="slider-container" #slider (click)="onSliderClick($event)">
             <div class="slider-bg-text">{{ isSubmitting ? 'ACCEPTING BOOKING...' : 'SLIDE TO ACCEPT' }}</div>
             <div 
@@ -161,13 +159,12 @@ interface JobDetails {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end; /* Aligns sheet to the very bottom */
+      justify-content: flex-end;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
     }
 
-    /* Ambient glassmorphism overlay on top of map background */
     .light-container::before {
       content: '';
       position: absolute;
@@ -177,14 +174,13 @@ interface JobDetails {
       z-index: 1;
     }
 
-    /* Bottom Sheet Container */
     .bottom-sheet {
       position: relative;
       z-index: 2;
       background-color: #FFFFFF;
       border-radius: 28px 28px 0 0;
       box-shadow: 0 -12px 36px rgba(0,0,0,0.12);
-      padding: 16px 20px 48px 20px; /* Safe padding for system nav */
+      padding: 16px 20px 48px 20px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -205,7 +201,6 @@ interface JobDetails {
       margin-bottom: 2px;
     }
 
-    /* Ticket Card layout */
     .details-card {
       background-color: #FFFFFF;
       border-radius: 20px;
@@ -241,7 +236,6 @@ interface JobDetails {
       line-height: 1.1;
     }
 
-    /* Professional embedded circular timer */
     .circle-timer {
       position: relative;
       width: 64px;
@@ -259,7 +253,7 @@ interface JobDetails {
     }
 
     .progress-ring-circle {
-      stroke-dasharray: 172.78; /* 2 * PI * r (r=27.5) */
+      stroke-dasharray: 172.78;
       transition: stroke-dashoffset 0.1s linear;
     }
 
@@ -306,7 +300,8 @@ interface JobDetails {
     }
 
     .payment-badge.card,
-    .payment-badge.account {
+    .payment-badge.account,
+    .payment-badge.rank {
       background-color: rgba(33, 150, 243, 0.08);
       color: #1565C0;
       border: 1px solid rgba(33, 150, 243, 0.15);
@@ -318,7 +313,6 @@ interface JobDetails {
       border: 1px solid #E4E7EB;
     }
 
-    /* Ticket Tear line */
     .ticket-stub-line {
       display: flex;
       align-items: center;
@@ -356,7 +350,6 @@ interface JobDetails {
       height: 1px;
     }
 
-    /* Ticket Body */
     .ticket-body {
       padding: 14px 20px 16px 20px;
       display: flex;
@@ -364,7 +357,6 @@ interface JobDetails {
       gap: 12px;
     }
 
-    /* Info Grid */
     .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -392,7 +384,6 @@ interface JobDetails {
       color: #37474F;
     }
 
-    /* Notes Box */
     .notes-box {
       background-color: #FAFBFD;
       border: 1px solid #E8EFF5;
@@ -411,7 +402,6 @@ interface JobDetails {
       line-height: 1.4;
     }
 
-    /* Route Timeline */
     .route-section {
       display: flex;
       gap: 14px;
@@ -495,7 +485,6 @@ interface JobDetails {
       line-height: 1.4;
     }
 
-    /* Action Footer & Slider Accept layout */
     .action-footer {
       display: flex;
       flex-direction: column;
@@ -504,7 +493,6 @@ interface JobDetails {
       align-items: center;
     }
 
-    /* Premium Slide to Accept Container */
     .slider-container {
       position: relative;
       width: 100%;
@@ -559,7 +547,6 @@ interface JobDetails {
       background-color: #1B5E20;
     }
 
-    /* Arrow visual using CSS border */
     .thumb-arrow {
       width: 0; 
       height: 0; 
@@ -594,12 +581,12 @@ interface JobDetails {
 })
 export class JobOfferComponent implements OnInit, OnDestroy {
   secondsRemaining = 15;
-  strokeDasharray = 172.78; // 2 * PI * 27.5
+  strokeDasharray = 172.78;
   job: JobDetails | null = null;
   jobIdFromUrl: string = '';
+  guid: string = '';
   isSubmitting = false;
   
-  // Custom slide variables
   sliderPosition = 0;
   isDragging = false;
   private startX = 0;
@@ -616,10 +603,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Attempt to parse query parameters from the URL
     this.route.queryParams.subscribe(params => {
       const id = params['jobId'] || '';
       this.jobIdFromUrl = id.toString();
+      this.guid = (params['guid'] || '').toString();
       const fareVal = parseFloat(params['fare'] || '0');
       const pickup = params['pickup'] ? decodeURIComponent(params['pickup']) : '';
       const dropoff = params['dropoff'] ? decodeURIComponent(params['dropoff']) : '';
@@ -643,7 +630,6 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         };
         this.cdr.detectChanges();
       } else {
-        // Fallback: Fetch active job offers directly from the API
         this.fetchJobFromApi();
       }
     });
@@ -651,25 +637,82 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.startTimer();
   }
 
+  private mapApiJobToJobDetails(item: any): JobDetails {
+    let paymentType = item.paymentType || item.paymentMethod || '';
+    if (!paymentType && item.scope !== undefined && item.scope !== null) {
+      const scope = parseInt(item.scope.toString()) || 0;
+      switch (scope) {
+        case 0: paymentType = 'Cash'; break;
+        case 1: paymentType = 'Account'; break;
+        case 2: paymentType = 'Rank'; break;
+        case 4: paymentType = 'Card'; break;
+        default: paymentType = 'Cash'; break;
+      }
+    }
+    if (!paymentType) paymentType = 'Cash';
+
+    return {
+      id: (item.bookingId || item.bookingNo || item.id || this.jobIdFromUrl || '').toString(),
+      fare: parseFloat((item.price || item.fare || item.amount || item.driverPrice || '0.00').toString()),
+      pickup: item.pickupAddress || item.pickup || item.from || 'Pickup location',
+      dropoff: item.destinationAddress || item.dropoff || item.dropoffAddress || item.to || 'Dropoff destination',
+      paymentType: paymentType,
+      vehicleType: item.vehicleType || item.vehicle || 'Standard Saloon',
+      passenger: item.passengerName || item.passenger || item.customerName || 'Passenger',
+      notes: item.details || item.notes || item.comment || item.specialRequirements || ''
+    };
+  }
+
   fetchJobFromApi(): void {
+    // 1. Try FindById?bookingId=
+    if (this.jobIdFromUrl) {
+      this.driverService.getJobById(this.jobIdFromUrl).subscribe({
+        next: (data) => {
+          if (data && (data.bookingId || data.pickupAddress || data.price)) {
+            this.job = this.mapApiJobToJobDetails(data);
+            if (data.guid && !this.guid) this.guid = data.guid;
+            this.cdr.detectChanges();
+          } else {
+            this.fetchViaRetrieveJobOfferOrOffers();
+          }
+        },
+        error: () => this.fetchViaRetrieveJobOfferOrOffers()
+      });
+    } else {
+      this.fetchViaRetrieveJobOfferOrOffers();
+    }
+  }
+
+  private fetchViaRetrieveJobOfferOrOffers(): void {
+    // 2. Try RetrieveJobOffer?guid=
+    if (this.guid) {
+      this.driverService.retrieveJobOffer(this.guid).subscribe({
+        next: (data) => {
+          if (data && (data.bookingId || data.pickupAddress || data.price)) {
+            this.job = this.mapApiJobToJobDetails(data);
+            this.cdr.detectChanges();
+          } else {
+            this.fetchViaGetJobOffers();
+          }
+        },
+        error: () => this.fetchViaGetJobOffers()
+      });
+    } else {
+      this.fetchViaGetJobOffers();
+    }
+  }
+
+  private fetchViaGetJobOffers(): void {
+    // 3. Try GetJobOffers
     this.driverService.getJobOffers().subscribe({
       next: (offers) => {
         const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
         if (Array.isArray(data) && data.length > 0) {
           const matching = data.find((j: any) => (j.bookingNo || j.bookingId || j.id || '').toString() === this.jobIdFromUrl) || data[0];
-          this.job = {
-            id: (matching.bookingNo || matching.bookingId || matching.id || this.jobIdFromUrl || '').toString(),
-            fare: parseFloat((matching.fare || matching.amount || matching.price || matching.driverPrice || '0.00').toString()),
-            pickup: matching.pickupAddress || matching.pickup || matching.from || 'Pickup location',
-            dropoff: matching.destinationAddress || matching.dropoff || matching.dropoffAddress || matching.to || 'Dropoff destination',
-            paymentType: matching.paymentType || matching.paymentMethod || 'Cash',
-            vehicleType: matching.vehicleType || matching.vehicle || 'Standard Saloon',
-            passenger: matching.passengerName || matching.passenger || matching.customerName || 'Passenger',
-            notes: matching.notes || matching.comment || matching.specialRequirements || ''
-          };
+          this.job = this.mapApiJobToJobDetails(matching);
+          if (matching.guid && !this.guid) this.guid = matching.guid;
           this.cdr.detectChanges();
         } else if (this.jobIdFromUrl) {
-          // If empty list, create a clean initial container with the booking ID
           if (!this.job) {
             this.job = {
               id: this.jobIdFromUrl,
@@ -686,7 +729,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        console.error('fetchJobFromApi error:', err);
+        console.error('fetchViaGetJobOffers error:', err);
       }
     });
   }
@@ -717,8 +760,8 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     
     if (this.sliderEl) {
       const containerWidth = this.sliderEl.nativeElement.clientWidth;
-      const thumbWidth = 48; // width of thumb
-      this.maxDragRange = containerWidth - thumbWidth - 8; // padding margin
+      const thumbWidth = 48;
+      this.maxDragRange = containerWidth - thumbWidth - 8;
     }
 
     if (event instanceof MouseEvent) {
@@ -743,7 +786,6 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.sliderPosition = position;
     this.cdr.detectChanges();
     
-    // Check if slider is dragged to threshold (85%+)
     if (this.maxDragRange > 0 && this.sliderPosition >= this.maxDragRange * 0.85) {
       this.onDragEnd(event);
       this.accept();
@@ -800,14 +842,13 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
     if (jobId && !jobId.startsWith('sim-')) {
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000).subscribe({
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, this.guid).subscribe({
         next: (res) => {
           console.log('replyJobOffer success:', res);
           this.notifyNativeApp('job_accepted');
         },
         error: (err) => {
           console.error('replyJobOffer error:', err);
-          // Always notify native Flutter bridge so driver transitions immediately without hang
           this.notifyNativeApp('job_accepted');
         }
       });
@@ -824,7 +865,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
     if (jobId && !jobId.startsWith('sim-')) {
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001).subscribe({
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
         next: (res) => {
           console.log('replyJobOffer decline success:', res);
           this.notifyNativeApp('job_rejected');
@@ -844,7 +885,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     const jobId = this.job?.id || this.jobIdFromUrl || '';
     if (jobId && !jobId.startsWith('sim-')) {
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001).subscribe({
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
         next: () => {
           this.notifyNativeApp('job_rejected');
         },

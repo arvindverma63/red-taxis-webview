@@ -168,9 +168,33 @@ export class DriverService {
     );
   }
 
-  replyJobOffer(jobId: number, response: number): Observable<any> {
-    console.log(`API Webview Request: GET /api/DriverApp/JobOfferReply?jobno=${jobId}&response=${response}`);
-    return this.http.get(`${this.baseUrl}/api/DriverApp/JobOfferReply?jobno=${jobId}&response=${response}`, { headers: this.getHeaders() }).pipe(
+  getJobById(bookingId: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/Bookings/FindById?bookingId=${bookingId}`);
+    return this.http.get(`${this.baseUrl}/api/Bookings/FindById?bookingId=${bookingId}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/Bookings/FindById success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/Bookings/FindById failed:', err)
+      })
+    );
+  }
+
+  retrieveJobOffer(guid: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/DriverApp/RetrieveJobOffer?guid=${guid}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/RetrieveJobOffer?guid=${guid}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/RetrieveJobOffer success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/RetrieveJobOffer failed:', err)
+      })
+    );
+  }
+
+  replyJobOffer(jobId: number, response: number, guid: string = ''): Observable<any> {
+    let url = `${this.baseUrl}/api/DriverApp/JobOfferReply?jobno=${jobId}&response=${response}`;
+    if (guid) {
+      url += `&guid=${encodeURIComponent(guid)}`;
+    }
+    console.log(`API Webview Request: GET ${url}`);
+    return this.http.get(url, { headers: this.getHeaders() }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: GET /api/DriverApp/JobOfferReply success:', res),
         error: (err) => console.error('API Webview Error: GET /api/DriverApp/JobOfferReply failed:', err)

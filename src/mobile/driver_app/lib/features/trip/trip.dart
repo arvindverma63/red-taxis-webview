@@ -11,6 +11,7 @@ enum TripStatus { idle, offered, enRouteToPickup, arrived, onTrip, complete }
 
 class TripDetails {
   final String id;
+  final String guid;
   final String pickupAddress;
   final String dropoffAddress;
   final double fare;
@@ -21,6 +22,7 @@ class TripDetails {
 
   const TripDetails({
     required this.id,
+    this.guid = '',
     required this.pickupAddress,
     required this.dropoffAddress,
     required this.fare,
@@ -112,25 +114,51 @@ class TripNotifier extends StateNotifier<TripState> {
       if (responseData['data'] is List) return responseData['data'];
       if (responseData['jobs'] is List) return responseData['jobs'];
       if (responseData['offers'] is List) return responseData['offers'];
-      if (responseData['bookingNo'] != null || responseData['id'] != null) {
+      if (responseData['bookingNo'] != null || responseData['bookingId'] != null || responseData['id'] != null) {
         return [responseData];
       }
     }
     return [];
   }
 
-  TripDetails _mapJobToDetails(Map<String, dynamic> job, String fallbackId) {
-    final fare = double.tryParse((job['fare'] ?? job['amount'] ?? job['price'] ?? job['driverPrice'] ?? '0.0').toString()) ?? 0.0;
+  TripDetails _mapJobToDetails(Map<String, dynamic> job, String fallbackId, {String fallbackGuid = ''}) {
+    final fare = double.tryParse((job['price'] ?? job['fare'] ?? job['amount'] ?? job['driverPrice'] ?? '0.0').toString()) ?? 0.0;
     final pickup = (job['pickupAddress'] ?? job['pickup'] ?? job['from'] ?? 'Pickup address').toString();
     final dropoff = (job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? job['to'] ?? 'Dropoff destination').toString();
-    final paymentType = (job['paymentType'] ?? job['paymentMethod'] ?? 'Cash').toString();
-    final id = (job['bookingNo'] ?? job['bookingId'] ?? job['id'] ?? fallbackId).toString();
+    
+    // Payment scope mapping
+    String paymentType = (job['paymentType'] ?? job['paymentMethod'] ?? '').toString();
+    if (paymentType.isEmpty && job['scope'] != null) {
+      final scope = int.tryParse(job['scope'].toString()) ?? 0;
+      switch (scope) {
+        case 0:
+          paymentType = 'Cash';
+          break;
+        case 1:
+          paymentType = 'Account';
+          break;
+        case 2:
+          paymentType = 'Rank';
+          break;
+        case 4:
+          paymentType = 'Card';
+          break;
+        default:
+          paymentType = 'Cash';
+          break;
+      }
+    }
+    if (paymentType.isEmpty) paymentType = 'Cash';
+
+    final id = (job['bookingId'] ?? job['bookingNo'] ?? job['id'] ?? fallbackId).toString();
+    final guid = (job['guid'] ?? job['notificationId'] ?? fallbackGuid).toString();
     final vehicleType = (job['vehicleType'] ?? job['vehicle'] ?? 'Standard Saloon').toString();
     final passenger = (job['passengerName'] ?? job['passenger'] ?? job['customerName'] ?? 'Passenger').toString();
-    final notes = (job['notes'] ?? job['comment'] ?? job['specialRequirements'] ?? '').toString();
+    final notes = (job['details'] ?? job['notes'] ?? job['comment'] ?? job['specialRequirements'] ?? '').toString();
 
     return TripDetails(
       id: id,
+      guid: guid,
       pickupAddress: pickup,
       dropoffAddress: dropoff,
       fare: fare,
@@ -176,10 +204,11 @@ class TripNotifier extends StateNotifier<TripState> {
     state = TripState(status: TripStatus.offered, currentTrip: trip);
   }
 
-  Future<void> fetchAndOfferJob(String bookingId, {TripDetails? fallbackDetails}) async {
+  Future<void> fetchAndOfferJob(String bookingId, {String guid = '', TripDetails? fallbackDetails}) async {
     final initialTrip = fallbackDetails ??
         TripDetails(
           id: bookingId,
+          guid: guid,
           pickupAddress: 'Pickup location',
           dropoffAddress: 'Dropoff destination',
           fare: 0.0,
@@ -194,26 +223,63 @@ class TripNotifier extends StateNotifier<TripState> {
     final token = auth.token;
     if (token == null) return;
 
-    try {
-      final response = await _dio.get(
-        '/api/DriverApp/GetJobOffers',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
+    Map<String, dynamic>? jobData;
 
-      final List<dynamic> data = _parseJobsList(response.data);
-      if (data.isNotEmpty) {
-        final matchingJob = data.firstWhere(
-          (j) => (j['bookingNo'] ?? j['bookingId'] ?? j['id'] ?? '').toString() == bookingId,
-          orElse: () => data.first,
+    // 1. Try FindById?bookingId=
+    if (bookingId.isNotEmpty) {
+      try {
+        final res = await _dio.get(
+          '/api/Bookings/FindById',
+          queryParameters: {'bookingId': bookingId},
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
         );
-        final jobMap = Map<String, dynamic>.from(matchingJob);
-        final details = _mapJobToDetails(jobMap, bookingId);
-        offerJob(details);
+        if (res.data != null && res.data is Map) {
+          jobData = Map<String, dynamic>.from(res.data);
+        }
+      } catch (e) {
+        debugPrint("[TripNotifier] FindById error: $e");
       }
-    } catch (e) {
-      debugPrint("[TripNotifier] fetchAndOfferJob API error: $e");
+    }
+
+    // 2. Try RetrieveJobOffer?guid=
+    if (jobData == null && guid.isNotEmpty) {
+      try {
+        final res = await _dio.get(
+          '/api/DriverApp/RetrieveJobOffer',
+          queryParameters: {'guid': guid},
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+        if (res.data != null && res.data is Map) {
+          jobData = Map<String, dynamic>.from(res.data);
+        }
+      } catch (e) {
+        debugPrint("[TripNotifier] RetrieveJobOffer error: $e");
+      }
+    }
+
+    // 3. Try GetJobOffers
+    if (jobData == null) {
+      try {
+        final res = await _dio.get(
+          '/api/DriverApp/GetJobOffers',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+        final list = _parseJobsList(res.data);
+        if (list.isNotEmpty) {
+          final matching = list.firstWhere(
+            (j) => (j['bookingNo'] ?? j['bookingId'] ?? j['id'] ?? '').toString() == bookingId,
+            orElse: () => list.first,
+          );
+          jobData = Map<String, dynamic>.from(matching);
+        }
+      } catch (e) {
+        debugPrint("[TripNotifier] GetJobOffers error: $e");
+      }
+    }
+
+    if (jobData != null) {
+      final details = _mapJobToDetails(jobData, bookingId, fallbackGuid: guid);
+      offerJob(details);
     }
   }
 
@@ -222,24 +288,30 @@ class TripNotifier extends StateNotifier<TripState> {
       final auth = _ref.read(authProvider);
       final token = auth.token;
       final jobId = state.currentTrip!.id;
+      final guid = state.currentTrip!.guid;
 
       // Update state immediately so UI transitions instantly
       state = state.copyWith(status: TripStatus.enRouteToPickup);
 
       if (!_isMockTrip(jobId)) {
         try {
-          await _dio.get(
+          final query = <String, dynamic>{
+            'jobno': int.tryParse(jobId) ?? 0,
+            'response': 2000, // AppJobOffer.Accept
+          };
+          if (guid.isNotEmpty) {
+            query['guid'] = guid;
+          }
+          final res = await _dio.get(
             '/api/DriverApp/JobOfferReply',
-            queryParameters: {
-              'jobno': int.tryParse(jobId) ?? 0,
-              'response': 2000, // AppJobOffer.Accept
-            },
+            queryParameters: query,
             options: Options(
               headers: token != null ? {'Authorization': 'Bearer $token'} : null,
             ),
           );
+          debugPrint("[TripNotifier] JobOfferReply Accept response: ${res.data}");
         } catch (e) {
-          debugPrint("[TripNotifier] JobOfferReply API error: $e");
+          debugPrint("[TripNotifier] JobOfferReply Accept API error: $e");
         }
       }
     }
@@ -250,25 +322,31 @@ class TripNotifier extends StateNotifier<TripState> {
       final auth = _ref.read(authProvider);
       final token = auth.token;
       final jobId = state.currentTrip!.id;
+      final guid = state.currentTrip!.guid;
+
+      state = const TripState(status: TripStatus.idle);
 
       if (!_isMockTrip(jobId)) {
         try {
-          await _dio.get(
+          final query = <String, dynamic>{
+            'jobno': int.tryParse(jobId) ?? 0,
+            'response': 2001, // AppJobOffer.Reject
+          };
+          if (guid.isNotEmpty) {
+            query['guid'] = guid;
+          }
+          final res = await _dio.get(
             '/api/DriverApp/JobOfferReply',
-            queryParameters: {
-              'jobno': int.tryParse(jobId) ?? 0,
-              'response': 2001, // AppJobOffer.Reject
-            },
+            queryParameters: query,
             options: Options(
               headers: token != null ? {'Authorization': 'Bearer $token'} : null,
             ),
           );
+          debugPrint("[TripNotifier] JobOfferReply Reject response: ${res.data}");
         } catch (e) {
-          // Proceed
+          debugPrint("[TripNotifier] JobOfferReply Reject API error: $e");
         }
       }
-
-      state = const TripState(status: TripStatus.idle);
     }
   }
 

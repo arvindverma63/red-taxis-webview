@@ -50,8 +50,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           final encodedVehicle = Uri.encodeComponent(trip.vehicleType);
           final encodedPassenger = Uri.encodeComponent(trip.passenger);
           final encodedNotes = Uri.encodeComponent(trip.notes);
+          final encodedGuid = Uri.encodeComponent(trip.guid);
           return DriverWebviewScreen(
-            url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
+            url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
             title: 'New Job Offer',
             hideAppBar: true,
           );
