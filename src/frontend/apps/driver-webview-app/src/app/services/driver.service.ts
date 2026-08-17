@@ -41,6 +41,10 @@ export class DriverService {
     return null;
   }
 
+  public getToken(): string | null {
+    return this.getTokenFromUrl() || localStorage.getItem('auth_token');
+  }
+
   getProfile(): Observable<any> {
     console.log('API Webview Request: GET /api/DriverApp/GetProfile');
     return this.http.get(`${this.baseUrl}/api/DriverApp/GetProfile`, { headers: this.getHeaders() }).pipe(
