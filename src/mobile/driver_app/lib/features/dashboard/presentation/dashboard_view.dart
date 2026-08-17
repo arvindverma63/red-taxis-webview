@@ -157,13 +157,6 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Dashboard',
-            onPressed: () {
-              _controller?.reload();
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.notifications_none_outlined),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(

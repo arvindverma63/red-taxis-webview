@@ -46,24 +46,20 @@ interface DashTotals {
       (touchmove)="onTouchMove($event)"
       (touchend)="onTouchEnd()"
     >
-      <!-- Pull-to-Refresh Indicator -->
+      <!-- Floating Native Pull-to-Refresh Circular Spinner -->
       <div 
-        class="pull-refresh-bar"
+        class="floating-refresh-spinner"
         [class.visible]="pullDistance > 0 || isRefreshing"
-        [style.height.px]="isRefreshing ? 48 : pullDistance"
+        [style.transform]="'translate(-50%, ' + (isRefreshing ? '20px' : (pullDistance - 45) + 'px)')"
+        [style.opacity]="isRefreshing ? 1 : (pullDistance / 50)"
       >
-        <div class="pull-refresh-content">
-          <span 
-            class="material-symbols-outlined refresh-icon"
-            [class.spinning]="isRefreshing"
-            [style.transform]="'rotate(' + (pullDistance * 4) + 'deg)'"
-          >
-            refresh
-          </span>
-          <span class="refresh-label">
-            {{ isRefreshing ? 'Refreshing live data...' : (pullDistance > 55 ? 'Release to refresh' : 'Pull down to refresh') }}
-          </span>
-        </div>
+        <span 
+          class="material-symbols-outlined native-spin-icon"
+          [class.spinning]="isRefreshing"
+          [style.transform]="'rotate(' + (pullDistance * 5) + 'deg)'"
+        >
+          refresh
+        </span>
       </div>
 
       <!-- 1. Active Booking Card (If there is an active/upcoming booking) -->
@@ -224,12 +220,7 @@ interface DashTotals {
 
       <!-- 5. Recent Completed Trips List Card -->
       <div class="dash-card trips-list-card">
-        <div class="card-header-with-action">
-          <h3 class="section-title">Recent Completed Trips</h3>
-          <button class="refresh-icon-btn" (click)="triggerRefresh()" title="Refresh Dashboard">
-            <span class="material-symbols-outlined" [class.spinning]="isRefreshing">refresh</span>
-          </button>
-        </div>
+        <h3 class="section-title">Recent Completed Trips</h3>
         
         <div *ngIf="isLoading && !isRefreshing" class="shimmer-placeholder list-shimmer"></div>
 
@@ -268,47 +259,35 @@ interface DashTotals {
       position: relative;
     }
 
-    /* Pull to Refresh Indicator Bar */
-    .pull-refresh-bar {
-      width: 100%;
-      height: 0;
-      overflow: hidden;
+    /* Floating Native Material Pull-to-Refresh Circular Spinner */
+    .floating-refresh-spinner {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: transparent;
-      transition: height 0.15s ease-out;
+      z-index: 9999;
+      pointer-events: none;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
     }
-    .pull-refresh-bar.visible {
-      opacity: 1;
-    }
-    .pull-refresh-content {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: #FFFFFF;
-      padding: 6px 14px;
-      border-radius: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-      border: 1px solid #E0E2EC;
-    }
-    .refresh-icon {
-      font-size: 20px;
+    .native-spin-icon {
+      font-size: 24px;
       color: #CD1A21;
       display: inline-block;
-      transition: transform 0.1s linear;
+      transition: transform 0.05s linear;
     }
-    .refresh-icon.spinning {
-      animation: spin 0.8s linear infinite;
+    .native-spin-icon.spinning {
+      animation: nativeSpin 0.75s linear infinite;
     }
-    @keyframes spin {
+    @keyframes nativeSpin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
-    }
-    .refresh-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #455A64;
     }
 
     /* Common Card Styling */
