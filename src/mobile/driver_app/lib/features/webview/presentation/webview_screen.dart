@@ -255,6 +255,14 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                     ),
               title: Text(widget.title),
               centerTitle: false,
+              actions: [
+                if (!kIsWeb)
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh',
+                    onPressed: () => _controller?.reload(),
+                  ),
+              ],
             ),
       body: PopScope(
         canPop: false,
