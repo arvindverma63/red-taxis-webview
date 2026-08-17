@@ -6,19 +6,34 @@ import { DriverService } from '../services/driver.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+interface ViaStop {
+  address: string;
+  postCode?: string;
+}
+
 interface Booking {
   id: string;
   pickup: string;
+  pickupPostCode?: string;
   dropoff: string;
+  destinationPostCode?: string;
+  vias?: ViaStop[];
   time: string;
   date: string;
+  fullDateTimeStr?: string;
   fare: number;
   paymentType: string;
   status: 'Completed' | 'Upcoming' | 'Cancelled';
   passenger: string;
+  phoneNumber?: string;
+  email?: string;
+  passengerCount?: number;
   notes?: string;
   vehicleType: string;
-  expanded?: boolean;
+  durationMinutes?: number;
+  mileageText?: string;
+  bookedByName?: string;
+  accountNumber?: string;
 }
 
 @Component({
@@ -62,8 +77,7 @@ interface Booking {
         <mat-card 
           *ngFor="let booking of filteredBookings" 
           class="booking-mat-card" 
-          [class.expanded]="booking.expanded"
-          (click)="toggleExpand(booking)"
+          (click)="openDetails(booking)"
         >
           <!-- Card Top Header -->
           <div class="card-top">
@@ -95,6 +109,17 @@ interface Booking {
                 </div>
               </div>
 
+              <!-- Via Stops Preview in Card -->
+              <div class="timeline-node via-node" *ngFor="let via of booking.vias; let i = index">
+                <span class="material-symbols-outlined node-icon via-icon">alt_route</span>
+                <div class="node-content">
+                  <div class="time-address">
+                    <span class="node-time-placeholder">Via {{ i + 1 }}</span>
+                    <span class="node-address" [title]="via.address">{{ via.address }}</span>
+                  </div>
+                </div>
+              </div>
+
               <div class="timeline-node">
                 <span class="material-symbols-outlined node-icon red-icon">location_on</span>
                 <div class="node-content">
@@ -109,7 +134,7 @@ interface Booking {
 
           <mat-divider></mat-divider>
 
-          <!-- Card Bottom Details & Toggles -->
+          <!-- Card Bottom Details & Clickable Prompt -->
           <div class="card-bottom">
             <span class="status-badge" [ngClass]="booking.status.toLowerCase()">
               {{ booking.status }}
@@ -121,34 +146,158 @@ interface Booking {
               {{ booking.date }}
             </span>
             <span class="spacer"></span>
-            <span class="material-symbols-outlined expand-chevron" [class.rotated]="booking.expanded">
-              expand_more
-            </span>
-          </div>
-
-          <!-- Expanded Details Section -->
-          <div class="expanded-details" *ngIf="booking.expanded" (click)="$event.stopPropagation()">
-            <mat-divider></mat-divider>
-            <div class="details-grid">
-              <div class="detail-cell">
-                <span class="detail-lbl">Passenger</span>
-                <span class="detail-val">{{ booking.passenger }}</span>
-              </div>
-              <div class="detail-cell">
-                <span class="detail-lbl">Vehicle Class</span>
-                <span class="detail-val">{{ booking.vehicleType }}</span>
-              </div>
-              <div class="detail-cell">
-                <span class="detail-lbl">Scheduled Date</span>
-                <span class="detail-val">{{ booking.date }} {{ booking.time }}</span>
-              </div>
-            </div>
-            <div class="detail-notes" *ngIf="booking.notes && booking.notes.trim().length > 0">
-              <span class="detail-lbl">Driver Notes</span>
-              <p class="notes-txt">"{{ booking.notes }}"</p>
-            </div>
+            <span class="view-details-txt">View Details &rarr;</span>
           </div>
         </mat-card>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- FULL BOOKING DETAILS MODAL / BOTTOM SHEET                      -->
+      <!-- ============================================================== -->
+      <div class="modal-backdrop" *ngIf="selectedBooking" (click)="closeDetails()">
+        <div class="modal-sheet" (click)="$event.stopPropagation()">
+          <!-- Sheet Header -->
+          <div class="sheet-header">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-title-row">
+              <div>
+                <h3 class="sheet-passenger-title">{{ selectedBooking.passenger }}</h3>
+                <span class="sheet-booking-id">Booking ID: #{{ selectedBooking.id }}</span>
+              </div>
+              <button class="sheet-close-btn" (click)="closeDetails()">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div class="sheet-datetime-sub">
+              <span class="material-symbols-outlined sub-icon">schedule</span>
+              <span>{{ selectedBooking.fullDateTimeStr || (selectedBooking.date + ' at ' + selectedBooking.time) }}</span>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons: Call / SMS -->
+          <div class="sheet-quick-actions" *ngIf="selectedBooking.phoneNumber">
+            <a [href]="'tel:' + selectedBooking.phoneNumber" class="action-pill-btn call">
+              <span class="material-symbols-outlined">call</span>
+              <span>Call Passenger</span>
+            </a>
+            <a [href]="'sms:' + selectedBooking.phoneNumber" class="action-pill-btn sms">
+              <span class="material-symbols-outlined">chat</span>
+              <span>Send SMS</span>
+            </a>
+          </div>
+
+          <!-- Modal Scrollable Content -->
+          <div class="sheet-body-scroll">
+            <!-- Route Cards -->
+            <div class="detail-section">
+              <span class="section-label">JOURNEY ROUTE</span>
+              
+              <!-- Pickup -->
+              <div class="location-detail-card pickup">
+                <div class="loc-badge-icon green">
+                  <span class="material-symbols-outlined">my_location</span>
+                </div>
+                <div class="loc-info">
+                  <span class="loc-type green-txt">PICKUP LOCATION</span>
+                  <p class="loc-address">{{ selectedBooking.pickup }}</p>
+                  <span class="loc-postcode" *ngIf="selectedBooking.pickupPostCode">{{ selectedBooking.pickupPostCode }}</span>
+                </div>
+              </div>
+
+              <!-- Vias -->
+              <div class="location-detail-card via" *ngFor="let via of selectedBooking.vias; let i = index">
+                <div class="loc-badge-icon yellow">
+                  <span class="material-symbols-outlined">alt_route</span>
+                </div>
+                <div class="loc-info">
+                  <span class="loc-type yellow-txt">VIA STOP {{ i + 1 }}</span>
+                  <p class="loc-address">{{ via.address }}</p>
+                  <span class="loc-postcode" *ngIf="via.postCode">{{ via.postCode }}</span>
+                </div>
+              </div>
+
+              <!-- Dropoff -->
+              <div class="location-detail-card dropoff">
+                <div class="loc-badge-icon red">
+                  <span class="material-symbols-outlined">location_on</span>
+                </div>
+                <div class="loc-info">
+                  <span class="loc-type red-txt">DESTINATION</span>
+                  <p class="loc-address">{{ selectedBooking.dropoff }}</p>
+                  <span class="loc-postcode" *ngIf="selectedBooking.destinationPostCode">{{ selectedBooking.destinationPostCode }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total Fare & Journey Metrics -->
+            <div class="detail-section">
+              <span class="section-label">FARE & METRICS</span>
+              <div class="metrics-grid">
+                <div class="metric-card">
+                  <span class="metric-lbl">TOTAL FARE</span>
+                  <span class="metric-val fare-val">£{{ selectedBooking.fare.toFixed(2) }}</span>
+                </div>
+                <div class="metric-card" *ngIf="selectedBooking.durationMinutes">
+                  <span class="metric-lbl">EST. DURATION</span>
+                  <span class="metric-val">{{ selectedBooking.durationMinutes }} mins</span>
+                </div>
+                <div class="metric-card" *ngIf="selectedBooking.mileageText">
+                  <span class="metric-lbl">EST. DISTANCE</span>
+                  <span class="metric-val">{{ selectedBooking.mileageText }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Booking Specifications Grid -->
+            <div class="detail-section">
+              <span class="section-label">BOOKING DETAILS</span>
+              <div class="info-list-card">
+                <div class="info-row">
+                  <span class="info-k">Payment Mode</span>
+                  <span class="info-v highlight-v">{{ selectedBooking.paymentType }}</span>
+                </div>
+                <div class="info-row" *ngIf="selectedBooking.accountNumber">
+                  <span class="info-k">Account Number</span>
+                  <span class="info-v">{{ selectedBooking.accountNumber }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-k">Booking Status</span>
+                  <span class="status-badge" [ngClass]="selectedBooking.status.toLowerCase()">{{ selectedBooking.status }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-k">Vehicle Class</span>
+                  <span class="info-v">{{ selectedBooking.vehicleType }}</span>
+                </div>
+                <div class="info-row" *ngIf="selectedBooking.passengerCount">
+                  <span class="info-k">Passenger Count</span>
+                  <span class="info-v">{{ selectedBooking.passengerCount }}</span>
+                </div>
+                <div class="info-row" *ngIf="selectedBooking.bookedByName">
+                  <span class="info-k">Booked By</span>
+                  <span class="info-v">{{ selectedBooking.bookedByName }}</span>
+                </div>
+                <div class="info-row" *ngIf="selectedBooking.email">
+                  <span class="info-k">Email</span>
+                  <span class="info-v">{{ selectedBooking.email }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Driver Notes / Instructions -->
+            <div class="detail-section" *ngIf="selectedBooking.notes && selectedBooking.notes.trim().length > 0">
+              <span class="section-label">DRIVER NOTES & INSTRUCTIONS</span>
+              <div class="notes-card">
+                <span class="material-symbols-outlined notes-icon">info</span>
+                <p class="notes-content">{{ selectedBooking.notes }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Close Action -->
+          <div class="sheet-footer">
+            <button class="sheet-dismiss-btn" (click)="closeDetails()">Close Details</button>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -159,6 +308,7 @@ interface Booking {
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
+      position: relative;
     }
 
     /* Single-Row Segmented Tab Bar */
@@ -323,6 +473,9 @@ interface Booking {
     .green-icon {
       color: #2E7D32;
     }
+    .yellow-icon, .via-icon {
+      color: #F57F17;
+    }
     .red-icon {
       color: #D32F2F;
     }
@@ -346,6 +499,9 @@ interface Booking {
     .node-time-placeholder {
       width: 44px;
       flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #74777F;
     }
     .node-address {
       font-size: 13px;
@@ -405,55 +561,10 @@ interface Booking {
     .spacer {
       flex: 1;
     }
-    .expand-chevron {
-      color: #74777F;
-      transition: transform 0.2s ease-in-out;
-    }
-    .expand-chevron.rotated {
-      transform: rotate(180deg);
-    }
-
-    /* Expanded Content */
-    .expanded-details {
-      background-color: #FFFFFF;
-      display: flex;
-      flex-direction: column;
-    }
-    .details-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 12px 16px;
-    }
-    .detail-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .detail-lbl {
-      font-size: 8px;
-      font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .detail-val {
-      font-size: 12px;
+    .view-details-txt {
+      font-size: 11px;
       font-weight: 700;
-      color: #1A1C1E;
-    }
-    .detail-notes {
-      padding: 0 16px 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .notes-txt {
-      margin: 0;
-      font-size: 12px;
-      color: #546E7A;
-      font-style: italic;
-      line-height: 1.4;
+      color: #D32F2F;
     }
 
     .empty-state {
@@ -491,6 +602,301 @@ interface Booking {
       border-radius: 20px;
       cursor: pointer;
     }
+
+    /* ============================================================== */
+    /* MODAL BOTTOM SHEET STYLES                                      */
+    /* ============================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-sheet {
+      background-color: #F8F9FA;
+      border-radius: 24px 24px 0 0;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-header {
+      padding: 12px 18px 12px 18px;
+      background-color: #FFFFFF;
+      border-bottom: 1px solid #E0E2EC;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sheet-grabber {
+      width: 36px;
+      height: 4px;
+      background-color: #CFD8DC;
+      border-radius: 2px;
+      align-self: center;
+      margin-bottom: 4px;
+    }
+    .sheet-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .sheet-passenger-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: #1A1C1E;
+    }
+    .sheet-booking-id {
+      font-size: 12px;
+      font-weight: 700;
+      color: #D32F2F;
+    }
+    .sheet-close-btn {
+      background: #F1F3F9;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #546E7A;
+    }
+    .sheet-datetime-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #74777F;
+    }
+    .sub-icon {
+      font-size: 16px;
+    }
+
+    .sheet-quick-actions {
+      display: flex;
+      gap: 10px;
+      padding: 10px 18px;
+      background-color: #FFFFFF;
+      border-bottom: 1px solid #E0E2EC;
+    }
+    .action-pill-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border-radius: 24px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .action-pill-btn.call {
+      background-color: rgba(76, 175, 80, 0.12);
+      color: #2E7D32;
+      border: 1px solid rgba(76, 175, 80, 0.25);
+    }
+    .action-pill-btn.sms {
+      background-color: rgba(33, 150, 243, 0.12);
+      color: #1565C0;
+      border: 1px solid rgba(33, 150, 243, 0.25);
+    }
+
+    .sheet-body-scroll {
+      padding: 14px 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .detail-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #90A4AE;
+      letter-spacing: 0.5px;
+    }
+
+    /* Location Cards */
+    .location-detail-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E0E2EC;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .loc-badge-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .loc-badge-icon.green { background-color: rgba(76, 175, 80, 0.12); color: #2E7D32; }
+    .loc-badge-icon.yellow { background-color: rgba(245, 127, 23, 0.12); color: #F57F17; }
+    .loc-badge-icon.red { background-color: rgba(211, 47, 47, 0.12); color: #D32F2F; }
+
+    .loc-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .loc-type {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .green-txt { color: #2E7D32; }
+    .yellow-txt { color: #F57F17; }
+    .red-txt { color: #D32F2F; }
+
+    .loc-address {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1A1C1E;
+      line-height: 1.35;
+    }
+    .loc-postcode {
+      font-size: 11px;
+      font-weight: 600;
+      color: #74777F;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .metric-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E0E2EC;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .metric-lbl {
+      font-size: 8px;
+      font-weight: 800;
+      color: #90A4AE;
+      letter-spacing: 0.5px;
+    }
+    .metric-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1A1C1E;
+    }
+    .fare-val {
+      color: #2E7D32;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    /* Specs List Card */
+    .info-list-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E0E2EC;
+      border-radius: 14px;
+      padding: 6px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #F1F3F9;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-k {
+      font-size: 12px;
+      font-weight: 600;
+      color: #74777F;
+    }
+    .info-v {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1A1C1E;
+    }
+    .highlight-v {
+      color: #1565C0;
+    }
+
+    /* Notes Card */
+    .notes-card {
+      background-color: #FAFBFD;
+      border: 1px solid #E0E2EC;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .notes-icon {
+      color: #1565C0;
+      font-size: 20px;
+    }
+    .notes-content {
+      margin: 0;
+      font-size: 12px;
+      font-style: italic;
+      color: #44474E;
+      line-height: 1.4;
+    }
+
+    .sheet-footer {
+      padding: 12px 18px 24px 18px;
+      background-color: #FFFFFF;
+      border-top: 1px solid #E0E2EC;
+    }
+    .sheet-dismiss-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 24px;
+      background-color: #1A1C1E;
+      color: #FFFFFF;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
   `]
 })
 export class BookingsComponent implements OnInit {
@@ -499,6 +905,7 @@ export class BookingsComponent implements OnInit {
   isLoading = false;
 
   bookings: Booking[] = [];
+  selectedBooking: Booking | null = null;
 
   constructor(private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
@@ -508,6 +915,14 @@ export class BookingsComponent implements OnInit {
 
   setTab(tab: string): void {
     this.activeTab = tab;
+  }
+
+  openDetails(booking: Booking): void {
+    this.selectedBooking = booking;
+  }
+
+  closeDetails(): void {
+    this.selectedBooking = null;
   }
 
   loadBookings(): void {
@@ -527,14 +942,32 @@ export class BookingsComponent implements OnInit {
           // Resolve fare
           const fare = parseFloat((job.price || job.fare || job.amount || job.driverPrice || '0.00').toString());
           
-          // Resolve addresses
+          // Resolve addresses & postcodes
           const pickup = job.pickupAddress || job.pickup || job.from || 'Pickup location';
+          const pickupPostCode = job.pickupPostCode || job.pickupPostcode || job.postcode || '';
           const dropoff = job.destinationAddress || job.dropoffAddress || job.dropoff || job.to || 'Dropoff destination';
+          const destinationPostCode = job.destinationPostCode || job.destinationPostcode || '';
+
+          // Parse vias
+          const vias: ViaStop[] = [];
+          if (Array.isArray(job.vias) && job.vias.length > 0) {
+            for (const v of job.vias) {
+              if (typeof v === 'string') {
+                vias.push({ address: v });
+              } else if (v && typeof v === 'object') {
+                vias.push({
+                  address: v.address || v.stopAddress || 'Via Stop',
+                  postCode: v.postCode || v.postcode || ''
+                });
+              }
+            }
+          }
 
           // Resolve dates & times
           const dtStr = job.pickupDateTime || job.bookingDateTime || job.dateCreated || job.endTime || '';
           let time = job.bookingTime || job.time || '';
           let date = job.bookingDate || job.date || '';
+          let fullDateTimeStr = '';
 
           if (dtStr) {
             const parsed = new Date(dtStr);
@@ -546,6 +979,7 @@ export class BookingsComponent implements OnInit {
                 const isToday = new Date().toDateString() === parsed.toDateString();
                 date = isToday ? 'Today' : parsed.toLocaleDateString([], { day: '2-digit', month: 'short' });
               }
+              fullDateTimeStr = parsed.toLocaleDateString([], { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }) + ' – ' + time;
             }
           }
           if (!time) time = '00:00';
@@ -567,7 +1001,7 @@ export class BookingsComponent implements OnInit {
 
           // Resolve status
           let status: 'Upcoming' | 'Completed' | 'Cancelled' = defaultStatus;
-          if (job.cancelled === true) {
+          if (job.cancelled === true || job.cancelledOnArrival === true) {
             status = 'Cancelled';
           } else if (job.status === 4 || job.status === 5 || job.status === 6) {
             status = 'Completed';
@@ -576,16 +1010,26 @@ export class BookingsComponent implements OnInit {
           return {
             id: (job.bookingId || job.bookingNo || job.id || Math.floor(Math.random() * 100000)).toString(),
             pickup: pickup,
+            pickupPostCode: pickupPostCode,
             dropoff: dropoff,
+            destinationPostCode: destinationPostCode,
+            vias: vias.length > 0 ? vias : undefined,
             time: time,
             date: date,
+            fullDateTimeStr: fullDateTimeStr,
             fare: isNaN(fare) ? 0.00 : fare,
             paymentType: paymentType,
             status: status,
             passenger: job.passengerName || job.cellText || job.passenger || job.customerName || 'Passenger',
+            phoneNumber: job.phoneNumber || job.phone || job.mobile || '',
+            email: job.email || '',
+            passengerCount: job.passengers ? parseInt(job.passengers.toString()) : undefined,
             notes: job.details || job.notes || job.comment || '',
             vehicleType: job.vehicleType || job.vehicle || 'Standard Saloon',
-            expanded: false
+            durationMinutes: job.durationMinutes ? parseInt(job.durationMinutes.toString()) : undefined,
+            mileageText: job.mileageText || (job.mileage ? `${job.mileage} miles` : undefined),
+            bookedByName: job.bookedByName || '',
+            accountNumber: job.accountNumber ? job.accountNumber.toString() : undefined
           };
         };
 
@@ -640,9 +1084,5 @@ export class BookingsComponent implements OnInit {
   getTabCount(tab: string): number {
     if (tab === 'All') return this.bookings.length;
     return this.bookings.filter(b => b.status === tab).length;
-  }
-
-  toggleExpand(booking: Booking): void {
-    booking.expanded = !booking.expanded;
   }
 }
