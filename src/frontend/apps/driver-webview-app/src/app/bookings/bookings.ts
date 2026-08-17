@@ -1013,8 +1013,15 @@ export class BookingsComponent implements OnInit {
 
   advanceTripStatus(booking: Booking): void {
     const current = this.getTripProgress(booking.id);
+    const bookingIdNum = parseInt(booking.id) || 0;
     if (current === 'assigned') {
       this.driverTripStatus[booking.id] = 'arrived';
+      if (bookingIdNum > 0) {
+        this.driverService.markArrived(bookingIdNum).subscribe({
+          next: (res) => console.log('Arrived API success:', res),
+          error: (err) => console.error('Arrived API error:', err)
+        });
+      }
     } else if (current === 'arrived') {
       this.driverTripStatus[booking.id] = 'pickedUp';
     }
@@ -1022,12 +1029,39 @@ export class BookingsComponent implements OnInit {
   }
 
   completeBooking(booking: Booking): void {
-    booking.status = 'Completed';
-    this.driverTripStatus[booking.id] = 'completed';
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      this.closeDetails();
-    }, 400);
+    const bookingIdNum = parseInt(booking.id) || 0;
+    if (bookingIdNum > 0) {
+      this.driverService.completeJob({
+        bookingId: bookingIdNum,
+        driverPrice: booking.fare,
+        waitingTime: 0,
+        parkingCharge: 0,
+        accountPrice: 0,
+        tip: 0
+      }).subscribe({
+        next: (res) => {
+          console.log('CompleteJob API success:', res);
+          booking.status = 'Completed';
+          this.driverTripStatus[booking.id] = 'completed';
+          this.loadBookings();
+          this.cdr.detectChanges();
+          setTimeout(() => this.closeDetails(), 400);
+        },
+        error: (err) => {
+          console.error('CompleteJob API error:', err);
+          booking.status = 'Completed';
+          this.driverTripStatus[booking.id] = 'completed';
+          this.loadBookings();
+          this.cdr.detectChanges();
+          setTimeout(() => this.closeDetails(), 400);
+        }
+      });
+    } else {
+      booking.status = 'Completed';
+      this.driverTripStatus[booking.id] = 'completed';
+      this.cdr.detectChanges();
+      setTimeout(() => this.closeDetails(), 400);
+    }
   }
 
   loadBookings(): void {

@@ -212,6 +212,61 @@ export class DriverService {
     );
   }
 
+  getDashTotals(): Observable<any> {
+    console.log('API Webview Request: GET /api/DriverApp/dashTotals');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/dashTotals`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/dashTotals success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/dashTotals failed:', err)
+      })
+    );
+  }
+
+  getActiveJob(): Observable<any> {
+    console.log('API Webview Request: GET /api/DriverApp/GetActiveJob');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/GetActiveJob`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetActiveJob success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetActiveJob failed:', err)
+      })
+    );
+  }
+
+  completeJob(data: {
+    bookingId: number;
+    waitingTime?: number;
+    parkingCharge?: number;
+    driverPrice?: number;
+    accountPrice?: number;
+    tip?: number;
+  }): Observable<any> {
+    const payload = {
+      bookingId: data.bookingId,
+      waitingTime: data.waitingTime ?? 0,
+      parkingCharge: data.parkingCharge ?? 0,
+      driverPrice: data.driverPrice ?? 0,
+      accountPrice: data.accountPrice ?? 0,
+      tip: data.tip ?? 0
+    };
+    console.log('API Webview Request: POST /api/DriverApp/CompleteJob payload:', JSON.stringify(payload));
+    return this.http.post(`${this.baseUrl}/api/DriverApp/CompleteJob`, payload, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/CompleteJob success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/CompleteJob failed:', err)
+      })
+    );
+  }
+
+  markArrived(bookingId: number): Observable<any> {
+    console.log(`API Webview Request: GET /api/DriverApp/Arrived?bookingId=${bookingId}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/Arrived?bookingId=${bookingId}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/Arrived success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/Arrived failed:', err)
+      })
+    );
+  }
+
   login(username: string, password: string): Observable<any> {
     console.log(`API Webview Request: POST /api/UserProfile/Login username: ${username}`);
     return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password }).pipe(
