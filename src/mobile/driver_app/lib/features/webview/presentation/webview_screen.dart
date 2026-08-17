@@ -126,6 +126,8 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                   paymentType: 'Card',
                 ),
               );
+            } else if (message.message == 'pull_refresh') {
+              _controller?.reload();
             }
           },
         )
@@ -253,13 +255,6 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                     ),
               title: Text(widget.title),
               centerTitle: false,
-              actions: [
-                if (!kIsWeb)
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () => _controller?.reload(),
-                  ),
-              ],
             ),
       body: PopScope(
         canPop: false,
@@ -276,46 +271,55 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
             Navigator.of(currentContext).maybePop();
           }
         },
-        child: kIsWeb
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.language, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'Webview is not supported on Web',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Please run the Flutter app on an Android Emulator, iOS Simulator, or a physical mobile device to view this screen.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
+        child: RefreshIndicator(
+          color: AppTheme.primaryRed,
+          backgroundColor: Colors.white,
+          onRefresh: () async {
+            if (_controller != null) {
+              await _controller!.reload();
+            }
+          },
+          child: kIsWeb
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.language, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Webview is not supported on Web',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Please run the Flutter app on an Android Emulator, iOS Simulator, or a physical mobile device to view this screen.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-            : Stack(
-                children: [
-                  Container(color: Colors.white),
-                  WebViewWidget(controller: _controller!),
-                  if (_isLoading)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.white,
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primaryRed,
+                )
+              : Stack(
+                  children: [
+                    Container(color: Colors.white),
+                    if (_controller != null) WebViewWidget(controller: _controller!),
+                    if (_isLoading)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primaryRed,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                  ],
+                ),
+        ),
       ),
     );
   }

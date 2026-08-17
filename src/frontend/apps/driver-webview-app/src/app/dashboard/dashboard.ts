@@ -807,6 +807,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   triggerRefresh(): void {
     this.isRefreshing = true;
     this.pullDistance = 48;
+    this.notifyNativeApp('pull_refresh');
     this.cdr.detectChanges();
     this.loadDashboardData();
   }

@@ -123,6 +123,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             ref.read(shiftProvider.notifier).goOnline();
           } else if (message.message == 'go_offline') {
             ref.read(shiftProvider.notifier).goOffline();
+          } else if (message.message == 'pull_refresh') {
+            _controller?.reload();
           }
         },
       );
@@ -173,125 +175,134 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Native Shift Status Toggle Card
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: CustomCard(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: isOnline ? Colors.green : Colors.grey,
-                              shape: BoxShape.circle,
-                              boxShadow: isOnline
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.green.withValues(alpha: 0.4),
-                                        blurRadius: 8,
-                                        spreadRadius: 2,
-                                      )
-                                    ]
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isOnline ? 'ONLINE' : 'OFFLINE',
-                            style: TextStyle(
-                              color: isOnline ? Colors.green : Colors.grey,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        isOnline ? 'On Duty' : 'Off Duty',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    isOnline
-                        ? 'You are active on the network and waiting to accept incoming ride offers. Live GPS tracking is active.'
-                        : 'Go online to start receiving booking requests in your area.',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isOnline ? Colors.grey[850] : AppTheme.primaryRed,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      minimumSize: const Size.fromHeight(48),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                      if (isOnline) {
-                        ref.read(shiftProvider.notifier).goOffline();
-                      } else {
-                        ref.read(shiftProvider.notifier).goOnline();
-                      }
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+      body: RefreshIndicator(
+        color: AppTheme.primaryRed,
+        backgroundColor: Colors.white,
+        onRefresh: () async {
+          if (_controller != null) {
+            await _controller!.reload();
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Native Shift Status Toggle Card
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: CustomCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          isOnline ? Icons.power_settings_new : Icons.play_arrow,
-                          size: 18,
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: isOnline ? Colors.green : Colors.grey,
+                                shape: BoxShape.circle,
+                                boxShadow: isOnline
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.green.withValues(alpha: 0.4),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        )
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isOnline ? 'ONLINE' : 'OFFLINE',
+                              style: TextStyle(
+                                color: isOnline ? Colors.green : Colors.grey,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(isOnline ? 'Go Offline' : 'Go Online'),
+                        Text(
+                          isOnline ? 'On Duty' : 'Off Duty',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Thin Loading bar for WebView loading state
-          if (_isLoading)
-            const Positioned(
-              child: SizedBox(
-                height: 3,
-                child: LinearProgressIndicator(
-                  color: AppTheme.primaryRed,
-                  backgroundColor: Colors.transparent,
+                    const SizedBox(height: 12),
+                    Text(
+                      isOnline
+                          ? 'You are active on the network and waiting to accept incoming ride offers. Live GPS tracking is active.'
+                          : 'Go online to start receiving booking requests in your area.',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isOnline ? Colors.grey[850] : AppTheme.primaryRed,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size.fromHeight(48),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        if (isOnline) {
+                          ref.read(shiftProvider.notifier).goOffline();
+                        } else {
+                          ref.read(shiftProvider.notifier).goOnline();
+                        }
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isOnline ? Icons.power_settings_new : Icons.play_arrow,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(isOnline ? 'Go Offline' : 'Go Online'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
 
-          // 2. Hybrid Data WebView (displays Today's summary and Recent completed trips list)
-          Expanded(
-            child: _controller != null
-                ? WebViewWidget(controller: _controller!)
-                : const Center(child: CircularProgressIndicator()),
-          ),
-        ],
+            // Thin Loading bar for WebView loading state
+            if (_isLoading)
+              const Positioned(
+                child: SizedBox(
+                  height: 3,
+                  child: LinearProgressIndicator(
+                    color: AppTheme.primaryRed,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+              ),
+
+            // 2. Hybrid Data WebView (displays Today's summary and Recent completed trips list)
+            Expanded(
+              child: _controller != null
+                  ? WebViewWidget(controller: _controller!)
+                  : const Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        ),
       ),
     );
   }
