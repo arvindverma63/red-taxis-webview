@@ -156,6 +156,70 @@ class TripNotifier extends StateNotifier<TripState> {
     state = TripState(status: TripStatus.offered, currentTrip: trip);
   }
 
+  Future<void> fetchAndOfferJob(String bookingId, {TripDetails? fallbackDetails}) async {
+    final defaultPickup = fallbackDetails?.pickupAddress ?? 'Pickup address';
+    final defaultDropoff = fallbackDetails?.dropoffAddress ?? 'Dropoff destination';
+    final defaultFare = fallbackDetails?.fare ?? 0.0;
+    final defaultPaymentType = fallbackDetails?.paymentType ?? 'Cash';
+    final defaultVehicle = fallbackDetails?.vehicleType ?? 'Standard Saloon';
+    final defaultPassenger = fallbackDetails?.passenger ?? 'Passenger';
+    final defaultNotes = fallbackDetails?.notes ?? '';
+
+    // Immediately display the offer overlay to the driver
+    offerJob(TripDetails(
+      id: bookingId,
+      pickupAddress: defaultPickup,
+      dropoffAddress: defaultDropoff,
+      fare: defaultFare,
+      paymentType: defaultPaymentType,
+      vehicleType: defaultVehicle,
+      passenger: defaultPassenger,
+      notes: defaultNotes,
+    ));
+
+    final auth = _ref.read(authProvider);
+    final token = auth.token;
+    if (token == null) return;
+
+    try {
+      final response = await _dio.get(
+        '/api/DriverApp/GetJobOffers',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      final List<dynamic> data = response.data ?? [];
+      if (data.isNotEmpty) {
+        final job = data.firstWhere(
+          (j) => (j['bookingNo'] ?? j['id'] ?? '').toString() == bookingId,
+          orElse: () => data.first,
+        );
+        final fare = (job['fare'] ?? job['amount'] ?? job['price'] ?? defaultFare).toDouble();
+        final pickup = job['pickupAddress'] ?? job['pickup'] ?? defaultPickup;
+        final dropoff = job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? defaultDropoff;
+        final paymentType = job['paymentType'] ?? job['paymentMethod'] ?? defaultPaymentType;
+        final id = (job['bookingNo'] ?? job['id'] ?? bookingId).toString();
+        final vehicleType = job['vehicleType'] ?? defaultVehicle;
+        final passenger = job['passengerName'] ?? job['passenger'] ?? defaultPassenger;
+        final notes = job['notes'] ?? job['comment'] ?? defaultNotes;
+
+        offerJob(TripDetails(
+          id: id,
+          pickupAddress: pickup,
+          dropoffAddress: dropoff,
+          fare: fare,
+          paymentType: paymentType,
+          vehicleType: vehicleType,
+          passenger: passenger,
+          notes: notes,
+        ));
+      }
+    } catch (e) {
+      debugPrint("fetchAndOfferJob API error: $e");
+    }
+  }
+
   Future<void> acceptJob() async {
     if (state.currentTrip != null) {
       final auth = _ref.read(authProvider);

@@ -93,7 +93,7 @@ void main() async {
     final token = await messaging.getToken();
     debugPrint('FCM Token: $token');
     
-    // FCM Foreground listener: show local heads-up notification with data payload
+    // FCM Foreground listener: show local heads-up notification with data payload and route immediately
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint("================ FCM FOREGROUND MESSAGE ================");
       debugPrint("Message ID: ${message.messageId}");
@@ -101,6 +101,10 @@ void main() async {
       debugPrint("Body: ${message.notification?.body}");
       debugPrint("Data: ${message.data}");
       debugPrint("========================================================");
+      
+      // Automatically trigger navigation/job offer overlay immediately on foreground message
+      NotificationNavigationHandler.handlePayload(message.data);
+
       final notification = message.notification;
       
       // If notification payload exists, show native heads-up banner on Android/iOS

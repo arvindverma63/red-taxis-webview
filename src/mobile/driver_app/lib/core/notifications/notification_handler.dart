@@ -57,8 +57,12 @@ class NotificationNavigationHandler {
       return;
     }
 
-    // Extract navigation identifier from common payload keys
-    final navId = (data['nav_id'] ??
+    // Extract navigation identifier and notification type from payload
+    final notificationType = (data['notificationType'] ??
+            data['notification_type'] ??
+            data['type'] ??
+            data['action'] ??
+            data['nav_id'] ??
             data['navId'] ??
             data['nav_page'] ??
             data['page'] ??
@@ -66,32 +70,57 @@ class NotificationNavigationHandler {
             data['screen'] ??
             data['tab'] ??
             data['route'] ??
-            data['action'] ??
-            data['type'] ??
             '')
         .toString()
         .trim()
         .toLowerCase();
 
-    debugPrint("NotificationNavigationHandler: Resolved navId = '$navId'");
+    final deepLink = (data['deepLink'] ??
+            data['deep_link'] ??
+            data['link'] ??
+            '')
+        .toString()
+        .trim();
 
-    // Check for Job Offer payload first
-    if (navId == 'new_job_offer' ||
-        navId == 'job_offer' ||
-        navId == 'job-offer' ||
-        data['type'] == 'NEW_JOB_OFFER') {
-      final id = data['jobId'] ?? data['id'] ?? 'job-${DateTime.now().millisecondsSinceEpoch}';
+    String bookingId = (data['bookingId'] ??
+            data['booking_id'] ??
+            data['jobId'] ??
+            data['job_id'] ??
+            data['id'] ??
+            '')
+        .toString()
+        .trim();
+
+    if (bookingId.isEmpty && deepLink.isNotEmpty) {
+      if (deepLink.contains('/')) {
+        bookingId = deepLink.split('/').last.trim();
+      }
+    }
+
+    debugPrint("NotificationNavigationHandler: notificationType='$notificationType', deepLink='$deepLink', bookingId='$bookingId'");
+
+    // Check for Job Offer / Booking Allocation payload
+    final isBookingOffer = notificationType.contains('booking') ||
+        notificationType.contains('allocated') ||
+        notificationType.contains('offered') ||
+        notificationType.contains('job') ||
+        deepLink.toLowerCase().startsWith('booking') ||
+        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType.contains('booking')));
+
+    if (isBookingOffer && bookingId.isNotEmpty) {
       final fare = double.tryParse(data['fare']?.toString() ?? '0.0') ?? 0.0;
-      final pickup = data['pickupAddress'] ?? data['pickup'] ?? 'Unknown Pickup';
-      final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? 'Unknown Dropoff';
+      final pickup = data['pickupAddress'] ?? data['pickup'] ?? 'Pickup address';
+      final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? 'Dropoff destination';
       final paymentType = data['paymentType'] ?? 'Cash';
       final vehicleType = data['vehicleType'] ?? 'Standard Saloon';
       final passenger = data['passengerName'] ?? data['passenger'] ?? 'Passenger';
       final notes = data['notes'] ?? '';
 
-      if (id.toString().isNotEmpty) {
-        targetRef.read(tripProvider.notifier).offerJob(TripDetails(
-              id: id.toString(),
+      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId'");
+      targetRef.read(tripProvider.notifier).fetchAndOfferJob(
+            bookingId,
+            fallbackDetails: TripDetails(
+              id: bookingId,
               pickupAddress: pickup.toString(),
               dropoffAddress: dropoff.toString(),
               fare: fare,
@@ -99,11 +128,12 @@ class NotificationNavigationHandler {
               vehicleType: vehicleType.toString(),
               passenger: passenger.toString(),
               notes: notes.toString(),
-            ));
-        return;
-      }
+            ),
+          );
+      return;
     }
 
+    final navId = notificationType;
     final navNotifier = targetRef.read(navigationProvider.notifier);
 
     // Map nav_id to tab index or custom webview
