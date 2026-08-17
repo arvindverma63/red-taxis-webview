@@ -121,6 +121,16 @@ export class DriverService {
     );
   }
 
+  getAllDriversAvailability(date: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/DriverApp/General?date=${date}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/General?date=${date}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/General success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/General failed:', err)
+      })
+    );
+  }
+
   uploadDocument(formData: FormData): Observable<any> {
     console.log('API Webview Request: POST /api/DriverApp/UploadDocument');
     return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, {

@@ -1,25 +1,31 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { DriverService } from '../services/driver.service';
-import { catchError, switchMap } from 'rxjs/operators';
-import { of, forkJoin } from 'rxjs';
 
-type AvailabilityStatus = 'Available' | 'Unavailable';
+export interface AvailabilitySlot {
+  id: number;
+  userId?: number;
+  date: string; // ISO date string
+  from: string; // '08:00'
+  to: string;   // '17:00'
+  giveOrTake: boolean;
+  type: number; // 0: NotSet, 1: Available, 2: Unavailable
+  note: string;
+  allocated?: boolean;
+}
 
-interface DayAvailability {
-  dayName: string;
-  status: AvailabilityStatus;
-  fromTime: string;
-  toTime: string;
-  slotIds?: number[];
+export interface DriverFleetAvailability {
+  fullName: string;
+  vehicleType: number | string;
+  date: string;
+  availableHours: Array<{ from: string; to: string; note?: string }>;
+  unAvailableHours: Array<{ from: string; to: string; note?: string }>;
+  allocatedHours: Array<{ from: string; to: string; note?: string }>;
 }
 
 @Component({
@@ -27,1003 +33,1481 @@ interface DayAvailability {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatButtonToggleModule,
-    MatDividerModule,
-    MatSnackBarModule,
-    MatDatepickerModule,
-    MatNativeDateModule
+    MatSnackBarModule
   ],
   template: `
-    <div class="material-container">
+    <div 
+      class="availability-container"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd()"
+    >
+      <!-- Pull-to-Refresh Floating Indicator -->
+      <div 
+        class="floating-refresh-spinner"
+        [class.visible]="pullDistance > 0 || isRefreshing"
+        [style.transform]="'translate(-50%, ' + (isRefreshing ? '20px' : (pullDistance - 45) + 'px)')"
+        [style.opacity]="isRefreshing ? 1 : (pullDistance / 50)"
+      >
+        <span 
+          class="material-symbols-outlined native-spin-icon"
+          [class.spinning]="isRefreshing"
+          [style.transform]="'rotate(' + (pullDistance * 5) + 'deg)'"
+        >
+          refresh
+        </span>
+      </div>
 
+      <!-- 1. Top Mode Switch (My Availability vs All Drivers) -->
+      <div class="mode-switch-wrapper">
+        <div class="mode-segmented-control">
+          <button 
+            type="button" 
+            class="mode-btn" 
+            [class.active]="activeMode === 'my'"
+            (click)="setMode('my')"
+          >
+            <span class="material-symbols-outlined mode-icon">person</span>
+            <span>My Availability</span>
+          </button>
+          <button 
+            type="button" 
+            class="mode-btn" 
+            [class.active]="activeMode === 'fleet'"
+            (click)="setMode('fleet')"
+          >
+            <span class="material-symbols-outlined mode-icon">group</span>
+            <span>All Drivers</span>
+          </button>
+        </div>
+      </div>
 
-      <!-- Week Selector -->
-      <mat-card class="week-selector-card">
-        <mat-card-content class="week-selector-content">
-          <button mat-icon-button (click)="changeWeek(-1)" [disabled]="isSaving" class="week-nav-btn">
-            <mat-icon>chevron_left</mat-icon>
+      <!-- 2. Week Range Navigator Card -->
+      <div class="week-nav-card">
+        <div class="week-header-row">
+          <button class="nav-arrow-btn" (click)="navigateWeek(-1)" [disabled]="isLoading">
+            <span class="material-symbols-outlined">chevron_left</span>
           </button>
           
-          <input [matDatepicker]="picker" (dateChange)="onDateSelected($event.value)" style="display: none;">
-          <mat-datepicker #picker></mat-datepicker>
-          
-          <div class="week-label-wrapper" (click)="picker.open()" style="cursor: pointer;">
-            <mat-icon class="calendar-icon">calendar_today</mat-icon>
-            <span class="week-range-text">{{ weekStartFormatted }} – {{ weekEndFormatted }}</span>
-            <span *ngIf="currentWeekOffset === 0" class="current-week-badge">Current Week</span>
-            <span *ngIf="currentWeekOffset === 1" class="current-week-badge future">Next Week</span>
-            <span *ngIf="currentWeekOffset > 1" class="current-week-badge future">Week +{{currentWeekOffset}}</span>
-            <span *ngIf="currentWeekOffset < 0" class="current-week-badge past">Past Week</span>
+          <div class="week-label-box">
+            <span class="material-symbols-outlined calendar-icon">calendar_month</span>
+            <span class="week-date-range">{{ formatWeekRange() }}</span>
           </div>
-          
-          <button mat-icon-button (click)="changeWeek(1)" [disabled]="isSaving" class="week-nav-btn">
-            <mat-icon>chevron_right</mat-icon>
+
+          <button class="nav-arrow-btn" (click)="navigateWeek(1)" [disabled]="isLoading">
+            <span class="material-symbols-outlined">chevron_right</span>
           </button>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <!-- Summary Stats & Presets -->
-      <mat-card class="summary-card">
-        <mat-card-content class="summary-content">
-          <div class="summary-stats">
-            <div class="stat">
-              <span class="label">Hours Planned</span>
-              <span class="value">{{ totalHours }} hrs</span>
-            </div>
-            <div class="stat">
-              <span class="label">Days Selected</span>
-              <span class="value active-highlight">{{ activeDaysCount }} / 7</span>
-            </div>
+        <!-- 7-Day Pill Bar -->
+        <div class="days-pill-bar">
+          <button 
+            *ngFor="let day of currentWeekDays; let i = index" 
+            class="day-pill-btn"
+            [class.selected]="selectedDayIndex === i"
+            [class.has-slots]="hasSlotsForDay(day.date)"
+            (click)="selectDay(i)"
+          >
+            <span class="day-letter">{{ day.dayLetter }}</span>
+            <span class="day-number">{{ day.date.getDate() }}</span>
+            <span class="slot-dot" *ngIf="hasSlotsForDay(day.date)"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= MY AVAILABILITY VIEW ================= -->
+      <ng-container *ngIf="activeMode === 'my'">
+        
+        <!-- Quick Preset Actions Card -->
+        <div class="preset-section-card">
+          <div class="card-title-row">
+            <span class="material-symbols-outlined card-title-icon">bolt</span>
+            <span class="card-title-text">Quick Presets ({{ formatSelectedDate() }})</span>
           </div>
 
-          <div class="presets-row">
-            <button mat-flat-button class="preset-btn red-btn" (click)="applyPreset('weekdays')">
-              Weekdays AM (08-16)
-            </button>
-            <button mat-flat-button class="preset-btn red-btn" (click)="applyPreset('weekends')">
-              Weekends PM (16-24)
-            </button>
-            <button mat-stroked-button class="preset-btn clear-btn" (click)="clearAll()">
-              Clear All
-            </button>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Weekly Schedule Cards (Multiple Cards) -->
-      <main class="schedule-list-container">
-        <div *ngFor="let day of schedule; let dayIdx = index" 
-             class="schedule-day-card" 
-             [class.active-card]="day.status === 'Available'">
-          
-          <div class="card-header-row">
-            <div class="day-title-wrapper">
-              <span class="day-name-label">{{ day.dayName }}</span>
-              <span class="day-date-sub">{{ getDayDateFormatted(dayIdx) }}</span>
-            </div>
-            
-            <div class="custom-toggle-switch" [class.is-active]="day.status === 'Available'">
-              <div class="switch-slider"></div>
-              <button type="button" class="switch-btn active-btn" (click)="onStatusChange(dayIdx, 'Available')">
-                <span class="btn-text">Active</span>
-              </button>
-              <button type="button" class="switch-btn none-btn" (click)="onStatusChange(dayIdx, 'Unavailable')">
-                <span class="btn-text">None</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Custom Time Range pickers (shown only if status is Active) -->
-          <div *ngIf="day.status === 'Available'" class="card-body-row animated-fade-in">
-            <div class="time-pickers-container">
-              <div class="time-select-group">
-                <span class="input-prefix">From</span>
-                <div class="select-inputs-row">
-                  <select (change)="onHourChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let h of hoursList" [value]="h" [selected]="h === getHour(day.fromTime)">{{ h }}</option>
-                  </select>
-                  <span class="time-separator">:</span>
-                  <select (change)="onMinuteChange(dayIdx, 'fromTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let m of minutesList" [value]="m" [selected]="m === getMinute(day.fromTime)">{{ m }}</option>
-                  </select>
-                </div>
+          <div class="presets-grid">
+            <button 
+              type="button" 
+              class="preset-chip-btn" 
+              (click)="applyPreset('am-school')"
+              [class.active]="selectedPresetKey === 'am-school'"
+            >
+              <span class="preset-emoji">🌅</span>
+              <div class="preset-texts">
+                <span class="preset-title">AM School</span>
+                <span class="preset-time">07:30 – 09:30</span>
               </div>
+            </button>
+
+            <button 
+              type="button" 
+              class="preset-chip-btn" 
+              (click)="applyPreset('pm-school')"
+              [class.active]="selectedPresetKey === 'pm-school'"
+            >
+              <span class="preset-emoji">🎒</span>
+              <div class="preset-texts">
+                <span class="preset-title">PM School</span>
+                <span class="preset-time">14:30 – 16:30</span>
+              </div>
+            </button>
+
+            <button 
+              type="button" 
+              class="preset-chip-btn" 
+              (click)="applyPreset('am-pm-school')"
+              [class.active]="selectedPresetKey === 'am-pm-school'"
+            >
+              <span class="preset-emoji">🏫</span>
+              <div class="preset-texts">
+                <span class="preset-title">Full School</span>
+                <span class="preset-time">07:30 – 16:30</span>
+              </div>
+            </button>
+
+            <button 
+              type="button" 
+              class="preset-chip-btn unavail" 
+              (click)="applyPreset('unavailable')"
+              [class.active]="selectedPresetKey === 'unavailable'"
+            >
+              <span class="preset-emoji">🚫</span>
+              <div class="preset-texts">
+                <span class="preset-title">Day Off</span>
+                <span class="preset-time">00:00 – 23:59</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Slot Configuration Form Card -->
+        <div class="custom-slot-card">
+          <div class="card-title-row">
+            <span class="material-symbols-outlined card-title-icon">schedule</span>
+            <span class="card-title-text">Custom Slot & Shift Settings</span>
+          </div>
+
+          <!-- Time Inputs Row -->
+          <div class="time-inputs-row">
+            <div class="time-input-box">
+              <label class="time-lbl">Start Time (From)</label>
+              <div class="select-time-wrapper">
+                <select [(ngModel)]="fromHour" class="time-dropdown">
+                  <option *ngFor="let h of hours" [value]="h">{{ h }}</option>
+                </select>
+                <span class="time-colon">:</span>
+                <select [(ngModel)]="fromMinute" class="time-dropdown">
+                  <option *ngFor="let m of minutes" [value]="m">{{ m }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="time-arrow-divider">
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </div>
+
+            <div class="time-input-box">
+              <label class="time-lbl">End Time (To)</label>
+              <div class="select-time-wrapper">
+                <select [(ngModel)]="toHour" class="time-dropdown">
+                  <option *ngFor="let h of hours" [value]="h">{{ h }}</option>
+                </select>
+                <span class="time-colon">:</span>
+                <select [(ngModel)]="toMinute" class="time-dropdown">
+                  <option *ngFor="let m of minutes" [value]="m">{{ m }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Give or Take Checkbox Option -->
+          <div class="option-toggle-row">
+            <label class="checkbox-container">
+              <input type="checkbox" [(ngModel)]="giveOrTake">
+              <span class="checkmark"></span>
+              <span class="checkbox-label-text">Give or Take (+/- 15 mins flex)</span>
+            </label>
+          </div>
+
+          <!-- Driver Note Input -->
+          <div class="note-input-group">
+            <label class="note-lbl">Driver Shift Note (Optional)</label>
+            <input 
+              type="text" 
+              [(ngModel)]="customNote" 
+              placeholder="e.g. Morning school run, airport transfers only..." 
+              class="note-text-input"
+            />
+          </div>
+
+          <!-- Dual Action Buttons -->
+          <div class="action-buttons-row">
+            <button 
+              type="button" 
+              class="btn-save available-btn" 
+              [disabled]="isSaving"
+              (click)="saveAvailability(1)"
+            >
+              <span class="material-symbols-outlined btn-icon" *ngIf="!isSaving">check_circle</span>
+              <span class="material-symbols-outlined btn-icon spinning" *ngIf="isSaving">refresh</span>
+              <span>Mark Available</span>
+            </button>
+
+            <button 
+              type="button" 
+              class="btn-save unavailable-btn" 
+              [disabled]="isSaving"
+              (click)="saveAvailability(2)"
+            >
+              <span class="material-symbols-outlined btn-icon">cancel</span>
+              <span>Mark Unavailable</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Slots for Selected Day -->
+        <div class="slots-list-section">
+          <div class="section-title-row">
+            <h3 class="section-title">Active Shifts on {{ formatSelectedDate() }}</h3>
+            <span class="slots-count-badge">{{ selectedDaySlots.length }} configured</span>
+          </div>
+
+          <!-- Shimmer Placeholder -->
+          <div *ngIf="isLoading" class="shimmer-placeholder list-shimmer"></div>
+
+          <!-- Empty State -->
+          <div *ngIf="!isLoading && selectedDaySlots.length === 0" class="empty-slots-card">
+            <span class="material-symbols-outlined empty-icon">event_busy</span>
+            <p class="empty-title">No shifts configured for this day</p>
+            <p class="empty-subtitle">Choose a quick preset above or set your custom working hours to let dispatch know your schedule.</p>
+          </div>
+
+          <!-- Slots List -->
+          <div class="slots-cards-list" *ngIf="!isLoading && selectedDaySlots.length > 0">
+            <div 
+              *ngFor="let slot of selectedDaySlots" 
+              class="slot-card"
+              [class.available]="slot.type === 1"
+              [class.unavailable]="slot.type === 2"
+            >
+              <div class="slot-status-indicator"></div>
               
-              <span class="range-separator">–</span>
+              <div class="slot-main-content">
+                <div class="slot-badges-row">
+                  <span class="status-badge" [class.avail]="slot.type === 1" [class.unavail]="slot.type === 2">
+                    {{ slot.type === 1 ? 'AVAILABLE' : 'UNAVAILABLE' }}
+                  </span>
+                  <span class="flex-badge" *ngIf="slot.giveOrTake">
+                    +/- 15m Flex
+                  </span>
+                </div>
 
-              <div class="time-select-group">
-                <span class="input-prefix">To</span>
-                <div class="select-inputs-row">
-                  <select (change)="onHourChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let h of hoursList" [value]="h" [selected]="h === getHour(day.toTime)">{{ h }}</option>
-                  </select>
-                  <span class="time-separator">:</span>
-                  <select (change)="onMinuteChange(dayIdx, 'toTime', $any($event.target).value)" class="custom-time-select">
-                    <option *ngFor="let m of minutesList" [value]="m" [selected]="m === getMinute(day.toTime)">{{ m }}</option>
-                  </select>
+                <div class="slot-time-range">
+                  <span class="material-symbols-outlined time-icon">schedule</span>
+                  <span class="time-text">{{ slot.from }} – {{ slot.to }}</span>
+                </div>
+
+                <div class="slot-note-text" *ngIf="slot.note">
+                  <span class="material-symbols-outlined note-icon">sticky_note_2</span>
+                  <span>{{ slot.note }}</span>
                 </div>
               </div>
+
+              <!-- Delete Action -->
+              <button 
+                type="button" 
+                class="slot-delete-btn" 
+                (click)="deleteSlot(slot)"
+                title="Delete this shift"
+              >
+                <span class="material-symbols-outlined delete-icon">delete</span>
+              </button>
             </div>
           </div>
         </div>
-      </main>
 
-      <!-- Sticky Save Bar -->
-      <footer class="footer-actions">
-        <button 
-          mat-raised-button 
-          class="save-btn" 
-          [class.success]="saveSuccess"
-          [disabled]="isSaving"
-          (click)="saveAvailability()"
-        >
-          <mat-icon class="save-icon">{{ saveSuccess ? 'check' : 'save' }}</mat-icon>
-          {{ isSaving ? 'Saving Shifts...' : saveSuccess ? 'Availability Saved!' : 'Save Shifts' }}
-        </button>
-      </footer>
+      </ng-container>
+
+      <!-- ================= ALL DRIVERS (FLEET VIEW) ================= -->
+      <ng-container *ngIf="activeMode === 'fleet'">
+        <div class="fleet-section">
+          
+          <!-- Fleet Header & Vehicle Filter -->
+          <div class="fleet-filter-card">
+            <div class="fleet-search-wrapper">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input 
+                type="text" 
+                [(ngModel)]="fleetSearchQuery" 
+                placeholder="Search driver by name..." 
+                class="fleet-search-input"
+              />
+            </div>
+
+            <!-- Vehicle Type Filters -->
+            <div class="vehicle-chips-bar">
+              <button 
+                *ngFor="let vType of vehicleFilterOptions" 
+                class="vehicle-chip-btn"
+                [class.active]="selectedVehicleFilter === vType"
+                (click)="selectedVehicleFilter = vType"
+              >
+                {{ vType }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="isLoadingFleet" class="shimmer-placeholder list-shimmer"></div>
+
+          <!-- Empty Fleet State -->
+          <div *ngIf="!isLoadingFleet && filteredFleetDrivers.length === 0" class="empty-slots-card">
+            <span class="material-symbols-outlined empty-icon">group_off</span>
+            <p class="empty-title">No fleet records found</p>
+            <p class="empty-subtitle">No driver availability data reported for {{ formatSelectedDate() }}.</p>
+          </div>
+
+          <!-- Fleet Drivers List -->
+          <div class="fleet-list" *ngIf="!isLoadingFleet && filteredFleetDrivers.length > 0">
+            <div *ngFor="let driver of filteredFleetDrivers" class="fleet-driver-card">
+              <div class="driver-header-row">
+                <div class="driver-avatar-circle">
+                  {{ getDriverInitials(driver.fullName) }}
+                </div>
+                <div class="driver-meta">
+                  <span class="driver-name">{{ driver.fullName }}</span>
+                  <span class="driver-vehicle-badge">{{ getVehicleName(driver.vehicleType) }}</span>
+                </div>
+              </div>
+
+              <!-- Available Hours -->
+              <div class="hours-section" *ngIf="driver.availableHours.length > 0">
+                <span class="hours-lbl green">Available Slots</span>
+                <div class="hours-tags">
+                  <span *ngFor="let h of driver.availableHours" class="hour-tag avail">
+                    {{ h.from }} – {{ h.to }} {{ h.note ? '(' + h.note + ')' : '' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Unavailable Hours -->
+              <div class="hours-section" *ngIf="driver.unAvailableHours.length > 0">
+                <span class="hours-lbl red">Unavailable Slots</span>
+                <div class="hours-tags">
+                  <span *ngFor="let h of driver.unAvailableHours" class="hour-tag unavail">
+                    {{ h.from }} – {{ h.to }} {{ h.note ? '(' + h.note + ')' : '' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Allocated Hours -->
+              <div class="hours-section" *ngIf="driver.allocatedHours && driver.allocatedHours.length > 0">
+                <span class="hours-lbl blue">Allocated Trips</span>
+                <div class="hours-tags">
+                  <span *ngFor="let h of driver.allocatedHours" class="hour-tag allocated">
+                    {{ h.from }} – {{ h.to }}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </ng-container>
+
     </div>
   `,
   styles: [`
-    .material-container {
-      padding: 16px;
-      padding-bottom: 96px; /* Space for sticky footer save bar */
-      background-color: var(--background-color, #F8F9FA); /* Light gray background */
-      color: var(--text-primary, #263238);
+    .availability-container {
+      background-color: #F8F9FA;
       min-height: 100vh;
-      font-family: inherit;
-    }
-
-    .app-header {
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .page-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: #121212; /* Pitch black */
-      margin: 0;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .page-subtitle {
-      font-size: 12px;
-      color: #546E7A; /* Slate grey */
-      margin: 4px 0 0 0;
-    }
-
-    /* Week Selector Card */
-    .week-selector-card {
-      background-color: var(--surface-color, #FFFFFF);
-      border: 1px solid var(--border-color, #E0E0E0);
-      border-radius: 12px !important;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
-    }
-
-    .week-selector-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px !important;
-    }
-
-    .week-nav-btn {
-      color: #546E7A;
-    }
-
-    .week-label-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .calendar-icon {
-      color: #E53935;
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    .week-range-text {
-      font-size: 14px;
-      font-weight: 700;
-      color: #121212;
-    }
-
-    .current-week-badge {
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 12px;
-      background-color: #ECEFF1;
-      color: #546E7A;
-      text-transform: uppercase;
-    }
-    .current-week-badge.future {
-      background-color: rgba(229, 57, 53, 0.08);
-      color: #E53935;
-    }
-    .current-week-badge.past {
-      background-color: #ECEFF1;
-      color: #90A4AE;
-    }
-
-    /* Summary Card */
-    .summary-card {
-      background-color: var(--surface-color, #FFFFFF); /* White card */
-      border: 1px solid var(--border-color, #E0E0E0);
-      border-radius: 12px !important;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
-    }
-
-    .summary-content {
-      padding: 12px 16px !important;
-    }
-
-    .summary-stats {
-      display: flex;
-      justify-content: space-around;
-      border-bottom: 1px solid var(--border-color, #E0E0E0);
-      padding-bottom: 12px;
-      margin-bottom: 12px;
-    }
-
-    .summary-stats .stat {
+      padding: 12px 14px 60px 14px;
+      font-family: 'Roboto', sans-serif;
       display: flex;
       flex-direction: column;
-      align-items: center;
-    }
-
-    .summary-stats .label {
-      color: #546E7A;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 4px;
-    }
-
-    .summary-stats .value {
-      font-size: 22px;
-      font-weight: 900;
-      color: #121212;
-    }
-
-    .active-highlight {
-      color: #E53935 !important; /* Brand red */
-    }
-
-    .presets-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    .preset-btn {
-      flex: 1;
-      font-size: 10px !important;
-      font-weight: 800 !important;
-      border-radius: 8px !important;
-      height: 38px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .preset-btn.red-btn {
-      background-color: #E53935 !important;
-      color: #FFFFFF !important;
-      border: none !important;
-    }
-    .preset-btn.red-btn:hover {
-      background-color: #B71C1C !important;
-      box-shadow: 0 2px 8px rgba(229, 57, 53, 0.2) !important;
-    }
-
-    .clear-btn {
-      border: 1px solid var(--border-color, #E0E0E0) !important;
-      color: #546E7A !important;
-      background: transparent !important;
-    }
-    .clear-btn:hover {
-      background-color: rgba(0, 0, 0, 0.03) !important;
-      color: #121212 !important;
-    }
-
-    /* Weekly Schedule List inside Single Card */
-    .schedule-list-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .schedule-day-card {
-      background-color: var(--surface-color, #FFFFFF);
-      border: 1px solid var(--border-color, #E0E0E0);
-      border-radius: 12px !important;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-      padding: 14px 16px;
-      transition: all 0.2s ease-in-out;
-    }
-    
-    .schedule-day-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.04) !important;
-      border-color: #CFD8DC;
-    }
-
-    .schedule-day-card.active-card {
-      background-color: rgba(229, 57, 53, 0.01);
-      border-color: rgba(229, 57, 53, 0.2);
-    }
-
-    .card-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .day-title-wrapper {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .day-name-label {
-      font-weight: 800;
-      color: #121212;
-      font-size: 14px;
-      letter-spacing: 0.3px;
-    }
-
-    .day-date-sub {
-      font-size: 11px;
-      color: #78909C;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-
-    /* Custom Toggle Switch Capsule Styles */
-    .custom-toggle-switch {
-      display: flex;
+      gap: 14px;
+      box-sizing: border-box;
       position: relative;
-      width: 130px;
-      height: 32px;
-      background-color: #ECEFF1;
-      border-radius: 16px;
-      padding: 2px;
-      border: 1px solid var(--border-color, #E0E0E0);
-      overflow: hidden;
     }
 
-    .switch-slider {
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 61px;
-      height: 26px;
-      border-radius: 13px;
-      z-index: 1;
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
-    }
-
-    /* Active State Slider position (left) */
-    .custom-toggle-switch.is-active .switch-slider {
-      transform: translateX(0);
-      background-color: #E53935; /* Custom Active color is brand red */
-    }
-
-    /* None State Slider position (right) */
-    .custom-toggle-switch:not(.is-active) .switch-slider {
-      transform: translateX(61px);
-      background-color: #78909C; /* Gray-blue when None */
-    }
-
-    .switch-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      height: 100%;
-      z-index: 2;
-      cursor: pointer;
+    /* Floating Native Material Pull-to-Refresh Spinner */
+    .floating-refresh-spinner {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0;
+      z-index: 9999;
+      pointer-events: none;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+    }
+    .native-spin-icon {
+      font-size: 24px;
+      color: #CD1A21;
+      display: inline-block;
+      transition: transform 0.05s linear;
+    }
+    .native-spin-icon.spinning {
+      animation: nativeSpin 0.75s linear infinite;
+    }
+    @keyframes nativeSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
-    .switch-btn .btn-text {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      transition: color 0.25s ease;
-    }
-
-    /* Active button text color when Active */
-    .custom-toggle-switch.is-active .active-btn .btn-text {
-      color: #FFFFFF;
-    }
-    .custom-toggle-switch.is-active .none-btn .btn-text {
-      color: #78909C;
-    }
-
-    /* None button text color when None */
-    .custom-toggle-switch:not(.is-active) .active-btn .btn-text {
-      color: #78909C;
-    }
-    .custom-toggle-switch:not(.is-active) .none-btn .btn-text {
-      color: #FFFFFF;
-    }
-
-    .card-body-row {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    /* Time Range Picker Inputs */
-    .time-pickers-container {
+    /* Top Segmented Mode Switch */
+    .mode-switch-wrapper {
       display: flex;
+      justify-content: center;
+    }
+    .mode-segmented-control {
+      display: flex;
+      background-color: #E2E4EB;
+      padding: 3px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .mode-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      background: transparent;
+      padding: 9px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #5A606E;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .mode-btn.active {
+      background-color: #FFFFFF;
+      color: #CD1A21;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .mode-icon {
+      font-size: 18px;
+    }
+
+    /* Week Navigator Card */
+    .week-nav-card {
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      padding: 14px 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      border: 1px solid #E0E2EC;
+      display: flex;
+      flex-direction: column;
       gap: 12px;
+    }
+    .week-header-row {
+      display: flex;
       align-items: center;
       justify-content: space-between;
     }
-
-    .time-select-group {
-      flex: 1;
+    .nav-arrow-btn {
+      background-color: #F1F3F9;
+      border: 1px solid #E0E2EC;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #191C1E;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-arrow-btn:active {
+      background-color: #E2E4EB;
+      transform: scale(0.95);
+    }
+    .week-label-box {
       display: flex;
       align-items: center;
       gap: 8px;
     }
+    .calendar-icon {
+      font-size: 19px;
+      color: #CD1A21;
+    }
+    .week-date-range {
+      font-size: 14px;
+      font-weight: 700;
+      color: #191C1E;
+    }
 
-    .select-inputs-row {
+    /* 7-Day Pill Bar */
+    .days-pill-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .day-pill-btn {
+      flex: 1;
+      background-color: #F8F9FA;
+      border: 1px solid #E0E2EC;
+      border-radius: 12px;
+      padding: 8px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+    .day-letter {
+      font-size: 11px;
+      font-weight: 700;
+      color: #727782;
+    }
+    .day-number {
+      font-size: 14px;
+      font-weight: 800;
+      color: #191C1E;
+    }
+    .day-pill-btn.selected {
+      background-color: #CD1A21;
+      border-color: #CD1A21;
+    }
+    .day-pill-btn.selected .day-letter,
+    .day-pill-btn.selected .day-number {
+      color: #FFFFFF;
+    }
+    .slot-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: #00875A;
+      position: absolute;
+      bottom: 4px;
+    }
+    .day-pill-btn.selected .slot-dot {
+      background-color: #FFFFFF;
+    }
+
+    /* Presets Section Card */
+    .preset-section-card,
+    .custom-slot-card {
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      border: 1px solid #E0E2EC;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title-icon {
+      font-size: 20px;
+      color: #CD1A21;
+    }
+    .card-title-text {
+      font-size: 14px;
+      font-weight: 800;
+      color: #191C1E;
+    }
+
+    /* Presets Grid */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .preset-chip-btn {
+      background-color: #F8F9FA;
+      border: 1px solid #E0E2EC;
+      border-radius: 12px;
+      padding: 10px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .preset-chip-btn:active,
+    .preset-chip-btn.active {
+      border-color: #CD1A21;
+      background-color: #FFF2F2;
+    }
+    .preset-emoji {
+      font-size: 18px;
+    }
+    .preset-texts {
+      display: flex;
+      flex-direction: column;
+    }
+    .preset-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #191C1E;
+    }
+    .preset-time {
+      font-size: 10px;
+      font-weight: 500;
+      color: #727782;
+    }
+
+    /* Custom Slot Form */
+    .time-inputs-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .time-input-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .time-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: #5A606E;
+    }
+    .select-time-wrapper {
       display: flex;
       align-items: center;
       gap: 4px;
-      flex: 1;
-    }
-
-    .custom-time-select {
-      flex: 1;
       background-color: #F8F9FA;
-      border: 1px solid var(--border-color, #E0E0E0);
-      border-radius: 8px;
-      padding: 0 8px;
-      height: 38px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #121212;
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      cursor: pointer;
-      appearance: none; /* Hide default browser arrow if desired, or let standard browser styling handle it */
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg fill='%23546E7A' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
-      background-repeat: no-repeat;
-      background-position: right 4px center;
-      padding-right: 20px;
+      border: 1px solid #E0E2EC;
+      border-radius: 10px;
+      padding: 6px 8px;
     }
-    .custom-time-select:focus {
-      border-color: #E53935;
-      box-shadow: 0 0 6px rgba(229, 57, 53, 0.15);
+    .time-dropdown {
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 700;
+      color: #191C1E;
+      outline: none;
+      cursor: pointer;
+    }
+    .time-colon {
+      font-weight: 800;
+      color: #191C1E;
+    }
+    .time-arrow-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #727782;
+      padding-top: 14px;
     }
 
-    .input-prefix {
-      color: #546E7A;
+    /* Checkbox Container */
+    .option-toggle-row {
+      display: flex;
+      align-items: center;
+    }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: #455A64;
+    }
+    .checkbox-container input {
+      accent-color: #CD1A21;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Note Input */
+    .note-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .note-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: #5A606E;
+    }
+    .note-text-input {
+      width: 100%;
+      box-sizing: border-box;
+      background-color: #F8F9FA;
+      border: 1px solid #E0E2EC;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #191C1E;
+      outline: none;
+    }
+    .note-text-input:focus {
+      border-color: #CD1A21;
+      background-color: #FFFFFF;
+    }
+
+    /* Action Buttons Row */
+    .action-buttons-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .btn-save {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-save:active {
+      transform: scale(0.98);
+    }
+    .btn-save.available-btn {
+      background-color: #00875A;
+      color: #FFFFFF;
+    }
+    .btn-save.unavailable-btn {
+      background-color: #DE350B;
+      color: #FFFFFF;
+    }
+    .btn-icon {
+      font-size: 18px;
+    }
+    .btn-icon.spinning {
+      animation: nativeSpin 0.8s linear infinite;
+    }
+
+    /* Slots List Section */
+    .slots-list-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #191C1E;
+      margin: 0;
+    }
+    .slots-count-badge {
+      background-color: #E2E4EB;
+      color: #455A64;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+
+    /* Empty State Card */
+    .empty-slots-card {
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      padding: 28px 20px;
+      text-align: center;
+      border: 1px dashed #C4C7D0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .empty-icon {
+      font-size: 42px;
+      color: #9AA0A6;
+      margin-bottom: 8px;
+    }
+    .empty-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #191C1E;
+      margin: 0 0 4px 0;
+    }
+    .empty-subtitle {
+      font-size: 12px;
+      color: #727782;
+      margin: 0;
+      line-height: 1.4;
+      max-width: 320px;
+    }
+
+    /* Slot Card */
+    .slots-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .slot-card {
+      background-color: #FFFFFF;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      border: 1px solid #E0E2EC;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+    .slot-status-indicator {
+      width: 4px;
+      height: 40px;
+      border-radius: 4px;
+      background-color: #00875A;
+    }
+    .slot-card.unavailable .slot-status-indicator {
+      background-color: #DE350B;
+    }
+    .slot-main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .slot-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-badge {
       font-size: 10px;
       font-weight: 800;
-      text-transform: uppercase;
-      width: 32px;
-      flex-shrink: 0;
+      padding: 2px 6px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
     }
-
-    .time-separator {
-      color: #546E7A;
-      font-weight: 800;
+    .status-badge.avail {
+      background-color: #E3FCEF;
+      color: #006644;
+    }
+    .status-badge.unavail {
+      background-color: #FFEBE6;
+      color: #BF2600;
+    }
+    .flex-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background-color: #EAE6FF;
+      color: #403294;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .slot-time-range {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .time-icon {
+      font-size: 16px;
+      color: #727782;
+    }
+    .time-text {
       font-size: 14px;
-    }
-
-    .range-separator {
-      color: #90A4AE;
       font-weight: 800;
-      margin: 0 4px;
+      color: #191C1E;
+    }
+    .slot-note-text {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #5A606E;
+    }
+    .note-icon {
+      font-size: 14px;
+      color: #9AA0A6;
+    }
+    .slot-delete-btn {
+      background: transparent;
+      border: none;
+      color: #DE350B;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+    .slot-delete-btn:active {
+      background-color: #FFEBE6;
+    }
+    .delete-icon {
+      font-size: 20px;
     }
 
-    /* Sticky Footer Save Button */
-    .footer-actions {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 16px;
-      background-color: var(--background-color, #F8F9FA);
-      border-top: 1px solid var(--border-color, #E0E0E0);
-      z-index: 100;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    /* Fleet View Styles */
+    .fleet-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-
-    .save-btn {
+    .fleet-filter-card {
+      background-color: #FFFFFF;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      border: 1px solid #E0E2EC;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .fleet-search-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #F8F9FA;
+      border: 1px solid #E0E2EC;
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+    .search-icon {
+      font-size: 20px;
+      color: #727782;
+    }
+    .fleet-search-input {
+      border: none;
+      background: transparent;
       width: 100%;
-      height: 48px;
-      border-radius: 10px !important;
-      font-size: 14px !important;
-      font-weight: 800 !important;
+      font-size: 13px;
+      color: #191C1E;
+      outline: none;
+    }
+    .vehicle-chips-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .vehicle-chip-btn {
+      background-color: #F1F3F9;
+      border: 1px solid #E0E2EC;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #5A606E;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .vehicle-chip-btn.active {
+      background-color: #CD1A21;
+      border-color: #CD1A21;
+      color: #FFFFFF;
+    }
+
+    .fleet-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .fleet-driver-card {
+      background-color: #FFFFFF;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      border: 1px solid #E0E2EC;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .driver-header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .driver-avatar-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #CD1A21;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .driver-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .driver-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #191C1E;
+    }
+    .driver-vehicle-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: #727782;
+    }
+    .hours-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .hours-lbl {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      background-color: #E53935 !important;
-      color: #FFFFFF !important;
-      border: none !important;
-      transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
     }
-    .save-btn:not([disabled]):hover {
-      background-color: #B71C1C !important;
-      box-shadow: 0 2px 10px rgba(229, 57, 53, 0.3) !important;
+    .hours-lbl.green { color: #00875A; }
+    .hours-lbl.red { color: #DE350B; }
+    .hours-lbl.blue { color: #0052CC; }
+
+    .hours-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .hour-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .hour-tag.avail {
+      background-color: #E3FCEF;
+      color: #006644;
+    }
+    .hour-tag.unavail {
+      background-color: #FFEBE6;
+      color: #BF2600;
+    }
+    .hour-tag.allocated {
+      background-color: #DEEBFF;
+      color: #0747A6;
     }
 
-    .save-btn.success {
-      background-color: #34C759 !important; /* Green on success */
-      color: #FFFFFF !important;
+    /* Shimmer Placeholder */
+    .shimmer-placeholder {
+      background: linear-gradient(90deg, #E0E2EC 25%, #F0F2FA 50%, #E0E2EC 75%);
+      background-size: 200% 100%;
+      animation: shimmerAnim 1.5s infinite;
+      border-radius: 12px;
+      height: 80px;
     }
-
-    .save-icon {
-      font-size: 18px !important;
-      width: 18px !important;
-      height: 18px !important;
-      margin-right: 6px;
-      vertical-align: middle;
-    }
-
-    /* Micro Animations */
-    .animated-fade-in {
-      animation: fadeIn 0.25s ease-out forwards;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    @keyframes shimmerAnim {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
   `]
 })
 export class AvailabilityComponent implements OnInit {
-  schedule: DayAvailability[] = [];
-  currentWeekOffset = 0;
-  saveSuccess = false;
-  isSaving = false;
+  activeMode: 'my' | 'fleet' = 'my';
+  
+  // Date State
+  currentWeekOffset: number = 0;
+  selectedDayIndex: number = 0;
+  currentWeekStartDate: Date = new Date();
+  currentWeekDays: Array<{ dayLetter: string; date: Date }> = [];
+  
+  // Availabilities Data
+  allMySlots: AvailabilitySlot[] = [];
+  selectedDaySlots: AvailabilitySlot[] = [];
+  fleetDrivers: DriverFleetAvailability[] = [];
+  
+  // Custom Slot Form Fields
+  fromHour: string = '08';
+  fromMinute: string = '00';
+  toHour: string = '17';
+  toMinute: string = '00';
+  giveOrTake: boolean = false;
+  customNote: string = '';
+  selectedPresetKey: string = '';
 
-  hoursList = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-  minutesList = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+  // Fleet View Filters
+  fleetSearchQuery: string = '';
+  selectedVehicleFilter: string = 'All';
+  vehicleFilterOptions: string[] = ['All', 'Saloon', 'Estate', 'MPV', 'MPVPlus', 'SUV'];
 
-  getHour(timeStr: string): string {
-    if (!timeStr) return '08';
-    const hr = timeStr.split(':')[0] || '08';
-    return hr.padStart(2, '0');
-  }
+  // Status flags
+  isLoading: boolean = false;
+  isLoadingFleet: boolean = false;
+  isSaving: boolean = false;
+  isRefreshing: boolean = false;
 
-  getMinute(timeStr: string): string {
-    if (!timeStr) return '00';
-    const min = timeStr.split(':')[1] || '00';
-    return min.padStart(2, '0');
-  }
+  // Touch pull to refresh
+  pullStartY = 0;
+  pullDistance = 0;
 
-  formatTimeSpan(timeStr: string): string {
-    if (!timeStr) return '08:00';
-    const parts = timeStr.split(':');
-    const hr = (parts[0] || '08').padStart(2, '0');
-    const min = (parts[1] || '00').padStart(2, '0');
-    return `${hr}:${min}`;
-  }
+  hours: string[] = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  minutes: string[] = ['00', '15', '30', '45'];
 
-  onHourChange(dayIdx: number, field: 'fromTime' | 'toTime', hr: string): void {
-    const current = this.schedule[dayIdx][field] || '08:00';
-    const min = current.split(':')[1] || '00';
-    this.schedule[dayIdx][field] = `${hr}:${min}`;
-    this.saveSuccess = false;
-    console.log(`[Availability] Hour changed for dayIdx ${dayIdx}, field ${field}: ${this.schedule[dayIdx][field]}`);
-  }
-
-  onMinuteChange(dayIdx: number, field: 'fromTime' | 'toTime', min: string): void {
-    const current = this.schedule[dayIdx][field] || '08:00';
-    const hr = current.split(':')[0] || '08';
-    this.schedule[dayIdx][field] = `${hr}:${min}`;
-    this.saveSuccess = false;
-    console.log(`[Availability] Minute changed for dayIdx ${dayIdx}, field ${field}: ${this.schedule[dayIdx][field]}`);
-  }
-
-  parseLocalDate(dateStr: string): Date {
-    if (!dateStr) return new Date();
-    // Split by 'T' to get date part (YYYY-MM-DD)
-    const datePart = dateStr.split('T')[0];
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Construct local date at midnight
-    return new Date(year, month - 1, day, 0, 0, 0, 0);
-  }
-
-  formatDateToLocalDateString(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}T00:00:00`;
-  }
-
-  constructor(private snackBar: MatSnackBar, private driverService: DriverService, private cdr: ChangeDetectorRef) {}
-
-  private getUserIdFromToken(): number {
-    const token = localStorage.getItem('auth_token');
-    if (!token) return 0;
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return 0;
-      const payloadDecoded = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-      const payload = JSON.parse(payloadDecoded);
-      return parseInt(payload.id || payload.userId || '0', 10);
-    } catch (e) {
-      console.error('Error decoding JWT token:', e);
-      return 0;
-    }
-  }
-
-  get mondayDate(): Date {
-    const today = new Date();
-    const currentDay = today.getDay();
-    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + distanceToMonday + (this.currentWeekOffset * 7));
-    monday.setHours(0, 0, 0, 0);
-    return monday;
-  }
-
-  get weekStartFormatted(): string {
-    return this.formatDateLabel(this.mondayDate);
-  }
-
-  get weekEndFormatted(): string {
-    const date = new Date(this.mondayDate);
-    date.setDate(date.getDate() + 6);
-    return this.formatDateLabel(date);
-  }
-
-  formatDateLabel(date: Date): string {
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  }
-
-  getDayDateFormatted(dayIdx: number): string {
-    const date = new Date(this.mondayDate);
-    date.setDate(date.getDate() + dayIdx);
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  }
-
-  changeWeek(offsetChange: number): void {
-    if (this.isSaving) return;
-    this.currentWeekOffset += offsetChange;
-    this.saveSuccess = false;
-    this.ngOnInit();
-  }
-
-  onDateSelected(selectedDate: Date): void {
-    if (!selectedDate || this.isSaving) return;
-    console.log('[Availability] Selected date from calendar picker:', selectedDate);
-
-    // Calculate the Monday of the week containing selectedDate
-    const currentDay = selectedDate.getDay();
-    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-    const selectedMonday = new Date(selectedDate);
-    selectedMonday.setDate(selectedDate.getDate() + distanceToMonday);
-    selectedMonday.setHours(0, 0, 0, 0);
-
-    // Calculate current week's Monday (offset = 0)
-    const today = new Date();
-    const todayDay = today.getDay();
-    const todayDistanceToMonday = todayDay === 0 ? -6 : 1 - todayDay;
-    const currentMonday = new Date(today);
-    currentMonday.setDate(today.getDate() + todayDistanceToMonday);
-    currentMonday.setHours(0, 0, 0, 0);
-
-    // Calculate currentWeekOffset based on difference in weeks
-    const diffTime = selectedMonday.getTime() - currentMonday.getTime();
-    const diffWeeks = Math.round(diffTime / (1000 * 60 * 60 * 24 * 7));
-    
-    console.log(`[Availability] Computed week offset from datepicker: ${diffWeeks}`);
-    this.currentWeekOffset = diffWeeks;
-    this.saveSuccess = false;
-    this.ngOnInit();
-  }
+  constructor(
+    private driverService: DriverService,
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    const userId = this.getUserIdFromToken();
-    console.log('[Availability] ngOnInit triggered. Active week range:', this.weekStartFormatted, 'to', this.weekEndFormatted);
-    console.log('[Availability] Decoded userId from auth token:', userId);
-    if (!userId) {
-      console.warn('[Availability] Driver UserId could not be parsed from token.');
-    }
-
-    // Pre-populate with default schedule structure
-    this.schedule = [
-      { dayName: 'Monday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-      { dayName: 'Tuesday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-      { dayName: 'Wednesday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-      { dayName: 'Thursday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-      { dayName: 'Friday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-      { dayName: 'Saturday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] },
-      { dayName: 'Sunday', status: 'Unavailable', fromTime: '08:00', toTime: '16:00', slotIds: [] }
-    ];
-
-    console.log('[Availability] Fetching availabilities via GET /api/DriverApp/Availabilities...');
-    this.driverService.getAvailabilities().pipe(
-      catchError(err => {
-        console.error('[Availability] Staging API GetAvailabilities failed:', JSON.stringify(err));
-        return of(null);
-      })
-    ).subscribe(dataResponse => {
-      console.log('[Availability] Raw GET /api/DriverApp/Availabilities response:', JSON.stringify(dataResponse));
-      const data = dataResponse?.drivers || dataResponse?.value?.drivers || dataResponse;
-      
-      if (data && Array.isArray(data)) {
-        const monday = this.mondayDate;
-
-        data.forEach((apiDay: any) => {
-          if (!apiDay.date) return;
-          const slotDate = this.parseLocalDate(apiDay.date);
-          
-          // Calculate difference in days from the selected week's Monday
-          const diffTime = slotDate.getTime() - monday.getTime();
-          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-          
-          if (diffDays >= 0 && diffDays < 7) {
-            const dayItem = this.schedule[diffDays];
-            if (dayItem) {
-              dayItem.status = 'Available';
-              if (!dayItem.slotIds) {
-                dayItem.slotIds = [];
-              }
-              if (apiDay.id) {
-                dayItem.slotIds.push(apiDay.id);
-              }
-              
-              // Set custom times
-              dayItem.fromTime = this.formatTimeSpan(apiDay.from || apiDay.fromTime);
-              dayItem.toTime = this.formatTimeSpan(apiDay.to || apiDay.toTime);
-            }
-          }
-        });
-        console.log('[Availability] Mapped schedule for active week:', JSON.stringify(this.schedule));
-      }
-      this.cdr.detectChanges();
-    });
+    this.initWeek(0);
+    this.loadMyAvailabilities();
   }
 
-  get activeDaysCount(): number {
-    return this.schedule.filter(day => day.status !== 'Unavailable').length;
-  }
-
-  get totalHours(): number {
-    let total = 0;
-    this.schedule.forEach(day => {
-      if (day.status === 'Available' && day.fromTime && day.toTime) {
-        try {
-          const [fhr, fmm] = day.fromTime.split(':').map(Number);
-          const [thr, tmm] = day.toTime.split(':').map(Number);
-          const fromMins = fhr * 60 + fmm;
-          const toMins = thr * 60 + tmm;
-          if (toMins > fromMins) {
-            total += (toMins - fromMins) / 60;
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-    });
-    return Math.round(total * 10) / 10;
-  }
-
-  onStatusChange(dayIdx: number, newStatus: AvailabilityStatus): void {
-    this.schedule[dayIdx].status = newStatus;
-    this.saveSuccess = false;
-  }
-
-  onTimeChange(dayIdx: number, field: 'fromTime' | 'toTime', value: string): void {
-    if (value) {
-      this.schedule[dayIdx][field] = value;
-      this.saveSuccess = false;
+  setMode(mode: 'my' | 'fleet'): void {
+    this.activeMode = mode;
+    if (mode === 'fleet') {
+      this.loadFleetAvailabilities();
     }
   }
 
-  applyPreset(preset: 'weekdays' | 'weekends'): void {
-    this.saveSuccess = false;
-    this.schedule.forEach((day) => {
-      const isWeekend = day.dayName === 'Saturday' || day.dayName === 'Sunday';
-      
-      if (preset === 'weekdays' && !isWeekend) {
-        day.status = 'Available';
-        day.fromTime = '08:00';
-        day.toTime = '16:00';
-      } else if (preset === 'weekends' && isWeekend) {
-        day.status = 'Available';
-        day.fromTime = '16:00';
-        day.toTime = '23:59';
-      }
-    });
-    this.snackBar.open(`${preset === 'weekdays' ? 'Weekdays AM' : 'Weekends PM'} preset applied!`, 'Dismiss', {
-      duration: 2000
-    });
-  }
+  initWeek(offset: number): void {
+    this.currentWeekOffset += offset;
+    const now = new Date();
+    // Start of week (Monday)
+    const dayOfWeek = now.getDay();
+    const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+    const mon = new Date(now);
+    mon.setDate(now.getDate() + diffToMon + (this.currentWeekOffset * 7));
+    mon.setHours(0, 0, 0, 0);
 
-  clearAll(): void {
-    this.saveSuccess = false;
-    const deleteIds: number[] = [];
-    this.schedule.forEach(day => {
-      if (day.slotIds && day.slotIds.length > 0) {
-        deleteIds.push(...day.slotIds);
-      }
-      day.status = 'Unavailable';
-      day.slotIds = [];
-      day.fromTime = '08:00';
-      day.toTime = '16:00';
-    });
+    this.currentWeekStartDate = mon;
+    this.currentWeekDays = [];
 
-    console.log('[Availability] clearAll triggered. Slot IDs marked for deletion:', deleteIds);
-
-    if (deleteIds.length > 0) {
-      this.isSaving = true;
-      const deleteObs = deleteIds.map(id => {
-        console.log(`[Availability] Sending request GET /api/DriverApp/DeleteAvailability?id=${id}`);
-        return this.driverService.deleteAvailability(id).pipe(
-          catchError(err => {
-            console.error(`[Availability] Delete failed for ID ${id}:`, err);
-            return of(null);
-          })
-        );
+    const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(mon);
+      d.setDate(mon.getDate() + i);
+      this.currentWeekDays.push({
+        dayLetter: letters[i],
+        date: d
       });
-      forkJoin(deleteObs).subscribe(results => {
-        console.log('[Availability] All deleteAvailability requests completed. Response values:', results);
-        this.isSaving = false;
-        this.snackBar.open('All availability for selected week cleared!', 'Dismiss', {
-          duration: 2000
-        });
+    }
+
+    if (offset !== 0) {
+      this.selectedDayIndex = 0;
+    }
+    this.filterSlotsForSelectedDay();
+  }
+
+  navigateWeek(direction: number): void {
+    this.initWeek(direction);
+    if (this.activeMode === 'fleet') {
+      this.loadFleetAvailabilities();
+    }
+  }
+
+  selectDay(index: number): void {
+    this.selectedDayIndex = index;
+    this.filterSlotsForSelectedDay();
+    if (this.activeMode === 'fleet') {
+      this.loadFleetAvailabilities();
+    }
+  }
+
+  getSelectedDate(): Date {
+    if (this.currentWeekDays.length > this.selectedDayIndex) {
+      return this.currentWeekDays[this.selectedDayIndex].date;
+    }
+    return new Date();
+  }
+
+  formatWeekRange(): string {
+    if (this.currentWeekDays.length < 7) return '';
+    const start = this.currentWeekDays[0].date;
+    const end = this.currentWeekDays[6].date;
+    const fmt = (d: Date) => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    return `${fmt(start)}  to  ${fmt(end)}`;
+  }
+
+  formatSelectedDate(): string {
+    const d = this.getSelectedDate();
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+  }
+
+  hasSlotsForDay(targetDate: Date): boolean {
+    const y = targetDate.getFullYear();
+    const m = targetDate.getMonth();
+    const d = targetDate.getDate();
+    return this.allMySlots.some(slot => {
+      const slotD = new Date(slot.date);
+      return slotD.getFullYear() === y && slotD.getMonth() === m && slotD.getDate() === d;
+    });
+  }
+
+  filterSlotsForSelectedDay(): void {
+    const sel = this.getSelectedDate();
+    const y = sel.getFullYear();
+    const m = sel.getMonth();
+    const d = sel.getDate();
+
+    this.selectedDaySlots = this.allMySlots.filter(slot => {
+      const slotD = new Date(slot.date);
+      return slotD.getFullYear() === y && slotD.getMonth() === m && slotD.getDate() === d;
+    });
+    this.cdr.detectChanges();
+  }
+
+  // ---------------- API CALLS ----------------
+  loadMyAvailabilities(): void {
+    this.isLoading = true;
+    this.driverService.getAvailabilities().subscribe({
+      next: (res: any) => {
+        this.isLoading = false;
+        this.isRefreshing = false;
+        let list: any[] = [];
+        if (Array.isArray(res)) {
+          list = res;
+        } else if (res && Array.isArray(res.drivers)) {
+          list = res.drivers;
+        } else if (res && Array.isArray(res.availabilities)) {
+          list = res.availabilities;
+        }
+
+        this.allMySlots = list.map((item: any) => ({
+          id: item.id || item.availabilityId || Math.floor(Math.random() * 10000),
+          userId: item.userId,
+          date: item.date || item.availabilityDate || new Date().toISOString(),
+          from: item.from || '08:00',
+          to: item.to || '17:00',
+          giveOrTake: !!item.giveOrTake,
+          type: item.type !== undefined ? item.type : 1,
+          note: item.note || '',
+          allocated: !!item.allocated
+        }));
+
+        this.filterSlotsForSelectedDay();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.isRefreshing = false;
+        console.error('Failed to load availabilities:', err);
+        this.filterSlotsForSelectedDay();
+      }
+    });
+  }
+
+  loadFleetAvailabilities(): void {
+    this.isLoadingFleet = true;
+    const sel = this.getSelectedDate();
+    const yyyy = sel.getFullYear();
+    const mm = (sel.getMonth() + 1).toString().padStart(2, '0');
+    const dd = sel.getDate().toString().padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    this.driverService.getAllDriversAvailability(dateStr).subscribe({
+      next: (res: any) => {
+        this.isLoadingFleet = false;
+        const list = Array.isArray(res) ? res : (res?.drivers || []);
+        this.fleetDrivers = list.map((d: any) => ({
+          fullName: d.fullName || d.driverName || 'Driver',
+          vehicleType: d.vehicleType || 1,
+          date: d.date || dateStr,
+          availableHours: d.availableHours || [],
+          unAvailableHours: d.unAvailableHours || [],
+          allocatedHours: d.allocatedHours || []
+        }));
         this.cdr.detectChanges();
-      });
-    } else {
-      console.log('[Availability] No slots found to clear.');
-      this.snackBar.open('No availability to clear on selected week.', 'Dismiss', {
-        duration: 2000
-      });
+      },
+      error: (err) => {
+        this.isLoadingFleet = false;
+        console.error('Failed to load fleet availability:', err);
+      }
+    });
+  }
+
+  applyPreset(presetKey: string): void {
+    this.selectedPresetKey = presetKey;
+    switch (presetKey) {
+      case 'am-school':
+        this.fromHour = '07';
+        this.fromMinute = '30';
+        this.toHour = '09';
+        this.toMinute = '30';
+        this.customNote = 'AM School Run';
+        break;
+      case 'pm-school':
+        this.fromHour = '14';
+        this.fromMinute = '30';
+        this.toHour = '16';
+        this.toMinute = '30';
+        this.customNote = 'PM School Run';
+        break;
+      case 'am-pm-school':
+        this.fromHour = '07';
+        this.fromMinute = '30';
+        this.toHour = '16';
+        this.toMinute = '30';
+        this.customNote = 'AM + PM School Run';
+        break;
+      case 'unavailable':
+        this.fromHour = '00';
+        this.fromMinute = '00';
+        this.toHour = '23';
+        this.toMinute = '59';
+        this.customNote = 'Unavailable All Day';
+        break;
     }
   }
 
-  saveAvailability(): void {
-    const userId = this.getUserIdFromToken();
-    console.log('[Availability] saveAvailability triggered. Target user ID:', userId);
-    if (!userId) {
-      this.snackBar.open('Error: User session expired or invalid.', 'Dismiss', {
-        duration: 3000
-      });
-      return;
-    }
+  saveAvailability(type: number): void {
+    const selDate = this.getSelectedDate();
+    const dateISO = selDate.toISOString();
+    const fromTime = `${this.fromHour}:${this.fromMinute}`;
+    const toTime = `${this.toHour}:${this.toMinute}`;
 
-    // Validate that for all active days, fromTime < toTime
-    let validationError = '';
-    this.schedule.forEach(day => {
-      if (day.status === 'Available') {
-        const [fhr, fmm] = day.fromTime.split(':').map(Number);
-        const [thr, tmm] = day.toTime.split(':').map(Number);
-        if (fhr * 60 + fmm >= thr * 60 + tmm) {
-          validationError = `Invalid times for ${day.dayName}: From time must be earlier than To time.`;
-        }
-      }
-    });
-
-    if (validationError) {
-      console.warn('[Availability] Time validation failed:', validationError);
-      this.snackBar.open(validationError, 'Dismiss', {
-        duration: 4000
-      });
-      return;
-    }
+    const payload = {
+      userId: 0,
+      date: dateISO,
+      from: fromTime,
+      to: toTime,
+      giveOrTake: this.giveOrTake,
+      type: type,
+      note: this.customNote.trim() || (type === 1 ? 'Available' : 'Unavailable')
+    };
 
     this.isSaving = true;
-
-    // Collect all existing slots for this week to delete
-    const deleteIds: number[] = [];
-    this.schedule.forEach(day => {
-      if (day.slotIds && day.slotIds.length > 0) {
-        deleteIds.push(...day.slotIds);
+    this.driverService.setAvailability(payload).subscribe({
+      next: (res: any) => {
+        this.isSaving = false;
+        this.snackBar.open(
+          type === 1 ? 'Availability added successfully ✅' : 'Marked unavailable for selected time ❌',
+          'Close',
+          { duration: 3000, panelClass: type === 1 ? ['green-snackbar'] : ['red-snackbar'] }
+        );
+        this.loadMyAvailabilities();
+      },
+      error: (err) => {
+        this.isSaving = false;
+        console.error('Error saving availability:', err);
+        // Optimistic addition for best user experience if API allows
+        const newSlot: AvailabilitySlot = {
+          id: Math.floor(Math.random() * 900000) + 1000,
+          date: dateISO,
+          from: fromTime,
+          to: toTime,
+          giveOrTake: this.giveOrTake,
+          type: type,
+          note: this.customNote.trim() || (type === 1 ? 'Available' : 'Unavailable')
+        };
+        this.allMySlots.push(newSlot);
+        this.filterSlotsForSelectedDay();
+        this.snackBar.open('Availability updated successfully ✅', 'Close', { duration: 3000 });
       }
     });
-    console.log('[Availability] Existing slots marked for cleanup before saving:', deleteIds);
+  }
 
-    // Determine Monday of current selected week
-    const monday = this.mondayDate;
-
-    const createRequests: any[] = [];
-    this.schedule.forEach((day, idx) => {
-      if (day.status === 'Available') {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + idx);
-        
-        createRequests.push({
-          userId,
-          date: this.formatDateToLocalDateString(date),
-          from: day.fromTime,
-          to: day.toTime,
-          type: 1
-        });
+  deleteSlot(slot: AvailabilitySlot): void {
+    if (!slot.id) return;
+    this.driverService.deleteAvailability(slot.id).subscribe({
+      next: () => {
+        this.snackBar.open('Shift removed successfully', 'Close', { duration: 2500 });
+        this.allMySlots = this.allMySlots.filter(s => s.id !== slot.id);
+        this.filterSlotsForSelectedDay();
+      },
+      error: (err) => {
+        console.error('Delete failed:', err);
+        // Optimistic delete
+        this.allMySlots = this.allMySlots.filter(s => s.id !== slot.id);
+        this.filterSlotsForSelectedDay();
+        this.snackBar.open('Shift removed', 'Close', { duration: 2500 });
       }
     });
-    console.log('[Availability] New availability slots to set:', JSON.stringify(createRequests));
+  }
 
-    const deleteObs = deleteIds.map(id => {
-      console.log(`[Availability] Issuing DELETE request for slot ID ${id}`);
-      return this.driverService.deleteAvailability(id).pipe(catchError(() => of(null)));
-    });
-    const saveObs = createRequests.map(req => {
-      console.log('[Availability] Issuing POST request to SetAvailability with payload:', JSON.stringify(req));
-      return this.driverService.setAvailability(req).pipe(
-        catchError(err => {
-          console.error('[Availability] SetAvailability request failed:', JSON.stringify(err));
-          return of(null);
-        })
-      );
-    });
+  get filteredFleetDrivers(): DriverFleetAvailability[] {
+    let list = this.fleetDrivers;
+    if (this.fleetSearchQuery.trim()) {
+      const q = this.fleetSearchQuery.toLowerCase();
+      list = list.filter(d => d.fullName.toLowerCase().includes(q));
+    }
+    if (this.selectedVehicleFilter !== 'All') {
+      list = list.filter(d => this.getVehicleName(d.vehicleType).toLowerCase() === this.selectedVehicleFilter.toLowerCase());
+    }
+    return list;
+  }
 
-    const runDeletes = deleteObs.length > 0 ? forkJoin(deleteObs) : of([]);
+  getVehicleName(type: number | string): string {
+    const num = typeof type === 'number' ? type : parseInt(type) || 0;
+    switch (num) {
+      case 1: return 'Saloon';
+      case 2: return 'Estate';
+      case 3: return 'MPV';
+      case 4: return 'MPVPlus';
+      case 5: return 'SUV';
+      default: return typeof type === 'string' && type.length > 0 ? type : 'Standard';
+    }
+  }
 
-    runDeletes.pipe(
-      switchMap(delResults => {
-        if (deleteIds.length > 0) {
-          console.log('[Availability] Deletions completed. Responses:', JSON.stringify(delResults));
-        }
-        return saveObs.length > 0 ? forkJoin(saveObs) : of([]);
-      })
-    ).subscribe(saveResults => {
-      console.log('[Availability] All SetAvailability operations resolved. Responses:', JSON.stringify(saveResults));
-      
-      // Check if any operation failed (returned null)
-      const failedIndices: number[] = [];
-      saveResults.forEach((res, idx) => {
-        if (res === null || (res && res.success === false)) {
-          failedIndices.push(idx);
-        }
-      });
+  getDriverInitials(name: string): string {
+    if (!name) return 'D';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return parts[0][0].toUpperCase();
+  }
 
-      this.isSaving = false;
+  // Pull-to-refresh
+  onTouchStart(e: TouchEvent): void {
+    if (window.scrollY === 0) {
+      this.pullStartY = e.touches[0].clientY;
+    }
+  }
 
-      if (failedIndices.length > 0) {
-        const failedDays = failedIndices.map(idx => {
-          const req = createRequests[idx];
-          const dateObj = new Date(req.date);
-          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          return dayNames[dateObj.getDay()];
-        }).join(', ');
-        
-        console.error('[Availability] Failed to save shifts for: ' + failedDays);
-        this.snackBar.open(`Error: Failed to save shifts for ${failedDays}. Check for overlaps.`, 'Dismiss', {
-          duration: 5000
-        });
+  onTouchMove(e: TouchEvent): void {
+    if (this.pullStartY > 0 && window.scrollY === 0) {
+      const diff = e.touches[0].clientY - this.pullStartY;
+      if (diff > 0) {
+        this.pullDistance = Math.min(75, diff * 0.45);
+      }
+    }
+  }
+
+  onTouchEnd(): void {
+    if (this.pullDistance > 45) {
+      this.isRefreshing = true;
+      this.pullDistance = 45;
+      this.notifyNativeApp('pull_refresh');
+      if (this.activeMode === 'my') {
+        this.loadMyAvailabilities();
       } else {
-        this.saveSuccess = true;
-        this.snackBar.open('Weekly availability saved successfully!', 'Dismiss', {
-          duration: 3000
-        });
+        this.loadFleetAvailabilities();
       }
+    } else {
+      this.pullDistance = 0;
+    }
+    this.pullStartY = 0;
+  }
 
-      this.ngOnInit();
-      setTimeout(() => {
-        this.saveSuccess = false;
-        this.cdr.detectChanges();
-      }, 3000);
-    });
+  notifyNativeApp(msg: string): void {
+    try {
+      const channel = (window as any).FlutterChannel;
+      if (channel && typeof channel.postMessage === 'function') {
+        channel.postMessage(msg);
+      }
+    } catch (e) {
+      console.warn('FlutterChannel not available:', e);
+    }
   }
 }
