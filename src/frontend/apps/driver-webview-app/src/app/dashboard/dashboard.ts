@@ -40,7 +40,32 @@ interface DashTotals {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="dashboard-container">
+    <div 
+      class="dashboard-container"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd()"
+    >
+      <!-- Pull-to-Refresh Indicator -->
+      <div 
+        class="pull-refresh-bar"
+        [class.visible]="pullDistance > 0 || isRefreshing"
+        [style.height.px]="isRefreshing ? 48 : pullDistance"
+      >
+        <div class="pull-refresh-content">
+          <span 
+            class="material-symbols-outlined refresh-icon"
+            [class.spinning]="isRefreshing"
+            [style.transform]="'rotate(' + (pullDistance * 4) + 'deg)'"
+          >
+            refresh
+          </span>
+          <span class="refresh-label">
+            {{ isRefreshing ? 'Refreshing live data...' : (pullDistance > 55 ? 'Release to refresh' : 'Pull down to refresh') }}
+          </span>
+        </div>
+      </div>
+
       <!-- 1. Active Booking Card (If there is an active/upcoming booking) -->
       <div class="dash-card active-booking-card" *ngIf="activeBooking">
         <div class="active-badge-row">
@@ -199,9 +224,14 @@ interface DashTotals {
 
       <!-- 5. Recent Completed Trips List Card -->
       <div class="dash-card trips-list-card">
-        <h3 class="section-title">Recent Completed Trips</h3>
+        <div class="card-header-with-action">
+          <h3 class="section-title">Recent Completed Trips</h3>
+          <button class="refresh-icon-btn" (click)="triggerRefresh()" title="Refresh Dashboard">
+            <span class="material-symbols-outlined" [class.spinning]="isRefreshing">refresh</span>
+          </button>
+        </div>
         
-        <div *ngIf="isLoading" class="shimmer-placeholder list-shimmer"></div>
+        <div *ngIf="isLoading && !isRefreshing" class="shimmer-placeholder list-shimmer"></div>
 
         <div *ngIf="!isLoading && completedJobs.length === 0" class="empty-trips-view">
           <span class="material-symbols-outlined empty-trips-icon">history</span>
@@ -229,12 +259,56 @@ interface DashTotals {
     .dashboard-container {
       background-color: #F8F9FA;
       min-height: 100vh;
-      padding: 12px 14px 48px 14px;
+      padding: 10px 14px 48px 14px;
       font-family: 'Roboto', sans-serif;
       display: flex;
       flex-direction: column;
       gap: 14px;
       box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Pull to Refresh Indicator Bar */
+    .pull-refresh-bar {
+      width: 100%;
+      height: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: transparent;
+      transition: height 0.15s ease-out;
+    }
+    .pull-refresh-bar.visible {
+      opacity: 1;
+    }
+    .pull-refresh-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #FFFFFF;
+      padding: 6px 14px;
+      border-radius: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border: 1px solid #E0E2EC;
+    }
+    .refresh-icon {
+      font-size: 20px;
+      color: #CD1A21;
+      display: inline-block;
+      transition: transform 0.1s linear;
+    }
+    .refresh-icon.spinning {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .refresh-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #455A64;
     }
 
     /* Common Card Styling */
@@ -522,13 +596,33 @@ interface DashTotals {
       letter-spacing: 0.3px;
     }
 
+    .card-header-with-action {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
     .section-title {
-      margin: 0 0 12px 0;
+      margin: 0;
       font-size: 12px;
       font-weight: 900;
       color: #546E7A;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+    }
+    .refresh-icon-btn {
+      background: transparent;
+      border: none;
+      color: #546E7A;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .refresh-icon-btn:active {
+      background-color: #ECEFF1;
     }
 
     /* Simulation Deck card styling */
@@ -660,7 +754,12 @@ interface DashTotals {
 export class DashboardComponent implements OnInit, OnDestroy {
   isOnline = false;
   isLoading = false;
+  isRefreshing = false;
   selectedFilter: 'Daily' | 'Weekly' | 'Monthly' = 'Daily';
+
+  // Pull-to-refresh touch tracker
+  pullStartY = 0;
+  pullDistance = 0;
 
   dashTotals: DashTotals = {
     earningsTotalToday: 0,
@@ -697,6 +796,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadDashboardData();
   }
 
+  // --- Pull to Refresh Handlers ---
+  onTouchStart(e: TouchEvent): void {
+    if (window.scrollY === 0) {
+      this.pullStartY = e.touches[0].clientY;
+    }
+  }
+
+  onTouchMove(e: TouchEvent): void {
+    if (this.isRefreshing) return;
+    if (window.scrollY === 0 && this.pullStartY > 0) {
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - this.pullStartY;
+      if (diff > 0) {
+        this.pullDistance = Math.min(75, diff * 0.45);
+        this.cdr.detectChanges();
+      }
+    }
+  }
+
+  onTouchEnd(): void {
+    if (this.pullDistance > 55 && !this.isRefreshing) {
+      this.triggerRefresh();
+    } else {
+      this.pullDistance = 0;
+      this.cdr.detectChanges();
+    }
+    this.pullStartY = 0;
+  }
+
+  triggerRefresh(): void {
+    this.isRefreshing = true;
+    this.pullDistance = 48;
+    this.cdr.detectChanges();
+    this.loadDashboardData();
+  }
+
   setFilter(filter: string): void {
     this.selectedFilter = filter as 'Daily' | 'Weekly' | 'Monthly';
   }
@@ -718,7 +853,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get gaugeDashOffset(): number {
-    // 353.43 is arc circumference for r=75 spanning 270 deg
     const maxTarget = 500;
     const progress = Math.min(1, Math.max(0, this.currentEarnings / maxTarget));
     return 353.43 * (1 - progress);
@@ -792,7 +926,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData(): void {
-    this.isLoading = true;
+    if (!this.isRefreshing) {
+      this.isLoading = true;
+    }
     this.cdr.detectChanges();
 
     forkJoin({
@@ -881,11 +1017,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         });
 
         this.isLoading = false;
+        this.isRefreshing = false;
+        this.pullDistance = 0;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error loading dashboard data:', err);
         this.isLoading = false;
+        this.isRefreshing = false;
+        this.pullDistance = 0;
         this.cdr.detectChanges();
       }
     });
