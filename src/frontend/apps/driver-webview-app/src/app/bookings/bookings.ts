@@ -1,9 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatButtonModule } from '@angular/material/button';
 import { DriverService } from '../services/driver.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -29,40 +27,27 @@ interface Booking {
   imports: [
     CommonModule,
     MatCardModule,
-    MatChipsModule,
-    MatDividerModule,
-    MatButtonModule
+    MatDividerModule
   ],
   template: `
     <div class="material-container">
-      <!-- Header Row with Title and Refresh -->
-      <div class="header-row">
-        <div>
-          <h2 class="page-title">My Bookings</h2>
-          <p class="page-subtitle">Track today's, upcoming and completed trips</p>
-        </div>
-        <button class="refresh-icon-btn" (click)="loadBookings()" [disabled]="isLoading" title="Refresh Bookings">
-          <span class="material-symbols-outlined" [class.spinning]="isLoading">refresh</span>
+      <!-- 4 Segmented Tabs (All on a single row) -->
+      <div class="filter-tab-bar">
+        <button 
+          *ngFor="let tab of tabs" 
+          class="tab-btn" 
+          [class.active]="activeTab === tab"
+          (click)="setTab(tab)"
+        >
+          <span class="tab-label">{{ tab }}</span>
+          <span class="tab-count">({{ getTabCount(tab) }})</span>
         </button>
       </div>
-
-      <!-- Tabs as Pills -->
-      <mat-chip-listbox class="full-width-pills" [hideSingleSelectionIndicator]="true" aria-label="Select booking filter">
-        <mat-chip-option 
-          *ngFor="let tab of tabs" 
-          [selected]="activeTab === tab"
-          (selectable)="true"
-          (selectionChange)="onChipSelectionChange(tab, $event.selected)"
-          class="pill-chip"
-        >
-          {{ tab }} ({{ getTabCount(tab) }})
-        </mat-chip-option>
-      </mat-chip-listbox>
 
       <!-- Loading State -->
       <div *ngIf="isLoading" class="loading-state">
         <div class="spinner"></div>
-        <p class="loading-text">Fetching latest bookings...</p>
+        <p class="loading-text">Loading bookings...</p>
       </div>
 
       <!-- Bookings List -->
@@ -71,7 +56,7 @@ interface Booking {
           <span class="material-symbols-outlined empty-icon">assignment_late</span>
           <p class="empty-title">No {{ activeTab.toLowerCase() }} bookings found</p>
           <p class="empty-subtitle">New allocations and scheduled trips will appear here.</p>
-          <button class="retry-btn" (click)="loadBookings()">Check Again</button>
+          <button class="retry-btn" (click)="loadBookings()">Refresh</button>
         </div>
 
         <mat-card 
@@ -169,100 +154,56 @@ interface Booking {
   `,
   styles: [`
     .material-container {
-      padding: 16px 16px 40px 16px;
+      padding: 12px 14px 40px 14px;
       background-color: #F8F9FA;
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
     }
 
-    .header-row {
+    /* Single-Row Segmented Tab Bar */
+    .filter-tab-bar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .page-title {
-      margin: 0;
-      font-size: 22px;
-      font-weight: 800;
-      color: #1A1C1E;
-      letter-spacing: -0.5px;
-    }
-    .page-subtitle {
-      margin: 2px 0 0 0;
-      font-size: 13px;
-      color: #74777F;
-    }
-    .refresh-icon-btn {
       background-color: #FFFFFF;
       border: 1px solid #E0E2EC;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      color: #1A1C1E;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: all 0.2s ease;
-    }
-    .refresh-icon-btn:active {
-      transform: scale(0.95);
-      background-color: #F2F3FA;
-    }
-    .spinning {
-      animation: spin 1s infinite linear;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    /* Pills Layout Override */
-    .full-width-pills {
-      margin-bottom: 16px;
-      display: flex;
+      border-radius: 24px;
+      padding: 4px;
+      margin-bottom: 14px;
+      gap: 4px;
+      box-sizing: border-box;
       width: 100%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
-    ::ng-deep .full-width-pills .mat-mdc-chip-listbox-wrapper {
-      display: flex;
-      width: 100%;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-    ::ng-deep .pill-chip {
+    .tab-btn {
       flex: 1;
-      border-radius: 20px !important;
-      min-height: 36px !important;
-      border: 1px solid #E0E2EC !important;
-      background-color: #FFFFFF !important;
-      box-shadow: none !important;
-      white-space: nowrap;
-    }
-    ::ng-deep .pill-chip .mat-mdc-chip-checkmark {
-      display: none !important;
-    }
-    ::ng-deep .pill-chip .mdc-evolution-chip__cell--primary,
-    ::ng-deep .pill-chip .mdc-evolution-chip__action {
+      border: none;
+      background: transparent;
+      padding: 8px 2px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #546E7A;
+      display: flex;
+      align-items: center;
       justify-content: center;
-      width: 100%;
-      padding: 0 8px !important;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      user-select: none;
     }
-    ::ng-deep .pill-chip.mat-mdc-chip-selected {
-      background-color: #D32F2F !important;
-      border-color: #D32F2F !important;
+    .tab-btn:active {
+      transform: scale(0.97);
     }
-    ::ng-deep .pill-chip.mat-mdc-chip-selected .mdc-evolution-chip__text-label {
-      color: #FFFFFF !important;
-      font-weight: 700 !important;
+    .tab-btn.active {
+      background-color: #D32F2F;
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(211, 47, 47, 0.25);
     }
-    ::ng-deep .pill-chip .mdc-evolution-chip__text-label {
-      color: #44474E;
-      font-size: 12px;
-      font-weight: 600;
+    .tab-count {
+      font-size: 10px;
+      font-weight: 800;
+      opacity: 0.9;
     }
 
     /* Loading State */
@@ -274,16 +215,20 @@ interface Booking {
       padding: 60px 20px;
     }
     .spinner {
-      width: 36px;
-      height: 36px;
-      border: 3.5px solid #E0E2EC;
+      width: 32px;
+      height: 32px;
+      border: 3px solid #E0E2EC;
       border-top-color: #D32F2F;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
     .loading-text {
-      margin-top: 16px;
-      font-size: 14px;
+      margin-top: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #74777F;
     }
@@ -334,7 +279,7 @@ interface Booking {
       color: #1A1C1E;
     }
     .booking-price {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 900;
       color: #2E7D32;
     }
@@ -540,7 +485,7 @@ interface Booking {
       background-color: #D32F2F;
       color: #FFFFFF;
       border: none;
-      padding: 8px 18px;
+      padding: 8px 20px;
       font-size: 12px;
       font-weight: 700;
       border-radius: 20px;
@@ -561,14 +506,19 @@ export class BookingsComponent implements OnInit {
     this.loadBookings();
   }
 
+  setTab(tab: string): void {
+    this.activeTab = tab;
+  }
+
   loadBookings(): void {
     this.isLoading = true;
     this.cdr.detectChanges();
 
     forkJoin({
-      todays: this.driverService.getTodaysJobs().pipe(catchError(() => of([]))),
-      future: this.driverService.getFutureJobs().pipe(catchError(() => of([]))),
-      completed: this.driverService.getCompletedJobs().pipe(catchError(() => of([])))
+      bookingsToday: this.driverService.getBookingsToday().pipe(catchError(() => of([]))),
+      todaysJobs: this.driverService.getTodaysJobs().pipe(catchError(() => of([]))),
+      futureJobs: this.driverService.getFutureJobs().pipe(catchError(() => of([]))),
+      completedJobs: this.driverService.getCompletedJobs().pipe(catchError(() => of([])))
     }).subscribe({
       next: (results) => {
         const allJobs: Booking[] = [];
@@ -578,11 +528,11 @@ export class BookingsComponent implements OnInit {
           const fare = parseFloat((job.price || job.fare || job.amount || job.driverPrice || '0.00').toString());
           
           // Resolve addresses
-          const pickup = job.pickupAddress || job.pickup || job.from || 'Unknown Pickup';
-          const dropoff = job.destinationAddress || job.dropoffAddress || job.dropoff || job.to || 'Unknown Dropoff';
+          const pickup = job.pickupAddress || job.pickup || job.from || 'Pickup location';
+          const dropoff = job.destinationAddress || job.dropoffAddress || job.dropoff || job.to || 'Dropoff destination';
 
           // Resolve dates & times
-          const dtStr = job.pickupDateTime || job.bookingDateTime || job.dateCreated || '';
+          const dtStr = job.pickupDateTime || job.bookingDateTime || job.dateCreated || job.endTime || '';
           let time = job.bookingTime || job.time || '';
           let date = job.bookingDate || job.date || '';
 
@@ -632,7 +582,7 @@ export class BookingsComponent implements OnInit {
             fare: isNaN(fare) ? 0.00 : fare,
             paymentType: paymentType,
             status: status,
-            passenger: job.passengerName || job.passenger || job.customerName || 'Passenger',
+            passenger: job.passengerName || job.cellText || job.passenger || job.customerName || 'Passenger',
             notes: job.details || job.notes || job.comment || '',
             vehicleType: job.vehicleType || job.vehicle || 'Standard Saloon',
             expanded: false
@@ -642,16 +592,19 @@ export class BookingsComponent implements OnInit {
         const extractList = (res: any): any[] => {
           if (!res) return [];
           if (Array.isArray(res)) return res;
+          if (Array.isArray(res.bookings)) return res.bookings;
           if (Array.isArray(res.value)) return res.value;
           if (Array.isArray(res.data)) return res.data;
           return [];
         };
 
-        const todaysList = extractList(results.todays);
-        const futureList = extractList(results.future);
-        const completedList = extractList(results.completed);
+        const bookingsTodayList = extractList(results.bookingsToday);
+        const todaysJobsList = extractList(results.todaysJobs);
+        const futureList = extractList(results.futureJobs);
+        const completedList = extractList(results.completedJobs);
 
-        todaysList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
+        bookingsTodayList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
+        todaysJobsList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
         futureList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
         completedList.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
 
@@ -687,12 +640,6 @@ export class BookingsComponent implements OnInit {
   getTabCount(tab: string): number {
     if (tab === 'All') return this.bookings.length;
     return this.bookings.filter(b => b.status === tab).length;
-  }
-
-  onChipSelectionChange(tab: string, selected: boolean): void {
-    if (selected) {
-      this.activeTab = tab;
-    }
   }
 
   toggleExpand(booking: Booking): void {

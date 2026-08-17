@@ -51,6 +51,16 @@ export class DriverService {
     );
   }
 
+  getBookingsToday(): Observable<any> {
+    console.log('API Webview Request: GET /api/Bookings/Today');
+    return this.http.get(`${this.baseUrl}/api/Bookings/Today`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/Bookings/Today success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/Bookings/Today failed:', err)
+      })
+    );
+  }
+
   getTodaysJobs(): Observable<any> {
     console.log('API Webview Request: GET /api/DriverApp/TodaysJobs');
     return this.http.get(`${this.baseUrl}/api/DriverApp/TodaysJobs`, { headers: this.getHeaders() }).pipe(
