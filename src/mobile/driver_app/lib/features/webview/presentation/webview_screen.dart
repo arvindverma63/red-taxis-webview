@@ -15,11 +15,15 @@ import 'package:driver_app/features/shift/shift.dart';
 class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;
   final String title;
+  final bool showBackButton;
+  final VoidCallback? onBack;
 
   const DriverWebviewScreen({
     super.key,
     required this.url,
     required this.title,
+    this.showBackButton = false,
+    this.onBack,
   });
 
   @override
@@ -184,12 +188,23 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            MainShell.scaffoldKey.currentState?.openDrawer();
-          },
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  if (widget.onBack != null) {
+                    widget.onBack!();
+                  } else {
+                    Navigator.of(context).maybePop();
+                  }
+                },
+              )
+            : IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  MainShell.scaffoldKey.currentState?.openDrawer();
+                },
+              ),
         title: Text(widget.title),
         centerTitle: false,
         actions: [

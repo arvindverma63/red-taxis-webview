@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:driver_app/core/config/constants.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/core/notifications/notification_handler.dart';
+import 'package:driver_app/features/navigation/presentation/navigation_notifier.dart';
 import 'package:driver_app/features/webview/presentation/webview_screen.dart';
 import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -18,63 +19,25 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
-  int _selectedIndex = 0;
-
   @override
   void initState() {
     super.initState();
-    _initializeNotificationHandlers();
-  }
-
-  void _initializeNotificationHandlers() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint("FCM Foreground message received: ${message.data}");
-      _handleNotificationPayload(message.data);
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("FCM message clicked: ${message.data}");
-      _handleNotificationPayload(message.data);
-    });
-
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        debugPrint("FCM initial message: ${message.data}");
-        _handleNotificationPayload(message.data);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationNavigationHandler.registerRef(ref);
     });
   }
 
-  void _handleNotificationPayload(Map<String, dynamic> data) {
-    if (data['type'] == 'NEW_JOB_OFFER') {
-      final id = data['jobId'] ?? '';
-      final fare = double.tryParse(data['fare'] ?? '0.0') ?? 0.0;
-      final pickup = data['pickupAddress'] ?? 'Unknown Pickup';
-      final dropoff = data['dropoffAddress'] ?? 'Unknown Dropoff';
-      final paymentType = data['paymentType'] ?? 'Cash';
-      final vehicleType = data['vehicleType'] ?? 'Standard Saloon';
-      final passenger = data['passengerName'] ?? 'Passenger';
-      final notes = data['notes'] ?? '';
-
-      if (id.isNotEmpty) {
-        ref.read(tripProvider.notifier).offerJob(TripDetails(
-          id: id,
-          pickupAddress: pickup,
-          dropoffAddress: dropoff,
-          fare: fare,
-          paymentType: paymentType,
-          vehicleType: vehicleType,
-          passenger: passenger,
-          notes: notes,
-        ));
-      }
-    }
+  @override
+  void dispose() {
+    NotificationNavigationHandler.unregisterRef();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final tripState = ref.watch(tripProvider);
     final authState = ref.watch(authProvider);
+    final navState = ref.watch(navigationProvider);
     final token = authState.token ?? '';
 
     // If there is an active booking, overlay the corresponding trip screen
@@ -116,11 +79,33 @@ class _MainShellState extends ConsumerState<MainShell> {
       }
     }
 
+    // If a custom webview route is triggered (e.g. via notification nav_id: "upload" or custom URL)
+    if (navState.hasCustomRoute) {
+      final customRoute = navState.customRoute!;
+      final prefix = customRoute.startsWith('/') ? customRoute : '/$customRoute';
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            ref.read(navigationProvider.notifier).closeCustomWebView();
+          }
+        },
+        child: DriverWebviewScreen(
+          url: '${AppConfig.webviewBaseUrl}/?token=$token#$prefix',
+          title: navState.customTitle ?? 'Details',
+          showBackButton: true,
+          onBack: () {
+            ref.read(navigationProvider.notifier).closeCustomWebView();
+          },
+        ),
+      );
+    }
+
     return Scaffold(
       key: MainShell.scaffoldKey,
-      drawer: _buildDrawer(context),
+      drawer: _buildDrawer(context, navState.selectedIndex),
       body: IndexedStack(
-        index: _selectedIndex,
+        index: navState.selectedIndex,
         children: [
           const DriverDashboardView(),
           DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
@@ -156,10 +141,10 @@ class _MainShellState extends ConsumerState<MainShell> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
-                  _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'Bookings'),
-                  _buildNavItem(2, Icons.person_outline, Icons.person, 'Profile'),
-                  _buildNavItem(3, Icons.event_available_outlined, Icons.event_available, 'Availability'),
+                  _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', navState.selectedIndex),
+                  _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'Bookings', navState.selectedIndex),
+                  _buildNavItem(2, Icons.person_outline, Icons.person, 'Profile', navState.selectedIndex),
+                  _buildNavItem(3, Icons.event_available_outlined, Icons.event_available, 'Availability', navState.selectedIndex),
                 ],
               ),
             ),
@@ -169,13 +154,11 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData inactiveIcon, IconData activeIcon, String label) {
-    final isActive = _selectedIndex == index;
+  Widget _buildNavItem(int index, IconData inactiveIcon, IconData activeIcon, String label, int activeIndex) {
+    final isActive = activeIndex == index;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
+        ref.read(navigationProvider.notifier).setTabIndex(index);
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
@@ -211,7 +194,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildDrawer(BuildContext context, int activeIndex) {
     final authState = ref.watch(authProvider);
     final email = authState.email ?? 'Partner Driver';
     final name = email.contains('@') ? email.split('@')[0] : email;
@@ -321,11 +304,11 @@ class _MainShellState extends ConsumerState<MainShell> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
               children: [
-                _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
-                _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings'),
-                _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile'),
-                _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability'),
-                _buildDrawerItem(4, Icons.receipt_long_outlined, Icons.receipt_long, 'My Expenses'),
+                _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', activeIndex),
+                _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings', activeIndex),
+                _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile', activeIndex),
+                _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability', activeIndex),
+                _buildDrawerItem(4, Icons.receipt_long_outlined, Icons.receipt_long, 'My Expenses', activeIndex),
               ],
             ),
           ),
@@ -372,8 +355,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  Widget _buildDrawerItem(int index, IconData inactiveIcon, IconData activeIcon, String title) {
-    final isActive = _selectedIndex == index;
+  Widget _buildDrawerItem(int index, IconData inactiveIcon, IconData activeIcon, String title, int activeIndex) {
+    final isActive = activeIndex == index;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
       child: ListTile(
@@ -396,9 +379,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         selected: isActive,
         selectedTileColor: AppTheme.primaryRed.withValues(alpha: 0.08),
         onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
+          ref.read(navigationProvider.notifier).setTabIndex(index);
           Navigator.of(context).pop();
         },
       ),

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/core/notifications/notification_handler.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/auth/presentation/login_screen.dart';
@@ -53,7 +55,26 @@ void main() async {
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
     );
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        debugPrint("Local Notification Clicked: payload=${response.payload}");
+        if (response.payload != null && response.payload!.isNotEmpty) {
+          NotificationNavigationHandler.handlePayload(response.payload);
+        }
+      },
+    );
+
+    // Check if app was opened via a local notification tap (terminated state)
+    final launchDetails = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+    if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
+      final payload = launchDetails.notificationResponse?.payload;
+      if (payload != null && payload.isNotEmpty) {
+        debugPrint("App launched from local notification click: payload=$payload");
+        NotificationNavigationHandler.handlePayload(payload);
+      }
+    }
 
     final messaging = FirebaseMessaging.instance;
     final settings = await messaging.requestPermission(
@@ -72,6 +93,7 @@ void main() async {
     final token = await messaging.getToken();
     debugPrint('FCM Token: $token');
     
+    // FCM Foreground listener: show local heads-up notification with data payload
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint("================ FCM FOREGROUND MESSAGE ================");
       debugPrint("Message ID: ${message.messageId}");
@@ -102,7 +124,22 @@ void main() async {
               presentSound: true,
             ),
           ),
+          payload: jsonEncode(message.data),
         );
+      }
+    });
+
+    // FCM Background Notification Tap
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint("FCM notification opened app: ${message.data}");
+      NotificationNavigationHandler.handlePayload(message.data);
+    });
+
+    // FCM Terminated Cold-start Tap
+    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint("FCM initial message on startup: ${message.data}");
+        NotificationNavigationHandler.handlePayload(message.data);
       }
     });
   } catch (e) {
