@@ -132,19 +132,20 @@ interface JobDetails {
         <!-- Slider and Action Buttons at the very bottom -->
         <div class="action-footer">
           <!-- Slide / Tap to Accept widget -->
-          <div class="slider-container" #slider (click)="onSliderClick($event)">
-            <div class="slider-bg-text">{{ isSubmitting ? 'ACCEPTING BOOKING...' : 'SLIDE TO ACCEPT' }}</div>
+          <div class="slider-container" #slider (click)="onSliderClick($event)" [class.accepted]="isAccepted">
+            <div class="slider-bg-text">{{ isAccepted ? 'ACCEPTED! RETURNING...' : isSubmitting ? 'ACCEPTING BOOKING...' : 'SLIDE TO ACCEPT' }}</div>
             <div 
               class="slider-thumb"
               [style.transform]="'translateX(' + sliderPosition + 'px)'"
               (mousedown)="onDragStart($event)"
               (touchstart)="onDragStart($event)"
             >
-              <div class="thumb-arrow"></div>
+              <div class="thumb-arrow" *ngIf="!isAccepted"></div>
+              <span class="material-symbols-outlined check-icon" *ngIf="isAccepted">check</span>
             </div>
           </div>
 
-          <button class="decline-btn" [disabled]="isSubmitting" (click)="decline()">
+          <button class="decline-btn" [disabled]="isSubmitting || isAccepted" (click)="decline()">
             Decline Job Offer
           </button>
         </div>
@@ -542,9 +543,19 @@ interface JobDetails {
       transition: transform 0.05s ease-out;
     }
 
-    .slider-thumb:active {
-      cursor: grabbing;
-      background-color: #1B5E20;
+    .slider-container.accepted {
+      background-color: #2E7D32 !important;
+      border-color: #2E7D32 !important;
+    }
+    .slider-container.accepted .slider-bg-text {
+      color: #FFFFFF !important;
+      font-weight: 900 !important;
+      animation: none !important;
+    }
+    .check-icon {
+      color: #FFFFFF;
+      font-size: 24px;
+      font-weight: bold;
     }
 
     .thumb-arrow {
@@ -586,6 +597,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   jobIdFromUrl: string = '';
   guid: string = '';
   isSubmitting = false;
+  isAccepted = false;
   
   sliderPosition = 0;
   isDragging = false;
@@ -837,23 +849,30 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   accept(): void {
     if (this.isSubmitting) return;
     this.isSubmitting = true;
+    this.isAccepted = true;
     this.timerSub?.unsubscribe();
     this.cdr.detectChanges();
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const doDismiss = () => {
+      setTimeout(() => {
+        this.notifyNativeApp('job_accepted');
+      }, 500);
+    };
+
     if (jobId && !jobId.startsWith('sim-')) {
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, this.guid).subscribe({
         next: (res) => {
           console.log('replyJobOffer success:', res);
-          this.notifyNativeApp('job_accepted');
+          doDismiss();
         },
         error: (err) => {
           console.error('replyJobOffer error:', err);
-          this.notifyNativeApp('job_accepted');
+          doDismiss();
         }
       });
     } else {
-      this.notifyNativeApp('job_accepted');
+      doDismiss();
     }
   }
 

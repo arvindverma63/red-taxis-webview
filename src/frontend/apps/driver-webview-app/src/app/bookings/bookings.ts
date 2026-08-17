@@ -174,15 +174,27 @@ interface Booking {
             </div>
           </div>
 
-          <!-- Quick Action Buttons: Call / SMS -->
-          <div class="sheet-quick-actions" *ngIf="selectedBooking.phoneNumber">
-            <a [href]="'tel:' + selectedBooking.phoneNumber" class="action-pill-btn call">
+          <!-- Quick Action Buttons: Status Toggle, Call, SMS -->
+          <div class="sheet-quick-actions">
+            <!-- Arrived / Picked Up Status Toggle -->
+            <button 
+              *ngIf="selectedBooking.status === 'Upcoming'"
+              class="action-pill-btn status-btn" 
+              [ngClass]="getTripProgress(selectedBooking.id)"
+              (click)="advanceTripStatus(selectedBooking)"
+            >
+              <span class="material-symbols-outlined">{{ getStatusIcon(selectedBooking.id) }}</span>
+              <span>{{ getStatusLabel(selectedBooking.id) }}</span>
+            </button>
+
+            <!-- Call & SMS -->
+            <a *ngIf="selectedBooking.phoneNumber" [href]="'tel:' + selectedBooking.phoneNumber" class="action-pill-btn call">
               <span class="material-symbols-outlined">call</span>
-              <span>Call Passenger</span>
+              <span>Call</span>
             </a>
-            <a [href]="'sms:' + selectedBooking.phoneNumber" class="action-pill-btn sms">
+            <a *ngIf="selectedBooking.phoneNumber" [href]="'sms:' + selectedBooking.phoneNumber" class="action-pill-btn sms">
               <span class="material-symbols-outlined">chat</span>
-              <span>Send SMS</span>
+              <span>SMS</span>
             </a>
           </div>
 
@@ -293,8 +305,16 @@ interface Booking {
             </div>
           </div>
 
-          <!-- Bottom Close Action -->
+          <!-- Bottom Actions (Complete Booking & Close) -->
           <div class="sheet-footer">
+            <button 
+              *ngIf="selectedBooking.status === 'Upcoming'"
+              class="sheet-complete-btn" 
+              (click)="completeBooking(selectedBooking)"
+            >
+              <span class="material-symbols-outlined">check_circle</span>
+              <span>Complete Booking</span>
+            </button>
             <button class="sheet-dismiss-btn" (click)="closeDetails()">Close Details</button>
           </div>
         </div>
@@ -695,7 +715,7 @@ interface Booking {
 
     .sheet-quick-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       padding: 10px 18px;
       background-color: #FFFFFF;
       border-bottom: 1px solid #E0E2EC;
@@ -706,12 +726,29 @@ interface Booking {
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 9px 12px;
+      padding: 9px 10px;
       border-radius: 24px;
       font-size: 12px;
       font-weight: 700;
       text-decoration: none;
+      border: none;
       transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .action-pill-btn.status-btn {
+      background-color: #E3F2FD;
+      color: #1565C0;
+      border: 1px solid #BBDEFB;
+    }
+    .action-pill-btn.status-btn.arrived {
+      background-color: #FFF8E1;
+      color: #E65100;
+      border-color: #FFE082;
+    }
+    .action-pill-btn.status-btn.pickedUp {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+      border-color: #A5D6A7;
     }
     .action-pill-btn.call {
       background-color: rgba(76, 175, 80, 0.12);
@@ -885,13 +922,37 @@ interface Booking {
       padding: 12px 18px 24px 18px;
       background-color: #FFFFFF;
       border-top: 1px solid #E0E2EC;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sheet-complete-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 24px;
+      background-color: #CD1A21;
+      color: #FFFFFF;
+      border: none;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.25);
+      transition: all 0.2s ease;
+    }
+    .sheet-complete-btn:active {
+      transform: scale(0.98);
+      background-color: #B71C1C;
     }
     .sheet-dismiss-btn {
       width: 100%;
-      padding: 12px;
+      padding: 11px;
       border-radius: 24px;
-      background-color: #1A1C1E;
-      color: #FFFFFF;
+      background-color: #ECEFF1;
+      color: #37474F;
       border: none;
       font-size: 13px;
       font-weight: 700;
@@ -906,6 +967,7 @@ export class BookingsComponent implements OnInit {
 
   bookings: Booking[] = [];
   selectedBooking: Booking | null = null;
+  driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
 
   constructor(private driverService: DriverService, private cdr: ChangeDetectorRef) {}
 
@@ -923,6 +985,49 @@ export class BookingsComponent implements OnInit {
 
   closeDetails(): void {
     this.selectedBooking = null;
+  }
+
+  getTripProgress(bookingId: string): 'assigned' | 'arrived' | 'pickedUp' | 'completed' {
+    return this.driverTripStatus[bookingId] || 'assigned';
+  }
+
+  getStatusIcon(bookingId: string): string {
+    const progress = this.getTripProgress(bookingId);
+    switch (progress) {
+      case 'assigned': return 'flag';
+      case 'arrived': return 'hail';
+      case 'pickedUp': return 'navigation';
+      default: return 'check_circle';
+    }
+  }
+
+  getStatusLabel(bookingId: string): string {
+    const progress = this.getTripProgress(bookingId);
+    switch (progress) {
+      case 'assigned': return 'Mark Arrived';
+      case 'arrived': return 'Mark Picked Up';
+      case 'pickedUp': return 'On Trip (POB)';
+      default: return 'Completed';
+    }
+  }
+
+  advanceTripStatus(booking: Booking): void {
+    const current = this.getTripProgress(booking.id);
+    if (current === 'assigned') {
+      this.driverTripStatus[booking.id] = 'arrived';
+    } else if (current === 'arrived') {
+      this.driverTripStatus[booking.id] = 'pickedUp';
+    }
+    this.cdr.detectChanges();
+  }
+
+  completeBooking(booking: Booking): void {
+    booking.status = 'Completed';
+    this.driverTripStatus[booking.id] = 'completed';
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.closeDetails();
+    }, 400);
   }
 
   loadBookings(): void {

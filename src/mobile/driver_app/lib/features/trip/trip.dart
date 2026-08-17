@@ -290,8 +290,8 @@ class TripNotifier extends StateNotifier<TripState> {
       final jobId = state.currentTrip!.id;
       final guid = state.currentTrip!.guid;
 
-      // Update state immediately so UI transitions instantly
-      state = state.copyWith(status: TripStatus.enRouteToPickup);
+      // Dismiss the job offer modal and return to previous screen / dashboard
+      state = const TripState(status: TripStatus.idle);
 
       if (!_isMockTrip(jobId)) {
         try {
