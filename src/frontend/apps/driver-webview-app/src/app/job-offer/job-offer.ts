@@ -133,9 +133,9 @@ interface JobDetails {
 
         <!-- Slider and Action Buttons at the very bottom -->
         <div class="action-footer">
-          <!-- Slide to Accept widget -->
-          <div class="slider-container" #slider>
-            <div class="slider-bg-text">SLIDE TO ACCEPT</div>
+          <!-- Slide to Accept widget with tap support -->
+          <div class="slider-container" #slider (click)="onSliderClick($event)">
+            <div class="slider-bg-text">{{ isSubmitting ? 'ACCEPTING BOOKING...' : 'SLIDE TO ACCEPT' }}</div>
             <div 
               class="slider-thumb"
               [style.transform]="'translateX(' + sliderPosition + 'px)'"
@@ -146,7 +146,7 @@ interface JobDetails {
             </div>
           </div>
 
-          <button class="decline-btn" (click)="decline()">
+          <button class="decline-btn" [disabled]="isSubmitting" (click)="decline()">
             Decline Job Offer
           </button>
         </div>
@@ -184,10 +184,10 @@ interface JobDetails {
       background-color: #FFFFFF;
       border-radius: 28px 28px 0 0;
       box-shadow: 0 -12px 36px rgba(0,0,0,0.12);
-      padding: 16px 20px 64px 20px; /* Safe padding for system nav */
+      padding: 16px 20px 48px 20px; /* Safe padding for system nav */
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -202,7 +202,7 @@ interface JobDetails {
       background-color: #CFD8DC;
       border-radius: 3px;
       align-self: center;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     /* Ticket Card layout */
@@ -499,7 +499,7 @@ interface JobDetails {
     .action-footer {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       width: 100%;
       align-items: center;
     }
@@ -509,15 +509,16 @@ interface JobDetails {
       position: relative;
       width: 100%;
       height: 56px;
-      background-color: rgba(76, 175, 80, 0.06);
+      background-color: rgba(76, 175, 80, 0.08);
       border-radius: 28px;
-      border: 1.5px solid rgba(76, 175, 80, 0.2);
+      border: 1.5px solid rgba(76, 175, 80, 0.25);
       display: flex;
       align-items: center;
       padding: 0 4px;
       box-sizing: border-box;
       overflow: hidden;
       user-select: none;
+      cursor: pointer;
     }
 
     .slider-bg-text {
@@ -558,7 +559,7 @@ interface JobDetails {
       background-color: #1B5E20;
     }
 
-    /* Arrow visual using CSS border instead of font files to prevent rendering flicker */
+    /* Arrow visual using CSS border */
     .thumb-arrow {
       width: 0; 
       height: 0; 
@@ -576,7 +577,7 @@ interface JobDetails {
       font-weight: 800;
       cursor: pointer;
       padding: 6px 16px;
-      margin-bottom: 24px; /* Ensure button sits safely above navigation bars */
+      margin-bottom: 12px;
       letter-spacing: 0.5px;
       transition: color 0.2s ease;
     }
@@ -584,12 +585,19 @@ interface JobDetails {
     .decline-btn:active {
       color: #B71C1C;
     }
+
+    .decline-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   `]
 })
 export class JobOfferComponent implements OnInit, OnDestroy {
   secondsRemaining = 15;
   strokeDasharray = 172.78; // 2 * PI * 27.5
   job: JobDetails | null = null;
+  jobIdFromUrl: string = '';
+  isSubmitting = false;
   
   // Custom slide variables
   sliderPosition = 0;
@@ -610,21 +618,24 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Attempt to parse query parameters from the URL
     this.route.queryParams.subscribe(params => {
-      const id = params['jobId'];
-      const fareVal = parseFloat(params['fare']);
-      const pickup = params['pickup'];
-      const dropoff = params['dropoff'];
+      const id = params['jobId'] || '';
+      this.jobIdFromUrl = id.toString();
+      const fareVal = parseFloat(params['fare'] || '0');
+      const pickup = params['pickup'] ? decodeURIComponent(params['pickup']) : '';
+      const dropoff = params['dropoff'] ? decodeURIComponent(params['dropoff']) : '';
       const paymentType = params['paymentType'];
       const vehicleType = params['vehicleType'];
       const passenger = params['passenger'];
       const notes = params['notes'];
 
-      if (id && !isNaN(fareVal) && pickup && dropoff) {
+      const isPlaceholder = !pickup || pickup === 'Pickup address' || pickup === 'Pickup location' || fareVal === 0;
+
+      if (id && !isNaN(fareVal) && pickup && dropoff && !isPlaceholder) {
         this.job = {
           id: id.toString(),
           fare: fareVal,
-          pickup: decodeURIComponent(pickup),
-          dropoff: decodeURIComponent(dropoff),
+          pickup: pickup,
+          dropoff: dropoff,
           paymentType: paymentType || 'Cash',
           vehicleType: vehicleType ? decodeURIComponent(vehicleType) : 'Standard Saloon',
           passenger: passenger ? decodeURIComponent(passenger) : 'Passenger',
@@ -632,7 +643,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         };
         this.cdr.detectChanges();
       } else {
-        // Fallback: Fetch active job offers from the API
+        // Fallback: Fetch active job offers directly from the API
         this.fetchJobFromApi();
       }
     });
@@ -641,34 +652,41 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   fetchJobFromApi(): void {
-    this.driverService.getJobOffers().subscribe(offers => {
-      const data = offers?.value || offers || [];
-      if (Array.isArray(data) && data.length > 0) {
-        const item = data[0];
-        this.job = {
-          id: (item.bookingNo || item.id || '').toString(),
-          fare: parseFloat(item.fare || item.amount || item.price || '0.00'),
-          pickup: item.pickupAddress || item.pickup || 'Unknown Pickup',
-          dropoff: item.destinationAddress || item.dropoff || item.dropoffAddress || 'Unknown Dropoff',
-          paymentType: item.paymentType || item.paymentMethod || 'Cash',
-          vehicleType: item.vehicleType || 'Standard Saloon',
-          passenger: item.passengerName || item.passenger || 'Passenger',
-          notes: item.notes || item.comment || ''
-        };
-        this.cdr.detectChanges();
-      } else {
-        // Mock fallback if offline/no connection
-        this.job = {
-          id: 'sim-cash-booking',
-          fare: 45.00,
-          pickup: 'Heathrow Airport Terminal 5',
-          dropoff: 'Red Taxi Office, London Central',
-          paymentType: 'Cash',
-          vehicleType: 'Standard Saloon',
-          passenger: 'James Smith',
-          notes: 'Flight BA441 arrived early. Meet at Costa Coffee.'
-        };
-        this.cdr.detectChanges();
+    this.driverService.getJobOffers().subscribe({
+      next: (offers) => {
+        const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
+        if (Array.isArray(data) && data.length > 0) {
+          const matching = data.find((j: any) => (j.bookingNo || j.bookingId || j.id || '').toString() === this.jobIdFromUrl) || data[0];
+          this.job = {
+            id: (matching.bookingNo || matching.bookingId || matching.id || this.jobIdFromUrl || '').toString(),
+            fare: parseFloat((matching.fare || matching.amount || matching.price || matching.driverPrice || '0.00').toString()),
+            pickup: matching.pickupAddress || matching.pickup || matching.from || 'Pickup location',
+            dropoff: matching.destinationAddress || matching.dropoff || matching.dropoffAddress || matching.to || 'Dropoff destination',
+            paymentType: matching.paymentType || matching.paymentMethod || 'Cash',
+            vehicleType: matching.vehicleType || matching.vehicle || 'Standard Saloon',
+            passenger: matching.passengerName || matching.passenger || matching.customerName || 'Passenger',
+            notes: matching.notes || matching.comment || matching.specialRequirements || ''
+          };
+          this.cdr.detectChanges();
+        } else if (this.jobIdFromUrl) {
+          // If empty list, create a clean initial container with the booking ID
+          if (!this.job) {
+            this.job = {
+              id: this.jobIdFromUrl,
+              fare: 0.00,
+              pickup: 'Pickup location',
+              dropoff: 'Dropoff destination',
+              paymentType: 'Cash',
+              vehicleType: 'Standard Saloon',
+              passenger: 'Passenger',
+              notes: ''
+            };
+            this.cdr.detectChanges();
+          }
+        }
+      },
+      error: (err) => {
+        console.error('fetchJobFromApi error:', err);
       }
     });
   }
@@ -693,12 +711,15 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
   // --- Slide / Drag to Accept Custom Mechanics ---
   onDragStart(event: MouseEvent | TouchEvent): void {
+    if (this.isSubmitting) return;
     this.isDragging = true;
     this.startX = this.getEventX(event) - this.sliderPosition;
     
-    const containerWidth = this.sliderEl.nativeElement.clientWidth;
-    const thumbWidth = 48; // width of thumb
-    this.maxDragRange = containerWidth - thumbWidth - 8; // padding margin
+    if (this.sliderEl) {
+      const containerWidth = this.sliderEl.nativeElement.clientWidth;
+      const thumbWidth = 48; // width of thumb
+      this.maxDragRange = containerWidth - thumbWidth - 8; // padding margin
+    }
 
     if (event instanceof MouseEvent) {
       document.addEventListener('mousemove', this.onDragMove);
@@ -710,7 +731,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   onDragMove = (event: MouseEvent | TouchEvent): void => {
-    if (!this.isDragging) return;
+    if (!this.isDragging || this.isSubmitting) return;
     event.preventDefault();
     
     const currentX = this.getEventX(event);
@@ -722,8 +743,8 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.sliderPosition = position;
     this.cdr.detectChanges();
     
-    // Check if slider is dragged all the way to accept (98% threshold)
-    if (this.sliderPosition >= this.maxDragRange - 4) {
+    // Check if slider is dragged to threshold (85%+)
+    if (this.maxDragRange > 0 && this.sliderPosition >= this.maxDragRange * 0.85) {
       this.onDragEnd(event);
       this.accept();
     }
@@ -736,9 +757,21 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     document.removeEventListener('touchmove', this.onDragMove);
     document.removeEventListener('touchend', this.onDragEnd);
 
-    if (this.sliderPosition < this.maxDragRange - 4) {
+    if (!this.isSubmitting && this.maxDragRange > 0 && this.sliderPosition < this.maxDragRange * 0.85) {
       this.animateSnapBack();
     }
+  }
+
+  onSliderClick(event: MouseEvent): void {
+    if (this.isDragging || this.isSubmitting) return;
+    if (this.sliderEl) {
+      const containerWidth = this.sliderEl.nativeElement.clientWidth;
+      const thumbWidth = 48;
+      this.maxDragRange = containerWidth - thumbWidth - 8;
+      this.sliderPosition = this.maxDragRange;
+      this.cdr.detectChanges();
+    }
+    this.accept();
   }
 
   private getEventX(event: MouseEvent | TouchEvent): number {
@@ -760,10 +793,23 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
   // --- Action Replies ---
   accept(): void {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
     this.timerSub?.unsubscribe();
-    if (this.job && !this.job.id.startsWith('sim-')) {
-      this.driverService.replyJobOffer(parseInt(this.job.id) || 0, 2000).subscribe(() => {
-        this.notifyNativeApp('job_accepted');
+    this.cdr.detectChanges();
+
+    const jobId = this.job?.id || this.jobIdFromUrl || '';
+    if (jobId && !jobId.startsWith('sim-')) {
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000).subscribe({
+        next: (res) => {
+          console.log('replyJobOffer success:', res);
+          this.notifyNativeApp('job_accepted');
+        },
+        error: (err) => {
+          console.error('replyJobOffer error:', err);
+          // Always notify native Flutter bridge so driver transitions immediately without hang
+          this.notifyNativeApp('job_accepted');
+        }
       });
     } else {
       this.notifyNativeApp('job_accepted');
@@ -771,10 +817,22 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   decline(): void {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
     this.timerSub?.unsubscribe();
-    if (this.job && !this.job.id.startsWith('sim-')) {
-      this.driverService.replyJobOffer(parseInt(this.job.id) || 0, 2001).subscribe(() => {
-        this.notifyNativeApp('job_rejected');
+    this.cdr.detectChanges();
+
+    const jobId = this.job?.id || this.jobIdFromUrl || '';
+    if (jobId && !jobId.startsWith('sim-')) {
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001).subscribe({
+        next: (res) => {
+          console.log('replyJobOffer decline success:', res);
+          this.notifyNativeApp('job_rejected');
+        },
+        error: (err) => {
+          console.error('replyJobOffer decline error:', err);
+          this.notifyNativeApp('job_rejected');
+        }
       });
     } else {
       this.notifyNativeApp('job_rejected');
@@ -782,9 +840,17 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   private autoReject(): void {
-    if (this.job && !this.job.id.startsWith('sim-')) {
-      this.driverService.replyJobOffer(parseInt(this.job.id) || 0, 2001).subscribe(() => {
-        this.notifyNativeApp('job_rejected');
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
+    const jobId = this.job?.id || this.jobIdFromUrl || '';
+    if (jobId && !jobId.startsWith('sim-')) {
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001).subscribe({
+        next: () => {
+          this.notifyNativeApp('job_rejected');
+        },
+        error: () => {
+          this.notifyNativeApp('job_rejected');
+        }
       });
     } else {
       this.notifyNativeApp('job_rejected');

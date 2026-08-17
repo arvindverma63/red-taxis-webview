@@ -53,6 +53,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           return DriverWebviewScreen(
             url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
             title: 'New Job Offer',
+            hideAppBar: true,
           );
         case TripStatus.enRouteToPickup:
         case TripStatus.arrived:
@@ -66,6 +67,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           return DriverWebviewScreen(
             url: '${AppConfig.webviewBaseUrl}/#/active-trip?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes&status=$statusName',
             title: 'Active Trip',
+            hideAppBar: true,
           );
         case TripStatus.complete:
           final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
@@ -73,6 +75,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           return DriverWebviewScreen(
             url: '${AppConfig.webviewBaseUrl}/#/trip-complete?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}',
             title: 'Trip Complete',
+            hideAppBar: true,
           );
         default:
           break;

@@ -16,6 +16,7 @@ class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;
   final String title;
   final bool showBackButton;
+  final bool hideAppBar;
   final VoidCallback? onBack;
 
   const DriverWebviewScreen({
@@ -23,6 +24,7 @@ class DriverWebviewScreen extends ConsumerStatefulWidget {
     required this.url,
     required this.title,
     this.showBackButton = false,
+    this.hideAppBar = false,
     this.onBack,
   });
 
@@ -61,6 +63,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         },
       )
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(const Color(0xFFFFFFFF))
         ..enableZoom(false)
         ..clearCache()
         ..addJavaScriptChannel(
@@ -187,34 +190,37 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: widget.showBackButton
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  if (widget.onBack != null) {
-                    widget.onBack!();
-                  } else {
-                    Navigator.of(context).maybePop();
-                  }
-                },
-              )
-            : IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  MainShell.scaffoldKey.currentState?.openDrawer();
-                },
-              ),
-        title: Text(widget.title),
-        centerTitle: false,
-        actions: [
-          if (!kIsWeb)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => _controller?.reload(),
+      backgroundColor: Colors.white,
+      appBar: widget.hideAppBar
+          ? null
+          : AppBar(
+              leading: widget.showBackButton
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        if (widget.onBack != null) {
+                          widget.onBack!();
+                        } else {
+                          Navigator.of(context).maybePop();
+                        }
+                      },
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () {
+                        MainShell.scaffoldKey.currentState?.openDrawer();
+                      },
+                    ),
+              title: Text(widget.title),
+              centerTitle: false,
+              actions: [
+                if (!kIsWeb)
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => _controller?.reload(),
+                  ),
+              ],
             ),
-        ],
-      ),
       body: kIsWeb
           ? const Center(
               child: Padding(
@@ -240,16 +246,17 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
             )
           : Stack(
               children: [
+                Container(color: Colors.white),
                 WebViewWidget(controller: _controller!),
                 if (_isLoading)
-                  const Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 3,
-                    child: LinearProgressIndicator(
-                      color: AppTheme.primaryRed,
-                      backgroundColor: Colors.transparent,
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.white,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryRed,
+                        ),
+                      ),
                     ),
                   ),
               ],

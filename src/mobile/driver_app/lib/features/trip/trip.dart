@@ -104,6 +104,43 @@ class TripNotifier extends StateNotifier<TripState> {
     _pollTimer = null;
   }
 
+  List<dynamic> _parseJobsList(dynamic responseData) {
+    if (responseData == null) return [];
+    if (responseData is List) return responseData;
+    if (responseData is Map) {
+      if (responseData['value'] is List) return responseData['value'];
+      if (responseData['data'] is List) return responseData['data'];
+      if (responseData['jobs'] is List) return responseData['jobs'];
+      if (responseData['offers'] is List) return responseData['offers'];
+      if (responseData['bookingNo'] != null || responseData['id'] != null) {
+        return [responseData];
+      }
+    }
+    return [];
+  }
+
+  TripDetails _mapJobToDetails(Map<String, dynamic> job, String fallbackId) {
+    final fare = double.tryParse((job['fare'] ?? job['amount'] ?? job['price'] ?? job['driverPrice'] ?? '0.0').toString()) ?? 0.0;
+    final pickup = (job['pickupAddress'] ?? job['pickup'] ?? job['from'] ?? 'Pickup address').toString();
+    final dropoff = (job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? job['to'] ?? 'Dropoff destination').toString();
+    final paymentType = (job['paymentType'] ?? job['paymentMethod'] ?? 'Cash').toString();
+    final id = (job['bookingNo'] ?? job['bookingId'] ?? job['id'] ?? fallbackId).toString();
+    final vehicleType = (job['vehicleType'] ?? job['vehicle'] ?? 'Standard Saloon').toString();
+    final passenger = (job['passengerName'] ?? job['passenger'] ?? job['customerName'] ?? 'Passenger').toString();
+    final notes = (job['notes'] ?? job['comment'] ?? job['specialRequirements'] ?? '').toString();
+
+    return TripDetails(
+      id: id,
+      pickupAddress: pickup,
+      dropoffAddress: dropoff,
+      fare: fare,
+      paymentType: paymentType,
+      vehicleType: vehicleType,
+      passenger: passenger,
+      notes: notes,
+    );
+  }
+
   Future<void> _pollJobOffer() async {
     // Only poll if currently idle
     if (state.status != TripStatus.idle) return;
@@ -120,31 +157,14 @@ class TripNotifier extends StateNotifier<TripState> {
         ),
       );
 
-      final List<dynamic> data = response.data ?? [];
+      final List<dynamic> data = _parseJobsList(response.data);
       if (data.isNotEmpty) {
-        final job = data.first;
-        final fare = (job['fare'] ?? job['amount'] ?? job['price'] ?? 0.0).toDouble();
-        final pickup = job['pickupAddress'] ?? job['pickup'] ?? 'Unknown Pickup';
-        final dropoff = job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? 'Unknown Dropoff';
-        final paymentType = job['paymentType'] ?? job['paymentMethod'] ?? 'Cash';
-        final id = (job['bookingNo'] ?? job['id'] ?? '').toString();
-        final vehicleType = job['vehicleType'] ?? 'Standard Saloon';
-        final passenger = job['passengerName'] ?? job['passenger'] ?? 'Passenger';
-        final notes = job['notes'] ?? job['comment'] ?? '';
-
-        offerJob(TripDetails(
-          id: id,
-          pickupAddress: pickup,
-          dropoffAddress: dropoff,
-          fare: fare,
-          paymentType: paymentType,
-          vehicleType: vehicleType,
-          passenger: passenger,
-          notes: notes,
-        ));
+        final job = Map<String, dynamic>.from(data.first);
+        final details = _mapJobToDetails(job, '');
+        offerJob(details);
       }
     } catch (e) {
-      // Ignore background poll errors
+      debugPrint("[TripNotifier] Background poll error: $e");
     }
   }
 
@@ -157,25 +177,18 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   Future<void> fetchAndOfferJob(String bookingId, {TripDetails? fallbackDetails}) async {
-    final defaultPickup = fallbackDetails?.pickupAddress ?? 'Pickup address';
-    final defaultDropoff = fallbackDetails?.dropoffAddress ?? 'Dropoff destination';
-    final defaultFare = fallbackDetails?.fare ?? 0.0;
-    final defaultPaymentType = fallbackDetails?.paymentType ?? 'Cash';
-    final defaultVehicle = fallbackDetails?.vehicleType ?? 'Standard Saloon';
-    final defaultPassenger = fallbackDetails?.passenger ?? 'Passenger';
-    final defaultNotes = fallbackDetails?.notes ?? '';
+    final initialTrip = fallbackDetails ??
+        TripDetails(
+          id: bookingId,
+          pickupAddress: 'Pickup location',
+          dropoffAddress: 'Dropoff destination',
+          fare: 0.0,
+          paymentType: 'Cash',
+          passenger: 'Passenger',
+        );
 
-    // Immediately display the offer overlay to the driver
-    offerJob(TripDetails(
-      id: bookingId,
-      pickupAddress: defaultPickup,
-      dropoffAddress: defaultDropoff,
-      fare: defaultFare,
-      paymentType: defaultPaymentType,
-      vehicleType: defaultVehicle,
-      passenger: defaultPassenger,
-      notes: defaultNotes,
-    ));
+    // Immediately display the offer overlay to the driver without delay
+    offerJob(initialTrip);
 
     final auth = _ref.read(authProvider);
     final token = auth.token;
@@ -189,34 +202,18 @@ class TripNotifier extends StateNotifier<TripState> {
         ),
       );
 
-      final List<dynamic> data = response.data ?? [];
+      final List<dynamic> data = _parseJobsList(response.data);
       if (data.isNotEmpty) {
-        final job = data.firstWhere(
-          (j) => (j['bookingNo'] ?? j['id'] ?? '').toString() == bookingId,
+        final matchingJob = data.firstWhere(
+          (j) => (j['bookingNo'] ?? j['bookingId'] ?? j['id'] ?? '').toString() == bookingId,
           orElse: () => data.first,
         );
-        final fare = (job['fare'] ?? job['amount'] ?? job['price'] ?? defaultFare).toDouble();
-        final pickup = job['pickupAddress'] ?? job['pickup'] ?? defaultPickup;
-        final dropoff = job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? defaultDropoff;
-        final paymentType = job['paymentType'] ?? job['paymentMethod'] ?? defaultPaymentType;
-        final id = (job['bookingNo'] ?? job['id'] ?? bookingId).toString();
-        final vehicleType = job['vehicleType'] ?? defaultVehicle;
-        final passenger = job['passengerName'] ?? job['passenger'] ?? defaultPassenger;
-        final notes = job['notes'] ?? job['comment'] ?? defaultNotes;
-
-        offerJob(TripDetails(
-          id: id,
-          pickupAddress: pickup,
-          dropoffAddress: dropoff,
-          fare: fare,
-          paymentType: paymentType,
-          vehicleType: vehicleType,
-          passenger: passenger,
-          notes: notes,
-        ));
+        final jobMap = Map<String, dynamic>.from(matchingJob);
+        final details = _mapJobToDetails(jobMap, bookingId);
+        offerJob(details);
       }
     } catch (e) {
-      debugPrint("fetchAndOfferJob API error: $e");
+      debugPrint("[TripNotifier] fetchAndOfferJob API error: $e");
     }
   }
 
@@ -225,6 +222,9 @@ class TripNotifier extends StateNotifier<TripState> {
       final auth = _ref.read(authProvider);
       final token = auth.token;
       final jobId = state.currentTrip!.id;
+
+      // Update state immediately so UI transitions instantly
+      state = state.copyWith(status: TripStatus.enRouteToPickup);
 
       if (!_isMockTrip(jobId)) {
         try {
@@ -239,11 +239,9 @@ class TripNotifier extends StateNotifier<TripState> {
             ),
           );
         } catch (e) {
-          // Proceed anyway
+          debugPrint("[TripNotifier] JobOfferReply API error: $e");
         }
       }
-
-      state = state.copyWith(status: TripStatus.enRouteToPickup);
     }
   }
 
