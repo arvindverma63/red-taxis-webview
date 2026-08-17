@@ -9,6 +9,8 @@ import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
 
+import 'package:flutter/services.dart';
+
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
@@ -19,6 +21,8 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
+  DateTime? _lastBackPressTime;
+
   @override
   void initState() {
     super.initState();
@@ -105,51 +109,90 @@ class _MainShellState extends ConsumerState<MainShell> {
       );
     }
 
-    return Scaffold(
-      key: MainShell.scaffoldKey,
-      drawer: _buildDrawer(context, navState.selectedIndex),
-      body: IndexedStack(
-        index: navState.selectedIndex,
-        children: [
-          const DriverDashboardView(),
-          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
-          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
-          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
-          DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/expenses', title: 'Expenses Log'),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        color: Colors.transparent,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        child: SafeArea(
-          child: Container(
-            height: 66,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 16,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(
-                color: Colors.grey.shade100,
-                width: 1,
-              ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // 1. If Drawer is open, close it
+        if (MainShell.scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          Navigator.of(context).pop();
+          return;
+        }
+
+        // 2. If Custom WebView route is open, close it
+        if (navState.hasCustomRoute) {
+          ref.read(navigationProvider.notifier).closeCustomWebView();
+          return;
+        }
+
+        // 3. If on a sub-tab (Bookings, Profile, Availability, Expenses), go back to Dashboard
+        if (navState.selectedIndex != 0) {
+          ref.read(navigationProvider.notifier).setTabIndex(0);
+          return;
+        }
+
+        // 4. On Dashboard, double-tap back within 2 seconds to exit app
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Press back again to exit Red Taxis'),
+              duration: Duration(seconds: 2),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', navState.selectedIndex),
-                  _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'Bookings', navState.selectedIndex),
-                  _buildNavItem(2, Icons.person_outline, Icons.person, 'Profile', navState.selectedIndex),
-                  _buildNavItem(3, Icons.event_available_outlined, Icons.event_available, 'Availability', navState.selectedIndex),
+          );
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        key: MainShell.scaffoldKey,
+        drawer: _buildDrawer(context, navState.selectedIndex),
+        body: IndexedStack(
+          index: navState.selectedIndex,
+          children: [
+            const DriverDashboardView(),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/expenses', title: 'Expenses Log'),
+          ],
+        ),
+        bottomNavigationBar: Container(
+          color: Colors.transparent,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          child: SafeArea(
+            child: Container(
+              height: 66,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
+                border: Border.all(
+                  color: Colors.grey.shade100,
+                  width: 1,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', navState.selectedIndex),
+                    _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'Bookings', navState.selectedIndex),
+                    _buildNavItem(2, Icons.person_outline, Icons.person, 'Profile', navState.selectedIndex),
+                    _buildNavItem(3, Icons.event_available_outlined, Icons.event_available, 'Availability', navState.selectedIndex),
+                  ],
+                ),
               ),
             ),
           ),

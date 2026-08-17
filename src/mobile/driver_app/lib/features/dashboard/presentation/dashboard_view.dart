@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:driver_app/core/config/constants.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
@@ -52,6 +53,45 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint("Dashboard WebView Error: ${error.description}");
+          },
+          onNavigationRequest: (NavigationRequest request) async {
+            final url = request.url;
+            final uri = Uri.tryParse(url);
+            if (uri == null) return NavigationDecision.prevent;
+
+            final scheme = uri.scheme.toLowerCase();
+            if (scheme == 'tel' ||
+                scheme == 'sms' ||
+                scheme == 'mailto' ||
+                scheme == 'geo' ||
+                scheme == 'intent' ||
+                url.contains('maps.google.com') ||
+                url.contains('www.google.com/maps') ||
+                url.contains('maps.apple.com')) {
+              try {
+                if (scheme == 'intent') {
+                  String parsedUrl = url;
+                  if (url.startsWith('intent://')) {
+                    final stripped = url.substring('intent://'.length);
+                    final intentIndex = stripped.indexOf('#Intent');
+                    final cleanHostPath = intentIndex != -1 ? stripped.substring(0, intentIndex) : stripped;
+                    parsedUrl = 'https://$cleanHostPath';
+                  }
+                  final intentUri = Uri.parse(parsedUrl);
+                  if (await canLaunchUrl(intentUri)) {
+                    await launchUrl(intentUri, mode: LaunchMode.externalApplication);
+                  }
+                } else {
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                }
+              } catch (e) {
+                debugPrint("Error launching external url $url: $e");
+              }
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
           },
         ),
       )

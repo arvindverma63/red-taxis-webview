@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/core/theme/theme.dart';
@@ -143,6 +144,45 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
             onWebResourceError: (WebResourceError error) {
               debugPrint("WebView Resource Error: ${error.description}");
             },
+            onNavigationRequest: (NavigationRequest request) async {
+              final url = request.url;
+              final uri = Uri.tryParse(url);
+              if (uri == null) return NavigationDecision.prevent;
+
+              final scheme = uri.scheme.toLowerCase();
+              if (scheme == 'tel' ||
+                  scheme == 'sms' ||
+                  scheme == 'mailto' ||
+                  scheme == 'geo' ||
+                  scheme == 'intent' ||
+                  url.contains('maps.google.com') ||
+                  url.contains('www.google.com/maps') ||
+                  url.contains('maps.apple.com')) {
+                try {
+                  if (scheme == 'intent') {
+                    String parsedUrl = url;
+                    if (url.startsWith('intent://')) {
+                      final stripped = url.substring('intent://'.length);
+                      final intentIndex = stripped.indexOf('#Intent');
+                      final cleanHostPath = intentIndex != -1 ? stripped.substring(0, intentIndex) : stripped;
+                      parsedUrl = 'https://$cleanHostPath';
+                    }
+                    final intentUri = Uri.parse(parsedUrl);
+                    if (await canLaunchUrl(intentUri)) {
+                      await launchUrl(intentUri, mode: LaunchMode.externalApplication);
+                    }
+                  } else {
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  }
+                } catch (e) {
+                  debugPrint("Error launching external url $url: $e");
+                }
+                return NavigationDecision.prevent;
+              }
+              return NavigationDecision.navigate;
+            },
           ),
         );
 
@@ -221,46 +261,62 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                   ),
               ],
             ),
-      body: kIsWeb
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.language, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'Webview is not supported on Web',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Please run the Flutter app on an Android Emulator, iOS Simulator, or a physical mobile device to view this screen.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          if (_controller != null && await _controller!.canGoBack()) {
+            await _controller!.goBack();
+            return;
+          }
+          final currentContext = context;
+          if (widget.onBack != null) {
+            widget.onBack!();
+          } else if (currentContext.mounted) {
+            Navigator.of(currentContext).maybePop();
+          }
+        },
+        child: kIsWeb
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.language, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'Webview is not supported on Web',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Please run the Flutter app on an Android Emulator, iOS Simulator, or a physical mobile device to view this screen.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            )
-          : Stack(
-              children: [
-                Container(color: Colors.white),
-                WebViewWidget(controller: _controller!),
-                if (_isLoading)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.white,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.primaryRed,
+              )
+            : Stack(
+                children: [
+                  Container(color: Colors.white),
+                  WebViewWidget(controller: _controller!),
+                  if (_isLoading)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.white,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: AppTheme.primaryRed,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }
