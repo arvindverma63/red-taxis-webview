@@ -136,7 +136,7 @@ export interface DriverFleetAvailability {
               (click)="applyPreset('am-school')"
               [class.active]="selectedPresetKey === 'am-school'"
             >
-              <span class="preset-emoji">🌅</span>
+              <span class="material-symbols-outlined preset-icon icon-am">wb_twilight</span>
               <div class="preset-texts">
                 <span class="preset-title">AM School</span>
                 <span class="preset-time">07:30 – 09:30</span>
@@ -149,7 +149,7 @@ export interface DriverFleetAvailability {
               (click)="applyPreset('pm-school')"
               [class.active]="selectedPresetKey === 'pm-school'"
             >
-              <span class="preset-emoji">🎒</span>
+              <span class="material-symbols-outlined preset-icon icon-pm">backpack</span>
               <div class="preset-texts">
                 <span class="preset-title">PM School</span>
                 <span class="preset-time">14:30 – 16:30</span>
@@ -162,7 +162,7 @@ export interface DriverFleetAvailability {
               (click)="applyPreset('am-pm-school')"
               [class.active]="selectedPresetKey === 'am-pm-school'"
             >
-              <span class="preset-emoji">🏫</span>
+              <span class="material-symbols-outlined preset-icon icon-full">school</span>
               <div class="preset-texts">
                 <span class="preset-title">Full School</span>
                 <span class="preset-time">07:30 – 16:30</span>
@@ -175,7 +175,7 @@ export interface DriverFleetAvailability {
               (click)="applyPreset('unavailable')"
               [class.active]="selectedPresetKey === 'unavailable'"
             >
-              <span class="preset-emoji">🚫</span>
+              <span class="material-symbols-outlined preset-icon icon-off">block</span>
               <div class="preset-texts">
                 <span class="preset-title">Day Off</span>
                 <span class="preset-time">00:00 – 23:59</span>
@@ -652,9 +652,16 @@ export interface DriverFleetAvailability {
       border-color: #CD1A21;
       background-color: #FFF2F2;
     }
-    .preset-emoji {
-      font-size: 18px;
+    .preset-icon {
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    .preset-icon.icon-am { color: #E65100; }
+    .preset-icon.icon-pm { color: #00838F; }
+    .preset-icon.icon-full { color: #1565C0; }
+    .preset-icon.icon-off { color: #C62828; }
     .preset-texts {
       display: flex;
       flex-direction: column;

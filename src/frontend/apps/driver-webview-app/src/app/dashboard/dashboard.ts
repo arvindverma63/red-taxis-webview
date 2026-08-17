@@ -204,16 +204,18 @@ interface DashTotals {
       <!-- 4. Developer Simulation Deck (When Online) -->
       <div class="dash-card sim-card" *ngIf="isOnline">
         <div class="card-title-row">
-          <span class="card-icon">🔬</span>
+          <span class="material-symbols-outlined card-title-icon">science</span>
           <span class="card-title">Developer Simulation Deck</span>
         </div>
         <p class="sim-desc">Trigger a test booking offer to verify push overlays & acceptance:</p>
         <div class="sim-button-row">
           <button class="sim-btn outlined" (click)="triggerSimulation('cash')">
-            💵 Cash Booking
+            <span class="material-symbols-outlined btn-inline-icon">payments</span>
+            <span>Cash Booking</span>
           </button>
           <button class="sim-btn outlined" (click)="triggerSimulation('card')">
-            💳 Card Booking
+            <span class="material-symbols-outlined btn-inline-icon">credit_card</span>
+            <span>Card Booking</span>
           </button>
         </div>
       </div>

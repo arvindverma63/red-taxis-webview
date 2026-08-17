@@ -116,6 +116,7 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Quick Presets**: 1-tap presets for `AM School` (07:30 - 09:30), `PM School` (14:30 - 16:30), `Full School` (07:30 - 16:30), and `Day Off` (00:00 - 23:59).
   - **Custom Shift Form**: From/To 24h time dropdowns, +/- 15m Give/Take flexibility toggle, driver notes, and dual "Mark Available" / "Mark Unavailable" action buttons.
   - **Fleet View**: Real-time driver schedule listing with vehicle type filters (`Saloon`, `Estate`, `MPV`, `MPVPlus`, `SUV`) and live search.
+- [x] **Professional Google Material Symbols Icon Standardization**: Replaced all emoji/AI-generated placeholders across Availability (`wb_twilight`, `backpack`, `school`, `block`, `schedule`, `calendar_month`), Dashboard (`science`, `payments`, `credit_card`), and Bookings with standardized vector Google Material Symbols (`material-symbols-outlined`) with consistent stroke weighting, HSL semantic colors, and crisp mobile DPI rendering.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
