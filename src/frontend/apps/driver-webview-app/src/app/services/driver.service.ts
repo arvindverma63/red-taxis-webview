@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -106,8 +106,10 @@ export class DriverService {
   }
 
   setAvailability(availabilityData: any): Observable<any> {
-    console.log('API Webview Request: POST /api/DriverApp/SetAvailability data:', availabilityData);
-    return this.http.post(`${this.baseUrl}/api/DriverApp/SetAvailability`, availabilityData, { headers: this.getHeaders() }).pipe(
+    console.log('API Webview Request: POST /api/DriverApp/SetAvailability data:', JSON.stringify(availabilityData));
+    let headers = this.getHeaders();
+    headers = headers.set('Content-Type', 'application/json');
+    return this.http.post(`${this.baseUrl}/api/DriverApp/SetAvailability`, availabilityData, { headers }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: POST /api/DriverApp/SetAvailability success:', res),
         error: (err) => console.error('API Webview Error: POST /api/DriverApp/SetAvailability failed:', err)
@@ -126,11 +128,12 @@ export class DriverService {
   }
 
   getAllDriversAvailability(date: string): Observable<any> {
-    console.log(`API Webview Request: GET /api/DriverApp/General?date=${date}`);
-    return this.http.get(`${this.baseUrl}/api/DriverApp/General?date=${date}`, { headers: this.getHeaders() }).pipe(
+    console.log(`API Webview Request: GET /api/Availability/General?date=${date}`);
+    return this.http.get(`${this.baseUrl}/api/Availability/General?date=${date}`, { headers: this.getHeaders() }).pipe(
+      catchError(() => this.http.get(`${this.baseUrl}/api/DriverApp/General?date=${date}`, { headers: this.getHeaders() })),
       tap({
-        next: (res) => console.log('API Webview Response: GET /api/DriverApp/General success:', res),
-        error: (err) => console.error('API Webview Error: GET /api/DriverApp/General failed:', err)
+        next: (res) => console.log('API Webview Response: Fleet availability success:', res),
+        error: (err) => console.error('API Webview Error: Fleet availability failed:', err)
       })
     );
   }

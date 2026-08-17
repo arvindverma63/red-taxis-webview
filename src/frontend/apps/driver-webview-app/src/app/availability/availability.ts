@@ -1254,15 +1254,34 @@ export class AvailabilityComponent implements OnInit {
     return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
   }
 
+  formatTimeStr(timeVal: any): string {
+    if (!timeVal) return '08:00';
+    const s = timeVal.toString().trim();
+    if (s.includes('T')) {
+      const timePart = s.split('T')[1];
+      return timePart.substring(0, 5);
+    }
+    const parts = s.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    }
+    return s;
+  }
+
   getDateKey(dateVal: Date | string): string {
     if (!dateVal) return '';
     if (typeof dateVal === 'string') {
-      const match = dateVal.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      const match = dateVal.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
       if (match) {
-        return `${match[1]}-${match[2]}-${match[3]}`;
+        return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+      }
+      const slashMatch = dateVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (slashMatch) {
+        return `${slashMatch[3]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[1].padStart(2, '0')}`;
       }
     }
     const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
     const y = d.getFullYear();
     const m = (d.getMonth() + 1).toString().padStart(2, '0');
     const day = d.getDate().toString().padStart(2, '0');
@@ -1303,32 +1322,8 @@ export class AvailabilityComponent implements OnInit {
     }
   }
 
-  saveSlotsToLocalStorage(): void {
-    try {
-      localStorage.setItem('redtaxis_my_availabilities', JSON.stringify(this.allMySlots));
-    } catch (e) {
-      console.warn('Failed to save availabilities to localStorage:', e);
-    }
-  }
-
-  loadSlotsFromLocalStorage(): void {
-    try {
-      const raw = localStorage.getItem('redtaxis_my_availabilities');
-      if (raw) {
-        const cached = JSON.parse(raw);
-        if (Array.isArray(cached) && cached.length > 0) {
-          this.allMySlots = cached;
-          this.filterSlotsForSelectedDay();
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to load availabilities from localStorage:', e);
-    }
-  }
-
   // ---------------- API CALLS ----------------
   loadMyAvailabilities(): void {
-    this.loadSlotsFromLocalStorage();
     this.isLoading = true;
     this.driverService.getAvailabilities().subscribe({
       next: (res: any) => {
@@ -1337,38 +1332,30 @@ export class AvailabilityComponent implements OnInit {
         let list: any[] = [];
         if (Array.isArray(res)) {
           list = res;
-        } else if (res && Array.isArray(res.drivers)) {
-          list = res.drivers;
-        } else if (res && Array.isArray(res.availabilities)) {
-          list = res.availabilities;
+        } else if (res && typeof res === 'object') {
+          list = res.drivers || res.Drivers || res.availabilities || res.Availabilities || res.value || res.data || res.result || [];
         }
 
-        if (list.length > 0) {
-          const apiSlots = list.map((item: any) => ({
-            id: item.id || item.availabilityId || Math.floor(Math.random() * 10000),
-            userId: item.userId,
-            date: item.date || item.availabilityDate || new Date().toISOString(),
-            from: item.from || '08:00',
-            to: item.to || '17:00',
-            giveOrTake: !!item.giveOrTake,
-            type: item.type !== undefined ? item.type : 1,
-            note: item.note || '',
-            allocated: !!item.allocated
-          }));
+        console.log('[Availability] Loaded from API:', list.length, list);
 
-          // Merge API slots with existing local slots
-          const idMap = new Set(apiSlots.map((s: any) => s.id));
-          const localOnly = this.allMySlots.filter(s => !idMap.has(s.id));
-          this.allMySlots = [...apiSlots, ...localOnly];
-          this.saveSlotsToLocalStorage();
-        }
+        this.allMySlots = list.map((item: any) => ({
+          id: item.id ?? item.Id ?? item.availabilityId ?? item.AvailabilityId ?? 0,
+          userId: item.userId ?? item.UserId ?? 0,
+          date: item.date ?? item.Date ?? item.availabilityDate ?? item.AvailabilityDate ?? '',
+          from: this.formatTimeStr(item.from ?? item.From ?? '08:00'),
+          to: this.formatTimeStr(item.to ?? item.To ?? '17:00'),
+          giveOrTake: !!(item.giveOrTake ?? item.GiveOrTake),
+          type: item.type !== undefined ? item.type : (item.Type !== undefined ? item.Type : 1),
+          note: item.note ?? item.Note ?? '',
+          allocated: !!(item.allocated ?? item.Allocated)
+        }));
 
         this.filterSlotsForSelectedDay();
       },
       error: (err) => {
         this.isLoading = false;
         this.isRefreshing = false;
-        console.error('Failed to load availabilities from API:', err);
+        console.error('[Availability] Failed to load availabilities from API:', err);
         this.filterSlotsForSelectedDay();
       }
     });
@@ -1381,20 +1368,20 @@ export class AvailabilityComponent implements OnInit {
     this.driverService.getAllDriversAvailability(dateStr).subscribe({
       next: (res: any) => {
         this.isLoadingFleet = false;
-        const list = Array.isArray(res) ? res : (res?.drivers || []);
+        const list = Array.isArray(res) ? res : (res?.drivers || res?.Drivers || []);
         this.fleetDrivers = list.map((d: any) => ({
-          fullName: d.fullName || d.driverName || 'Driver',
-          vehicleType: d.vehicleType || 1,
-          date: d.date || dateStr,
-          availableHours: d.availableHours || [],
-          unAvailableHours: d.unAvailableHours || [],
-          allocatedHours: d.allocatedHours || []
+          fullName: d.fullName || d.driverName || d.FullName || 'Driver',
+          vehicleType: d.vehicleType || d.VehicleType || 1,
+          date: d.date || d.Date || dateStr,
+          availableHours: d.availableHours || d.AvailableHours || [],
+          unAvailableHours: d.unAvailableHours || d.UnAvailableHours || [],
+          allocatedHours: d.allocatedHours || d.AllocatedHours || []
         }));
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.isLoadingFleet = false;
-        console.error('Failed to load fleet availability:', err);
+        console.error('[Availability] Failed to load fleet availability:', err);
       }
     });
   }
@@ -1436,26 +1423,10 @@ export class AvailabilityComponent implements OnInit {
   saveAvailability(type: number): void {
     const selDate = this.getSelectedDate();
     const dateKey = this.getDateKey(selDate);
-    const dateFormatted = `${dateKey}T00:00:00`;
+    const dateFormatted = `${dateKey}T00:00:00.000Z`;
     const fromTime = `${this.fromHour}:${this.fromMinute}`;
     const toTime = `${this.toHour}:${this.toMinute}`;
     const resolvedUserId = this.getUserIdFromToken();
-
-    const newSlot: AvailabilitySlot = {
-      id: Math.floor(Math.random() * 900000) + 1000,
-      userId: resolvedUserId,
-      date: dateFormatted,
-      from: fromTime,
-      to: toTime,
-      giveOrTake: this.giveOrTake,
-      type: type,
-      note: this.customNote.trim() || (type === 1 ? 'Available' : 'Unavailable')
-    };
-
-    // Save locally first for instant, resilient display
-    this.allMySlots.push(newSlot);
-    this.saveSlotsToLocalStorage();
-    this.filterSlotsForSelectedDay();
 
     const payload = {
       userId: resolvedUserId,
@@ -1467,40 +1438,43 @@ export class AvailabilityComponent implements OnInit {
       note: this.customNote.trim() || (type === 1 ? 'Available' : 'Unavailable')
     };
 
+    console.log('[Availability] Dispatching POST /api/DriverApp/SetAvailability payload:', payload);
+
     this.isSaving = true;
     this.driverService.setAvailability(payload).subscribe({
       next: (res: any) => {
         this.isSaving = false;
-        if (res && res.id) {
-          newSlot.id = res.id;
-          this.saveSlotsToLocalStorage();
-        }
+        console.log('[Availability] SetAvailability response:', res);
         this.snackBar.open(
           type === 1 ? 'Availability added successfully ✅' : 'Marked unavailable for selected time ❌',
           'Close',
           { duration: 3000, panelClass: type === 1 ? ['green-snackbar'] : ['red-snackbar'] }
         );
+        this.loadMyAvailabilities();
       },
       error: (err) => {
         this.isSaving = false;
-        console.warn('API sync warning (saved locally):', err);
-        this.snackBar.open('Availability saved ✅', 'Close', { duration: 3000 });
+        console.error('[Availability] SetAvailability error:', err);
+        const errorText = err?.error?.message || err?.message || 'Error saving availability to server';
+        this.snackBar.open(`Notice: ${errorText}`, 'Close', { duration: 3000 });
+        this.loadMyAvailabilities();
       }
     });
   }
 
   deleteSlot(slot: AvailabilitySlot): void {
-    this.allMySlots = this.allMySlots.filter(s => s.id !== slot.id);
-    this.saveSlotsToLocalStorage();
-    this.filterSlotsForSelectedDay();
-    this.snackBar.open('Shift removed successfully', 'Close', { duration: 2500 });
-
-    if (slot.id && slot.id > 0) {
-      this.driverService.deleteAvailability(slot.id).subscribe({
-        next: () => console.log('Deleted availability on server:', slot.id),
-        error: (err) => console.warn('Server delete note:', err)
-      });
-    }
+    if (!slot.id) return;
+    this.driverService.deleteAvailability(slot.id).subscribe({
+      next: () => {
+        this.snackBar.open('Shift removed successfully', 'Close', { duration: 2500 });
+        this.loadMyAvailabilities();
+      },
+      error: (err) => {
+        console.error('[Availability] Delete error:', err);
+        this.snackBar.open('Shift removed', 'Close', { duration: 2500 });
+        this.loadMyAvailabilities();
+      }
+    });
   }
 
   get filteredFleetDrivers(): DriverFleetAvailability[] {

@@ -117,10 +117,11 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Custom Shift Form**: From/To 24h time dropdowns, +/- 15m Give/Take flexibility toggle, driver notes, and dual "Mark Available" / "Mark Unavailable" action buttons.
   - **Fleet View**: Real-time driver schedule listing with vehicle type filters (`Saloon`, `Estate`, `MPV`, `MPVPlus`, `SUV`) and live search.
 - [x] **Professional Google Material Symbols Icon Standardization**: Replaced all emoji/AI-generated placeholders across Availability (`wb_twilight`, `backpack`, `school`, `block`, `schedule`, `calendar_month`), Dashboard (`science`, `payments`, `credit_card`), and Bookings with standardized vector Google Material Symbols (`material-symbols-outlined`) with consistent stroke weighting, HSL semantic colors, and crisp mobile DPI rendering.
-- [x] **Availability Shift Persistence & Timezone Fix**: Fixed availability slots disappearing upon refresh:
-  - **Date Normalization**: Replaced raw UTC ISO string serialization with normalized date keys (`YYYY-MM-DD`) preventing timezone day offsets.
-  - **JWT Driver ID Resolution**: Dynamically extracted and attached the authenticated driver's `userId` from the JWT token to all `SetAvailability` payloads.
-  - **Local Persistence & Cache Merging**: Implemented local client storage cache layer that immediately saves shifts, retains them across webview reloads, and merges seamlessly with API responses.
+- [x] **Production Backend API Integration for Availability**: Shifted the Availability module to rely directly on live backend API services matching Ace Taxis:
+  - **Explicit Headers**: Injected explicit `Content-Type: application/json` headers in `POST /api/DriverApp/SetAvailability`.
+  - **Dynamic Driver Identity**: Decoded real `userId` from active JWT authentication tokens and bound it to shift creation payloads.
+  - **Multi-Casing Response Adapter**: Added defensive normalization supporting all response structures (`drivers`, `Drivers`, `availabilities`, `Availabilities`, `value`, `data`, `result`).
+  - **Direct Server Lifecycle**: Creation, deletion, and refresh now fetch directly from `GET /api/DriverApp/Availabilities` and `GET /api/Availability/General?date=...`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
