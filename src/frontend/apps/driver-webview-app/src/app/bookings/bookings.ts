@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { DriverService } from '../services/driver.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -42,7 +43,8 @@ interface Booking {
   imports: [
     CommonModule,
     MatCardModule,
-    MatDividerModule
+    MatDividerModule,
+    MatSnackBarModule
   ],
   template: `
     <div class="material-container">
@@ -969,7 +971,11 @@ export class BookingsComponent implements OnInit {
   selectedBooking: Booking | null = null;
   driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
 
-  constructor(private driverService: DriverService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private driverService: DriverService,
+    private cdr: ChangeDetectorRef,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.loadBookings();
@@ -1015,15 +1021,24 @@ export class BookingsComponent implements OnInit {
     const current = this.getTripProgress(booking.id);
     const bookingIdNum = parseInt(booking.id) || 0;
     if (current === 'assigned') {
+      this.snackBar.open('Marking arrived at pickup...', 'Dismiss', { duration: 2000 });
       this.driverTripStatus[booking.id] = 'arrived';
       if (bookingIdNum > 0) {
         this.driverService.markArrived(bookingIdNum).subscribe({
-          next: (res) => console.log('Arrived API success:', res),
-          error: (err) => console.error('Arrived API error:', err)
+          next: (res) => {
+            console.log('Arrived API success:', res);
+            this.snackBar.open('Status updated to Arrived successfully!', 'Dismiss', { duration: 2500 });
+          },
+          error: (err) => {
+            console.error('Arrived API error:', err);
+            this.snackBar.open('Failed to update status to Arrived.', 'Dismiss', { duration: 2500 });
+          }
         });
       }
     } else if (current === 'arrived') {
+      this.snackBar.open('Starting trip (POB)...', 'Dismiss', { duration: 2000 });
       this.driverTripStatus[booking.id] = 'pickedUp';
+      this.snackBar.open('Passenger onboard, trip started!', 'Dismiss', { duration: 2500 });
     }
     this.cdr.detectChanges();
   }
@@ -1031,6 +1046,7 @@ export class BookingsComponent implements OnInit {
   completeBooking(booking: Booking): void {
     const bookingIdNum = parseInt(booking.id) || 0;
     if (bookingIdNum > 0) {
+      this.snackBar.open('Completing booking...', 'Dismiss', { duration: 2000 });
       this.driverService.completeJob({
         bookingId: bookingIdNum,
         driverPrice: booking.fare,
@@ -1047,6 +1063,7 @@ export class BookingsComponent implements OnInit {
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
               this.cdr.detectChanges();
+              this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
               setTimeout(() => this.closeDetails(), 400);
             },
             error: () => {
@@ -1054,6 +1071,7 @@ export class BookingsComponent implements OnInit {
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
               this.cdr.detectChanges();
+              this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
               setTimeout(() => this.closeDetails(), 400);
             }
           });
@@ -1066,6 +1084,7 @@ export class BookingsComponent implements OnInit {
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
               this.cdr.detectChanges();
+              this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
               setTimeout(() => this.closeDetails(), 400);
             },
             error: () => {
@@ -1073,6 +1092,7 @@ export class BookingsComponent implements OnInit {
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
               this.cdr.detectChanges();
+              this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
               setTimeout(() => this.closeDetails(), 400);
             }
           });

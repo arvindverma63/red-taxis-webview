@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { DriverService } from '../services/driver.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -38,7 +39,7 @@ interface DashTotals {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatSnackBarModule],
   template: `
     <div 
       class="dashboard-container"
@@ -764,7 +765,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private driverService: DriverService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -865,15 +867,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const bookingIdNum = parseInt(this.activeBooking.id) || 0;
 
     if (this.activeTripProgress === 'assigned') {
+      this.snackBar.open('Marking arrived at pickup...', 'Dismiss', { duration: 2000 });
       this.activeTripProgress = 'arrived';
       if (bookingIdNum > 0) {
         this.driverService.markArrived(bookingIdNum).subscribe({
-          next: (res) => console.log('Arrived API success:', res),
-          error: (err) => console.error('Arrived API error:', err)
+          next: (res) => {
+            console.log('Arrived API success:', res);
+            this.snackBar.open('Status updated to Arrived successfully!', 'Dismiss', { duration: 2500 });
+          },
+          error: (err) => {
+            console.error('Arrived API error:', err);
+            this.snackBar.open('Failed to update status to Arrived.', 'Dismiss', { duration: 2500 });
+          }
         });
       }
     } else if (this.activeTripProgress === 'arrived') {
+      this.snackBar.open('Starting trip (POB)...', 'Dismiss', { duration: 2000 });
       this.activeTripProgress = 'pickedUp';
+      this.snackBar.open('Passenger onboard, trip started!', 'Dismiss', { duration: 2500 });
     }
     this.cdr.detectChanges();
   }
@@ -884,6 +895,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const fare = this.activeBooking.fare;
 
     if (bookingIdNum > 0) {
+      this.snackBar.open('Completing booking...', 'Dismiss', { duration: 2000 });
       this.driverService.completeJob({
         bookingId: bookingIdNum,
         driverPrice: fare,
@@ -897,22 +909,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
             next: () => {
               this.activeBooking = null;
               this.loadDashboardData();
+              this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
             },
             error: () => {
               this.activeBooking = null;
               this.loadDashboardData();
+              this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
             }
           });
         },
-        error: () => {
+        error: (err) => {
+          console.error('CompleteJob error:', err);
           this.driverService.setActiveJob(0).subscribe({
             next: () => {
               this.activeBooking = null;
               this.loadDashboardData();
+              this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
             },
             error: () => {
               this.activeBooking = null;
               this.loadDashboardData();
+              this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
             }
           });
         }
@@ -920,6 +937,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } else {
       this.activeBooking = null;
       this.loadDashboardData();
+      this.snackBar.open('Simulation booking completed.', 'Dismiss', { duration: 2500 });
     }
   }
 
