@@ -281,8 +281,8 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   Future<void> fetchAndOfferJob(String bookingId, {String guid = '', TripDetails? fallbackDetails}) async {
-    if (state.status != TripStatus.idle) {
-      debugPrint("[TripNotifier] Ignoring job offer because status is not idle (${state.status})");
+    if (state.status == TripStatus.offered) {
+      debugPrint("[TripNotifier] Ignoring job offer because an offer is already active on screen");
       return;
     }
 
