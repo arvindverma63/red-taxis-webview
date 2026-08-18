@@ -618,7 +618,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       const id = params['jobId'] || '';
       this.jobIdFromUrl = id.toString();
-      this.guid = (params['guid'] || '').toString();
+      this.guid = (params['guid'] || params['Guid'] || params['notificationId'] || params['notification_id'] || '').toString();
       const fareVal = parseFloat(params['fare'] || '0');
       const pickup = params['pickup'] ? decodeURIComponent(params['pickup']) : '';
       const dropoff = params['dropoff'] ? decodeURIComponent(params['dropoff']) : '';
@@ -650,9 +650,9 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   private mapApiJobToJobDetails(item: any): JobDetails {
-    let paymentType = item.paymentType || item.paymentMethod || '';
-    if (!paymentType && item.scope !== undefined && item.scope !== null) {
-      const scope = parseInt(item.scope.toString()) || 0;
+    let paymentType = item.paymentType || item.PaymentType || item.paymentMethod || item.PaymentMethod || '';
+    if (!paymentType && (item.scope !== undefined && item.scope !== null || item.Scope !== undefined && item.Scope !== null)) {
+      const scope = parseInt((item.scope ?? item.Scope).toString()) || 0;
       switch (scope) {
         case 0: paymentType = 'Cash'; break;
         case 1: paymentType = 'Account'; break;
@@ -664,14 +664,14 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     if (!paymentType) paymentType = 'Cash';
 
     return {
-      id: (item.bookingId || item.bookingNo || item.id || this.jobIdFromUrl || '').toString(),
-      fare: parseFloat((item.price || item.fare || item.amount || item.driverPrice || '0.00').toString()),
-      pickup: item.pickupAddress || item.pickup || item.from || 'Pickup location',
-      dropoff: item.destinationAddress || item.dropoff || item.dropoffAddress || item.to || 'Dropoff destination',
+      id: (item.bookingId || item.BookingId || item.bookingNo || item.BookingNo || item.id || item.Id || this.jobIdFromUrl || '').toString(),
+      fare: parseFloat((item.price || item.Price || item.fare || item.Fare || item.amount || item.Amount || item.driverPrice || item.DriverPrice || '0.00').toString()),
+      pickup: item.pickupAddress || item.PickupAddress || item.pickup || item.Pickup || item.from || item.From || 'Pickup location',
+      dropoff: item.destinationAddress || item.DestinationAddress || item.dropoff || item.Dropoff || item.dropoffAddress || item.DropoffAddress || item.to || item.To || 'Dropoff destination',
       paymentType: paymentType,
-      vehicleType: item.vehicleType || item.vehicle || 'Standard Saloon',
-      passenger: item.passengerName || item.passenger || item.customerName || 'Passenger',
-      notes: item.details || item.notes || item.comment || item.specialRequirements || ''
+      vehicleType: item.vehicleType || item.VehicleType || item.vehicle || item.Vehicle || 'Standard Saloon',
+      passenger: item.passengerName || item.PassengerName || item.passenger || item.Passenger || item.customerName || item.CustomerName || 'Passenger',
+      notes: item.details || item.Details || item.notes || item.Notes || item.comment || item.Comment || item.specialRequirements || item.SpecialRequirements || ''
     };
   }
 
@@ -680,9 +680,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     if (this.jobIdFromUrl) {
       this.driverService.getJobById(this.jobIdFromUrl).subscribe({
         next: (data) => {
-          if (data && (data.bookingId || data.pickupAddress || data.price)) {
+          if (data && (data.bookingId || data.BookingId || data.pickupAddress || data.Price || data.price)) {
             this.job = this.mapApiJobToJobDetails(data);
-            if (data.guid && !this.guid) this.guid = data.guid;
+            const guid = data.guid || data.Guid || data.notificationId || data.notification_id || data.NotificationId;
+            if (guid && !this.guid) this.guid = guid;
             this.cdr.detectChanges();
           } else {
             this.fetchViaRetrieveJobOfferOrOffers();
@@ -720,9 +721,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       next: (offers) => {
         const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
         if (Array.isArray(data) && data.length > 0) {
-          const matching = data.find((j: any) => (j.bookingNo || j.bookingId || j.id || '').toString() === this.jobIdFromUrl) || data[0];
+          const matching = data.find((j: any) => (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === this.jobIdFromUrl) || data[0];
           this.job = this.mapApiJobToJobDetails(matching);
-          if (matching.guid && !this.guid) this.guid = matching.guid;
+          const guid = matching.guid || matching.Guid || matching.notificationId || matching.notification_id || matching.NotificationId;
+          if (guid && !this.guid) this.guid = guid;
           this.cdr.detectChanges();
         } else if (this.jobIdFromUrl) {
           if (!this.job) {

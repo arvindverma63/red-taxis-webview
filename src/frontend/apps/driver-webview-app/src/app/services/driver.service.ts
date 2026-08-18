@@ -259,11 +259,17 @@ export class DriverService {
   }): Observable<any> {
     const payload = {
       bookingId: data.bookingId,
+      BookingId: data.bookingId,
       waitingTime: data.waitingTime ?? 0,
+      WaitingTime: data.waitingTime ?? 0,
       parkingCharge: data.parkingCharge ?? 0,
+      ParkingCharge: data.parkingCharge ?? 0,
       driverPrice: data.driverPrice ?? 0,
+      DriverPrice: data.driverPrice ?? 0,
       accountPrice: data.accountPrice ?? 0,
-      tip: data.tip ?? 0
+      AccountPrice: data.accountPrice ?? 0,
+      tip: data.tip ?? 0,
+      Tip: data.tip ?? 0
     };
     console.log('API Webview Request: POST /api/DriverApp/CompleteJob payload:', JSON.stringify(payload));
     return this.http.post(`${this.baseUrl}/api/DriverApp/CompleteJob`, payload, { headers: this.getHeaders() }).pipe(

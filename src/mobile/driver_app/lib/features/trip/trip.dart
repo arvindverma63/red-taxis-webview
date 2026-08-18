@@ -122,14 +122,14 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   TripDetails _mapJobToDetails(Map<String, dynamic> job, String fallbackId, {String fallbackGuid = ''}) {
-    final fare = double.tryParse((job['price'] ?? job['fare'] ?? job['amount'] ?? job['driverPrice'] ?? '0.0').toString()) ?? 0.0;
-    final pickup = (job['pickupAddress'] ?? job['pickup'] ?? job['from'] ?? 'Pickup address').toString();
-    final dropoff = (job['destinationAddress'] ?? job['dropoff'] ?? job['dropoffAddress'] ?? job['to'] ?? 'Dropoff destination').toString();
+    final fare = double.tryParse((job['price'] ?? job['Price'] ?? job['fare'] ?? job['Fare'] ?? job['amount'] ?? job['Amount'] ?? job['driverPrice'] ?? job['DriverPrice'] ?? '0.0').toString()) ?? 0.0;
+    final pickup = (job['pickupAddress'] ?? job['PickupAddress'] ?? job['pickup'] ?? job['Pickup'] ?? job['from'] ?? job['From'] ?? 'Pickup address').toString();
+    final dropoff = (job['destinationAddress'] ?? job['DestinationAddress'] ?? job['dropoff'] ?? job['Dropoff'] ?? job['dropoffAddress'] ?? job['DropoffAddress'] ?? job['to'] ?? job['To'] ?? 'Dropoff destination').toString();
     
     // Payment scope mapping
-    String paymentType = (job['paymentType'] ?? job['paymentMethod'] ?? '').toString();
-    if (paymentType.isEmpty && job['scope'] != null) {
-      final scope = int.tryParse(job['scope'].toString()) ?? 0;
+    String paymentType = (job['paymentType'] ?? job['PaymentType'] ?? job['paymentMethod'] ?? job['PaymentMethod'] ?? '').toString();
+    if (paymentType.isEmpty && (job['scope'] != null || job['Scope'] != null)) {
+      final scope = int.tryParse((job['scope'] ?? job['Scope']).toString()) ?? 0;
       switch (scope) {
         case 0:
           paymentType = 'Cash';
@@ -150,11 +150,11 @@ class TripNotifier extends StateNotifier<TripState> {
     }
     if (paymentType.isEmpty) paymentType = 'Cash';
 
-    final id = (job['bookingId'] ?? job['bookingNo'] ?? job['id'] ?? fallbackId).toString();
-    final guid = (job['guid'] ?? job['notificationId'] ?? fallbackGuid).toString();
-    final vehicleType = (job['vehicleType'] ?? job['vehicle'] ?? 'Standard Saloon').toString();
-    final passenger = (job['passengerName'] ?? job['passenger'] ?? job['customerName'] ?? 'Passenger').toString();
-    final notes = (job['details'] ?? job['notes'] ?? job['comment'] ?? job['specialRequirements'] ?? '').toString();
+    final id = (job['bookingId'] ?? job['BookingId'] ?? job['bookingNo'] ?? job['BookingNo'] ?? job['id'] ?? job['Id'] ?? fallbackId).toString();
+    final guid = (job['guid'] ?? job['Guid'] ?? job['notificationId'] ?? job['notification_id'] ?? job['NotificationId'] ?? fallbackGuid).toString();
+    final vehicleType = (job['vehicleType'] ?? job['VehicleType'] ?? job['vehicle'] ?? job['Vehicle'] ?? 'Standard Saloon').toString();
+    final passenger = (job['passengerName'] ?? job['PassengerName'] ?? job['passenger'] ?? job['Passenger'] ?? job['customerName'] ?? job['CustomerName'] ?? 'Passenger').toString();
+    final notes = (job['details'] ?? job['Details'] ?? job['notes'] ?? job['Notes'] ?? job['comment'] ?? job['Comment'] ?? job['specialRequirements'] ?? job['SpecialRequirements'] ?? '').toString();
 
     return TripDetails(
       id: id,
@@ -416,11 +416,17 @@ class TripNotifier extends StateNotifier<TripState> {
             '/api/DriverApp/CompleteJob',
             data: {
               'bookingId': int.tryParse(jobId) ?? 0,
+              'BookingId': int.tryParse(jobId) ?? 0,
               'driverPrice': fare,
+              'DriverPrice': fare,
               'waitingTime': 0,
+              'WaitingTime': 0,
               'parkingCharge': 0.0,
+              'ParkingCharge': 0.0,
               'accountPrice': 0.0,
+              'AccountPrice': 0.0,
               'tip': 0.0,
+              'Tip': 0.0,
             },
             options: Options(
               headers: token != null ? {'Authorization': 'Bearer $token'} : null,

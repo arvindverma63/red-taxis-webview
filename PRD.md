@@ -85,6 +85,10 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **QA Audit & Build Health Hardening**: 
   - Fixed a template expectation bug in the Angular unit tests spec (`app.spec.ts`), bringing tests to 100% green passing status.
   - Cleared all linter warnings from the Flutter codebase.
+  - Corrected local `org.gradle.java.home` path in `gradle.properties` to point to a valid JDK 21 installation, fixing build failure crashes and restoring successful build capabilities.
+  - Fixed a bug where the hybrid Dashboard WebView would show the login page by adding a reactive auth state listener to reload the WebView with the valid token once authentication resolves.
+  - Aligned JSON key mapping in both Flutter and Angular to support multi-casing (e.g., `guid` vs `Guid`, `bookingId` vs `BookingId`) during job offer acceptance, ensuring the required `guid` parameter is sent and received successfully by the staging API.
+  - Aligned the POST `/api/DriverApp/CompleteJob` payload in both Angular and Flutter to transmit properties in both camelCase and PascalCase (e.g. `bookingId` / `BookingId`, `driverPrice` / `DriverPrice`), eliminating model binding errors on the backend server.
 - [x] **Logging Security Hardening**: Wrapped raw telemetry, credentials, and token logging in standard Flutter HTTP interceptors behind `if (kDebugMode)` to block sensitive PII/token leaking in production release logs.
 - [x] **Remote Job Offer Screen Cutover & Redesign**: Migrated the native Flutter job offer UI to a remotely customizable Angular component (`#/job-offer`), bridged natively using a `FlutterChannel` Javascript interface. Redesigned it with a premium, light-themed ticket layout matching the rest of the application's clean design system.
 - [x] **Remote Active Booking Progress & Completion Cutover**: Migrated the En Route to Pickup, Arrived at Pickup, Passenger Onboard (On Trip), and Trip Complete screens from native Flutter views to remotely managed and styled Angular components (`#/active-trip` and `#/trip-complete`), supporting bidirectionally bridged navigation/utility controls.

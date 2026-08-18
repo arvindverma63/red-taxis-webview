@@ -147,6 +147,17 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       }
     });
 
+    // Listen for authentication changes (like auto-login resolving or login success)
+    // to reload the WebView with the valid token
+    ref.listen(authProvider, (previous, next) {
+      if (previous?.token != next.token) {
+        final token = next.token ?? '';
+        final shift = ref.read(shiftProvider);
+        final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard';
+        _controller?.loadRequest(Uri.parse(url));
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
