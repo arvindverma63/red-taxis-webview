@@ -71,7 +71,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         '/api/DriverApp/DriverShift',
         queryParameters: {
           'userid': userId,
-          'status': 1001,
+          'status': 1000, // AppDriverShift.Start (Online)
         },
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : null,
@@ -106,7 +106,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         '/api/DriverApp/DriverShift',
         queryParameters: {
           'userid': userId,
-          'status': 1000,
+          'status': 1001, // AppDriverShift.Finish (Offline)
         },
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : null,
