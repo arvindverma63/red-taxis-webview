@@ -1039,6 +1039,7 @@ export class BookingsComponent implements OnInit {
   maxDragRange = 0;
   startX = 0;
   activeBookingId = '';
+  driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
 
   constructor(
     private driverService: DriverService,
