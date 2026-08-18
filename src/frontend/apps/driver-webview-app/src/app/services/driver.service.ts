@@ -221,7 +221,10 @@ export class DriverService {
       url += `&guid=${encodeURIComponent(guid)}`;
     }
     console.log(`API Webview Request: GET ${url}`);
-    return this.http.get(url, { headers: this.getHeaders() }).pipe(
+    return this.http.get(url, { 
+      headers: this.getHeaders(),
+      responseType: 'text'
+    }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: GET /api/DriverApp/JobOfferReply success:', res),
         error: (err) => console.error('API Webview Error: GET /api/DriverApp/JobOfferReply failed:', err)
