@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { DriverService } from '../services/driver.service';
 import { Subscription, interval } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface JobDetails {
   id: string;
@@ -611,7 +612,8 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private driverService: DriverService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -867,6 +869,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, this.guid).subscribe({
         next: (res) => {
           console.log(`replyJobOffer accept success for jobId=${jobId}. Response text: "${res}"`);
+          this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
           doDismiss();
         },
         error: (err) => {
@@ -874,6 +877,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
           try {
             console.error(`replyJobOffer accept error serialized: ${JSON.stringify(err)}`);
           } catch (e) {}
+          this.snackBar.open(`Error accepting Job Offer: ${err?.error || err?.message || 'Unknown Error'}`, 'Close', { duration: 4000 });
           doDismiss();
         }
       });
@@ -894,6 +898,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
         next: (res) => {
           console.log(`replyJobOffer decline success for jobId=${jobId}. Response text: "${res}"`);
+          this.snackBar.open(`Job Offer #${jobId} Declined successfully.`, 'Close', { duration: 3500 });
           this.notifyNativeApp('job_rejected');
         },
         error: (err) => {
@@ -901,6 +906,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
           try {
             console.error(`replyJobOffer decline error serialized: ${JSON.stringify(err)}`);
           } catch (e) {}
+          this.snackBar.open(`Error declining Job Offer: ${err?.error || err?.message || 'Unknown Error'}`, 'Close', { duration: 4000 });
           this.notifyNativeApp('job_rejected');
         }
       });
@@ -918,6 +924,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
         next: (res) => {
           console.log(`replyJobOffer autoReject success for jobId=${jobId}. Response text: "${res}"`);
+          this.snackBar.open(`Job offer expired and auto-rejected.`, 'Close', { duration: 3500 });
           this.notifyNativeApp('job_rejected');
         },
         error: (err) => {
