@@ -7,6 +7,7 @@ import 'package:dio/io.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum ShiftStatus { offline, online }
 
@@ -35,6 +36,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
   StreamSubscription<Position>? _locationSubscription;
   final _locationService = LocationService();
   DateTime? _lastGpsSendTime;
+  final _storage = const FlutterSecureStorage();
 
   final _dio = Dio(BaseOptions(
     baseUrl: 'https://staging-api.redtaxi.co.uk',
@@ -59,12 +61,49 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         logPrint: (obj) => debugPrint('[Dio/Shift] $obj'),
       ));
     }
+    _restoreShiftState();
+  }
+
+  Future<void> _restoreShiftState() async {
+    try {
+      final isOnlineStr = await _storage.read(key: 'shift_online');
+      if (isOnlineStr == 'true') {
+        final startTimeStr = await _storage.read(key: 'shift_start_time');
+        final startTime = startTimeStr != null ? DateTime.tryParse(startTimeStr) : null;
+        
+        state = ShiftState(
+          status: ShiftStatus.online,
+          startTime: startTime ?? DateTime.now(),
+        );
+
+        final hasPermission = await _locationService.checkPermissions();
+        if (hasPermission) {
+          _locationSubscription?.cancel();
+          _locationSubscription = _locationService.getLocationStream().listen((position) {
+            _sendGpsUpdate(position);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("[ShiftNotifier] Restore shift state error: $e");
+    }
+  }
+
+  String _formatDateTime(DateTime dt) {
+    String year = dt.year.toString();
+    String month = dt.month.toString().padLeft(2, '0');
+    String day = dt.day.toString().padLeft(2, '0');
+    String hour = dt.hour.toString().padLeft(2, '0');
+    String minute = dt.minute.toString().padLeft(2, '0');
+    String second = dt.second.toString().padLeft(2, '0');
+    return '$year-$month-$day $hour:$minute:$second';
   }
 
   Future<void> goOnline() async {
     final auth = _ref.read(authProvider);
     final userId = auth.userId ?? 65;
     final token = auth.token;
+    final shiftDate = _formatDateTime(DateTime.now());
 
     try {
       await _dio.get(
@@ -72,6 +111,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         queryParameters: {
           'userid': userId,
           'status': 1000, // AppDriverShift.Start (Online)
+          'shiftDate': shiftDate,
         },
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : null,
@@ -94,12 +134,15 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
       status: ShiftStatus.online,
       startTime: DateTime.now(),
     );
+    await _storage.write(key: 'shift_online', value: 'true');
+    await _storage.write(key: 'shift_start_time', value: state.startTime.toString());
   }
 
   Future<void> goOffline() async {
     final auth = _ref.read(authProvider);
     final userId = auth.userId ?? 65;
     final token = auth.token;
+    final shiftDate = _formatDateTime(DateTime.now());
 
     try {
       await _dio.get(
@@ -107,6 +150,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         queryParameters: {
           'userid': userId,
           'status': 1001, // AppDriverShift.Finish (Offline)
+          'shiftDate': shiftDate,
         },
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : null,
@@ -120,6 +164,8 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     _locationSubscription = null;
 
     state = const ShiftState(status: ShiftStatus.offline);
+    await _storage.write(key: 'shift_online', value: 'false');
+    await _storage.delete(key: 'shift_start_time');
   }
 
   Future<void> _sendGpsUpdate(Position position) async {
