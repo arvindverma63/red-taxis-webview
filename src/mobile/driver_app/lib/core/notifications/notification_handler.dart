@@ -108,12 +108,13 @@ class NotificationNavigationHandler {
     debugPrint("NotificationNavigationHandler: notificationType='$notificationType', deepLink='$deepLink', bookingId='$bookingId', guid='$guid'");
 
     // Check for Job Offer / Booking Allocation payload
-    final isBookingOffer = notificationType.contains('booking') ||
+    final isBookingOffer = notificationType == '1' ||
+        notificationType.contains('booking') ||
         notificationType.contains('allocated') ||
         notificationType.contains('offered') ||
         notificationType.contains('job') ||
         deepLink.toLowerCase().startsWith('booking') ||
-        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType.contains('booking')));
+        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType.contains('booking') || notificationType == '1'));
 
     if (isBookingOffer && bookingId.isNotEmpty) {
       final fare = double.tryParse(data['fare']?.toString() ?? '0.0') ?? 0.0;
@@ -160,7 +161,6 @@ class NotificationNavigationHandler {
       case 'my-bookings':
       case 'trips':
       case 'my_trips':
-      case '1':
         navNotifier.setTabIndex(1);
         break;
 
