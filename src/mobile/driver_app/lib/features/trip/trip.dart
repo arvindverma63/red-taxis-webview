@@ -84,6 +84,7 @@ class TripNotifier extends StateNotifier<TripState> {
     _ref.listen<ShiftState>(shiftProvider, (previous, next) {
       if (next.status == ShiftStatus.online) {
         _startPolling();
+        checkActiveJob();
       } else {
         _stopPolling();
       }
@@ -93,6 +94,7 @@ class TripNotifier extends StateNotifier<TripState> {
     final shift = _ref.read(shiftProvider);
     if (shift.status == ShiftStatus.online) {
       _startPolling();
+      checkActiveJob();
     }
   }
 
@@ -196,6 +198,44 @@ class TripNotifier extends StateNotifier<TripState> {
     }
   }
 
+  Future<void> checkActiveJob() async {
+    // Only check if currently idle
+    if (state.status != TripStatus.idle) return;
+
+    final auth = _ref.read(authProvider);
+    final token = auth.token;
+    if (token == null) return;
+
+    try {
+      final response = await _dio.get(
+        '/api/DriverApp/GetActiveJob',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      final jobData = response.data;
+      if (jobData != null && jobData is Map) {
+        final jobMap = Map<String, dynamic>.from(jobData);
+        final details = _mapJobToDetails(jobMap, '');
+        if (details.id.isNotEmpty) {
+          final statusVal = int.tryParse((jobMap['status'] ?? jobMap['Status'] ?? '0').toString()) ?? 0;
+          TripStatus activeStatus = TripStatus.enRouteToPickup;
+          if (statusVal == 3006) {
+            activeStatus = TripStatus.onTrip;
+          } else if (statusVal == 3) {
+            activeStatus = TripStatus.arrived;
+          }
+          
+          state = TripState(status: activeStatus, currentTrip: details);
+          debugPrint("[TripNotifier] Restored active trip: ${details.id} status: $activeStatus");
+        }
+      }
+    } catch (e) {
+      debugPrint("[TripNotifier] checkActiveJob error: $e");
+    }
+  }
+
   bool _isMockTrip(String jobId) {
     return jobId.startsWith('sim-');
   }
@@ -290,8 +330,9 @@ class TripNotifier extends StateNotifier<TripState> {
       final jobId = state.currentTrip!.id;
       final guid = state.currentTrip!.guid;
 
-      // Dismiss the job offer modal and return to previous screen / dashboard
-      state = const TripState(status: TripStatus.idle);
+      final backupTrip = state.currentTrip;
+      // Transition state to enRouteToPickup to show the active trip screen/webview
+      state = TripState(status: TripStatus.enRouteToPickup, currentTrip: backupTrip);
 
       if (!_isMockTrip(jobId)) {
         try {
