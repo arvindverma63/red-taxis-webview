@@ -45,46 +45,19 @@ class _MainShellState extends ConsumerState<MainShell> {
     final token = authState.token ?? '';
 
     // If there is an active booking, overlay the corresponding trip screen
-    if (tripState.status != TripStatus.idle && tripState.currentTrip != null) {
+    if (tripState.status == TripStatus.offered && tripState.currentTrip != null) {
       final trip = tripState.currentTrip!;
-      switch (tripState.status) {
-        case TripStatus.offered:
-          final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
-          final encodedDropoff = Uri.encodeComponent(trip.dropoffAddress);
-          final encodedVehicle = Uri.encodeComponent(trip.vehicleType);
-          final encodedPassenger = Uri.encodeComponent(trip.passenger);
-          final encodedNotes = Uri.encodeComponent(trip.notes);
-          final encodedGuid = Uri.encodeComponent(trip.guid);
-          return DriverWebviewScreen(
-            url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
-            title: 'New Job Offer',
-            hideAppBar: true,
-          );
-        case TripStatus.enRouteToPickup:
-        case TripStatus.arrived:
-        case TripStatus.onTrip:
-          final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
-          final encodedDropoff = Uri.encodeComponent(trip.dropoffAddress);
-          final encodedVehicle = Uri.encodeComponent(trip.vehicleType);
-          final encodedPassenger = Uri.encodeComponent(trip.passenger);
-          final encodedNotes = Uri.encodeComponent(trip.notes);
-          final statusName = tripState.status.name;
-          return DriverWebviewScreen(
-            url: '${AppConfig.webviewBaseUrl}/#/active-trip?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes&status=$statusName',
-            title: 'Active Trip',
-            hideAppBar: true,
-          );
-        case TripStatus.complete:
-          final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
-          final encodedDropoff = Uri.encodeComponent(trip.dropoffAddress);
-          return DriverWebviewScreen(
-            url: '${AppConfig.webviewBaseUrl}/#/trip-complete?token=$token&jobId=${trip.id}&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}',
-            title: 'Trip Complete',
-            hideAppBar: true,
-          );
-        default:
-          break;
-      }
+      final encodedPickup = Uri.encodeComponent(trip.pickupAddress);
+      final encodedDropoff = Uri.encodeComponent(trip.dropoffAddress);
+      final encodedVehicle = Uri.encodeComponent(trip.vehicleType);
+      final encodedPassenger = Uri.encodeComponent(trip.passenger);
+      final encodedNotes = Uri.encodeComponent(trip.notes);
+      final encodedGuid = Uri.encodeComponent(trip.guid);
+      return DriverWebviewScreen(
+        url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
+        title: 'New Job Offer',
+        hideAppBar: true,
+      );
     }
 
     // If a custom webview route is triggered (e.g. via notification nav_id: "upload" or custom URL)

@@ -366,74 +366,21 @@ class TripNotifier extends StateNotifier<TripState> {
 
   Future<void> acceptJob() async {
     if (state.currentTrip != null) {
-      final auth = _ref.read(authProvider);
-      final token = auth.token;
       final jobId = state.currentTrip!.id;
-      final guid = state.currentTrip!.guid;
 
-      final backupTrip = state.currentTrip;
-      // Transition state to enRouteToPickup to show the active trip screen/webview
-      state = TripState(status: TripStatus.enRouteToPickup, currentTrip: backupTrip);
+      // Close/dismiss job offer overlay by returning to idle state
+      state = const TripState(status: TripStatus.idle);
 
       final bookingIdInt = int.tryParse(jobId) ?? 0;
       if (bookingIdInt > 0 && !_isMockTrip(jobId)) {
         setActiveJob(bookingIdInt);
-      }
-
-      if (!_isMockTrip(jobId)) {
-        try {
-          final query = <String, dynamic>{
-            'jobno': bookingIdInt,
-            'response': 2000, // AppJobOffer.Accept
-          };
-          if (guid.isNotEmpty) {
-            query['guid'] = guid;
-          }
-          final res = await _dio.get(
-            '/api/DriverApp/JobOfferReply',
-            queryParameters: query,
-            options: Options(
-              headers: token != null ? {'Authorization': 'Bearer $token'} : null,
-            ),
-          );
-          debugPrint("[TripNotifier] JobOfferReply Accept response: ${res.data}");
-        } catch (e) {
-          debugPrint("[TripNotifier] JobOfferReply Accept API error: $e");
-        }
       }
     }
   }
 
   Future<void> rejectJob() async {
     if (state.currentTrip != null) {
-      final auth = _ref.read(authProvider);
-      final token = auth.token;
-      final jobId = state.currentTrip!.id;
-      final guid = state.currentTrip!.guid;
-
       state = const TripState(status: TripStatus.idle);
-
-      if (!_isMockTrip(jobId)) {
-        try {
-          final query = <String, dynamic>{
-            'jobno': int.tryParse(jobId) ?? 0,
-            'response': 2001, // AppJobOffer.Reject
-          };
-          if (guid.isNotEmpty) {
-            query['guid'] = guid;
-          }
-          final res = await _dio.get(
-            '/api/DriverApp/JobOfferReply',
-            queryParameters: query,
-            options: Options(
-              headers: token != null ? {'Authorization': 'Bearer $token'} : null,
-            ),
-          );
-          debugPrint("[TripNotifier] JobOfferReply Reject response: ${res.data}");
-        } catch (e) {
-          debugPrint("[TripNotifier] JobOfferReply Reject API error: $e");
-        }
-      }
     }
   }
 
