@@ -893,12 +893,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
         tip: 0
       }).subscribe({
         next: () => {
-          this.activeBooking = null;
-          this.loadDashboardData();
+          this.driverService.setActiveJob(0).subscribe({
+            next: () => {
+              this.activeBooking = null;
+              this.loadDashboardData();
+            },
+            error: () => {
+              this.activeBooking = null;
+              this.loadDashboardData();
+            }
+          });
         },
         error: () => {
-          this.activeBooking = null;
-          this.loadDashboardData();
+          this.driverService.setActiveJob(0).subscribe({
+            next: () => {
+              this.activeBooking = null;
+              this.loadDashboardData();
+            },
+            error: () => {
+              this.activeBooking = null;
+              this.loadDashboardData();
+            }
+          });
         }
       });
     } else {

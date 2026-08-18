@@ -215,20 +215,56 @@ class TripNotifier extends StateNotifier<TripState> {
       );
 
       final jobData = response.data;
-      if (jobData != null && jobData is Map) {
-        final jobMap = Map<String, dynamic>.from(jobData);
-        final details = _mapJobToDetails(jobMap, '');
-        if (details.id.isNotEmpty) {
-          final statusVal = int.tryParse((jobMap['status'] ?? jobMap['Status'] ?? '0').toString()) ?? 0;
-          TripStatus activeStatus = TripStatus.enRouteToPickup;
-          if (statusVal == 3006) {
-            activeStatus = TripStatus.onTrip;
-          } else if (statusVal == 3) {
-            activeStatus = TripStatus.arrived;
+      if (jobData != null) {
+        String activeBookingId = '';
+        Map<String, dynamic>? activeJobMap;
+
+        if (jobData is Map) {
+          activeJobMap = Map<String, dynamic>.from(jobData);
+          activeBookingId = (activeJobMap['bookingId'] ?? activeJobMap['BookingId'] ?? activeJobMap['bookingNo'] ?? activeJobMap['BookingNo'] ?? activeJobMap['id'] ?? activeJobMap['Id'] ?? '').toString();
+        } else if (jobData is int || jobData is String) {
+          activeBookingId = jobData.toString();
+        } else if (jobData is Map && (jobData['value'] != null || jobData['data'] != null)) {
+          final nested = jobData['value'] ?? jobData['data'];
+          if (nested is int || nested is String) {
+            activeBookingId = nested.toString();
+          } else if (nested is Map) {
+            activeJobMap = Map<String, dynamic>.from(nested);
+            activeBookingId = (activeJobMap['bookingId'] ?? activeJobMap['BookingId'] ?? '').toString();
           }
-          
-          state = TripState(status: activeStatus, currentTrip: details);
-          debugPrint("[TripNotifier] Restored active trip: ${details.id} status: $activeStatus");
+        }
+
+        if (activeBookingId.isNotEmpty && activeBookingId != '0') {
+          Map<String, dynamic>? finalJobData = activeJobMap;
+
+          if (finalJobData == null) {
+            try {
+              final detailsRes = await _dio.get(
+                '/api/Bookings/FindById',
+                queryParameters: {'bookingId': activeBookingId},
+                options: Options(headers: {'Authorization': 'Bearer $token'}),
+              );
+              if (detailsRes.data != null && detailsRes.data is Map) {
+                finalJobData = Map<String, dynamic>.from(detailsRes.data);
+              }
+            } catch (e) {
+              debugPrint("[TripNotifier] Fetch active job details error: $e");
+            }
+          }
+
+          if (finalJobData != null) {
+            final details = _mapJobToDetails(finalJobData, activeBookingId);
+            final statusVal = int.tryParse((finalJobData['status'] ?? finalJobData['Status'] ?? '0').toString()) ?? 0;
+            TripStatus activeStatus = TripStatus.enRouteToPickup;
+            if (statusVal == 3006) {
+              activeStatus = TripStatus.onTrip;
+            } else if (statusVal == 3) {
+              activeStatus = TripStatus.arrived;
+            }
+
+            state = TripState(status: activeStatus, currentTrip: details);
+            debugPrint("[TripNotifier] Restored active trip: ${details.id} status: $activeStatus");
+          }
         }
       }
     } catch (e) {
@@ -339,10 +375,15 @@ class TripNotifier extends StateNotifier<TripState> {
       // Transition state to enRouteToPickup to show the active trip screen/webview
       state = TripState(status: TripStatus.enRouteToPickup, currentTrip: backupTrip);
 
+      final bookingIdInt = int.tryParse(jobId) ?? 0;
+      if (bookingIdInt > 0 && !_isMockTrip(jobId)) {
+        setActiveJob(bookingIdInt);
+      }
+
       if (!_isMockTrip(jobId)) {
         try {
           final query = <String, dynamic>{
-            'jobno': int.tryParse(jobId) ?? 0,
+            'jobno': bookingIdInt,
             'response': 2000, // AppJobOffer.Accept
           };
           if (guid.isNotEmpty) {
@@ -457,6 +498,7 @@ class TripNotifier extends StateNotifier<TripState> {
       final fare = state.currentTrip!.fare;
 
       if (!_isMockTrip(jobId)) {
+        setActiveJob(0);
         try {
           await _dio.post(
             '/api/DriverApp/CompleteJob',
@@ -488,7 +530,33 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   void finishShiftItem() {
+    final jobId = state.currentTrip?.id;
+    if (jobId != null && !_isMockTrip(jobId)) {
+      setActiveJob(0);
+    }
     state = const TripState(status: TripStatus.idle);
+  }
+
+  Future<void> setActiveJob(int bookingId) async {
+    final auth = _ref.read(authProvider);
+    final token = auth.token;
+
+    try {
+      await _dio.post(
+        '/api/DriverApp/SetActiveJob',
+        queryParameters: {'bookingId': bookingId},
+        data: {
+          'bookingId': bookingId,
+          'BookingId': bookingId,
+        },
+        options: Options(
+          headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+        ),
+      );
+      debugPrint("[TripNotifier] SetActiveJob success: $bookingId");
+    } catch (e) {
+      debugPrint("[TripNotifier] SetActiveJob error: $e");
+    }
   }
 
   @override

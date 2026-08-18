@@ -249,6 +249,18 @@ export class DriverService {
     );
   }
 
+  setActiveJob(bookingId: number | null): Observable<any> {
+    const idVal = bookingId ?? 0;
+    const url = `${this.baseUrl}/api/DriverApp/SetActiveJob?bookingId=${idVal}`;
+    console.log(`API Webview Request: POST ${url}`);
+    return this.http.post(url, { bookingId: idVal, BookingId: idVal }, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/DriverApp/SetActiveJob success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/SetActiveJob failed:', err)
+      })
+    );
+  }
+
   completeJob(data: {
     bookingId: number;
     waitingTime?: number;

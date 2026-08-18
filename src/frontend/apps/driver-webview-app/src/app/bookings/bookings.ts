@@ -1041,19 +1041,41 @@ export class BookingsComponent implements OnInit {
       }).subscribe({
         next: (res) => {
           console.log('CompleteJob API success:', res);
-          booking.status = 'Completed';
-          this.driverTripStatus[booking.id] = 'completed';
-          this.loadBookings();
-          this.cdr.detectChanges();
-          setTimeout(() => this.closeDetails(), 400);
+          this.driverService.setActiveJob(0).subscribe({
+            next: () => {
+              booking.status = 'Completed';
+              this.driverTripStatus[booking.id] = 'completed';
+              this.loadBookings();
+              this.cdr.detectChanges();
+              setTimeout(() => this.closeDetails(), 400);
+            },
+            error: () => {
+              booking.status = 'Completed';
+              this.driverTripStatus[booking.id] = 'completed';
+              this.loadBookings();
+              this.cdr.detectChanges();
+              setTimeout(() => this.closeDetails(), 400);
+            }
+          });
         },
         error: (err) => {
           console.error('CompleteJob API error:', err);
-          booking.status = 'Completed';
-          this.driverTripStatus[booking.id] = 'completed';
-          this.loadBookings();
-          this.cdr.detectChanges();
-          setTimeout(() => this.closeDetails(), 400);
+          this.driverService.setActiveJob(0).subscribe({
+            next: () => {
+              booking.status = 'Completed';
+              this.driverTripStatus[booking.id] = 'completed';
+              this.loadBookings();
+              this.cdr.detectChanges();
+              setTimeout(() => this.closeDetails(), 400);
+            },
+            error: () => {
+              booking.status = 'Completed';
+              this.driverTripStatus[booking.id] = 'completed';
+              this.loadBookings();
+              this.cdr.detectChanges();
+              setTimeout(() => this.closeDetails(), 400);
+            }
+          });
         }
       });
     } else {
