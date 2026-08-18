@@ -863,13 +863,17 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     };
 
     if (jobId && !jobId.startsWith('sim-')) {
+      console.log(`replyJobOffer accept action started for jobId=${jobId}, guid=${this.guid}`);
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, this.guid).subscribe({
         next: (res) => {
-          console.log('replyJobOffer success:', res);
+          console.log(`replyJobOffer accept success for jobId=${jobId}. Response text: "${res}"`);
           doDismiss();
         },
         error: (err) => {
-          console.error('replyJobOffer error:', err);
+          console.error(`replyJobOffer accept failed for jobId=${jobId}. Error details:`, err);
+          try {
+            console.error(`replyJobOffer accept error serialized: ${JSON.stringify(err)}`);
+          } catch (e) {}
           doDismiss();
         }
       });
@@ -886,13 +890,17 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
     if (jobId && !jobId.startsWith('sim-')) {
+      console.log(`replyJobOffer decline action started for jobId=${jobId}, guid=${this.guid}`);
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
         next: (res) => {
-          console.log('replyJobOffer decline success:', res);
+          console.log(`replyJobOffer decline success for jobId=${jobId}. Response text: "${res}"`);
           this.notifyNativeApp('job_rejected');
         },
         error: (err) => {
-          console.error('replyJobOffer decline error:', err);
+          console.error(`replyJobOffer decline failed for jobId=${jobId}. Error details:`, err);
+          try {
+            console.error(`replyJobOffer decline error serialized: ${JSON.stringify(err)}`);
+          } catch (e) {}
           this.notifyNativeApp('job_rejected');
         }
       });
@@ -906,11 +914,17 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     const jobId = this.job?.id || this.jobIdFromUrl || '';
     if (jobId && !jobId.startsWith('sim-')) {
+      console.log(`replyJobOffer autoReject action started for jobId=${jobId}, guid=${this.guid}`);
       this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
-        next: () => {
+        next: (res) => {
+          console.log(`replyJobOffer autoReject success for jobId=${jobId}. Response text: "${res}"`);
           this.notifyNativeApp('job_rejected');
         },
-        error: () => {
+        error: (err) => {
+          console.error(`replyJobOffer autoReject failed for jobId=${jobId}. Error details:`, err);
+          try {
+            console.error(`replyJobOffer autoReject error serialized: ${JSON.stringify(err)}`);
+          } catch (e) {}
           this.notifyNativeApp('job_rejected');
         }
       });

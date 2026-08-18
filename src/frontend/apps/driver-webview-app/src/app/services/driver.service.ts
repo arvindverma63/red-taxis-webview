@@ -220,14 +220,19 @@ export class DriverService {
     if (guid) {
       url += `&guid=${encodeURIComponent(guid)}`;
     }
-    console.log(`API Webview Request: GET ${url}`);
+    console.log(`API Webview Request: GET ${url} - parameters: jobId=${jobId}, response=${response}, guid=${guid}`);
     return this.http.get(url, { 
       headers: this.getHeaders(),
       responseType: 'text'
     }).pipe(
       tap({
-        next: (res) => console.log('API Webview Response: GET /api/DriverApp/JobOfferReply success:', res),
-        error: (err) => console.error('API Webview Error: GET /api/DriverApp/JobOfferReply failed:', err)
+        next: (res) => console.log(`API Webview Response: GET /api/DriverApp/JobOfferReply success. Response text: "${res}"`),
+        error: (err) => {
+          console.error(`API Webview Error: GET /api/DriverApp/JobOfferReply failed for jobId=${jobId}, response=${response}, guid=${guid}. Error details:`, err);
+          try {
+            console.error(`API Webview Error Serialized: ${JSON.stringify(err)}`);
+          } catch(e) {}
+        }
       })
     );
   }
