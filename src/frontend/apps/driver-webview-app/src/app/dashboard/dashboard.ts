@@ -957,8 +957,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         // 2. Active Job (From getActiveJob or first upcoming today job)
         let activeRaw = results.activeJob?.value || results.activeJob;
+        if (activeRaw && (activeRaw.cancelled || activeRaw.cancelledOnArrival || activeRaw.status === 4 || activeRaw.status === 5 || activeRaw.status === 6)) {
+          activeRaw = null;
+        }
         if (!activeRaw && todayList.length > 0) {
-          activeRaw = todayList.find((j: any) => !j.cancelled && j.status !== 4 && j.status !== 5);
+          activeRaw = todayList.find((j: any) => !j.cancelled && !j.cancelledOnArrival && j.status !== 4 && j.status !== 5 && j.status !== 6);
         }
 
         if (activeRaw && (activeRaw.bookingId || activeRaw.id || activeRaw.bookingNo)) {
