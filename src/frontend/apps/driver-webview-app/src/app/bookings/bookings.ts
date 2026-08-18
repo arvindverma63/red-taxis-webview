@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -180,7 +180,7 @@ interface Booking {
           <div class="sheet-quick-actions">
             <!-- Arrived / Picked Up Status Toggle -->
             <button 
-              *ngIf="selectedBooking.status === 'Upcoming'"
+              *ngIf="selectedBooking.status === 'Upcoming' && selectedBooking.id === activeBookingId"
               class="action-pill-btn status-btn" 
               [ngClass]="getTripProgress(selectedBooking.id)"
               (click)="advanceTripStatus(selectedBooking)"
@@ -309,14 +309,33 @@ interface Booking {
 
           <!-- Bottom Actions (Complete Booking & Close) -->
           <div class="sheet-footer">
-            <button 
-              *ngIf="selectedBooking.status === 'Upcoming'"
-              class="sheet-complete-btn" 
-              (click)="completeBooking(selectedBooking)"
-            >
-              <span class="material-symbols-outlined">check_circle</span>
-              <span>Complete Booking</span>
-            </button>
+            <!-- Slide to Complete Widget -->
+            <div class="slide-complete-container" *ngIf="selectedBooking.status === 'Upcoming' && selectedBooking.id === activeBookingId">
+              <div 
+                #sliderEl
+                class="slide-complete-track"
+                [class.submitting]="isSubmitting"
+              >
+                <div 
+                  class="slide-fill-bar" 
+                  [style.width.px]="sliderPosition + 22"
+                ></div>
+                <div class="slide-track-text" *ngIf="!isSubmitting">
+                  {{ isDragging ? 'Release to Complete' : 'Slide to Complete' }}
+                </div>
+                <div class="slide-track-text submitting" *ngIf="isSubmitting">
+                  Completing Booking...
+                </div>
+                <div 
+                  class="slide-thumb-btn"
+                  [style.transform]="'translateX(' + sliderPosition + 'px)'"
+                  (mousedown)="onDragStart($event)"
+                  (touchstart)="onDragStart($event)"
+                >
+                  <span class="material-symbols-outlined select-none" style="user-select:none;">keyboard_double_arrow_right</span>
+                </div>
+              </div>
+            </div>
             <button class="sheet-dismiss-btn" (click)="closeDetails()">Close Details</button>
           </div>
         </div>
@@ -928,25 +947,69 @@ interface Booking {
       flex-direction: column;
       gap: 8px;
     }
-    .sheet-complete-btn {
+    .slide-complete-container {
       width: 100%;
-      padding: 13px;
+      margin: 8px 0 4px 0;
+      box-sizing: border-box;
+    }
+    .slide-complete-track {
+      position: relative;
+      height: 48px;
+      background-color: #F1F3F9;
+      border: 1px solid #CFD8DC;
       border-radius: 24px;
-      background-color: #CD1A21;
-      color: #FFFFFF;
-      border: none;
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.25);
-      transition: all 0.2s ease;
+      user-select: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
     }
-    .sheet-complete-btn:active {
-      transform: scale(0.98);
+    .slide-complete-track.submitting {
+      opacity: 0.8;
+      pointer-events: none;
+    }
+    .slide-fill-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, #CD1A21 0%, #E53935 100%);
+      border-radius: 24px 0 0 24px;
+      z-index: 1;
+      transition: width 0.05s ease;
+    }
+    .slide-track-text {
+      position: absolute;
+      font-size: 12px;
+      font-weight: 800;
+      color: #37474F;
+      z-index: 2;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+    .slide-track-text.submitting {
+      color: #CD1A21;
+    }
+    .slide-thumb-btn {
+      position: absolute;
+      left: 4px;
+      width: 40px;
+      height: 40px;
+      background-color: #CD1A21;
+      color: #FFFFFF;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      z-index: 3;
+      box-shadow: 0 3px 8px rgba(205, 26, 33, 0.45);
+      transition: transform 0.05s ease, background-color 0.2s;
+    }
+    .slide-thumb-btn:active {
+      cursor: grabbing;
       background-color: #B71C1C;
     }
     .sheet-dismiss-btn {
@@ -969,7 +1032,13 @@ export class BookingsComponent implements OnInit {
 
   bookings: Booking[] = [];
   selectedBooking: Booking | null = null;
-  driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
+  @ViewChild('sliderEl') sliderEl!: any;
+  sliderPosition = 0;
+  isDragging = false;
+  isSubmitting = false;
+  maxDragRange = 0;
+  startX = 0;
+  activeBookingId = '';
 
   constructor(
     private driverService: DriverService,
@@ -987,10 +1056,82 @@ export class BookingsComponent implements OnInit {
 
   openDetails(booking: Booking): void {
     this.selectedBooking = booking;
+    this.sliderPosition = 0;
+    this.isSubmitting = false;
   }
 
   closeDetails(): void {
     this.selectedBooking = null;
+  }
+
+  onDragStart(event: MouseEvent | TouchEvent): void {
+    if (this.isSubmitting) return;
+    this.isDragging = true;
+    this.startX = this.getEventX(event) - this.sliderPosition;
+    
+    if (this.sliderEl) {
+      const containerWidth = this.sliderEl.nativeElement.clientWidth;
+      const thumbWidth = 40;
+      this.maxDragRange = containerWidth - thumbWidth - 8;
+    }
+
+    if (event instanceof MouseEvent) {
+      document.addEventListener('mousemove', this.onDragMove);
+      document.addEventListener('mouseup', this.onDragEnd);
+    } else {
+      document.addEventListener('touchmove', this.onDragMove, { passive: false });
+      document.addEventListener('touchend', this.onDragEnd);
+    }
+  }
+
+  onDragMove = (event: MouseEvent | TouchEvent): void => {
+    if (!this.isDragging || this.isSubmitting) return;
+    event.preventDefault();
+    
+    const currentX = this.getEventX(event);
+    let position = currentX - this.startX;
+    
+    if (position < 0) position = 0;
+    if (position > this.maxDragRange) position = this.maxDragRange;
+    
+    this.sliderPosition = position;
+    this.cdr.detectChanges();
+    
+    if (this.maxDragRange > 0 && this.sliderPosition >= this.maxDragRange * 0.85) {
+      this.onDragEnd(event);
+      if (this.selectedBooking) {
+        this.completeBooking(this.selectedBooking);
+      }
+    }
+  }
+
+  onDragEnd = (event: MouseEvent | TouchEvent): void => {
+    this.isDragging = false;
+    document.removeEventListener('mousemove', this.onDragMove);
+    document.removeEventListener('mouseup', this.onDragEnd);
+    document.removeEventListener('touchmove', this.onDragMove);
+    document.removeEventListener('touchend', this.onDragEnd);
+
+    if (!this.isSubmitting && this.maxDragRange > 0 && this.sliderPosition < this.maxDragRange * 0.85) {
+      this.animateSnapBack();
+    }
+  }
+
+  private getEventX(event: MouseEvent | TouchEvent): number {
+    return event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+  }
+
+  private animateSnapBack(): void {
+    const step = this.sliderPosition / 8;
+    const intervalId = setInterval(() => {
+      if (this.sliderPosition > 0) {
+        this.sliderPosition -= step;
+        if (this.sliderPosition < 0) this.sliderPosition = 0;
+        this.cdr.detectChanges();
+      } else {
+        clearInterval(intervalId);
+      }
+    }, 16);
   }
 
   getTripProgress(bookingId: string): 'assigned' | 'arrived' | 'pickedUp' | 'completed' {
@@ -1046,6 +1187,8 @@ export class BookingsComponent implements OnInit {
   completeBooking(booking: Booking): void {
     const bookingIdNum = parseInt(booking.id) || 0;
     if (bookingIdNum > 0) {
+      this.isSubmitting = true;
+      this.cdr.detectChanges();
       this.snackBar.open('Completing booking...', 'Dismiss', { duration: 2000 });
       this.driverService.completeJob({
         bookingId: bookingIdNum,
@@ -1059,6 +1202,7 @@ export class BookingsComponent implements OnInit {
           console.log('CompleteJob API success:', res);
           this.driverService.setActiveJob(0).subscribe({
             next: () => {
+              this.isSubmitting = false;
               booking.status = 'Completed';
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
@@ -1067,6 +1211,7 @@ export class BookingsComponent implements OnInit {
               setTimeout(() => this.closeDetails(), 400);
             },
             error: () => {
+              this.isSubmitting = false;
               booking.status = 'Completed';
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
@@ -1080,6 +1225,7 @@ export class BookingsComponent implements OnInit {
           console.error('CompleteJob API error:', err);
           this.driverService.setActiveJob(0).subscribe({
             next: () => {
+              this.isSubmitting = false;
               booking.status = 'Completed';
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
@@ -1088,6 +1234,7 @@ export class BookingsComponent implements OnInit {
               setTimeout(() => this.closeDetails(), 400);
             },
             error: () => {
+              this.isSubmitting = false;
               booking.status = 'Completed';
               this.driverTripStatus[booking.id] = 'completed';
               this.loadBookings();
@@ -1099,6 +1246,7 @@ export class BookingsComponent implements OnInit {
         }
       });
     } else {
+      this.isSubmitting = false;
       booking.status = 'Completed';
       this.driverTripStatus[booking.id] = 'completed';
       this.cdr.detectChanges();
@@ -1114,9 +1262,19 @@ export class BookingsComponent implements OnInit {
       bookingsToday: this.driverService.getBookingsToday().pipe(catchError(() => of([]))),
       todaysJobs: this.driverService.getTodaysJobs().pipe(catchError(() => of([]))),
       futureJobs: this.driverService.getFutureJobs().pipe(catchError(() => of([]))),
-      completedJobs: this.driverService.getCompletedJobs().pipe(catchError(() => of([])))
+      completedJobs: this.driverService.getCompletedJobs().pipe(catchError(() => of([]))),
+      activeJob: this.driverService.getActiveJob().pipe(catchError(() => of(null)))
     }).subscribe({
       next: (results) => {
+        let activeId = '';
+        if (results.activeJob) {
+          const activeRaw = results.activeJob.value || results.activeJob;
+          if (activeRaw) {
+            activeId = (typeof activeRaw === 'object' ? (activeRaw.bookingId || activeRaw.id || activeRaw.bookingNo) : activeRaw).toString();
+          }
+        }
+        this.activeBookingId = activeId;
+
         const allJobs: Booking[] = [];
         
         const processJob = (job: any, defaultStatus: 'Upcoming' | 'Completed' | 'Cancelled'): Booking => {
