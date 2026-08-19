@@ -1358,9 +1358,10 @@ export class BookingsComponent implements OnInit {
 
           // Resolve status
           let status: 'Upcoming' | 'Completed' | 'Cancelled' = defaultStatus;
-          if (job.cancelled === true || job.cancelledOnArrival === true) {
+          const rawStatus = job.status?.toString().toLowerCase() || '';
+          if (job.cancelled === true || job.cancelledOnArrival === true || rawStatus.includes('cancel') || rawStatus === '3') {
             status = 'Cancelled';
-          } else if (job.status === 4 || job.status === 5 || job.status === 6) {
+          } else if (rawStatus.includes('complete') || rawStatus === '4' || rawStatus === '5' || rawStatus === '6') {
             status = 'Completed';
           }
 
@@ -1404,10 +1405,11 @@ export class BookingsComponent implements OnInit {
         const futureList = extractList(results.futureJobs);
         const completedList = extractList(results.completedJobs);
 
+        // Process completed jobs first so they take precedence during ID deduplication
+        completedList.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
         bookingsTodayList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
         todaysJobsList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
         futureList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
-        completedList.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
 
         // Deduplicate bookings by ID
         const seenIds = new Set<string>();
