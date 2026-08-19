@@ -892,9 +892,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  notifyNativeApp(message: string): void {
+    try {
+      const channel = (window as any).FlutterChannel;
+      if (channel) {
+        channel.postMessage(message);
+      } else {
+        console.log(`Native notification bypassed: ${message}`);
+      }
+    } catch (err) {
+      console.error('Failed to notify native app:', err);
+    }
+  }
+
   completeActiveBooking(): void {
     if (!this.activeBooking) return;
-    this.router.navigate(['/complete-job'], { queryParams: { jobId: this.activeBooking.id, fare: this.activeBooking.fare } });
+    const channel = (window as any).FlutterChannel;
+    if (channel) {
+      channel.postMessage(`open_complete_job:${this.activeBooking.id}:${this.activeBooking.fare}`);
+    } else {
+      this.router.navigate(['/complete-job'], { queryParams: { jobId: this.activeBooking.id, fare: this.activeBooking.fare } });
+    }
   }
 
   loadDashboardData(): void {
@@ -1029,19 +1047,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.notifyNativeApp('simulate_cash_booking');
     } else {
       this.notifyNativeApp('simulate_card_booking');
-    }
-  }
-
-  private notifyNativeApp(message: string): void {
-    try {
-      const channel = (window as any).FlutterChannel;
-      if (channel) {
-        channel.postMessage(message);
-      } else {
-        console.log(`Native notification bypassed (channel not active): ${message}`);
-      }
-    } catch (err) {
-      console.error('Failed to notify native app:', err);
     }
   }
 

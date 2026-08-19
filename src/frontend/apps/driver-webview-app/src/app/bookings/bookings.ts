@@ -1211,11 +1211,30 @@ export class BookingsComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  notifyNativeApp(message: string): void {
+    try {
+      const channel = (window as any).FlutterChannel;
+      if (channel) {
+        channel.postMessage(message);
+      } else {
+        console.log(`Native notification bypassed: ${message}`);
+      }
+    } catch (err) {
+      console.error('Failed to notify native app:', err);
+    }
+  }
+
   completeBooking(booking: Booking): void {
     const bookingIdNum = parseInt(booking.id) || 0;
     if (bookingIdNum <= 0) return;
     this.closeDetails();
-    this.router.navigate(['/complete-job'], { queryParams: { jobId: booking.id, fare: booking.fare } });
+
+    const channel = (window as any).FlutterChannel;
+    if (channel) {
+      channel.postMessage(`open_complete_job:${booking.id}:${booking.fare}`);
+    } else {
+      this.router.navigate(['/complete-job'], { queryParams: { jobId: booking.id, fare: booking.fare } });
+    }
   }
 
   setActiveJob(booking: Booking): void {

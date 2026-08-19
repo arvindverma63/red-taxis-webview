@@ -125,6 +125,22 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             ref.read(shiftProvider.notifier).goOffline();
           } else if (message.message == 'pull_refresh') {
             _controller?.reload();
+          } else if (message.message.startsWith('open_complete_job:')) {
+            final parts = message.message.split(':');
+            if (parts.length >= 3) {
+              final jobId = parts[1];
+              final fare = parts[2];
+              ref.read(navigationProvider.notifier).openCustomWebView(
+                route: '/complete-job',
+                title: 'Complete Job',
+                params: {
+                  'jobId': jobId,
+                  'fare': fare,
+                },
+              );
+            }
+          } else if (message.message == 'close_complete_job') {
+            ref.read(navigationProvider.notifier).closeCustomWebView();
           }
         },
       );

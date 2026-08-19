@@ -494,6 +494,19 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
     }, 16);
   }
 
+  notifyNativeApp(message: string): void {
+    try {
+      const channel = (window as any).FlutterChannel;
+      if (channel) {
+        channel.postMessage(message);
+      } else {
+        console.log(`Native notification bypassed: ${message}`);
+      }
+    } catch (err) {
+      console.error('Failed to notify native app:', err);
+    }
+  }
+
   submit(): void {
     const bookingIdNum = parseInt(this.jobId) || 0;
     if (bookingIdNum <= 0) return;
@@ -516,6 +529,7 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
           next: () => {
             this.isSubmitting = false;
             this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
+            this.notifyNativeApp('close_complete_job');
             setTimeout(() => {
               this.router.navigate(['/bookings']);
             }, 600);
@@ -523,6 +537,7 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
           error: () => {
             this.isSubmitting = false;
             this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
+            this.notifyNativeApp('close_complete_job');
             setTimeout(() => {
               this.router.navigate(['/bookings']);
             }, 600);
@@ -535,6 +550,7 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
           next: () => {
             this.isSubmitting = false;
             this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
+            this.notifyNativeApp('close_complete_job');
             setTimeout(() => {
               this.router.navigate(['/bookings']);
             }, 600);
@@ -542,6 +558,7 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
           error: () => {
             this.isSubmitting = false;
             this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
+            this.notifyNativeApp('close_complete_job');
             setTimeout(() => {
               this.router.navigate(['/bookings']);
             }, 600);
@@ -552,6 +569,7 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
   }
 
   cancel(): void {
+    this.notifyNativeApp('close_complete_job');
     window.history.back();
   }
 
