@@ -83,10 +83,14 @@ class NotificationNavigationHandler {
         .trim();
 
     String bookingId = (data['bookingId'] ??
+            data['BookingId'] ??
             data['booking_id'] ??
+            data['bookingNo'] ??
+            data['BookingNo'] ??
             data['jobId'] ??
             data['job_id'] ??
             data['id'] ??
+            data['Id'] ??
             '')
         .toString()
         .trim();
@@ -101,20 +105,22 @@ class NotificationNavigationHandler {
             data['notification_id'] ??
             data['guid'] ??
             data['Guid'] ??
+            data['NotificationId'] ??
+            data['Notification_Id'] ??
             '')
         .toString()
         .trim();
 
     debugPrint("NotificationNavigationHandler: notificationType='$notificationType', deepLink='$deepLink', bookingId='$bookingId', guid='$guid'");
 
-    // Check for Job Offer / Booking Allocation payload
+    // Check for Job Offer / Booking Allocation payload (Strict matches only, do not match cancelled/unallocated/amended)
     final isBookingOffer = notificationType == '1' ||
-        notificationType.contains('booking') ||
-        notificationType.contains('allocated') ||
-        notificationType.contains('offered') ||
-        notificationType.contains('job') ||
-        deepLink.toLowerCase().startsWith('booking') ||
-        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType.contains('booking') || notificationType == '1'));
+        notificationType == 'allocated' ||
+        notificationType == 'offered' ||
+        notificationType == 'job_offered' ||
+        notificationType == 'job_offer' ||
+        (deepLink.isNotEmpty && deepLink.toLowerCase().startsWith('booking') && !deepLink.toLowerCase().contains('cancel') && !deepLink.toLowerCase().contains('unallocate') && !deepLink.toLowerCase().contains('amend')) ||
+        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType == '1'));
 
     if (isBookingOffer && bookingId.isNotEmpty) {
       final fare = double.tryParse(data['fare']?.toString() ?? '0.0') ?? 0.0;
