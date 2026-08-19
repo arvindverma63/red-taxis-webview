@@ -188,6 +188,10 @@ class NotificationNavigationHandler {
         break;
 
       case '2': // Job Unallocated
+        final currentTrip = targetRef.read(tripProvider).currentTrip;
+        if (currentTrip != null && currentTrip.id == bookingId) {
+          targetRef.read(tripProvider.notifier).rejectJob();
+        }
         navNotifier.openCustomWebView(
           route: '/job-offer',
           title: 'Job Unallocated',
@@ -200,6 +204,10 @@ class NotificationNavigationHandler {
         break;
 
       case '3': // Job Amended
+        final currentTrip = targetRef.read(tripProvider).currentTrip;
+        if (currentTrip != null && currentTrip.id == bookingId) {
+          targetRef.read(tripProvider.notifier).rejectJob();
+        }
         navNotifier.openCustomWebView(
           route: '/job-offer',
           title: 'Job Amended',
@@ -212,6 +220,10 @@ class NotificationNavigationHandler {
         break;
 
       case '4': // Job Cancelled
+        final currentTrip = targetRef.read(tripProvider).currentTrip;
+        if (currentTrip != null && currentTrip.id == bookingId) {
+          targetRef.read(tripProvider.notifier).rejectJob();
+        }
         navNotifier.openCustomWebView(
           route: '/job-offer',
           title: 'Job Cancelled',
