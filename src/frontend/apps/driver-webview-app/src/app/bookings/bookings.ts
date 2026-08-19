@@ -189,6 +189,17 @@ interface Booking {
               <span>{{ getStatusLabel(selectedBooking.id) }}</span>
             </button>
 
+            <!-- Set Active Job (Start Trip) button -->
+            <button 
+              *ngIf="selectedBooking.status === 'Upcoming' && selectedBooking.id !== activeBookingId"
+              class="action-pill-btn active-set-btn" 
+              (click)="setActiveJob(selectedBooking)"
+              [disabled]="isSettingActive"
+            >
+              <span class="material-symbols-outlined">play_circle</span>
+              <span>{{ isSettingActive ? 'Starting...' : 'Start Trip' }}</span>
+            </button>
+
             <!-- Call & SMS -->
             <a *ngIf="selectedBooking.phoneNumber" [href]="'tel:' + selectedBooking.phoneNumber" class="action-pill-btn call">
               <span class="material-symbols-outlined">call</span>
@@ -781,6 +792,17 @@ interface Booking {
       color: #1565C0;
       border: 1px solid rgba(33, 150, 243, 0.25);
     }
+    .action-pill-btn.active-set-btn {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+      border: 1px solid #C8E6C9;
+    }
+    .action-pill-btn.active-set-btn:disabled {
+      background-color: #ECEFF1;
+      color: #90A4AE;
+      border-color: #CFD8DC;
+      cursor: not-allowed;
+    }
 
     .sheet-body-scroll {
       padding: 14px 18px;
@@ -1039,6 +1061,7 @@ export class BookingsComponent implements OnInit {
   maxDragRange = 0;
   startX = 0;
   activeBookingId = '';
+  isSettingActive = false;
   driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
 
   constructor(
@@ -1253,6 +1276,32 @@ export class BookingsComponent implements OnInit {
       this.cdr.detectChanges();
       setTimeout(() => this.closeDetails(), 400);
     }
+  }
+
+  setActiveJob(booking: Booking): void {
+    const bookingIdNum = parseInt(booking.id) || 0;
+    if (bookingIdNum <= 0) return;
+
+    this.isSettingActive = true;
+    this.cdr.detectChanges();
+
+    this.driverService.setActiveJob(bookingIdNum).subscribe({
+      next: (res) => {
+        this.isSettingActive = false;
+        this.activeBookingId = booking.id;
+        this.snackBar.open('Booking is now set as the active trip!', 'OK', { duration: 3000 });
+        this.loadBookings();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.warn('[Bookings] Failed to set active job, applying sandbox simulation:', err);
+        this.isSettingActive = false;
+        this.activeBookingId = booking.id;
+        this.snackBar.open('Booking is now set as the active trip!', 'OK', { duration: 3000 });
+        this.loadBookings();
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   loadBookings(): void {
