@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DriverService } from '../services/driver.service';
 import { Subscription, interval } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
@@ -606,11 +606,13 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   private maxDragRange = 0;
 
   private timerSub: Subscription | null = null;
+  private pollInterval: any;
 
   @ViewChild('slider', { static: false }) sliderEl!: ElementRef;
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private driverService: DriverService,
     private cdr: ChangeDetectorRef,
     private snackBar: MatSnackBar
@@ -649,6 +651,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     });
 
     this.startTimer();
+    this.startPollingStatus();
   }
 
   private mapApiJobToJobDetails(item: any): JobDetails {
@@ -953,7 +956,45 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     }
   }
 
+  startPollingStatus(): void {
+    this.pollInterval = setInterval(() => {
+      if (this.isSubmitting || this.isAccepted || !this.jobIdFromUrl) return;
+      if (this.jobIdFromUrl.startsWith('sim-')) return;
+
+      this.driverService.getJobOffers().subscribe({
+        next: (offers) => {
+          const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
+          if (Array.isArray(data)) {
+            // Check if our jobIdFromUrl still exists in the active offers
+            const exists = data.some((j: any) => 
+              (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === this.jobIdFromUrl
+            );
+            
+            if (!exists) {
+              console.warn('[Job Offer] Job is no longer offered/allocated to this driver. Dismissing.');
+              this.snackBar.open('This job offer is no longer available.', 'Dismiss', { duration: 3000 });
+              this.stopPollingStatus();
+              this.notifyNativeApp('job_rejected');
+              this.router.navigate(['/bookings']);
+            }
+          }
+        },
+        error: (err) => {
+          console.error('[Job Offer] Polling check failed:', err);
+        }
+      });
+    }, 3000);
+  }
+
+  stopPollingStatus(): void {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+  }
+
   ngOnDestroy(): void {
     this.timerSub?.unsubscribe();
+    this.stopPollingStatus();
   }
 }
