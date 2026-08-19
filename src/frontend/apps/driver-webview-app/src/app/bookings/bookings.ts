@@ -1359,9 +1359,9 @@ export class BookingsComponent implements OnInit {
           // Resolve status
           let status: 'Upcoming' | 'Completed' | 'Cancelled' = defaultStatus;
           const rawStatus = job.status?.toString().toLowerCase() || '';
-          if (job.cancelled === true || job.cancelledOnArrival === true || rawStatus.includes('cancel') || rawStatus === '3') {
+          if (job.cancelled === true || job.cancelledOnArrival === true || rawStatus.includes('cancel') || rawStatus === '2') {
             status = 'Cancelled';
-          } else if (rawStatus.includes('complete') || rawStatus === '4' || rawStatus === '5' || rawStatus === '6') {
+          } else if (rawStatus.includes('complete') || rawStatus === '3' || rawStatus === '4' || rawStatus === '5' || rawStatus === '6') {
             status = 'Completed';
           }
 
