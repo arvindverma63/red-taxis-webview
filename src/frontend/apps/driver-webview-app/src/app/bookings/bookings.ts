@@ -1580,9 +1580,16 @@ export class BookingsComponent implements OnInit {
       next: (results) => {
         let activeId = '';
         if (results.activeJob) {
-          const activeRaw = results.activeJob.value || results.activeJob;
+          const activeRaw = results.activeJob.value || results.activeJob.data || results.activeJob;
           if (activeRaw) {
-            activeId = (typeof activeRaw === 'object' ? (activeRaw.bookingId || activeRaw.id || activeRaw.bookingNo) : activeRaw).toString();
+            let activeObj = activeRaw;
+            if (Array.isArray(activeRaw)) {
+              activeObj = activeRaw[0];
+            }
+            if (activeObj) {
+              const parsedId = activeObj.bookingId || activeObj.id || activeObj.bookingNo || activeObj.BookingId || activeObj.BookingNo || '';
+              activeId = parsedId.toString();
+            }
           }
         }
         this.activeBookingId = activeId;

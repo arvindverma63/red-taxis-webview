@@ -1257,7 +1257,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.completedTripsCount = completedList.length;
 
         // 2. Active Job (From getActiveJob or first upcoming today job)
-        let activeRaw = results.activeJob?.value || results.activeJob;
+        let activeRaw = results.activeJob?.value || results.activeJob?.data || results.activeJob;
+        if (activeRaw && Array.isArray(activeRaw)) {
+          activeRaw = activeRaw[0];
+        }
         if (activeRaw && (activeRaw.cancelled || activeRaw.cancelledOnArrival || activeRaw.status === 4 || activeRaw.status === 5 || activeRaw.status === 6)) {
           activeRaw = null;
         }
@@ -1265,10 +1268,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
           activeRaw = todayList.find((j: any) => !j.cancelled && !j.cancelledOnArrival && j.status !== 4 && j.status !== 5 && j.status !== 6);
         }
 
-        if (activeRaw && (activeRaw.bookingId || activeRaw.id || activeRaw.bookingNo)) {
-          const fare = parseFloat((activeRaw.price || activeRaw.fare || activeRaw.amount || '0.00').toString());
+        if (activeRaw && (activeRaw.bookingId || activeRaw.id || activeRaw.bookingNo || activeRaw.BookingId || activeRaw.BookingNo)) {
+          const fare = parseFloat((activeRaw.price || activeRaw.fare || activeRaw.amount || activeRaw.driverPrice || '0.00').toString());
           this.activeBooking = {
-            id: (activeRaw.bookingId || activeRaw.bookingNo || activeRaw.id).toString(),
+            id: (activeRaw.bookingId || activeRaw.bookingNo || activeRaw.id || activeRaw.BookingId || activeRaw.BookingNo).toString(),
             passenger: activeRaw.passengerName || activeRaw.cellText || activeRaw.passenger || 'Passenger',
             fare: isNaN(fare) ? 0.00 : fare,
             pickup: activeRaw.pickupAddress || activeRaw.pickup || 'Pickup location',
