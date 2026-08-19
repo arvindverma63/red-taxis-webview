@@ -24,3 +24,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Prevent raw icon text flashing by hiding icon elements until fonts are fully loaded */
+.material-symbols-outlined, .material-icons {
+  opacity: 0 !important;
+}
+.fonts-loaded .material-symbols-outlined, .fonts-loaded .material-icons {
+  opacity: 1 !important;
+}

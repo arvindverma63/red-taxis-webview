@@ -510,7 +510,12 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
 
   submit(): void {
     const bookingIdNum = parseInt(this.jobId) || 0;
-    if (bookingIdNum <= 0) return;
+    if (bookingIdNum <= 0) {
+      this.isSubmitting = false;
+      this.isAccepted = false;
+      this.animateSnapBack();
+      return;
+    }
 
     this.isSubmitting = true;
     this.isAccepted = true;

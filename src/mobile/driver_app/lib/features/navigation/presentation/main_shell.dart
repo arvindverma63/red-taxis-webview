@@ -63,7 +63,21 @@ class _MainShellState extends ConsumerState<MainShell> {
     // If a custom webview route is triggered (e.g. via notification nav_id: "upload" or custom URL)
     if (navState.hasCustomRoute) {
       final customRoute = navState.customRoute!;
-      final prefix = customRoute.startsWith('/') ? customRoute : '/$customRoute';
+      var prefix = customRoute.startsWith('/') ? customRoute : '/$customRoute';
+      
+      if (navState.customParams != null && navState.customParams!.isNotEmpty) {
+        final queryParts = <String>[];
+        navState.customParams!.forEach((key, value) {
+          queryParts.add('$key=${Uri.encodeComponent(value)}');
+        });
+        final queryStr = queryParts.join('&');
+        if (prefix.contains('?')) {
+          prefix = '$prefix&$queryStr';
+        } else {
+          prefix = '$prefix?$queryStr';
+        }
+      }
+
       return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
