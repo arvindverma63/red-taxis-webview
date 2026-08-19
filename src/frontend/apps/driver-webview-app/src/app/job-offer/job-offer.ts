@@ -735,7 +735,6 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   private maxDragRange = 0;
 
   private timerSub: Subscription | null = null;
-  private pollInterval: any;
 
   @ViewChild('slider', { static: false }) sliderEl!: ElementRef;
 
@@ -788,7 +787,6 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     });
 
     this.startTimer();
-    this.startPollingStatus();
   }
 
   private mapApiJobToJobDetails(item: any): JobDetails {
@@ -1093,56 +1091,6 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     }
   }
 
-  startPollingStatus(): void {
-    this.pollInterval = setInterval(() => {
-      if (this.isSubmitting || this.isAccepted || !this.jobIdFromUrl || this.jobStatus !== 'active') return;
-      if (this.jobIdFromUrl.startsWith('sim-')) return;
-
-      this.driverService.getJobOffers().subscribe({
-        next: (offers) => {
-          const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
-          if (Array.isArray(data)) {
-            // Check if our jobIdFromUrl still exists in the active offers
-            const exists = data.some((j: any) => 
-              (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === this.jobIdFromUrl
-            );
-            
-            if (!exists) {
-              console.warn('[Job Offer] Job is no longer offered. Checking status via FindById...');
-              this.stopPollingStatus();
-              
-              this.driverService.getJobById(this.jobIdFromUrl).subscribe({
-                next: (booking) => {
-                  const statusStr = (booking.status || booking.Status || '').toString().toLowerCase();
-                  if (statusStr.includes('cancel')) {
-                    this.jobStatus = 'cancelled';
-                  } else {
-                    this.jobStatus = 'unallocated';
-                  }
-                  this.cdr.detectChanges();
-                },
-                error: () => {
-                  this.jobStatus = 'unallocated';
-                  this.cdr.detectChanges();
-                }
-              });
-            }
-          }
-        },
-        error: (err) => {
-          console.error('[Job Offer] Polling check failed:', err);
-        }
-      });
-    }, 3000);
-  }
-
-  stopPollingStatus(): void {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
-    }
-  }
-
   getStatusIconName(): string {
     switch (this.jobStatus) {
       case 'cancelled': return 'cancel';
@@ -1177,6 +1125,5 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.timerSub?.unsubscribe();
-    this.stopPollingStatus();
   }
 }
