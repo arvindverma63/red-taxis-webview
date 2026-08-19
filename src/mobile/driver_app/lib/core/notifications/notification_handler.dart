@@ -194,6 +194,8 @@ class NotificationNavigationHandler {
         break;
 
       case '2': // Job Unallocated
+      case 'unallocated':
+      case 'job_unallocated':
         final currentTrip = targetRef.read(tripProvider).currentTrip;
         if (currentTrip != null && currentTrip.id == bookingId) {
           targetRef.read(tripProvider.notifier).rejectJob();
@@ -210,6 +212,8 @@ class NotificationNavigationHandler {
         break;
 
       case '3': // Job Amended
+      case 'amended':
+      case 'job_amended':
         final currentTrip = targetRef.read(tripProvider).currentTrip;
         if (currentTrip != null && currentTrip.id == bookingId) {
           targetRef.read(tripProvider.notifier).rejectJob();
@@ -226,6 +230,8 @@ class NotificationNavigationHandler {
         break;
 
       case '4': // Job Cancelled
+      case 'cancelled':
+      case 'job_cancelled':
         final currentTrip = targetRef.read(tripProvider).currentTrip;
         if (currentTrip != null && currentTrip.id == bookingId) {
           targetRef.read(tripProvider.notifier).rejectJob();
