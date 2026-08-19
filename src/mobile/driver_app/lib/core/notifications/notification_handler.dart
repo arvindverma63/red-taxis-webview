@@ -169,7 +169,6 @@ class NotificationNavigationHandler {
       case 'my-profile':
       case 'compliance':
       case 'account':
-      case '2':
         navNotifier.setTabIndex(2);
         break;
 
@@ -178,7 +177,6 @@ class NotificationNavigationHandler {
       case 'shift_planner':
       case 'weekly_availability':
       case 'weekly-availability':
-      case '3':
         navNotifier.setTabIndex(3);
         break;
 
@@ -186,8 +184,43 @@ class NotificationNavigationHandler {
       case 'my_expenses':
       case 'my-expenses':
       case 'expense_log':
-      case '4':
         navNotifier.setTabIndex(4);
+        break;
+
+      case '2': // Job Unallocated
+        navNotifier.openCustomWebView(
+          route: '/job-offer',
+          title: 'Job Unallocated',
+          params: {
+            'jobId': bookingId,
+            'status': 'unallocated',
+            ..._extractParams(data)
+          },
+        );
+        break;
+
+      case '3': // Job Amended
+        navNotifier.openCustomWebView(
+          route: '/job-offer',
+          title: 'Job Amended',
+          params: {
+            'jobId': bookingId,
+            'status': 'amended',
+            ..._extractParams(data)
+          },
+        );
+        break;
+
+      case '4': // Job Cancelled
+        navNotifier.openCustomWebView(
+          route: '/job-offer',
+          title: 'Job Cancelled',
+          params: {
+            'jobId': bookingId,
+            'status': 'cancelled',
+            ..._extractParams(data)
+          },
+        );
         break;
 
       case 'create-booking':

@@ -23,8 +23,38 @@ interface JobDetails {
   imports: [CommonModule],
   template: `
     <div class="light-container">
+      <!-- Full screen status pages for Cancelled, Unallocated, and Amended bookings -->
+      <div class="status-overlay-card" *ngIf="jobStatus && jobStatus !== 'active'">
+        <div class="status-header">
+          <span class="material-symbols-outlined status-icon" [ngClass]="jobStatus">
+            {{ getStatusIconName() }}
+          </span>
+          <h2 class="status-title">{{ getStatusTitleText() }}</h2>
+          <p class="status-body">{{ getStatusBodyText() }}</p>
+        </div>
+
+        <div class="status-details-box" *ngIf="job">
+          <div class="status-row">
+            <span class="status-lbl">Booking ID:</span>
+            <span class="status-val">#{{ job.id }}</span>
+          </div>
+          <div class="status-row" *ngIf="job.passenger">
+            <span class="status-lbl">Passenger:</span>
+            <span class="status-val">{{ job.passenger }}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-lbl">Route:</span>
+            <span class="status-val route-compact">{{ job.pickup }} ➔ {{ job.dropoff }}</span>
+          </div>
+        </div>
+
+        <button class="status-ok-btn" (click)="dismissStatusScreen()">
+          OK
+        </button>
+      </div>
+
       <!-- Bottom Sheet Drawer -->
-      <div class="bottom-sheet" *ngIf="job">
+      <div class="bottom-sheet" *ngIf="job && (!jobStatus || jobStatus === 'active')">
         <!-- Header Grabber Bar -->
         <div class="sheet-grabber"></div>
 
@@ -589,6 +619,104 @@ interface JobDetails {
       opacity: 0.5;
       cursor: not-allowed;
     }
+
+    /* Status Overlay Card CSS */
+    .status-overlay-card {
+      background-color: #FFFFFF;
+      border-radius: 24px;
+      width: 90%;
+      max-width: 380px;
+      padding: 32px 24px;
+      box-sizing: border-box;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+      animation: zoomInStatus 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin: auto;
+    }
+    @keyframes zoomInStatus {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .status-icon {
+      font-size: 80px;
+      margin-bottom: 16px;
+    }
+    .status-icon.cancelled {
+      color: #D32F2F;
+    }
+    .status-icon.unallocated {
+      color: #FFB300;
+    }
+    .status-icon.amended {
+      color: #1976D2;
+    }
+    .status-title {
+      margin: 0 0 8px 0;
+      font-size: 22px;
+      font-weight: 900;
+      color: #1A1C1E;
+    }
+    .status-body {
+      margin: 0 0 24px 0;
+      font-size: 14px;
+      color: #74777F;
+      line-height: 1.5;
+    }
+    .status-details-box {
+      background-color: #FAFBFD;
+      border: 1px solid #E0E2EC;
+      border-radius: 14px;
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 28px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .status-lbl {
+      font-size: 12px;
+      font-weight: 700;
+      color: #74777F;
+      white-space: nowrap;
+    }
+    .status-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: #1A1C1E;
+    }
+    .status-val.route-compact {
+      text-align: right;
+      line-height: 1.3;
+    }
+    .status-ok-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 24px;
+      background-color: #CD1A21;
+      color: #FFFFFF;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.3);
+      transition: all 0.2s ease;
+    }
+    .status-ok-btn:active {
+      transform: scale(0.97);
+      background-color: #B71C1C;
+    }
   `]
 })
 export class JobOfferComponent implements OnInit, OnDestroy {
@@ -599,6 +727,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   guid: string = '';
   isSubmitting = false;
   isAccepted = false;
+  jobStatus: 'active' | 'cancelled' | 'unallocated' | 'amended' = 'active';
   
   sliderPosition = 0;
   isDragging = false;
@@ -630,6 +759,14 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       const vehicleType = params['vehicleType'];
       const passenger = params['passenger'];
       const notes = params['notes'];
+
+      const statusParam = params['status'] || params['Status'] || '';
+      if (statusParam) {
+        const parsedStatus = statusParam.toString().toLowerCase();
+        if (parsedStatus === 'cancelled' || parsedStatus === 'unallocated' || parsedStatus === 'amended') {
+          this.jobStatus = parsedStatus as any;
+        }
+      }
 
       const isPlaceholder = !pickup || pickup === 'Pickup address' || pickup === 'Pickup location' || fareVal === 0;
 
@@ -958,7 +1095,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
   startPollingStatus(): void {
     this.pollInterval = setInterval(() => {
-      if (this.isSubmitting || this.isAccepted || !this.jobIdFromUrl) return;
+      if (this.isSubmitting || this.isAccepted || !this.jobIdFromUrl || this.jobStatus !== 'active') return;
       if (this.jobIdFromUrl.startsWith('sim-')) return;
 
       this.driverService.getJobOffers().subscribe({
@@ -971,11 +1108,24 @@ export class JobOfferComponent implements OnInit, OnDestroy {
             );
             
             if (!exists) {
-              console.warn('[Job Offer] Job is no longer offered/allocated to this driver. Dismissing.');
-              this.snackBar.open('This job offer is no longer available.', 'Dismiss', { duration: 3000 });
+              console.warn('[Job Offer] Job is no longer offered. Checking status via FindById...');
               this.stopPollingStatus();
-              this.notifyNativeApp('job_rejected');
-              this.router.navigate(['/bookings']);
+              
+              this.driverService.getJobById(this.jobIdFromUrl).subscribe({
+                next: (booking) => {
+                  const statusStr = (booking.status || booking.Status || '').toString().toLowerCase();
+                  if (statusStr.includes('cancel')) {
+                    this.jobStatus = 'cancelled';
+                  } else {
+                    this.jobStatus = 'unallocated';
+                  }
+                  this.cdr.detectChanges();
+                },
+                error: () => {
+                  this.jobStatus = 'unallocated';
+                  this.cdr.detectChanges();
+                }
+              });
             }
           }
         },
@@ -991,6 +1141,38 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
+  }
+
+  getStatusIconName(): string {
+    switch (this.jobStatus) {
+      case 'cancelled': return 'cancel';
+      case 'unallocated': return 'info';
+      case 'amended': return 'edit';
+      default: return 'info';
+    }
+  }
+
+  getStatusTitleText(): string {
+    switch (this.jobStatus) {
+      case 'cancelled': return 'Job Cancelled';
+      case 'unallocated': return 'Job Unallocated';
+      case 'amended': return 'Job Amended';
+      default: return 'Job Notification';
+    }
+  }
+
+  getStatusBodyText(): string {
+    switch (this.jobStatus) {
+      case 'cancelled': return 'This booking has been cancelled by the operator.';
+      case 'unallocated': return 'This booking has been unallocated and removed from your queue.';
+      case 'amended': return 'The operator has amended the details of this booking. Please review.';
+      default: return 'This booking status has changed.';
+    }
+  }
+
+  dismissStatusScreen(): void {
+    this.notifyNativeApp('job_rejected');
+    this.router.navigate(['/bookings']);
   }
 
   ngOnDestroy(): void {
