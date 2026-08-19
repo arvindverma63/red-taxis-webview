@@ -104,7 +104,8 @@ import { DriverService } from '../services/driver.service';
             </div>
             <div class="quote-metrics">
               <div class="metric-box">
-                <span class="metric-val">{{ mileageText || (mileage.toFixed(1) + ' mi') }}</span>
+                <span class="metric-val">{{ getFormattedMileage().main }}</span>
+                <span class="metric-sub-val" *ngIf="getFormattedMileage().details">{{ getFormattedMileage().details }}</span>
                 <span class="metric-lbl">Distance</span>
               </div>
               <div class="metric-box">
@@ -155,7 +156,7 @@ import { DriverService } from '../services/driver.service';
   `,
   styles: [`
     .material-container {
-      padding: 16px 16px 96px 16px;
+      padding: 16px 16px 150px 16px;
       background-color: #F8F9FA;
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
@@ -422,32 +423,47 @@ import { DriverService } from '../services/driver.service';
     }
     .quote-metrics {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
     }
     .metric-box {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 10px 4px;
+      justify-content: center;
+      padding: 12px 6px;
       background-color: #FFFFFF;
-      border-radius: 10px;
-      border: 1px solid rgba(0,0,0,0.015);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      min-height: 76px;
+      box-sizing: border-box;
     }
     .metric-val {
-      font-size: 13.5px;
-      font-weight: 800;
+      font-size: 13px;
+      font-weight: 900;
       color: #37474F;
+      text-align: center;
+      line-height: 1.2;
     }
-    .metric-lbl {
-      font-size: 9.5px;
+    .metric-sub-val {
+      font-size: 8px;
       color: #78909C;
       font-weight: 700;
+      text-align: center;
       margin-top: 2px;
+      line-height: 1.1;
+      word-break: break-word;
+    }
+    .metric-lbl {
+      font-size: 9px;
+      color: #90A4AE;
+      font-weight: 700;
+      margin-top: 4px;
       text-transform: uppercase;
+      letter-spacing: 0.2px;
     }
     .metric-box.highlighted {
-      background-color: rgba(76, 175, 80, 0.05);
+      background-color: rgba(76, 175, 80, 0.04);
       border-color: rgba(76, 175, 80, 0.1);
     }
     .metric-val.green {
@@ -533,6 +549,27 @@ export class CreateBookingComponent implements OnInit {
 
   suggestions: any[] = [];
   private debounceTimer: any;
+
+  getFormattedMileage(): { main: string; details: string | null } {
+    const txt = this.mileageText || (this.mileage > 0 ? (this.mileage.toFixed(1) + ' mi') : '');
+    if (!txt) return { main: '--', details: null };
+    
+    if (txt.includes(' - ') || txt.includes('(')) {
+      const parts = txt.split(' - ');
+      if (parts.length > 0) {
+        const main = parts[0].trim();
+        const details = parts.slice(1).join(' - ')
+          .replace(/\+/g, '|')
+          .replace(/Dead Miles:/i, 'Dead:')
+          .replace(/Trip Miles:/i, 'Trip:')
+          .replace(/Dead Miles/i, 'Dead')
+          .replace(/Trip Miles/i, 'Trip')
+          .trim();
+        return { main, details };
+      }
+    }
+    return { main: txt, details: null };
+  }
 
   constructor(
     private driverService: DriverService,
