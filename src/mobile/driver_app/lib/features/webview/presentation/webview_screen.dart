@@ -12,6 +12,7 @@ import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/shift/shift.dart';
+import 'package:driver_app/features/navigation/presentation/navigation_notifier.dart';
 
 class DriverWebviewScreen extends ConsumerStatefulWidget {
   final String url;

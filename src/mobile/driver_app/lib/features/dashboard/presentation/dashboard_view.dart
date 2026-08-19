@@ -9,6 +9,7 @@ import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
+import 'package:driver_app/features/navigation/presentation/navigation_notifier.dart';
 
 class DriverDashboardView extends ConsumerStatefulWidget {
   const DriverDashboardView({super.key});
