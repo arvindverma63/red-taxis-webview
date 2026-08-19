@@ -1587,8 +1587,10 @@ export class BookingsComponent implements OnInit {
               activeObj = activeRaw[0];
             }
             if (activeObj) {
-              const parsedId = activeObj.bookingId || activeObj.id || activeObj.bookingNo || activeObj.BookingId || activeObj.BookingNo || '';
-              activeId = parsedId.toString();
+              const parsedId = (typeof activeObj === 'object' ? (activeObj.bookingId || activeObj.id || activeObj.bookingNo || activeObj.BookingId || activeObj.BookingNo || '') : activeObj).toString().trim();
+              if (parsedId && parsedId !== '0') {
+                activeId = parsedId;
+              }
             }
           }
         }

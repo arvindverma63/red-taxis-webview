@@ -249,7 +249,10 @@ export class DriverService {
 
   getActiveJob(): Observable<any> {
     console.log('API Webview Request: GET /api/DriverApp/GetActiveJob');
-    return this.http.get(`${this.baseUrl}/api/DriverApp/GetActiveJob`, { headers: this.getHeaders() }).pipe(
+    return this.http.get(`${this.baseUrl}/api/DriverApp/GetActiveJob`, { 
+      headers: this.getHeaders(),
+      responseType: 'text'
+    }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: GET /api/DriverApp/GetActiveJob success:', res),
         error: (err) => console.error('API Webview Error: GET /api/DriverApp/GetActiveJob failed:', err)
