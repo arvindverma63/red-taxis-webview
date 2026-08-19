@@ -6,6 +6,7 @@ import { DriverService } from '../services/driver.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 interface ViaStop {
   address: string;
@@ -348,101 +349,6 @@ interface Booking {
               </div>
             </div>
             <button class="sheet-dismiss-btn" (click)="closeDetails()">Close Details</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Complete Job Form Modal Dialog -->
-      <div class="modal-backdrop" *ngIf="showCompleteModal" (click)="showCompleteModal = false">
-        <div class="complete-modal-card" (click)="$event.stopPropagation()">
-          <div class="modal-header-centered">
-            <span class="material-symbols-outlined success-icon-amber">check_circle</span>
-            <h3 class="modal-title-centered">Complete Job</h3>
-            <p class="modal-subtitle-centered">Enter final trip parameters to submit</p>
-          </div>
-
-          <div class="modal-body-form">
-            <!-- Payment Field -->
-            <div class="modal-form-group">
-              <label class="modal-form-lbl">Payment (Account Price)</label>
-              <div class="modal-input-wrapper">
-                <span class="modal-currency-symbol">£</span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  class="modal-form-input" 
-                  [value]="completeForm.payment" 
-                  (input)="completeForm.payment = +$any($event.target).value"
-                />
-              </div>
-            </div>
-
-            <!-- Price Field -->
-            <div class="modal-form-group">
-              <label class="modal-form-lbl">Price (Driver Price)</label>
-              <div class="modal-input-wrapper">
-                <span class="modal-currency-symbol">£</span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  class="modal-form-input" 
-                  [value]="completeForm.price" 
-                  (input)="completeForm.price = +$any($event.target).value"
-                />
-              </div>
-            </div>
-
-            <!-- Tip Field -->
-            <div class="modal-form-group">
-              <label class="modal-form-lbl">Tip</label>
-              <div class="modal-input-wrapper">
-                <span class="modal-currency-symbol">£</span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  class="modal-form-input" 
-                  [value]="completeForm.tip" 
-                  (input)="completeForm.tip = +$any($event.target).value"
-                />
-              </div>
-            </div>
-
-            <!-- Waiting Time Field -->
-            <div class="modal-form-group">
-              <label class="modal-form-lbl">Waiting Time (Minutes)</label>
-              <div class="modal-input-wrapper no-symbol">
-                <input 
-                  type="number" 
-                  step="1" 
-                  class="modal-form-input" 
-                  [value]="completeForm.waitingTime" 
-                  (input)="completeForm.waitingTime = +$any($event.target).value"
-                />
-              </div>
-            </div>
-
-            <!-- Parking Charge Field -->
-            <div class="modal-form-group">
-              <label class="modal-form-lbl">Parking Charge</label>
-              <div class="modal-input-wrapper no-symbol">
-                <input 
-                  type="number" 
-                  step="1" 
-                  class="modal-form-input" 
-                  [value]="completeForm.parkingCharge" 
-                  (input)="completeForm.parkingCharge = +$any($event.target).value"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer-buttons">
-            <button class="modal-btn submit-btn" (click)="submitCompleteJob()" [disabled]="isSubmitting">
-              {{ isSubmitting ? 'Submitting...' : 'Submit' }}
-            </button>
-            <button class="modal-btn close-btn" (click)="showCompleteModal = false" [disabled]="isSubmitting">
-              Cancel
-            </button>
           </div>
         </div>
       </div>
@@ -1141,139 +1047,6 @@ interface Booking {
       cursor: pointer;
     }
 
-    /* Complete Job Modal CSS */
-    .success-icon-amber {
-      font-size: 72px;
-      color: #FFB300;
-      margin-bottom: 12px;
-    }
-    .complete-modal-card {
-      background-color: #FFFFFF;
-      border-radius: 20px;
-      width: 90%;
-      max-width: 380px;
-      padding: 24px;
-      box-sizing: border-box;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-      animation: zoomIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    @keyframes zoomIn {
-      from { transform: scale(0.9); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    .modal-header-centered {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .modal-title-centered {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 900;
-      color: #1A1C1E;
-    }
-    .modal-subtitle-centered {
-      margin: 4px 0 0 0;
-      font-size: 12px;
-      color: #74777F;
-      font-weight: 500;
-    }
-    .modal-body-form {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-    .modal-form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .modal-form-lbl {
-      font-size: 11px;
-      font-weight: 700;
-      color: #74777F;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .modal-input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-    .modal-currency-symbol {
-      position: absolute;
-      left: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      color: #44474E;
-    }
-    .modal-form-input {
-      width: 100%;
-      border: 1px solid #C4C6CF;
-      border-radius: 8px;
-      padding: 10px 10px 10px 28px;
-      font-size: 14px;
-      outline: none;
-      box-sizing: border-box;
-      color: #1A1C1E;
-      background-color: #FAFBFD;
-      transition: all 0.2s ease;
-    }
-    .modal-input-wrapper.no-symbol .modal-form-input {
-      padding-left: 12px;
-    }
-    .modal-form-input:focus {
-      border-color: #CD1A21;
-      background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.1);
-    }
-    .modal-footer-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .modal-btn {
-      width: 100%;
-      height: 44px;
-      border-radius: 22px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-btn.submit-btn {
-      background-color: #CD1A21;
-      color: #FFFFFF;
-      box-shadow: 0 3px 8px rgba(205, 26, 33, 0.3);
-    }
-    .modal-btn.submit-btn:disabled {
-      background-color: #ECEFF1;
-      color: #90A4AE;
-      box-shadow: none;
-      cursor: not-allowed;
-    }
-    .modal-btn.close-btn {
-      background-color: transparent;
-      color: #CD1A21;
-      border: 1px solid #CD1A21;
-    }
-    .modal-btn.close-btn:disabled {
-      border-color: #ECEFF1;
-      color: #90A4AE;
-      cursor: not-allowed;
-    }
   `]
 })
 export class BookingsComponent implements OnInit {
@@ -1291,21 +1064,13 @@ export class BookingsComponent implements OnInit {
   startX = 0;
   activeBookingId = '';
   isSettingActive = false;
-  showCompleteModal = false;
-  bookingToComplete: Booking | null = null;
-  completeForm = {
-    payment: 0,
-    price: 0,
-    tip: 0,
-    waitingTime: 0,
-    parkingCharge: 0
-  };
   driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
 
   constructor(
     private driverService: DriverService,
     private cdr: ChangeDetectorRef,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -1446,98 +1211,11 @@ export class BookingsComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  openCompleteModal(booking: any): void {
-    const fare = parseFloat((booking.price || booking.fare || booking.amount || booking.driverPrice || '0.00').toString()) || 0;
-    this.bookingToComplete = booking;
-    this.completeForm = {
-      payment: 0,
-      price: fare,
-      tip: 0,
-      waitingTime: 0,
-      parkingCharge: 0
-    };
-    this.showCompleteModal = true;
-    this.cdr.detectChanges();
-  }
-
   completeBooking(booking: Booking): void {
-    this.openCompleteModal(booking);
-  }
-
-  submitCompleteJob(): void {
-    if (!this.bookingToComplete) return;
-    const booking = this.bookingToComplete;
     const bookingIdNum = parseInt(booking.id) || 0;
-
-    if (bookingIdNum > 0) {
-      this.isSubmitting = true;
-      this.cdr.detectChanges();
-      this.snackBar.open('Completing booking...', 'Dismiss', { duration: 2000 });
-
-      this.driverService.completeJob({
-        bookingId: bookingIdNum,
-        driverPrice: this.completeForm.price,
-        waitingTime: this.completeForm.waitingTime,
-        parkingCharge: this.completeForm.parkingCharge,
-        accountPrice: this.completeForm.payment,
-        tip: this.completeForm.tip
-      }).subscribe({
-        next: (res) => {
-          console.log('CompleteJob API success:', res);
-          this.driverService.setActiveJob(0).subscribe({
-            next: () => {
-              this.isSubmitting = false;
-              this.showCompleteModal = false;
-              this.bookingToComplete = null;
-              booking.status = 'Completed';
-              this.driverTripStatus[booking.id] = 'completed';
-              this.loadBookings();
-              this.cdr.detectChanges();
-              this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
-              setTimeout(() => this.closeDetails(), 400);
-            },
-            error: () => {
-              this.isSubmitting = false;
-              this.showCompleteModal = false;
-              this.bookingToComplete = null;
-              booking.status = 'Completed';
-              this.driverTripStatus[booking.id] = 'completed';
-              this.loadBookings();
-              this.cdr.detectChanges();
-              this.snackBar.open('Booking completed successfully!', 'Dismiss', { duration: 3000 });
-              setTimeout(() => this.closeDetails(), 400);
-            }
-          });
-        },
-        error: (err) => {
-          console.error('CompleteJob API error:', err);
-          this.driverService.setActiveJob(0).subscribe({
-            next: () => {
-              this.isSubmitting = false;
-              this.showCompleteModal = false;
-              this.bookingToComplete = null;
-              booking.status = 'Completed';
-              this.driverTripStatus[booking.id] = 'completed';
-              this.loadBookings();
-              this.cdr.detectChanges();
-              this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
-              setTimeout(() => this.closeDetails(), 400);
-            },
-            error: () => {
-              this.isSubmitting = false;
-              this.showCompleteModal = false;
-              this.bookingToComplete = null;
-              booking.status = 'Completed';
-              this.driverTripStatus[booking.id] = 'completed';
-              this.loadBookings();
-              this.cdr.detectChanges();
-              this.snackBar.open('Failed to complete booking.', 'Dismiss', { duration: 3000 });
-              setTimeout(() => this.closeDetails(), 400);
-            }
-          });
-        }
-      });
-    }
+    if (bookingIdNum <= 0) return;
+    this.closeDetails();
+    this.router.navigate(['/complete-job'], { queryParams: { jobId: booking.id, fare: booking.fare } });
   }
 
   setActiveJob(booking: Booking): void {
