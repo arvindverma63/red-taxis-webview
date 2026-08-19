@@ -131,6 +131,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
             DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
             DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/expenses', title: 'Expenses Log'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/create-booking', title: 'Rank Pickup'),
           ],
         ),
         bottomNavigationBar: Container(
@@ -329,6 +330,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile', activeIndex),
                 _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability', activeIndex),
                 _buildDrawerItem(4, Icons.receipt_long_outlined, Icons.receipt_long, 'My Expenses', activeIndex),
+                _buildDrawerItem(5, Icons.add_circle_outline, Icons.add_circle, 'Rank Pickup', activeIndex),
               ],
             ),
           ),

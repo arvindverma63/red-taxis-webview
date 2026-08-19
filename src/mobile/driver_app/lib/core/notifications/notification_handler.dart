@@ -190,6 +190,14 @@ class NotificationNavigationHandler {
         navNotifier.setTabIndex(4);
         break;
 
+      case 'create-booking':
+      case 'create_booking':
+      case 'rank_pickup':
+      case 'rank-pickup':
+      case '5':
+        navNotifier.setTabIndex(5);
+        break;
+
       case 'upload':
       case 'doc_upload':
       case 'document_upload':

@@ -9,6 +9,7 @@ import { ActiveTripComponent } from './active-trip/active-trip';
 import { TripCompleteComponent } from './trip-complete/trip-complete';
 import { DashboardComponent } from './dashboard/dashboard';
 import { ExpensesComponent } from './expenses/expenses';
+import { CreateBookingComponent } from './create-booking/create-booking';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -22,6 +23,7 @@ export const routes: Routes = [
   { path: 'trip-complete', component: TripCompleteComponent, canActivate: [authGuard] },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'expenses', component: ExpensesComponent, canActivate: [authGuard] },
+  { path: 'create-booking', component: CreateBookingComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'bookings', pathMatch: 'full' },
   { path: '**', redirectTo: 'bookings' }
 ];

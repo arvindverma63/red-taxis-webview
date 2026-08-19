@@ -319,4 +319,46 @@ export class DriverService {
       })
     );
   }
+
+  searchAddress(term: string, sessionToken: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/address/dispatchsearch?q=${term}&sessionToken=${sessionToken}`);
+    return this.http.get(`${this.baseUrl}/api/address/dispatchsearch?q=${term}&sessionToken=${sessionToken}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/address/dispatchsearch success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/address/dispatchsearch failed:', err)
+      })
+    );
+  }
+
+  resolveAddress(id: string, sessionToken: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/address/resolve?id=${id}&sessionToken=${sessionToken}`);
+    return this.http.get(`${this.baseUrl}/api/address/resolve?id=${id}&sessionToken=${sessionToken}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/address/resolve success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/address/resolve failed:', err)
+      })
+    );
+  }
+
+  getBookingPrice(priceData: any): Observable<any> {
+    console.log('API Webview Request: POST /api/Bookings/GetPrice data:', JSON.stringify(priceData));
+    let headers = this.getHeaders().set('Content-Type', 'application/json');
+    return this.http.post(`${this.baseUrl}/api/Bookings/GetPrice`, priceData, { headers }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/Bookings/GetPrice success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/Bookings/GetPrice failed:', err)
+      })
+    );
+  }
+
+  createRankBooking(bookingData: any): Observable<any> {
+    console.log('API Webview Request: POST /api/Bookings/RankCreate data:', JSON.stringify(bookingData));
+    let headers = this.getHeaders().set('Content-Type', 'application/json');
+    return this.http.post(`${this.baseUrl}/api/Bookings/RankCreate`, bookingData, { headers }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: POST /api/Bookings/RankCreate success:', res),
+        error: (err) => console.error('API Webview Error: POST /api/Bookings/RankCreate failed:', err)
+      })
+    );
+  }
 }
