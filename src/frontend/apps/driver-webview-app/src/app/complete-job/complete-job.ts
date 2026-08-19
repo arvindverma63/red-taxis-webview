@@ -131,7 +131,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   `,
   styles: [`
     .complete-container {
-      background: radial-gradient(circle at top, #1a1f2c, #0d1017);
+      background-color: #F8F9FA;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -148,7 +148,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
       width: 100%;
       max-width: 400px;
       padding: 32px 24px;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.06);
+      border: 1px solid #E0E2EC;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -166,7 +167,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     .notch {
       width: 16px;
       height: 24px;
-      background: radial-gradient(circle, transparent 50%, #0d1017 50%);
+      background: radial-gradient(circle, transparent 50%, #F8F9FA 50%);
       background-size: 32px 32px;
     }
     .notch.left {
