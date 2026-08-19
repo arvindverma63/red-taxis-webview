@@ -1256,16 +1256,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.futureCount = futureList.length;
         this.completedTripsCount = completedList.length;
 
-        // 2. Active Job (From getActiveJob or first upcoming today job)
-        let activeRaw = results.activeJob?.value || results.activeJob?.data || results.activeJob;
-        if (activeRaw && Array.isArray(activeRaw)) {
-          activeRaw = activeRaw[0];
+        // 2. Active Job Resolution (No static fallbacks, strictly match activeJob API response value)
+        let activeJobIdStr = '';
+        if (results.activeJob !== undefined && results.activeJob !== null) {
+          const rawVal = results.activeJob.value || results.activeJob.data || results.activeJob;
+          if (rawVal) {
+            let val = rawVal;
+            if (Array.isArray(rawVal)) {
+              val = rawVal[0];
+            }
+            if (val) {
+              const parsedVal = (typeof val === 'object' ? (val.bookingId || val.id || val.bookingNo || val.BookingId || val.BookingNo || '') : val).toString().trim();
+              if (parsedVal && parsedVal !== '0') {
+                activeJobIdStr = parsedVal;
+              }
+            }
+          }
         }
-        if (activeRaw && (activeRaw.cancelled || activeRaw.cancelledOnArrival || activeRaw.status === 4 || activeRaw.status === 5 || activeRaw.status === 6)) {
-          activeRaw = null;
-        }
-        if (!activeRaw && todayList.length > 0) {
-          activeRaw = todayList.find((j: any) => !j.cancelled && !j.cancelledOnArrival && j.status !== 4 && j.status !== 5 && j.status !== 6);
+
+        let activeRaw = null;
+        if (activeJobIdStr) {
+          // Attempt to find this booking details in our loaded lists
+          activeRaw = todayList.find((j: any) => (j.bookingId || j.bookingNo || j.id || '').toString() === activeJobIdStr);
+          if (!activeRaw) {
+            activeRaw = futureList.find((j: any) => (j.bookingId || j.bookingNo || j.id || '').toString() === activeJobIdStr);
+          }
         }
 
         if (activeRaw && (activeRaw.bookingId || activeRaw.id || activeRaw.bookingNo || activeRaw.BookingId || activeRaw.BookingNo)) {
