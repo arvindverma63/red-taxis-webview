@@ -19,174 +19,142 @@ import { DriverService } from '../services/driver.service';
   ],
   template: `
     <div class="material-container">
-      <div class="booking-card animated-fade-in">
-        <div class="card-header">
-          <h3 class="card-title">Create Rank Booking</h3>
-          <p class="card-subtitle">Generate a cash booking from Rank Pickup (SP8 4PZ)</p>
+      <!-- Linear loading bar active when calling suggestions / resolve / price quote -->
+      <div class="linear-loader" *ngIf="isResolving || isFetchingPrice">
+        <div class="loader-bar"></div>
+      </div>
+
+      <div class="form-body animated-fade-in">
+        <!-- Pickup Location Card (Read-only) -->
+        <div class="form-group readonly">
+          <label class="form-lbl">Pickup Location</label>
+          <div class="readonly-field-box">
+            <div class="pickup-icon-backdrop">
+              <span class="material-symbols-outlined field-icon green">my_location</span>
+            </div>
+            <div class="readonly-text-box">
+              <span class="readonly-main">Rank Pickup</span>
+              <span class="readonly-sub">SP8 4PZ</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Linear loading bar active when calling suggestions / resolve / price quote -->
-        <div class="linear-loader" *ngIf="isResolving || isFetchingPrice">
-          <div class="loader-bar"></div>
-        </div>
-
-        <div class="form-body">
-          <!-- Pickup Location Card (Read-only) -->
-          <div class="form-group readonly">
-            <label class="form-lbl">Pickup Location</label>
-            <div class="readonly-field-box">
-              <div class="pickup-icon-backdrop">
-                <span class="material-symbols-outlined field-icon green">my_location</span>
-              </div>
-              <div class="readonly-text-box">
-                <span class="readonly-main">Rank Pickup</span>
-                <span class="readonly-sub">SP8 4PZ</span>
-              </div>
-            </div>
+        <!-- Destination Address input + suggestion drop box -->
+        <div class="form-group relative">
+          <label class="form-lbl">Destination Address</label>
+          <div class="input-icon-wrapper">
+            <span class="material-symbols-outlined input-icon">search</span>
+            <input 
+              type="text" 
+              placeholder="Search destination or postcode..." 
+              class="form-input search-field" 
+              [value]="destinationAddress"
+              (input)="onDestinationInput($any($event.target).value)" 
+            />
+            <div class="input-spinner" *ngIf="isSearchingSuggestions"></div>
           </div>
 
-          <!-- Destination Address input + suggestion drop box -->
-          <div class="form-group relative">
-            <label class="form-lbl">Destination Address</label>
-            <div class="input-icon-wrapper">
-              <span class="material-symbols-outlined input-icon">search</span>
-              <input 
-                type="text" 
-                placeholder="Search destination or postcode..." 
-                class="form-input search-field" 
-                [value]="destinationAddress"
-                (input)="onDestinationInput($any($event.target).value)" 
-              />
-              <div class="input-spinner" *ngIf="isSearchingSuggestions"></div>
-            </div>
-
-            <!-- Suggestions display list -->
-            <div class="suggestion-box animated-fade-in" *ngIf="suggestions.length > 0">
-              <div 
-                class="suggestion-item" 
-                *ngFor="let item of suggestions" 
-                (click)="selectSuggestion(item)"
-              >
-                <div class="item-icon-circle">
-                  <span class="material-symbols-outlined item-icon">location_on</span>
-                </div>
-                <div class="item-text-box">
-                  <span class="item-main">{{ item.label }}</span>
-                  <span class="item-sub" *ngIf="item.secondaryText">{{ item.secondaryText }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Passenger Name -->
-          <div class="form-group">
-            <label class="form-lbl">Passenger Name</label>
-            <div class="input-icon-wrapper">
-              <span class="material-symbols-outlined input-icon">person</span>
-              <input 
-                type="text" 
-                placeholder="Enter passenger name..." 
-                class="form-input" 
-                [value]="passengerName"
-                (input)="onPassengerNameInput($any($event.target).value)"
-              />
-            </div>
-          </div>
-
-          <!-- Price Quote summary panel -->
-          <div class="quote-card animated-fade-in" *ngIf="price > 0 && !isFetchingPrice">
-            <div class="quote-header">
-              <div class="quote-title-box">
-                <span class="material-symbols-outlined quote-icon">local_taxi</span>
-                <span class="quote-title">Estimated Pricing</span>
-              </div>
-              <span class="pricing-scope-badge">CASH / RANK</span>
-            </div>
-            <div class="quote-metrics">
-              <div class="metric-box">
-                <span class="metric-val">{{ getFormattedMileage().main }}</span>
-                <span class="metric-sub-val" *ngIf="getFormattedMileage().details">{{ getFormattedMileage().details }}</span>
-                <span class="metric-lbl">Distance</span>
-              </div>
-              <div class="metric-box">
-                <span class="metric-val">{{ durationText || (durationMinutes + ' mins') }}</span>
-                <span class="metric-lbl">Duration</span>
-              </div>
-              <div class="metric-box highlighted">
-                <span class="metric-val green">£{{ price.toFixed(2) }}</span>
-                <span class="metric-lbl">Driver Price</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Price confirmation overrides -->
-          <div class="form-group" *ngIf="price > 0">
-            <label class="form-lbl">Confirm / Override Price</label>
-            <div class="amount-input-wrapper">
-              <span class="currency-symbol">£</span>
-              <input 
-                type="number" 
-                step="0.01" 
-                placeholder="0.00" 
-                class="form-input amount-field" 
-                [value]="price"
-                (input)="onPriceInput($any($event.target).value)" 
-              />
-            </div>
-          </div>
-
-          <!-- Create Button actions -->
-          <div class="form-actions-row">
-            <button 
-              mat-flat-button 
-              class="submit-action-btn" 
-              (click)="submitBooking()" 
-              [disabled]="isSubmitting || isResolving || isFetchingPrice || price <= 0"
+          <!-- Suggestions display list -->
+          <div class="suggestion-box animated-fade-in" *ngIf="suggestions.length > 0">
+            <div 
+              class="suggestion-item" 
+              *ngFor="let item of suggestions" 
+              (click)="selectSuggestion(item)"
             >
-              <div class="btn-content-wrapper" *ngIf="!isSubmitting">
-                <span class="material-symbols-outlined">add_circle</span>
-                <span>Create Booking</span>
+              <div class="item-icon-circle">
+                <span class="material-symbols-outlined item-icon">location_on</span>
               </div>
-              <span *ngIf="isSubmitting">Creating Booking...</span>
-            </button>
+              <div class="item-text-box">
+                <span class="item-main">{{ item.label }}</span>
+                <span class="item-sub" *ngIf="item.secondaryText">{{ item.secondaryText }}</span>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Passenger Name -->
+        <div class="form-group">
+          <label class="form-lbl">Passenger Name</label>
+          <div class="input-icon-wrapper">
+            <span class="material-symbols-outlined input-icon">person</span>
+            <input 
+              type="text" 
+              placeholder="Enter passenger name..." 
+              class="form-input" 
+              [value]="passengerName"
+              (input)="onPassengerNameInput($any($event.target).value)"
+            />
+          </div>
+        </div>
+
+        <!-- Price Quote summary panel -->
+        <div class="quote-card animated-fade-in" *ngIf="price > 0 && !isFetchingPrice">
+          <div class="quote-header">
+            <div class="quote-title-box">
+              <span class="material-symbols-outlined quote-icon">local_taxi</span>
+              <span class="quote-title">Estimated Pricing</span>
+            </div>
+            <span class="pricing-scope-badge">CASH / RANK</span>
+          </div>
+          <div class="quote-metrics">
+            <div class="metric-box">
+              <span class="metric-val">{{ getFormattedMileage().main }}</span>
+              <span class="metric-sub-val" *ngIf="getFormattedMileage().details">{{ getFormattedMileage().details }}</span>
+              <span class="metric-lbl">Distance</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-val">{{ durationText || (durationMinutes + ' mins') }}</span>
+              <span class="metric-lbl">Duration</span>
+            </div>
+            <div class="metric-box highlighted">
+              <span class="metric-val green">£{{ price.toFixed(2) }}</span>
+              <span class="metric-lbl">Driver Price</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price confirmation overrides -->
+        <div class="form-group" *ngIf="price > 0">
+          <label class="form-lbl">Confirm / Override Price</label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">£</span>
+            <input 
+              type="number" 
+              step="0.01" 
+              placeholder="0.00" 
+              class="form-input amount-field" 
+              [value]="price"
+              (input)="onPriceInput($any($event.target).value)" 
+            />
+          </div>
+        </div>
+
+        <!-- Create Button actions -->
+        <div class="form-actions-row">
+          <button 
+            mat-flat-button 
+            class="submit-action-btn" 
+            (click)="submitBooking()" 
+            [disabled]="isSubmitting || isResolving || isFetchingPrice || price <= 0"
+          >
+            <div class="btn-content-wrapper" *ngIf="!isSubmitting">
+              <span class="material-symbols-outlined">add_circle</span>
+              <span>Create Booking</span>
+            </div>
+            <span *ngIf="isSubmitting">Creating Booking...</span>
+          </button>
         </div>
       </div>
     </div>
   `,
   styles: [`
     .material-container {
-      padding: 16px 16px 150px 16px;
+      padding: 12px 10px 150px 10px;
       background-color: #F8F9FA;
       min-height: 100vh;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
-    }
-
-    .booking-card {
-      background-color: #FFFFFF;
-      border-radius: 18px;
-      border: 1px solid rgba(0, 0, 0, 0.02);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.015);
       position: relative;
-      overflow: hidden;
-    }
-
-    .card-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid #ECEFF1;
-    }
-    .card-title {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 900;
-      color: #263238;
-    }
-    .card-subtitle {
-      margin: 4px 0 0 0;
-      font-size: 11.5px;
-      color: #90A4AE;
-      font-weight: 500;
     }
 
     /* Linear progress bar loader */
@@ -198,6 +166,7 @@ import { DriverService } from '../services/driver.service';
       height: 3px;
       background-color: #FFCDD2;
       overflow: hidden;
+      z-index: 100;
     }
     .loader-bar {
       width: 100%;
@@ -213,10 +182,16 @@ import { DriverService } from '../services/driver.service';
     }
 
     .form-body {
-      padding: 24px;
+      background-color: #FFFFFF;
+      border-radius: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.02);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.015);
+      padding: 24px 16px;
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .form-group {
