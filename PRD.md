@@ -136,6 +136,10 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Dynamic Driver Identity**: Decoded real `userId` from active JWT authentication tokens and bound it to shift creation payloads.
   - **Multi-Casing Response Adapter**: Added defensive normalization supporting all response structures (`drivers`, `Drivers`, `availabilities`, `Availabilities`, `value`, `data`, `result`).
   - **Direct Server Lifecycle**: Creation, deletion, and refresh now fetch directly from `GET /api/DriverApp/Availabilities` and `GET /api/Availability/General?date=...`.
+- [x] **Local Bundling of Material Symbols Fonts (Zero-Flicker First Load)**: Fixed raw text ligature flashing (`check`, `person`, `location_on`, `account_circle`, `bolt`, `schedule`) on initial app launch:
+  - Installed `material-symbols` npm package and imported `material-symbols/outlined.css` directly into `styles.css`.
+  - Bundles the `.woff2` font files directly into the compiled Angular assets, eliminating asynchronous Google Fonts CDN download latency.
+  - Enforced strict CSS font properties (`font-variation-settings`, `-webkit-font-feature-settings: 'liga'`) ensuring icons render instantly as vector glyphs on the very first frame.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
