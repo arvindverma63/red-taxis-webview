@@ -255,6 +255,16 @@ class NotificationNavigationHandler {
         navNotifier.setTabIndex(5);
         break;
 
+      case 'reports':
+      case 'report':
+      case 'statements':
+      case 'statement':
+      case 'earnings':
+      case 'earning':
+      case '6':
+        navNotifier.setTabIndex(6);
+        break;
+
       case 'upload':
       case 'doc_upload':
       case 'document_upload':

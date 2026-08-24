@@ -138,6 +138,43 @@ export class DriverService {
     );
   }
 
+  getEarnings(from: string, to: string): Observable<any> {
+    console.log(`API Webview Request: GET /api/DriverApp/Earnings?from=${from}&to=${to}`);
+    return this.http.get(`${this.baseUrl}/api/DriverApp/Earnings?from=${from}&to=${to}`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/Earnings success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/Earnings failed:', err)
+      })
+    );
+  }
+
+  getStatements(): Observable<any> {
+    console.log('API Webview Request: GET /api/DriverApp/Statements');
+    return this.http.get(`${this.baseUrl}/api/DriverApp/Statements`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log('API Webview Response: GET /api/DriverApp/Statements success:', res),
+        error: (err) => console.error('API Webview Error: GET /api/DriverApp/Statements failed:', err)
+      })
+    );
+  }
+
+  downloadStatement(statementId: number): Observable<Blob> {
+    console.log(`API Webview Request: GET /api/Accounts/DownloadStatement?statementId=${statementId}`);
+    return this.http.get(`${this.baseUrl}/api/Accounts/DownloadStatement?statementId=${statementId}`, {
+      headers: this.getHeaders(),
+      responseType: 'blob'
+    }).pipe(
+      catchError(() => this.http.get(`${this.baseUrl}/api/DriverApp/DownloadStatement?statementId=${statementId}`, {
+        headers: this.getHeaders(),
+        responseType: 'blob'
+      })),
+      tap({
+        next: () => console.log(`API Webview Response: Statement download started for ID ${statementId}`),
+        error: (err) => console.error('API Webview Error: Statement download failed:', err)
+      })
+    );
+  }
+
   uploadDocument(formData: FormData): Observable<any> {
     console.log('API Webview Request: POST /api/DriverApp/UploadDocument');
     return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, {

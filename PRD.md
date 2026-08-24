@@ -140,6 +140,14 @@ The Angular router guards and services parse the `token` parameter directly from
   - Installed `material-symbols` npm package and imported `material-symbols/outlined.css` directly into `styles.css`.
   - Bundles the `.woff2` font files directly into the compiled Angular assets, eliminating asynchronous Google Fonts CDN download latency.
   - Enforced strict CSS font properties (`font-variation-settings`, `-webkit-font-feature-settings: 'liga'`) ensuring icons render instantly as vector glyphs on the very first frame.
+- [x] **Reports & Statements Portal (Ace Taxis Parity & Backend Routes)**: Built and fully integrated the comprehensive Reports & Statements Portal across both the Angular web app and the Flutter native mobile shell matching the Ace Taxis reference specification:
+  - **Backend API Routes Integrated**: `GET /api/DriverApp/dashTotals`, `GET /api/DriverApp/Earnings?from=YYYY-MM-DD&to=YYYY-MM-DD`, `GET /api/DriverApp/Statements`, and `GET /api/Accounts/DownloadStatement?statementId=...` (with fallback to `/api/DriverApp/DownloadStatement`).
+  - **3 Segmented Views**:
+    1. **Earnings Overview**: Animated comparative bar chart comparing earnings for Today vs This Week vs This Month powered dynamically by `dashTotals`, metric breakdown cards, and quick jump buttons.
+    2. **Earning Report**: Date range filtering (with quick presets for Today, Yesterday, This Week, This Month, and Last 30 Days), daily earnings list with index badges, gross/net totals, floating bottom net earnings summary, and **Detailed Earning Breakdown Dialog** (Cash, Account, Rank, Commission, Gross, Net, Cash Jobs, Account Jobs, Rank Jobs, and Rank Miles).
+    3. **Statements**: Date range filtering, newest/oldest sorting, statements card listing with statement IDs, period ranges, payment status badges, and **Full Statement Details Dialog** with PDF download trigger.
+  - **Flutter Integration**: Added index 6 to `IndexedStack` and added **"Reports & Statements"** menu option to the drawer sidebar (`main_shell.dart`), with push notification routing support in `NotificationNavigationHandler`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
