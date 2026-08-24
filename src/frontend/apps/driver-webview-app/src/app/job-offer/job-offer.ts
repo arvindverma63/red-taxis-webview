@@ -764,6 +764,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         const parsedStatus = statusParam.toString().toLowerCase();
         if (parsedStatus === 'cancelled' || parsedStatus === 'unallocated' || parsedStatus === 'amended') {
           this.jobStatus = parsedStatus as any;
+          this.timerSub?.unsubscribe();
         }
       }
 
@@ -784,9 +785,11 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       } else {
         this.fetchJobFromApi();
       }
-    });
 
-    this.startTimer();
+      if (!this.jobStatus || this.jobStatus === 'active') {
+        this.startTimer();
+      }
+    });
   }
 
   private mapApiJobToJobDetails(item: any): JobDetails {
@@ -889,8 +892,12 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   startTimer(): void {
+    if (this.jobStatus && this.jobStatus !== 'active') {
+      return;
+    }
+    this.timerSub?.unsubscribe();
     this.timerSub = interval(1000)
-      .pipe(takeWhile(() => this.secondsRemaining > 0))
+      .pipe(takeWhile(() => this.secondsRemaining > 0 && (!this.jobStatus || this.jobStatus === 'active')))
       .subscribe({
         next: () => {
           this.secondsRemaining--;
@@ -1119,6 +1126,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   dismissStatusScreen(): void {
+    this.notifyNativeApp('close_custom_webview');
     this.notifyNativeApp('job_rejected');
     this.router.navigate(['/bookings']);
   }

@@ -143,7 +143,9 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                   },
                 );
               }
-            } else if (message.message == 'close_complete_job') {
+            } else if (message.message == 'close_complete_job' ||
+                message.message == 'close_custom_webview' ||
+                message.message == 'dismiss_status') {
               ref.read(navigationProvider.notifier).closeCustomWebView();
             }
           },

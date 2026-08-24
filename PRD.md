@@ -147,7 +147,13 @@ The Angular router guards and services parse the `token` parameter directly from
     2. **Earning Report**: Date range filtering (with quick presets for Today, Yesterday, This Week, This Month, and Last 30 Days), daily earnings list with index badges, gross/net totals, floating bottom net earnings summary, and **Detailed Earning Breakdown Dialog** (Cash, Account, Rank, Commission, Gross, Net, Cash Jobs, Account Jobs, Rank Jobs, and Rank Miles).
     3. **Statements**: Date range filtering, newest/oldest sorting, statements card listing with statement IDs, period ranges, payment status badges, and **Full Statement Details Dialog** with PDF download trigger.
   - **Flutter Integration**: Added index 6 to `IndexedStack` and added **"Reports & Statements"** menu option to the drawer sidebar (`main_shell.dart`), with push notification routing support in `NotificationNavigationHandler`.
+- [x] **Cancellation & Unallocation Push Notification Classification Fix**: Fixed an issue where "Booking cancelled" or "Booking unallocated" push notifications incorrectly triggered the "SLIDE TO ACCEPT" new job offer bottom sheet:
+  - Explicitly prioritized cancellation, unallocation, and amendment detection in `NotificationNavigationHandler` before evaluating job offers, scanning notification type keys, payload titles, bodies, and deep links.
+  - Automatically resets/dismisses any active `tripProvider` offer state (`rejectJob()`) upon receiving cancellation or unallocation notifications.
+  - Passes `status: 'cancelled'` (or `'unallocated'`, `'amended'`) to the full-screen `/job-offer` webview overlay.
+  - Disabled the 15-second countdown timer and auto-rejection mechanisms in `JobOfferComponent` (`job-offer.ts`) during non-active status displays, presenting the dedicated status alert card with dismissal integration (`close_custom_webview`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 

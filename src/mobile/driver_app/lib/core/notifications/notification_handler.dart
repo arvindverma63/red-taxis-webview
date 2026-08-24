@@ -111,16 +111,105 @@ class NotificationNavigationHandler {
         .toString()
         .trim();
 
-    debugPrint("NotificationNavigationHandler: notificationType='$notificationType', deepLink='$deepLink', bookingId='$bookingId', guid='$guid'");
+    final notificationTitle = (data['title'] ?? '').toString().trim().toLowerCase();
+    final notificationBody = (data['body'] ?? data['message'] ?? '').toString().trim().toLowerCase();
 
-    // Check for Job Offer / Booking Allocation payload (Strict matches only, do not match cancelled/unallocated/amended)
-    final isBookingOffer = notificationType == '1' ||
+    debugPrint("NotificationNavigationHandler: notificationType='$notificationType', title='$notificationTitle', body='$notificationBody', deepLink='$deepLink', bookingId='$bookingId', guid='$guid'");
+
+    final navNotifier = targetRef.read(navigationProvider.notifier);
+
+    // 1. Check for Booking Cancelled
+    final isCancelled = notificationType == '4' ||
+        notificationType == 'cancelled' ||
+        notificationType == 'cancel' ||
+        notificationType == 'job_cancelled' ||
+        notificationType == 'booking_cancelled' ||
+        notificationType == 'booking.cancelled' ||
+        notificationType == 'bookingcancelled' ||
+        notificationType == 'cancelled_booking' ||
+        deepLink.toLowerCase().contains('cancel') ||
+        notificationTitle.contains('cancel') ||
+        notificationBody.contains('cancel');
+
+    if (isCancelled) {
+      debugPrint("NotificationNavigationHandler: Booking $bookingId CANCELLED. Dismissing any active offer and showing Cancelled screen.");
+      targetRef.read(tripProvider.notifier).rejectJob();
+      navNotifier.openCustomWebView(
+        route: '/job-offer',
+        title: 'Booking Cancelled',
+        params: {
+          if (bookingId.isNotEmpty) 'jobId': bookingId,
+          'status': 'cancelled',
+          ..._extractParams(data)
+        },
+      );
+      return;
+    }
+
+    // 2. Check for Booking Unallocated
+    final isUnallocated = notificationType == '2' ||
+        notificationType == 'unallocated' ||
+        notificationType == 'unallocate' ||
+        notificationType == 'job_unallocated' ||
+        notificationType == 'booking_unallocated' ||
+        notificationType == 'booking.unallocated' ||
+        notificationType == 'unallocated_booking' ||
+        deepLink.toLowerCase().contains('unallocate') ||
+        notificationTitle.contains('unallocate') ||
+        notificationBody.contains('unallocate');
+
+    if (isUnallocated) {
+      debugPrint("NotificationNavigationHandler: Booking $bookingId UNALLOCATED. Dismissing any active offer and showing Unallocated screen.");
+      targetRef.read(tripProvider.notifier).rejectJob();
+      navNotifier.openCustomWebView(
+        route: '/job-offer',
+        title: 'Booking Unallocated',
+        params: {
+          if (bookingId.isNotEmpty) 'jobId': bookingId,
+          'status': 'unallocated',
+          ..._extractParams(data)
+        },
+      );
+      return;
+    }
+
+    // 3. Check for Booking Amended
+    final isAmended = notificationType == '3' ||
+        notificationType == 'amended' ||
+        notificationType == 'amend' ||
+        notificationType == 'job_amended' ||
+        notificationType == 'booking_amended' ||
+        notificationType == 'booking.amended' ||
+        notificationType == 'amended_booking' ||
+        deepLink.toLowerCase().contains('amend') ||
+        notificationTitle.contains('amend') ||
+        notificationBody.contains('amend');
+
+    if (isAmended) {
+      debugPrint("NotificationNavigationHandler: Booking $bookingId AMENDED. Dismissing any active offer and showing Amended screen.");
+      targetRef.read(tripProvider.notifier).rejectJob();
+      navNotifier.openCustomWebView(
+        route: '/job-offer',
+        title: 'Booking Amended',
+        params: {
+          if (bookingId.isNotEmpty) 'jobId': bookingId,
+          'status': 'amended',
+          ..._extractParams(data)
+        },
+      );
+      return;
+    }
+
+    // 4. Check for Job Offer / Booking Allocation payload (Strict matches only)
+    final isBookingOffer = !isCancelled && !isUnallocated && !isAmended && (
+        notificationType == '1' ||
         notificationType == 'allocated' ||
         notificationType == 'offered' ||
         notificationType == 'job_offered' ||
         notificationType == 'job_offer' ||
-        (deepLink.isNotEmpty && deepLink.toLowerCase().startsWith('booking') && !deepLink.toLowerCase().contains('cancel') && !deepLink.toLowerCase().contains('unallocate') && !deepLink.toLowerCase().contains('amend')) ||
-        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType == '1'));
+        (deepLink.isNotEmpty && deepLink.toLowerCase().startsWith('booking')) ||
+        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType == '1' || notificationType == 'job_offer' || notificationType == 'allocated'))
+    );
 
     if (isBookingOffer && bookingId.isNotEmpty) {
       final fare = double.tryParse(data['fare']?.toString() ?? '0.0') ?? 0.0;
@@ -151,7 +240,6 @@ class NotificationNavigationHandler {
     }
 
     final navId = notificationType;
-    final navNotifier = targetRef.read(navigationProvider.notifier);
 
     // Map nav_id to tab index or custom webview
     switch (navId) {
