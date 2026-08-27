@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:driver_app/features/auth/auth.dart';
 
@@ -15,6 +16,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  DateTime? _lastBackPressTime;
 
   @override
   void dispose() {
@@ -40,8 +42,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      body: Stack(
-        children: [
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          final now = DateTime.now();
+          if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+            _lastBackPressTime = now;
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Press back again to exit First Taxis'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          } else {
+            SystemNavigator.pop();
+          }
+        },
+        child: Stack(
+          children: [
           // Background scrollable content
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -676,6 +696,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
         ],
+        ),
       ),
     );
   }

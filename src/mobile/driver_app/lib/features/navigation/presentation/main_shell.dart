@@ -53,10 +53,21 @@ class _MainShellState extends ConsumerState<MainShell> {
       final encodedPassenger = Uri.encodeComponent(trip.passenger);
       final encodedNotes = Uri.encodeComponent(trip.notes);
       final encodedGuid = Uri.encodeComponent(trip.guid);
-      return DriverWebviewScreen(
-        url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
-        title: 'New Job Offer',
-        hideAppBar: true,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            ref.read(tripProvider.notifier).rejectJob();
+          }
+        },
+        child: DriverWebviewScreen(
+          url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
+          title: 'New Job Offer',
+          hideAppBar: true,
+          onBack: () {
+            ref.read(tripProvider.notifier).rejectJob();
+          },
+        ),
       );
     }
 

@@ -160,6 +160,13 @@ The Angular router guards and services parse the `token` parameter directly from
   - Updated app labels in `AndroidManifest.xml` (`First Taxis`), `main.dart` (`First Taxis Driver`), `main_shell.dart`, `dashboard_view.dart`, `profile.ts`, `expenses.ts`, and `login.ts`.
   - Redesigned the native Flutter `LoginScreen` (`login_screen.dart`) with an elevated card layout, glowing brand badge, driver portal subtitle, modern rounded inputs with dedicated icon containers, and SSL security indicators.
   - Implemented an animated modal progress overlay during `isLoading` (Login API call) featuring a dual-ring circular spinner, pulsing vehicle icon, linear wave indicator, and real-time status messaging (`Signing In...`, `Connecting to First Taxis secure server and verifying driver credentials...`).
+- [x] **Global Double-Tap Back Exit Protection**: Prevented accidental app termination on Android by enforcing a unified, intelligent back navigation hierarchy with a 2-second double-tap-to-exit requirement:
+  - Implemented `PopScope` on the `LoginScreen` with a 2-second exit timer and toast notification (`Press back again to exit First Taxis`).
+  - Updated `DriverWebviewScreen` (`webview_screen.dart`) and `MainShell` (`main_shell.dart`) to eliminate single-tap `Navigator.maybePop()` crashes:
+    1. If drawer is open -> closes drawer.
+    2. If custom webview / modal overlay / job offer is active -> dismisses overlay.
+    3. If on any sub-tab (Bookings, Profile, Availability, Expenses, Reports) -> switches tab back to Dashboard (`selectedIndex = 0`).
+    4. On Dashboard / root screen -> triggers the 2-second double-tap toast requirement before closing the application via `SystemNavigator.pop()`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

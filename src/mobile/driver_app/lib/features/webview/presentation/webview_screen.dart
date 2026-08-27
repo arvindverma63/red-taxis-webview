@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -35,6 +36,7 @@ class DriverWebviewScreen extends ConsumerStatefulWidget {
 }
 
 class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
+  static DateTime? _lastGlobalBackPressTime;
   WebViewController? _controller;
   bool _isLoading = true;
 
@@ -294,8 +296,46 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
           final currentContext = context;
           if (widget.onBack != null) {
             widget.onBack!();
-          } else if (currentContext.mounted) {
-            Navigator.of(currentContext).maybePop();
+            return;
+          }
+
+          // 1. If Drawer is open, close it
+          if (MainShell.scaffoldKey.currentState?.isDrawerOpen ?? false) {
+            if (currentContext.mounted) {
+              Navigator.of(currentContext).pop();
+            }
+            return;
+          }
+
+          // 2. If Custom WebView route is open, close it
+          final navState = ref.read(navigationProvider);
+          if (navState.hasCustomRoute) {
+            ref.read(navigationProvider.notifier).closeCustomWebView();
+            return;
+          }
+
+          // 3. If on a sub-tab (Bookings, Profile, Availability, Expenses, etc.), go back to Dashboard
+          if (navState.selectedIndex != 0) {
+            ref.read(navigationProvider.notifier).setTabIndex(0);
+            return;
+          }
+
+          // 4. On Dashboard / Root, require double-tap back within 2 seconds to exit app
+          final now = DateTime.now();
+          if (_DriverWebviewScreenState._lastGlobalBackPressTime == null ||
+              now.difference(_DriverWebviewScreenState._lastGlobalBackPressTime!) > const Duration(seconds: 2)) {
+            _DriverWebviewScreenState._lastGlobalBackPressTime = now;
+            if (currentContext.mounted) {
+              ScaffoldMessenger.of(currentContext).removeCurrentSnackBar();
+              ScaffoldMessenger.of(currentContext).showSnackBar(
+                const SnackBar(
+                  content: Text('Press back again to exit First Taxis'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          } else {
+            SystemNavigator.pop();
           }
         },
         child: RefreshIndicator(
