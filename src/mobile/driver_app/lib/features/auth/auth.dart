@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:driver_app/core/config/constants.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
 
@@ -117,6 +118,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           data: {
             'username': username,
             'password': password,
+            'tenantId': AppConfig.defaultTenantId,
           },
         );
       }

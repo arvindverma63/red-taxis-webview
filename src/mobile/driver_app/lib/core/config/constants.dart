@@ -9,6 +9,9 @@ class AppConfig {
 
   static String get webviewBaseUrl => useDevUrl ? devBaseUrl : prodBaseUrl;
 
+  // Statically configured Tenant ID
+  static const String defaultTenantId = 'org_2a5d0f4bd851490388ef0d9f';
+
   static String get bookingsUrl => '$webviewBaseUrl/#/bookings';
   static String get profileUrl => '$webviewBaseUrl/#/profile';
   static String get availabilityUrl => '$webviewBaseUrl/#/availability';
