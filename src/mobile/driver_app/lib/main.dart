@@ -201,7 +201,7 @@ class DriverApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Red Taxi Driver',
+      title: 'First Taxis Driver',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light, // Enforce light mode only as requested

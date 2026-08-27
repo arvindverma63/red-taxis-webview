@@ -1763,7 +1763,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
         <rect width="100%" height="100%" fill="#FCFDFD"/>
         <path d="M 0 0 L 15 10 L 30 0 L 45 10 L 60 0 L 75 10 L 90 0 L 105 10 L 120 0 L 135 10 L 150 0 L 165 10 L 180 0 L 195 10 L 210 0 L 225 10 L 240 0 L 255 10 L 270 0 L 285 10 L 300 0 L 300 400 L 0 400 Z" fill="#FFFFFF" stroke="#ECEFF1" stroke-width="1.5"/>
-        <text x="50%" y="45" font-family="'Courier New', monospace" font-weight="bold" font-size="16" text-anchor="middle" fill="#263238">RED TAXIS LTD</text>
+        <text x="50%" y="45" font-family="'Courier New', monospace" font-weight="bold" font-size="16" text-anchor="middle" fill="#263238">FIRST TAXIS LTD</text>
         <text x="50%" y="65" font-family="'Courier New', monospace" font-size="10" text-anchor="middle" fill="#78909C">OFFICIAL EXPENSE RECEIPT</text>
         
         <line x1="20" y1="90" x2="280" y2="90" stroke="#B0BEC5" stroke-dasharray="4 4" stroke-width="1"/>
@@ -1790,7 +1790,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         <text x="20" y="330" font-family="'Courier New', monospace" font-weight="bold" font-size="15" fill="#263238">TOTAL CLAIMED</text>
         <text x="280" y="330" font-family="'Courier New', monospace" font-weight="bold" font-size="15" text-anchor="end" fill="#2E7D32">£${index === 0 ? '45.50' : index === 1 ? '6.80' : '15.00'}</text>
         
-        <text x="50%" y="375" font-family="'Courier New', monospace" font-size="9" text-anchor="middle" fill="#90A4AE">Thank you for driving with Red Taxis!</text>
+        <text x="50%" y="375" font-family="'Courier New', monospace" font-size="9" text-anchor="middle" fill="#90A4AE">Thank you for driving with First Taxis!</text>
       </svg>
     `;
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);

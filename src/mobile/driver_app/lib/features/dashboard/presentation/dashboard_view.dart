@@ -105,7 +105,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
               const TripDetails(
                 id: 'sim-cash-booking',
                 pickupAddress: 'Heathrow Airport Terminal 5',
-                dropoffAddress: 'Red Taxi Office, London Central',
+                dropoffAddress: 'First Taxis Office, London Central',
                 fare: 45.00,
                 paymentType: 'Cash',
               ),
@@ -183,7 +183,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: const Text('Red Taxis Dashboard'),
+        title: const Text('First Taxis Dashboard'),
         centerTitle: false,
         actions: [
           IconButton(

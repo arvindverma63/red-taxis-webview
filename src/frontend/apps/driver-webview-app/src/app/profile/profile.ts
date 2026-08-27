@@ -85,7 +85,7 @@ interface DriverDoc {
             </div>
             <div class="profile-identity">
               <h2 class="mat-headline-small name-title">{{ driverName }}</h2>
-              <span class="badge-pill role-badge">Red Taxis Driver</span>
+              <span class="badge-pill role-badge">First Taxis Driver</span>
               <div class="stats-row" *ngIf="lastLogin">
                 <span class="stat"><mat-icon class="star-icon">schedule</mat-icon> Last Login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
               </div>

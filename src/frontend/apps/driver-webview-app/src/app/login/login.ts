@@ -29,7 +29,7 @@ import { of } from 'rxjs';
               <div class="logo-circle">
                 <span class="material-symbols-outlined logo-icon">local_taxi</span>
               </div>
-              <h1 class="brand-title">RED TAXIS</h1>
+              <h1 class="brand-title">FIRST TAXIS</h1>
               <p class="brand-subtitle">Driver Partner Network</p>
             </div>
 

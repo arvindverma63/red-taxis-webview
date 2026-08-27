@@ -156,6 +156,10 @@ The Angular router guards and services parse the `token` parameter directly from
   - Stored `defaultTenantId` statically in Flutter `AppConfig` (`constants.dart`).
   - Updated `AuthNotifier.signIn` (`auth.dart`) to transmit `tenantId` inside the JSON payload to `POST /api/UserProfile/Login`.
   - Added `defaultTenantId` in Angular `DriverService` (`driver.service.ts`) and bound it to all web-based login dispatches.
+- [x] **Brand Rebrand to First Taxis & Enterprise Login Redesign**: Rebranded application titles, badges, and receipts from Red Taxis to **First Taxis** and overhauled the authentication portal:
+  - Updated app labels in `AndroidManifest.xml` (`First Taxis`), `main.dart` (`First Taxis Driver`), `main_shell.dart`, `dashboard_view.dart`, `profile.ts`, `expenses.ts`, and `login.ts`.
+  - Redesigned the native Flutter `LoginScreen` (`login_screen.dart`) with an elevated card layout, glowing brand badge, driver portal subtitle, modern rounded inputs with dedicated icon containers, and SSL security indicators.
+  - Implemented an animated modal progress overlay during `isLoading` (Login API call) featuring a dual-ring circular spinner, pulsing vehicle icon, linear wave indicator, and real-time status messaging (`Signing In...`, `Connecting to First Taxis secure server and verifying driver credentials...`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

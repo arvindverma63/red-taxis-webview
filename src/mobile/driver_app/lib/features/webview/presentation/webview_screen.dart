@@ -112,7 +112,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                 const TripDetails(
                   id: 'sim-cash-booking',
                   pickupAddress: 'Heathrow Airport Terminal 5',
-                  dropoffAddress: 'Red Taxi Office, London Central',
+                  dropoffAddress: 'First Taxis Office, London Central',
                   fare: 45.00,
                   paymentType: 'Cash',
                 ),
