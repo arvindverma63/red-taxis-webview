@@ -353,7 +353,11 @@ export class DriverService {
 
   login(username: string, password: string, tenantId: string = this.defaultTenantId): Observable<any> {
     console.log(`API Webview Request: POST /api/UserProfile/Login username: ${username}, tenantId: ${tenantId}`);
-    return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password, tenantId }).pipe(
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Accept': '*/*'
+    });
+    return this.http.post(`${this.baseUrl}/api/UserProfile/Login`, { username, password, tenantId }, { headers }).pipe(
       tap({
         next: (res) => console.log('API Webview Response: POST /api/UserProfile/Login success:', res),
         error: (err) => console.error('API Webview Error: POST /api/UserProfile/Login failed:', err)

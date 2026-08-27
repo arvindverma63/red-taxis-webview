@@ -108,20 +108,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.authenticating, errorMessage: null);
 
     try {
-      Response response;
-      if (username.toLowerCase() == 'driver' && password == 'driver') {
-        // Fetch a real JWT token issued by the dev endpoint on the server
-        response = await _dio.get('/dev/token?user=$username');
-      } else {
-        response = await _dio.post(
-          '/api/UserProfile/Login',
-          data: {
-            'username': username,
-            'password': password,
-            'tenantId': AppConfig.defaultTenantId,
+      debugPrint('[Auth] Sending Login to /api/UserProfile/Login: username=$username, tenantId=${AppConfig.defaultTenantId}');
+      final response = await _dio.post(
+        '/api/UserProfile/Login',
+        data: {
+          'username': username,
+          'password': password,
+          'tenantId': AppConfig.defaultTenantId,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': '*/*',
           },
-        );
-      }
+        ),
+      );
 
       final data = response.data;
       final token = data['token'] ?? data['jwt'] ?? data['value']?['token'];
