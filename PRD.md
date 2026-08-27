@@ -152,9 +152,9 @@ The Angular router guards and services parse the `token` parameter directly from
   - Automatically resets/dismisses any active `tripProvider` offer state (`rejectJob()`) upon receiving cancellation or unallocation notifications.
   - Passes `status: 'cancelled'` (or `'unallocated'`, `'amended'`) to the full-screen `/job-offer` webview overlay.
   - Disabled the 15-second countdown timer and auto-rejection mechanisms in `JobOfferComponent` (`job-offer.ts`) during non-active status displays, presenting the dedicated status alert card with dismissal integration (`close_custom_webview`).
-- [x] **Static Tenant ID (`tenantId`) Login Integration**: Added static configuration and direct transmission of `tenantId` (`"org_2a5d0f4bd851490388ef0d9f"`) for driver authentication:
+- [x] **Static Tenant ID (`tenantId`) Login Integration**: Added static configuration and direct transmission of `tenantId` (`"org_ace_taxis"`) for driver authentication:
   - Stored `defaultTenantId` statically in Flutter `AppConfig` (`constants.dart`).
-  - Updated `AuthNotifier.signIn` (`auth.dart`) to dispatch `POST /api/UserProfile/Login` with payload `{ "username": username, "password": password, "tenantId": "org_2a5d0f4bd851490388ef0d9f" }` and explicit `Content-Type: application/json` and `Accept: */*` headers.
+  - Updated `AuthNotifier.signIn` (`auth.dart`) to dispatch `POST /api/UserProfile/Login` with payload `{ "username": username, "password": password, "tenantId": "org_ace_taxis" }` and explicit `Content-Type: application/json` and `Accept: */*` headers.
   - Added `defaultTenantId` in Angular `DriverService` (`driver.service.ts`) with identical JSON headers.
 - [x] **Brand Rebrand to First Taxis & Enterprise Login Redesign**: Rebranded application titles, badges, and receipts from Red Taxis to **First Taxis** and overhauled the authentication portal:
   - Updated app labels in `AndroidManifest.xml` (`First Taxis`), `main.dart` (`First Taxis Driver`), `main_shell.dart`, `dashboard_view.dart`, `profile.ts`, `expenses.ts`, and `login.ts`.
