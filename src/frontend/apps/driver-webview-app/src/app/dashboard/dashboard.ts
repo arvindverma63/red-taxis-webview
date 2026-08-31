@@ -250,6 +250,69 @@ interface DashTotals {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .dashboard-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .dash-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .count-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    }
+    :host-context(.dark-theme) .trip-item {
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .trip-desc,
+    :host-context(.dark-theme) .trip-fare,
+    :host-context(.dark-theme) .section-title,
+    :host-context(.dark-theme) .count-num,
+    :host-context(.dark-theme) .gauge-earnings-value,
+    :host-context(.dark-theme) .gauge-jobs-count,
+    :host-context(.dark-theme) .sim-title,
+    :host-context(.dark-theme) .sim-btn {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .trip-time,
+    :host-context(.dark-theme) .count-lbl,
+    :host-context(.dark-theme) .gauge-filter-label,
+    :host-context(.dark-theme) .sim-desc {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .gauge-bg {
+      stroke: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .filter-pill {
+      background-color: #2D2D35 !important;
+      color: #90A4AE !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .filter-pill.active {
+      background-color: #CD1A21 !important;
+      color: #FFFFFF !important;
+      border-color: #CD1A21 !important;
+    }
+    :host-context(.dark-theme) .active-route {
+      background-color: #121214 !important;
+    }
+    :host-context(.dark-theme) .passenger-name,
+    :host-context(.dark-theme) .node-addr {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .map-btn {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #1565C0 !important;
+    }
+
     .dashboard-container {
       background-color: #F8F9FA;
       min-height: 100vh;
