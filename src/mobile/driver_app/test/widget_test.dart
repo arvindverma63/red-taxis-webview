@@ -6,6 +6,7 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 import 'package:driver_app/main.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/shift/shift.dart';
+import 'package:driver_app/core/location/location.dart';
 
 class MockWebViewPlatform extends WebViewPlatform {
   @override
@@ -95,11 +96,12 @@ class ShiftNotifierMock extends ShiftNotifier {
   ShiftNotifierMock(super.ref);
 
   @override
-  Future<void> goOnline() async {
+  Future<LocationPermissionResult> goOnline() async {
     state = ShiftState(
       status: ShiftStatus.online,
       startTime: DateTime.now(),
     );
+    return LocationPermissionResult.granted;
   }
 
   @override

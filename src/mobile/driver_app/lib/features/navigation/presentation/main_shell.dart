@@ -8,6 +8,7 @@ import 'package:driver_app/features/webview/presentation/webview_screen.dart';
 import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
+import 'package:driver_app/features/settings/presentation/settings_view.dart';
 
 import 'package:flutter/services.dart';
 
@@ -158,6 +159,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/expenses', title: 'Expenses Log'),
             DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/create-booking', title: 'Rank Pickup'),
             DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/reports', title: 'Reports & Statements'),
+            const SettingsView(),
           ],
         ),
         bottomNavigationBar: Container(
@@ -363,6 +365,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                         _buildDrawerItem(4, Icons.receipt_long_outlined, Icons.receipt_long, 'My Expenses', activeIndex),
                         _buildDrawerItem(5, Icons.add_circle_outline, Icons.add_circle, 'Rank Pickup', activeIndex),
                         _buildDrawerItem(6, Icons.bar_chart_outlined, Icons.bar_chart, 'Reports & Statements', activeIndex),
+                        _buildDrawerItem(7, Icons.settings_outlined, Icons.settings, 'Settings', activeIndex),
                       ],
                     ),
                   ),

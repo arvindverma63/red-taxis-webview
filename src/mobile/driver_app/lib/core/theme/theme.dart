@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AppTheme {
   // Brand color palette
@@ -95,5 +97,37 @@ class AppTheme {
         ),
       ),
     );
+  }
+}
+
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
+  return ThemeModeNotifier();
+});
+
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  ThemeModeNotifier() : super(ThemeMode.light) {
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    try {
+      final mode = await _storage.read(key: 'theme_mode');
+      if (mode == 'dark') {
+        state = ThemeMode.dark;
+      } else {
+        state = ThemeMode.light;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> toggleTheme(bool isDarkMode) async {
+    state = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    try {
+      await _storage.write(key: 'theme_mode', value: isDarkMode ? 'dark' : 'light');
+    } catch (_) {}
   }
 }
