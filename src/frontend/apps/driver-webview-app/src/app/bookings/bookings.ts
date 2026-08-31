@@ -355,6 +355,82 @@ interface Booking {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .material-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .filter-tab-bar {
+      background-color: #2D2D35 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .tab-btn:not(.active) {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .tab-btn.active {
+      background-color: #CD1A21 !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 2px 6px rgba(205, 26, 33, 0.25) !important;
+    }
+    :host-context(.dark-theme) .booking-mat-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .ref-val,
+    :host-context(.dark-theme) .node-address,
+    :host-context(.dark-theme) .view-details-txt,
+    :host-context(.dark-theme) .sheet-passenger-title,
+    :host-context(.dark-theme) .loc-address,
+    :host-context(.dark-theme) .metric-val,
+    :host-context(.dark-theme) .info-v,
+    :host-context(.dark-theme) .notes-txt,
+    :host-context(.dark-theme) .sheet-dismiss-btn {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .ref-label,
+    :host-context(.dark-theme) .node-time-placeholder,
+    :host-context(.dark-theme) .node-time,
+    :host-context(.dark-theme) .date-badge,
+    :host-context(.dark-theme) .sheet-datetime-sub,
+    :host-context(.dark-theme) .section-label,
+    :host-context(.dark-theme) .loc-postcode,
+    :host-context(.dark-theme) .metric-lbl,
+    :host-context(.dark-theme) .info-k,
+    :host-context(.dark-theme) .notes-lbl,
+    :host-context(.dark-theme) .empty-title,
+    :host-context(.dark-theme) .empty-subtitle {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .timeline-line {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .modal-sheet {
+      background-color: #121214 !important;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.3) !important;
+    }
+    :host-context(.dark-theme) .sheet-header,
+    :host-context(.dark-theme) .sheet-quick-actions,
+    :host-context(.dark-theme) .location-detail-card,
+    :host-context(.dark-theme) .metric-card,
+    :host-context(.dark-theme) .info-list-card,
+    :host-context(.dark-theme) .notes-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .sheet-close-btn {
+      background-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .info-row {
+      border-bottom-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .sheet-dismiss-btn {
+      background-color: #CD1A21 !important;
+      color: #FFFFFF !important;
+    }
+
     .material-container {
       padding: 12px 14px 40px 14px;
       background-color: #F8F9FA;
