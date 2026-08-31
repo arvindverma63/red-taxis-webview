@@ -656,6 +656,104 @@ export interface DashTotals {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .reports-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .view-segmented-bar {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .segment-btn:not(.active) {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .segment-btn.active {
+      background-color: #1E1E24 !important;
+      color: #E53935 !important;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    :host-context(.dark-theme) .overview-chart-card,
+    :host-context(.dark-theme) .metric-card,
+    :host-context(.dark-theme) .filter-header-card,
+    :host-context(.dark-theme) .earning-item-card,
+    :host-context(.dark-theme) .statement-item-card,
+    :host-context(.dark-theme) .modal-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .date-selector-row,
+    :host-context(.dark-theme) .modal-period-box,
+    :host-context(.dark-theme) .modal-date-chip,
+    :host-context(.dark-theme) .data-grid,
+    :host-context(.dark-theme) .count-pill {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .modal-header,
+    :host-context(.dark-theme) .modal-footer {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .preset-chip {
+      background-color: #121214 !important;
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .preset-chip.active {
+      background-color: #E53935 !important;
+      color: #FFFFFF !important;
+    }
+    :host-context(.dark-theme) .btn-close,
+    :host-context(.dark-theme) .modal-close-btn {
+      background-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .chart-title,
+    :host-context(.dark-theme) .bar-value,
+    :host-context(.dark-theme) .metric-val,
+    :host-context(.dark-theme) .date-range-text,
+    :host-context(.dark-theme) .earning-date,
+    :host-context(.dark-theme) .stmt-id,
+    :host-context(.dark-theme) .earned-value,
+    :host-context(.dark-theme) .header-title-box h3,
+    :host-context(.dark-theme) .info-val,
+    :host-context(.dark-theme) .data-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .chart-subtitle,
+    :host-context(.dark-theme) .bar-label,
+    :host-context(.dark-theme) .metric-lbl,
+    :host-context(.dark-theme) .gross-tag,
+    :host-context(.dark-theme) .statement-period,
+    :host-context(.dark-theme) .earned-label,
+    :host-context(.dark-theme) .sub-header-id,
+    :host-context(.dark-theme) .info-key,
+    :host-context(.dark-theme) .data-label,
+    :host-context(.dark-theme) .count-name {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .bar-track {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .statement-card-bottom {
+      border-top-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .data-row {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .data-row.highlight-net {
+      background-color: rgba(229, 57, 53, 0.15) !important;
+    }
+    :host-context(.dark-theme) .info-line {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .earning-index-badge {
+      background-color: rgba(229, 57, 53, 0.15) !important;
+      color: #E53935 !important;
+    }
+
     .reports-container {
       min-height: 100vh;
       background-color: #F8F9FA;

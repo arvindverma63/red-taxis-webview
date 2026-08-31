@@ -148,6 +148,68 @@ import { DriverService } from '../services/driver.service';
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .material-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .form-body {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .readonly-field-box {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .form-input {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .form-input:focus {
+      background-color: #121214 !important;
+      border-color: #E53935 !important;
+    }
+    :host-context(.dark-theme) .suggestion-box {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+    }
+    :host-context(.dark-theme) .suggestion-item {
+      border-bottom-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .suggestion-item:hover {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .quote-card {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .metric-box {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .metric-box.highlighted {
+      background-color: rgba(76, 175, 80, 0.1) !important;
+      border-color: rgba(76, 175, 80, 0.2) !important;
+    }
+    :host-context(.dark-theme) .readonly-main,
+    :host-context(.dark-theme) .item-main,
+    :host-context(.dark-theme) .metric-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .readonly-sub,
+    :host-context(.dark-theme) .form-lbl,
+    :host-context(.dark-theme) .item-sub,
+    :host-context(.dark-theme) .quote-title-box,
+    :host-context(.dark-theme) .metric-lbl,
+    :host-context(.dark-theme) .metric-sub-val {
+      color: #90A4AE !important;
+    }
+
     .material-container {
       padding: 12px 10px 150px 10px;
       background-color: #F8F9FA;
