@@ -443,7 +443,9 @@ export interface DriverFleetAvailability {
     :host-context(.dark-theme) .preset-section-card,
     :host-context(.dark-theme) .custom-slot-card,
     :host-context(.dark-theme) .empty-slots-card,
-    :host-context(.dark-theme) .slot-card {
+    :host-context(.dark-theme) .slot-card,
+    :host-context(.dark-theme) .fleet-filter-card,
+    :host-context(.dark-theme) .fleet-driver-card {
       background-color: #1E1E24 !important;
       border-color: #2D2D35 !important;
       color: #ECEFF1 !important;
@@ -491,7 +493,10 @@ export interface DriverFleetAvailability {
     :host-context(.dark-theme) .note-text-input,
     :host-context(.dark-theme) .section-title,
     :host-context(.dark-theme) .slot-time,
-    :host-context(.dark-theme) .empty-title {
+    :host-context(.dark-theme) .empty-title,
+    :host-context(.dark-theme) .time-text,
+    :host-context(.dark-theme) .fleet-search-input,
+    :host-context(.dark-theme) .driver-name {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .preset-time,
@@ -500,11 +505,15 @@ export interface DriverFleetAvailability {
     :host-context(.dark-theme) .checkbox-container,
     :host-context(.dark-theme) .note-lbl,
     :host-context(.dark-theme) .slot-note,
-    :host-context(.dark-theme) .empty-subtitle {
+    :host-context(.dark-theme) .empty-subtitle,
+    :host-context(.dark-theme) .driver-vehicle-badge,
+    :host-context(.dark-theme) .slot-note-text,
+    :host-context(.dark-theme) .slot-note-text span {
       color: #90A4AE !important;
     }
     :host-context(.dark-theme) .select-time-wrapper,
-    :host-context(.dark-theme) .note-text-input {
+    :host-context(.dark-theme) .note-text-input,
+    :host-context(.dark-theme) .fleet-search-wrapper {
       background-color: #121214 !important;
       border-color: #2D2D35 !important;
     }
@@ -519,6 +528,16 @@ export interface DriverFleetAvailability {
     :host-context(.dark-theme) .time-dropdown option {
       background-color: #1E1E24 !important;
       color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .vehicle-chip-btn {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .vehicle-chip-btn.active {
+      background-color: #CD1A21 !important;
+      border-color: #CD1A21 !important;
+      color: #FFFFFF !important;
     }
 
     * {
