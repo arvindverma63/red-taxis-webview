@@ -172,6 +172,8 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **First Taxis Logo & App Icon Setup**: Generated a premium road-themed vector-style logo for **First Taxis** using Gemini's image generation tools. Integrated the logo as the native app icon for both Android and iOS platforms utilizing the `flutter_launcher_icons` builder pipeline.
 - [x] **Animated Road-Themed Splash Screen**: Developed an animated, premium light-themed splash screen (`splash_screen.dart`) as the initial application landing experience. Features a soft radial gradient, scaling logo animations, a glowing repeating ripple backdrop, and a custom-designed asphalt "road progress" tracker with dashed lanes and headlight overlays that synchronizes session token auto-login checks.
 
+- [x] **Settings Page Header & Drawer Integration**: Configured the native Settings page (`settings_view.dart`) with a standard menu icon in the AppBar's leading property. Integrates directly with `MainShell.scaffoldKey` to trigger Drawer opens from the Settings tab. Adjusted the layout to set `centerTitle: false`, aligning it with the styling of the Dashboard and all WebView app headers.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
 
