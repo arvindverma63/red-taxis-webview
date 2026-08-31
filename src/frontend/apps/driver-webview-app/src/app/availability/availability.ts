@@ -423,6 +423,104 @@ export interface DriverFleetAvailability {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .availability-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .mode-segmented-control {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .mode-btn:not(.active) {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .mode-btn.active {
+      background-color: #1E1E24 !important;
+      color: #CD1A21 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    :host-context(.dark-theme) .week-nav-card,
+    :host-context(.dark-theme) .preset-section-card,
+    :host-context(.dark-theme) .custom-slot-card,
+    :host-context(.dark-theme) .empty-slots-card,
+    :host-context(.dark-theme) .slot-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .nav-arrow-btn {
+      background-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .day-pill-btn {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .day-pill-btn:not(.selected) .day-letter {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .day-pill-btn:not(.selected) .day-number {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .day-pill-btn.selected {
+      background-color: #CD1A21 !important;
+      border-color: #CD1A21 !important;
+    }
+    :host-context(.dark-theme) .preset-chip-btn {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .preset-chip-btn.active {
+      background-color: #CD1A21 !important;
+      border-color: #CD1A21 !important;
+      color: #FFFFFF !important;
+    }
+    :host-context(.dark-theme) .preset-chip-btn.active .preset-title,
+    :host-context(.dark-theme) .preset-chip-btn.active .preset-time {
+      color: #FFFFFF !important;
+    }
+    :host-context(.dark-theme) .preset-title,
+    :host-context(.dark-theme) .week-date-range,
+    :host-context(.dark-theme) .card-title-text,
+    :host-context(.dark-theme) .time-colon,
+    :host-context(.dark-theme) .time-dropdown,
+    :host-context(.dark-theme) .note-text-input,
+    :host-context(.dark-theme) .section-title,
+    :host-context(.dark-theme) .slot-time,
+    :host-context(.dark-theme) .empty-title {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .preset-time,
+    :host-context(.dark-theme) .time-lbl,
+    :host-context(.dark-theme) .time-arrow-divider,
+    :host-context(.dark-theme) .checkbox-container,
+    :host-context(.dark-theme) .note-lbl,
+    :host-context(.dark-theme) .slot-note,
+    :host-context(.dark-theme) .empty-subtitle {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .select-time-wrapper,
+    :host-context(.dark-theme) .note-text-input {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .note-text-input:focus {
+      border-color: #CD1A21 !important;
+      background-color: #121214 !important;
+    }
+    :host-context(.dark-theme) .slots-count-badge {
+      background-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .time-dropdown option {
+      background-color: #1E1E24 !important;
+      color: #ECEFF1 !important;
+    }
+
     * {
       -webkit-tap-highlight-color: transparent !important;
       outline: none !important;
