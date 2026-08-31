@@ -41,7 +41,9 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   void _initWebViewController() {
     final token = ref.read(authProvider).token ?? '';
     final shift = ref.read(shiftProvider);
-    final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard';
+    final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
+    final themeStr = isDark ? 'dark' : 'light';
+    final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
 
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -170,7 +172,9 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       if (previous?.status != next.status) {
         try {
           final token = ref.read(authProvider).token ?? '';
-          final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${next.status.name}#/dashboard';
+          final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
+          final themeStr = isDark ? 'dark' : 'light';
+          final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${next.status.name}#/dashboard';
           _controller?.loadRequest(Uri.parse(url));
         } catch (e) {
           debugPrint("[Dashboard] WebView shift change reload error: $e");
@@ -185,10 +189,27 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
         try {
           final token = next.token ?? '';
           final shift = ref.read(shiftProvider);
-          final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard';
+          final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
+          final themeStr = isDark ? 'dark' : 'light';
+          final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
           _controller?.loadRequest(Uri.parse(url));
         } catch (e) {
           debugPrint("[Dashboard] WebView auth change reload error: $e");
+        }
+      }
+    });
+
+    // Listen for theme changes to reload the WebView with the correct theme parameter
+    ref.listen(themeModeProvider, (previous, next) {
+      if (previous != next) {
+        try {
+          final token = ref.read(authProvider).token ?? '';
+          final shift = ref.read(shiftProvider);
+          final themeStr = next == ThemeMode.dark ? 'dark' : 'light';
+          final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
+          _controller?.loadRequest(Uri.parse(url));
+        } catch (e) {
+          debugPrint("[Dashboard] WebView theme change reload error: $e");
         }
       }
     });
@@ -223,7 +244,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       ),
       body: RefreshIndicator(
         color: AppTheme.primaryRed,
-        backgroundColor: Colors.white,
+        backgroundColor: ref.watch(themeModeProvider) == ThemeMode.dark ? AppTheme.darkSurface : Colors.white,
         onRefresh: () async {
           if (_controller != null) {
             await _controller!.reload();
