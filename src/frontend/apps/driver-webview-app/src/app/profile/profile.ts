@@ -279,6 +279,50 @@ interface DriverDoc {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .material-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .doc-row-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    }
+    :host-context(.dark-theme) .color-palette-tag {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .color-tag-hex {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .compliance-progress-bar {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .info-divider {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .empty-badge {
+      background-color: #2D2D35 !important;
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .preview-modal-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .preview-header,
+    :host-context(.dark-theme) .preview-footer {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .close-btn {
+      color: #ECEFF1 !important;
+      border-color: #2D2D35 !important;
+    }
+
     .material-container {
       padding: 16px;
       background-color: var(--background-color);
