@@ -806,6 +806,7 @@ export interface DashTotals {
       font-weight: 700;
       color: #546E7A;
       margin-top: 8px;
+      white-space: nowrap;
     }
 
     /* Quick Jump Grid */
