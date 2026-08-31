@@ -272,15 +272,19 @@ interface DashTotals {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .trip-desc,
-    :host-context(.dark-theme) .trip-fare,
     :host-context(.dark-theme) .section-title,
-    :host-context(.dark-theme) .count-num,
     :host-context(.dark-theme) .gauge-earnings-value,
-    :host-context(.dark-theme) .gauge-jobs-count,
     :host-context(.dark-theme) .sim-title,
     :host-context(.dark-theme) .sim-btn {
       color: #ECEFF1 !important;
     }
+    :host-context(.dark-theme) .count-num.green { color: #81C784 !important; }
+    :host-context(.dark-theme) .count-num.blue { color: #64B5F6 !important; }
+    :host-context(.dark-theme) .count-num.red { color: #E57373 !important; }
+    :host-context(.dark-theme) .trip-fare { color: #81C784 !important; }
+    :host-context(.dark-theme) .active-fare { color: #81C784 !important; }
+    :host-context(.dark-theme) .gauge-jobs-count { color: #E57373 !important; }
+    :host-context(.dark-theme) .check-icon { color: #81C784 !important; }
     :host-context(.dark-theme) .trip-time,
     :host-context(.dark-theme) .count-lbl,
     :host-context(.dark-theme) .gauge-filter-label,
