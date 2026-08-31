@@ -257,116 +257,123 @@ class _MainShellState extends ConsumerState<MainShell> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Custom Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 64, 24, 24),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.primaryRed, AppTheme.primaryDarkRed],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(32),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Custom Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(24, 64, 24, 24),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppTheme.primaryRed, AppTheme.primaryDarkRed],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'D',
-                      style: const TextStyle(
-                        fontSize: 26.0,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.primaryRed,
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(32),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  name.toUpperCase(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  email,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Verified Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.verified, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'Verified Driver',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'D',
+                              style: const TextStyle(
+                                fontSize: 26.0,
+                                fontWeight: FontWeight.w900,
+                                color: AppTheme.primaryRed,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          name.toUpperCase(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Verified Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified, color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'Verified Driver',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  
+                  // Drawer tab list options
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      children: [
+                        _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', activeIndex),
+                        _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings', activeIndex),
+                        _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile', activeIndex),
+                        _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability', activeIndex),
+                        _buildDrawerItem(4, Icons.receipt_long_outlined, Icons.receipt_long, 'My Expenses', activeIndex),
+                        _buildDrawerItem(5, Icons.add_circle_outline, Icons.add_circle, 'Rank Pickup', activeIndex),
+                        _buildDrawerItem(6, Icons.bar_chart_outlined, Icons.bar_chart, 'Reports & Statements', activeIndex),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          
-          // Drawer tab list options
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: [
-                _buildDrawerItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', activeIndex),
-                _buildDrawerItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'My Bookings', activeIndex),
-                _buildDrawerItem(2, Icons.person_outline, Icons.person, 'My Profile', activeIndex),
-                _buildDrawerItem(3, Icons.event_available_outlined, Icons.event_available, 'Weekly Availability', activeIndex),
-                _buildDrawerItem(4, Icons.receipt_long_outlined, Icons.receipt_long, 'My Expenses', activeIndex),
-                _buildDrawerItem(5, Icons.add_circle_outline, Icons.add_circle, 'Rank Pickup', activeIndex),
-                _buildDrawerItem(6, Icons.bar_chart_outlined, Icons.bar_chart, 'Reports & Statements', activeIndex),
-              ],
-            ),
-          ),
-          
-          const Spacer(),
           
           // Sign Out Button Card at bottom
           Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
             child: OutlinedButton.icon(
               icon: const Icon(Icons.logout_outlined, size: 18),
               label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),

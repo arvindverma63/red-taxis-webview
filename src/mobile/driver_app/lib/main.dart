@@ -7,6 +7,7 @@ import 'package:driver_app/core/notifications/notification_handler.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/auth/presentation/login_screen.dart';
+import 'package:driver_app/features/splash/presentation/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -161,8 +162,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/splash',
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/',
         builder: (context, state) => const MainShell(),
@@ -175,6 +180,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoggedIn = authState.status == AuthStatus.authenticated;
       final isLoggingIn = state.matchedLocation == '/login';
+      final isSplash = state.matchedLocation == '/splash';
+
+      if (isSplash) {
+        return null;
+      }
 
       if (authState.status == AuthStatus.authenticating) {
         return null;
