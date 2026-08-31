@@ -43,7 +43,9 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
   final _dio = Dio(BaseOptions(
     baseUrl: 'https://staging-api.redtaxi.co.uk',
     connectTimeout: const Duration(seconds: 10),

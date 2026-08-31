@@ -14,19 +14,23 @@ enum ShiftStatus { offline, online }
 class ShiftState {
   final ShiftStatus status;
   final DateTime? startTime;
+  final bool isLoading;
 
   const ShiftState({
     required this.status,
     this.startTime,
+    this.isLoading = false,
   });
 
   ShiftState copyWith({
     ShiftStatus? status,
     DateTime? startTime,
+    bool? isLoading,
   }) {
     return ShiftState(
       status: status ?? this.status,
       startTime: startTime ?? this.startTime,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 }
@@ -36,7 +40,9 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
   StreamSubscription<Position>? _locationSubscription;
   final _locationService = LocationService();
   DateTime? _lastGpsSendTime;
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   final _dio = Dio(BaseOptions(
     baseUrl: 'https://staging-api.redtaxi.co.uk',
@@ -76,8 +82,8 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
           startTime: startTime ?? DateTime.now(),
         );
 
-        final hasPermission = await _locationService.checkPermissions();
-        if (hasPermission) {
+        final permResult = await _locationService.checkPermissions();
+        if (permResult == LocationPermissionResult.granted) {
           _locationSubscription?.cancel();
           _locationSubscription = _locationService.getLocationStream().listen((position) {
             _sendGpsUpdate(position);
@@ -99,14 +105,52 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     return '$year-$month-$day $hour:$minute:$second';
   }
 
-  Future<void> goOnline() async {
-    final auth = _ref.read(authProvider);
-    final userId = auth.userId ?? 65;
-    final token = auth.token;
-    final shiftDate = _formatDateTime(DateTime.now());
+  Future<LocationPermissionResult> goOnline() async {
+    if (state.isLoading) return LocationPermissionResult.granted;
+    state = state.copyWith(isLoading: true);
 
     try {
-      await _dio.get(
+      // 1. Verify location service and permissions first
+      final permResult = await _locationService.checkPermissions();
+      if (permResult != LocationPermissionResult.granted) {
+        return permResult;
+      }
+
+      // 2. Start location tracking locally
+      try {
+        _locationSubscription?.cancel();
+        _locationSubscription = _locationService.getLocationStream().listen(
+          (position) {
+            _sendGpsUpdate(position);
+          },
+          onError: (err) {
+            debugPrint("[ShiftNotifier] Location stream error: $err");
+          },
+        );
+      } catch (e) {
+        debugPrint("[ShiftNotifier] Location stream setup error: $e");
+      }
+
+      // 3. Update state and local storage immediately (Optimistic UI Update)
+      state = ShiftState(
+        status: ShiftStatus.online,
+        startTime: DateTime.now(),
+        isLoading: false,
+      );
+      try {
+        await _storage.write(key: 'shift_online', value: 'true');
+        await _storage.write(key: 'shift_start_time', value: state.startTime.toString());
+      } catch (storageErr) {
+        debugPrint("[ShiftNotifier] Storage write error in goOnline: $storageErr");
+      }
+
+      // 4. Dispatch the API call in the background
+      final auth = _ref.read(authProvider);
+      final userId = auth.userId ?? 65;
+      final token = auth.token;
+      final shiftDate = _formatDateTime(DateTime.now());
+
+      _dio.get(
         '/api/DriverApp/DriverShift',
         queryParameters: {
           'userid': userId,
@@ -116,36 +160,45 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : null,
         ),
-      );
-    } catch (e) {
-      // Proceed locally even if API call fails
-    }
-
-    // Start location tracking
-    final hasPermission = await _locationService.checkPermissions();
-    if (hasPermission) {
-      _locationSubscription?.cancel();
-      _locationSubscription = _locationService.getLocationStream().listen((position) {
-        _sendGpsUpdate(position);
+      ).then((_) {
+        debugPrint("[ShiftNotifier] GoOnline API success");
+      }).catchError((e) {
+        debugPrint("[ShiftNotifier] GoOnline API background error: $e");
       });
-    }
 
-    state = ShiftState(
-      status: ShiftStatus.online,
-      startTime: DateTime.now(),
-    );
-    await _storage.write(key: 'shift_online', value: 'true');
-    await _storage.write(key: 'shift_start_time', value: state.startTime.toString());
+      return LocationPermissionResult.granted;
+    } finally {
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+      }
+    }
   }
 
   Future<void> goOffline() async {
-    final auth = _ref.read(authProvider);
-    final userId = auth.userId ?? 65;
-    final token = auth.token;
-    final shiftDate = _formatDateTime(DateTime.now());
+    if (state.isLoading) return;
+    state = state.copyWith(isLoading: true);
 
     try {
-      await _dio.get(
+      // 1. Immediately cancel location tracking locally
+      _locationSubscription?.cancel();
+      _locationSubscription = null;
+
+      // 2. Update state and local storage immediately (Optimistic UI Update)
+      state = const ShiftState(status: ShiftStatus.offline, isLoading: false);
+      try {
+        await _storage.write(key: 'shift_online', value: 'false');
+        await _storage.delete(key: 'shift_start_time');
+      } catch (storageErr) {
+        debugPrint("[ShiftNotifier] Storage write error in goOffline: $storageErr");
+      }
+
+      // 3. Dispatch the API call in the background
+      final auth = _ref.read(authProvider);
+      final userId = auth.userId ?? 65;
+      final token = auth.token;
+      final shiftDate = _formatDateTime(DateTime.now());
+
+      _dio.get(
         '/api/DriverApp/DriverShift',
         queryParameters: {
           'userid': userId,
@@ -155,17 +208,16 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         options: Options(
           headers: token != null ? {'Authorization': 'Bearer $token'} : null,
         ),
-      );
-    } catch (e) {
-      // Proceed locally
+      ).then((_) {
+        debugPrint("[ShiftNotifier] GoOffline API success");
+      }).catchError((e) {
+        debugPrint("[ShiftNotifier] GoOffline API background error: $e");
+      });
+    } finally {
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+      }
     }
-
-    _locationSubscription?.cancel();
-    _locationSubscription = null;
-
-    state = const ShiftState(status: ShiftStatus.offline);
-    await _storage.write(key: 'shift_online', value: 'false');
-    await _storage.delete(key: 'shift_start_time');
   }
 
   Future<void> _sendGpsUpdate(Position position) async {

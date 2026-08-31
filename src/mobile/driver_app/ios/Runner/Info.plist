@@ -70,5 +70,16 @@
 	<string>This app requires camera access to take compliance document scan photographs.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires photo library access to upload driver compliance documents.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>First Taxis requires precise location access to track trips and send nearby booking offers while active.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>First Taxis requires continuous precise background location access to track active bookings and receive jobs even when backgrounded.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>First Taxis requires continuous background location access to receive booking offers.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

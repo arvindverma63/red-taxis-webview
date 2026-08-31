@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -7,6 +8,8 @@ import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/trip/trip.dart';
+import 'package:driver_app/core/location/location.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/navigation/presentation/navigation_notifier.dart';
@@ -21,11 +24,18 @@ class DriverDashboardView extends ConsumerStatefulWidget {
 class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   WebViewController? _controller;
   bool _isLoading = true;
+  Timer? _locationTimer;
 
   @override
   void initState() {
     super.initState();
     _initWebViewController();
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
   }
 
   void _initWebViewController() {
@@ -158,9 +168,13 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
     // Listen for shift changes to keep the WebView URL synchronized reactively
     ref.listen(shiftProvider, (previous, next) {
       if (previous?.status != next.status) {
-        final token = ref.read(authProvider).token ?? '';
-        final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${next.status.name}#/dashboard';
-        _controller?.loadRequest(Uri.parse(url));
+        try {
+          final token = ref.read(authProvider).token ?? '';
+          final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${next.status.name}#/dashboard';
+          _controller?.loadRequest(Uri.parse(url));
+        } catch (e) {
+          debugPrint("[Dashboard] WebView shift change reload error: $e");
+        }
       }
     });
 
@@ -168,10 +182,14 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
     // to reload the WebView with the valid token
     ref.listen(authProvider, (previous, next) {
       if (previous?.token != next.token) {
-        final token = next.token ?? '';
-        final shift = ref.read(shiftProvider);
-        final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard';
-        _controller?.loadRequest(Uri.parse(url));
+        try {
+          final token = next.token ?? '';
+          final shift = ref.read(shiftProvider);
+          final url = '${AppConfig.webviewBaseUrl}/?token=$token&shiftStatus=${shift.status.name}#/dashboard';
+          _controller?.loadRequest(Uri.parse(url));
+        } catch (e) {
+          debugPrint("[Dashboard] WebView auth change reload error: $e");
+        }
       }
     });
 
@@ -286,25 +304,41 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                         ),
                         minimumSize: const Size.fromHeight(48),
                         elevation: 0,
+                        disabledBackgroundColor: isOnline ? Colors.grey[800]?.withOpacity(0.6) : AppTheme.primaryRed.withOpacity(0.6),
+                        disabledForegroundColor: Colors.white70,
                       ),
-                      onPressed: () {
-                        if (isOnline) {
-                          ref.read(shiftProvider.notifier).goOffline();
-                        } else {
-                          ref.read(shiftProvider.notifier).goOnline();
-                        }
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isOnline ? Icons.power_settings_new : Icons.play_arrow,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(isOnline ? 'Go Offline' : 'Go Online'),
-                        ],
-                      ),
+                      onPressed: shift.isLoading
+                          ? null
+                          : () async {
+                              if (isOnline) {
+                                ref.read(shiftProvider.notifier).goOffline();
+                              } else {
+                                final result = await ref.read(shiftProvider.notifier).goOnline();
+                                if (result != LocationPermissionResult.granted && context.mounted) {
+                                  _showLocationSettingsDialog(context, result);
+                                }
+                              }
+                            },
+                      child: shift.isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  isOnline ? Icons.power_settings_new : Icons.play_arrow,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(isOnline ? 'Go Offline' : 'Go Online'),
+                              ],
+                            ),
                     ),
                   ],
                 ),
@@ -313,13 +347,11 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
             // Thin Loading bar for WebView loading state
             if (_isLoading)
-              const Positioned(
-                child: SizedBox(
-                  height: 3,
-                  child: LinearProgressIndicator(
-                    color: AppTheme.primaryRed,
-                    backgroundColor: Colors.transparent,
-                  ),
+              const SizedBox(
+                height: 3,
+                child: LinearProgressIndicator(
+                  color: AppTheme.primaryRed,
+                  backgroundColor: Colors.transparent,
                 ),
               ),
 
@@ -332,6 +364,93 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showLocationSettingsDialog(BuildContext context, LocationPermissionResult result) {
+    String title;
+    String message;
+    bool isServiceDisabled = result == LocationPermissionResult.serviceDisabled;
+
+    if (isServiceDisabled) {
+      title = 'Location Services Disabled';
+      message = 'GPS location services are disabled on your device. Please enable location services to go online.';
+    } else {
+      title = 'Location Permission Required';
+      message = 'First Taxis requires precise background location permissions to receive booking offers. Please grant permission in settings.';
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return PopScope(
+          canPop: true,
+          onPopInvokedWithResult: (didPop, popResult) {
+            if (didPop) {
+              _locationTimer?.cancel();
+            }
+          },
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.location_off, color: AppTheme.primaryRed),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  _locationTimer?.cancel();
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryRed,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  if (isServiceDisabled) {
+                    Geolocator.openLocationSettings();
+                  } else {
+                    Geolocator.openAppSettings();
+                  }
+
+                  // 2-second periodic check loop to auto-verify settings changes
+                  _locationTimer?.cancel();
+                  _locationTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+                    final locService = LocationService();
+                    final checkResult = await locService.checkPermissions();
+                    if (checkResult == LocationPermissionResult.granted) {
+                      timer.cancel();
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop(); // Auto-dismiss dialog
+                      }
+                      ref.read(shiftProvider.notifier).goOnline(); // Auto-go online
+                    }
+                  });
+                },
+                child: Text(isServiceDisabled ? 'Open Settings' : 'App Settings'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
