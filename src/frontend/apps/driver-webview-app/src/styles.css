@@ -169,8 +169,6 @@ body {
   color: var(--text-primary) !important;
 }
 
-.dark-theme p,
-.dark-theme span:not(.native-spin-icon):not(.preset-icon):not(.mat-mdc-button-touch-target):not(.day-letter):not(.day-number),
 .dark-theme .chart-subtitle,
 .dark-theme .info-label,
 .dark-theme .bar-label,
