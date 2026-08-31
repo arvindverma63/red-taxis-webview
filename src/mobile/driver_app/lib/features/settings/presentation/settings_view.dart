@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/features/auth/auth.dart';
+import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -191,8 +192,14 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            MainShell.scaffoldKey.currentState?.openDrawer();
+          },
+        ),
         title: const Text('Settings'),
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
