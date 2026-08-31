@@ -256,6 +256,36 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
+    // Listen for theme changes to dynamically inject JavaScript and update the theme state instantly without reloading
+    ref.listen(themeModeProvider, (previous, next) {
+      if (previous != next) {
+        try {
+          final themeStr = next == ThemeMode.dark ? 'dark' : 'light';
+          final jsInject = """
+            (function() {
+              const theme = '$themeStr';
+              if (theme === 'dark') {
+                document.documentElement.classList.add('dark-theme');
+              } else {
+                document.documentElement.classList.remove('dark-theme');
+              }
+              localStorage.setItem('theme', theme);
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('theme', theme);
+                window.history.replaceState({}, '', url.toString());
+              } catch (e) {
+                console.error('Failed to update URL search params:', e);
+              }
+            })();
+          """;
+          _controller?.runJavaScript(jsInject);
+        } catch (e) {
+          debugPrint("[WebviewScreen] WebView theme change injection error: $e");
+        }
+      }
+    });
+
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
       appBar: widget.hideAppBar

@@ -199,17 +199,32 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       }
     });
 
-    // Listen for theme changes to reload the WebView with the correct theme parameter
+    // Listen for theme changes to dynamically inject JavaScript and update the theme state instantly without reloading
     ref.listen(themeModeProvider, (previous, next) {
       if (previous != next) {
         try {
-          final token = ref.read(authProvider).token ?? '';
-          final shift = ref.read(shiftProvider);
           final themeStr = next == ThemeMode.dark ? 'dark' : 'light';
-          final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
-          _controller?.loadRequest(Uri.parse(url));
+          final jsInject = """
+            (function() {
+              const theme = '$themeStr';
+              if (theme === 'dark') {
+                document.documentElement.classList.add('dark-theme');
+              } else {
+                document.documentElement.classList.remove('dark-theme');
+              }
+              localStorage.setItem('theme', theme);
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('theme', theme);
+                window.history.replaceState({}, '', url.toString());
+              } catch (e) {
+                console.error('Failed to update URL search params:', e);
+              }
+            })();
+          """;
+          _controller?.runJavaScript(jsInject);
         } catch (e) {
-          debugPrint("[Dashboard] WebView theme change reload error: $e");
+          debugPrint("[Dashboard] WebView theme change injection error: $e");
         }
       }
     });
