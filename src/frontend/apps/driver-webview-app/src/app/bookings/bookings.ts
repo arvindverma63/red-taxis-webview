@@ -430,6 +430,22 @@ interface Booking {
       background-color: #CD1A21 !important;
       color: #FFFFFF !important;
     }
+    :host-context(.dark-theme) .card-bottom {
+      background-color: #1E1E24 !important;
+      border-top: 1px solid #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .payment-badge {
+      background-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .node-icon {
+      background-color: #1E1E24 !important;
+    }
+    :host-context(.dark-theme) .empty-state {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
 
     .material-container {
       padding: 12px 14px 40px 14px;
