@@ -380,6 +380,95 @@ interface CategoryOption {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .expenses-container {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .stats-dashboard-card,
+    :host-context(.dark-theme) .form-card,
+    :host-context(.dark-theme) .expense-row-card,
+    :host-context(.dark-theme) .modal-card,
+    :host-context(.dark-theme) .receipt-preview-thumbnail-card,
+    :host-context(.dark-theme) .receipt-img-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .stat-box,
+    :host-context(.dark-theme) .attach-photo-btn,
+    :host-context(.dark-theme) .category-card {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .category-card:hover {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .category-card.selected {
+      background-color: #1E1E24 !important;
+      border-color: #E53935 !important;
+    }
+    :host-context(.dark-theme) .filter-pill {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .filter-pill.active {
+      background-color: #E53935 !important;
+      border-color: #E53935 !important;
+      color: #FFFFFF !important;
+    }
+    :host-context(.dark-theme) .form-input,
+    :host-context(.dark-theme) .form-textarea {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .form-input:focus,
+    :host-context(.dark-theme) .form-textarea:focus {
+      background-color: #121214 !important;
+      border-color: #E53935 !important;
+    }
+    :host-context(.dark-theme) .modal-header,
+    :host-context(.dark-theme) .modal-details-row {
+      border-bottom-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .divider,
+    :host-context(.dark-theme) .breakdown-progress-bar {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .cancel-btn {
+      border-color: #2D2D35 !important;
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .close-form-btn,
+    :host-context(.dark-theme) .modal-close-btn {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .total-claimed-val,
+    :host-context(.dark-theme) .category-name,
+    :host-context(.dark-theme) .expense-amount,
+    :host-context(.dark-theme) .form-heading,
+    :host-context(.dark-theme) .category-card-lbl,
+    :host-context(.dark-theme) .currency-symbol,
+    :host-context(.dark-theme) .modal-title,
+    :host-context(.dark-theme) .modal-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .total-claimed-lbl,
+    :host-context(.dark-theme) .stat-lbl,
+    :host-context(.dark-theme) .breakdown-info,
+    :host-context(.dark-theme) .breakdown-toggle-btn,
+    :host-context(.dark-theme) .toggle-arrow,
+    :host-context(.dark-theme) .desc-txt,
+    :host-context(.dark-theme) .form-lbl,
+    :host-context(.dark-theme) .modal-lbl,
+    :host-context(.dark-theme) .receipt-section-lbl {
+      color: #90A4AE !important;
+    }
+
     .expenses-container {
       padding: 16px 16px 96px 16px;
       background-color: #F8F9FA;

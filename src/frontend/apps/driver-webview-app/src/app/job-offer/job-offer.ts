@@ -184,6 +184,60 @@ interface JobDetails {
     </div>
   `,
   styles: [`
+    /* Dark Theme Support via :host-context */
+    :host-context(.dark-theme) .light-container {
+      background-color: #121214 !important;
+    }
+    :host-context(.dark-theme) .light-container::before {
+      background-color: rgba(18, 18, 20, 0.65) !important;
+    }
+    :host-context(.dark-theme) .bottom-sheet,
+    :host-context(.dark-theme) .details-card,
+    :host-context(.dark-theme) .status-overlay-card {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .sheet-grabber,
+    :host-context(.dark-theme) .timeline-line {
+      background-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .stub-notch {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .stub-dash {
+      border-top-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .notes-box,
+    :host-context(.dark-theme) .status-details-box {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .timeline-dot {
+      background-color: #1E1E24 !important;
+    }
+    :host-context(.dark-theme) .vehicle-badge {
+      background-color: #2D2D35 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .seconds-num,
+    :host-context(.dark-theme) .info-val,
+    :host-context(.dark-theme) .addr-text,
+    :host-context(.dark-theme) .status-title,
+    :host-context(.dark-theme) .status-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .seconds-lbl,
+    :host-context(.dark-theme) .info-lbl,
+    :host-context(.dark-theme) .addr-label,
+    :host-context(.dark-theme) .notes-txt,
+    :host-context(.dark-theme) .status-body,
+    :host-context(.dark-theme) .status-lbl {
+      color: #90A4AE !important;
+    }
+
     .light-container {
       position: relative;
       background: #ECEFF1 url('/map_bg.png') no-repeat center center;
