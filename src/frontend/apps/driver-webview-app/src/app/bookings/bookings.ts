@@ -446,6 +446,17 @@ interface Booking {
       background-color: #1E1E24 !important;
       border-color: #2D2D35 !important;
     }
+    :host-context(.dark-theme) .sheet-footer {
+      background-color: #1E1E24 !important;
+      border-top: 1px solid #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .slide-complete-track {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .slide-track-text {
+      color: #ECEFF1 !important;
+    }
 
     .material-container {
       padding: 12px 14px 40px 14px;
