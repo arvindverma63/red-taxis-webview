@@ -423,6 +423,10 @@ export interface DriverFleetAvailability {
     </div>
   `,
   styles: [`
+    * {
+      -webkit-tap-highlight-color: transparent !important;
+      outline: none !important;
+    }
     .availability-container {
       background-color: #F8F9FA;
       min-height: 100vh;
