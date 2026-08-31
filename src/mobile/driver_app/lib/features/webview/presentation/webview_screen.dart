@@ -54,6 +54,8 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         params = const PlatformWebViewControllerCreationParams();
       }
 
+      final isDarkInitial = ref.read(themeModeProvider) == ThemeMode.dark;
+
       final controller = WebViewController.fromPlatformCreationParams(
         params,
         onPermissionRequest: (WebViewPermissionRequest request) async {
@@ -67,7 +69,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         },
       )
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0xFFFFFFFF))
+        ..setBackgroundColor(isDarkInitial ? const Color(0xFF121214) : const Color(0xFFFFFFFF))
         ..enableZoom(false)
         ..clearCache()
         ..addJavaScriptChannel(
@@ -252,8 +254,10 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
       appBar: widget.hideAppBar
           ? null
           : AppBar(
@@ -340,30 +344,30 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         },
         child: RefreshIndicator(
           color: AppTheme.primaryRed,
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
           onRefresh: () async {
             if (_controller != null) {
               await _controller!.reload();
             }
           },
           child: kIsWeb
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.language, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
+                        const Icon(Icons.language, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text(
                           'Webview is not supported on Web',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           'Please run the Flutter app on an Android Emulator, iOS Simulator, or a physical mobile device to view this screen.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
                         ),
                       ],
                     ),
@@ -371,12 +375,12 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                 )
               : Stack(
                   children: [
-                    Container(color: Colors.white),
+                    Container(color: isDark ? AppTheme.darkBackground : Colors.white),
                     if (_controller != null) WebViewWidget(controller: _controller!),
                     if (_isLoading)
                       Positioned.fill(
                         child: Container(
-                          color: Colors.white,
+                          color: isDark ? AppTheme.darkBackground : Colors.white,
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: AppTheme.primaryRed,

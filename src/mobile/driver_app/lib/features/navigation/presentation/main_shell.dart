@@ -44,6 +44,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     final authState = ref.watch(authProvider);
     final navState = ref.watch(navigationProvider);
     final token = authState.token ?? '';
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final themeStr = isDark ? 'dark' : 'light';
 
     // If there is an active booking, overlay the corresponding trip screen
     if (tripState.status == TripStatus.offered && tripState.currentTrip != null) {
@@ -62,7 +64,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           }
         },
         child: DriverWebviewScreen(
-          url: '${AppConfig.webviewBaseUrl}/#/job-offer?token=$token&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
+          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
           title: 'New Job Offer',
           hideAppBar: true,
           onBack: () {
@@ -98,7 +100,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           }
         },
         child: DriverWebviewScreen(
-          url: '${AppConfig.webviewBaseUrl}/?token=$token#$prefix',
+          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#$prefix',
           title: navState.customTitle ?? 'Details',
           showBackButton: true,
           onBack: () {
@@ -153,12 +155,12 @@ class _MainShellState extends ConsumerState<MainShell> {
           index: navState.selectedIndex,
           children: [
             const DriverDashboardView(),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/bookings', title: 'My Bookings'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/profile', title: 'My Profile'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/availability', title: 'Weekly Availability'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/expenses', title: 'Expenses Log'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/create-booking', title: 'Rank Pickup'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token#/reports', title: 'Reports & Statements'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/bookings', title: 'My Bookings'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/profile', title: 'My Profile'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/availability', title: 'Weekly Availability'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/expenses', title: 'Expenses Log'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/create-booking', title: 'Rank Pickup'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/reports', title: 'Reports & Statements'),
             const SettingsView(),
           ],
         ),
@@ -169,18 +171,18 @@ class _MainShellState extends ConsumerState<MainShell> {
             child: Container(
               height: 66,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? AppTheme.darkSurface : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
                     blurRadius: 16,
                     spreadRadius: 1,
                     offset: const Offset(0, 4),
                   ),
                 ],
                 border: Border.all(
-                  color: Colors.grey.shade100,
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
                   width: 1,
                 ),
               ),
@@ -205,6 +207,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   Widget _buildNavItem(int index, IconData inactiveIcon, IconData activeIcon, String label, int activeIndex) {
     final isActive = activeIndex == index;
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     return GestureDetector(
       onTap: () {
         ref.read(navigationProvider.notifier).setTabIndex(index);
@@ -215,7 +218,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryRed.withValues(alpha: 0.08) : Colors.transparent,
+          color: isActive ? AppTheme.primaryRed.withValues(alpha: isDark ? 0.15 : 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -223,7 +226,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           children: [
             Icon(
               isActive ? activeIcon : inactiveIcon,
-              color: isActive ? AppTheme.primaryRed : Colors.grey[600],
+              color: isActive ? AppTheme.primaryRed : (isDark ? AppTheme.textDarkSecondary : Colors.grey[600]),
               size: 22,
             ),
             if (isActive) ...[
@@ -247,9 +250,10 @@ class _MainShellState extends ConsumerState<MainShell> {
     final authState = ref.watch(authProvider);
     final email = authState.email ?? 'Partner Driver';
     final name = email.contains('@') ? email.split('@')[0] : email;
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(32),
@@ -415,19 +419,20 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildDrawerItem(int index, IconData inactiveIcon, IconData activeIcon, String title, int activeIndex) {
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     final isActive = activeIndex == index;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
       child: ListTile(
         leading: Icon(
           isActive ? activeIcon : inactiveIcon,
-          color: isActive ? AppTheme.primaryRed : Colors.grey[700],
+          color: isActive ? AppTheme.primaryRed : (isDark ? AppTheme.textDarkSecondary : Colors.grey.shade600),
           size: 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isActive ? AppTheme.primaryRed : Colors.grey[800],
+            color: isActive ? AppTheme.primaryRed : (isDark ? AppTheme.textDarkPrimary : Colors.grey.shade800),
             fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
             fontSize: 14,
           ),
@@ -436,7 +441,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           borderRadius: BorderRadius.circular(14),
         ),
         selected: isActive,
-        selectedTileColor: AppTheme.primaryRed.withValues(alpha: 0.08),
+        selectedTileColor: AppTheme.primaryRed.withValues(alpha: isDark ? 0.15 : 0.08),
         onTap: () {
           ref.read(navigationProvider.notifier).setTabIndex(index);
           Navigator.of(context).pop();

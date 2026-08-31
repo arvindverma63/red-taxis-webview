@@ -9,6 +9,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var theme = urlParams.get('theme');
+      if (!theme && window.location.hash.includes('?')) {
+        var queryString = window.location.hash.split('?')[1];
+        theme = new URLSearchParams(queryString).get('theme');
+      }
+      if (!theme) {
+        theme = localStorage.getItem('theme');
+      }
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      } else {
+        document.documentElement.classList.remove('dark-theme');
+      }
+      if (theme) {
+        localStorage.setItem('theme', theme);
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

@@ -48,3 +48,103 @@ body {
   -webkit-tap-highlight-color: transparent !important;
   outline: none !important;
 }
+
+/* ================= DARK THEME VARIABLES ================= */
+.dark-theme {
+  --background-color: #121214 !important;
+  --surface-color: #1E1E24 !important;
+  --text-primary: #ECEFF1 !important;
+  --text-secondary: #90A4AE !important;
+  --border-color: #2D2D35 !important;
+}
+
+/* Scoped dark theme selector overrides */
+.dark-theme body {
+  background-color: var(--background-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Specific elements dark overrides to align with modern native dark palette */
+.dark-theme .reports-container,
+.dark-theme .availability-container,
+.dark-theme .bookings-container,
+.dark-theme .profile-container,
+.dark-theme .expenses-container,
+.dark-theme .create-booking-container,
+.dark-theme .active-trip-container,
+.dark-theme .modal-backdrop {
+  background-color: var(--background-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .floating-refresh-spinner,
+.dark-theme .week-nav-card,
+.dark-theme .overview-chart-card,
+.dark-theme .preset-section-card,
+.dark-theme .modal-card,
+.dark-theme .expense-card,
+.dark-theme .jump-card:not(.jump-earnings):not(.jump-statements) {
+  background: var(--surface-color) !important;
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme mat-card {
+  background-color: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Input elements inside dark theme */
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  background-color: var(--surface-color) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Text overrides */
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+.dark-theme .chart-title,
+.dark-theme .card-title-text,
+.dark-theme .info-val,
+.dark-theme .week-date-range,
+.dark-theme .section-title,
+.dark-theme .profile-name,
+.dark-theme .bar-value,
+.dark-theme .modal-header h3,
+.dark-theme .data-val {
+  color: var(--text-primary) !important;
+}
+
+.dark-theme p,
+.dark-theme span:not(.native-spin-icon):not(.preset-icon):not(.mat-mdc-button-touch-target),
+.dark-theme .chart-subtitle,
+.dark-theme .info-label,
+.dark-theme .bar-label,
+.dark-theme .text-secondary,
+.dark-theme .data-label {
+  color: var(--text-secondary) !important;
+}
+
+.dark-theme .view-segmented-bar,
+.dark-theme .mode-segmented-control {
+  background-color: #2D2D35 !important;
+}
+
+.dark-theme .segment-btn:not(.active),
+.dark-theme .mode-btn:not(.active) {
+  color: var(--text-secondary) !important;
+}
+
+.dark-theme .segment-btn.active,
+.dark-theme .mode-btn.active {
+  background-color: var(--surface-color) !important;
+  color: #E53935 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+}
