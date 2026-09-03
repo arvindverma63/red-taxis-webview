@@ -43,13 +43,21 @@ Here is the exact difference between **First-Time Setup** and **Everyday Login**
 ### Step 1: First-Time Setup (Done Only Once)
 When a driver installs and opens the app for the very first time, the app asks: *"Which taxi fleet do you drive for?"*
 
-<p align="center">
-  <img src="images/step1_fleet_setup.jpg" alt="Step 1: First-Time Fleet Setup Screen" width="300" style="border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);" />
-</p>
+<div align="center" style="display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin: 20px 0;">
+  <div style="text-align: center; max-width: 300px;">
+    <img src="images/step1_fleet_setup.jpg" alt="Option A: First-Time Fleet Setup Form" width="280" style="border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);" />
+    <p style="font-size: 13px; font-weight: bold; margin-top: 10px; color: #1e293b;">1. Tap "Scan Office QR Code"</p>
+  </div>
+  <div style="text-align: center; max-width: 300px;">
+    <img src="images/step1_qr_autofill.jpg" alt="Option B: Camera Scans & Auto-Fills Details" width="280" style="border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 2px solid #22c55e;" />
+    <p style="font-size: 13px; font-weight: bold; margin-top: 10px; color: #15803d;">2. Camera Scans & Auto-Fills Details!</p>
+  </div>
+</div>
 
-1. The driver enters their **Company ID** and **Fleet Key** (given to them by their office manager), or taps **Scan Office QR Code** with their camera.
-2. They tap **Connect to Fleet**.
-3. **That's it!** The app locks into their company, saves the configuration safely onto the phone, and updates the entire screen with the company's official logo and colors.
+1. **Option A (Manual Entry)**: The driver enters their **Company ID** (e.g. `org_first_taxis`) and **Fleet Key** given to them by their office manager.
+2. **Option B (Fastest! 1-Tap QR Scan)**: The driver taps **"Scan Office QR Code"** and points their phone camera at the onboarding sheet. The app instantly recognizes the fleet, shows a green checkmark, and **auto-fills all fields automatically**!
+3. The driver taps **Connect to Fleet** (or **Auto-Fill & Connect**).
+4. **That's it!** The app locks into their company, saves the configuration safely into the phone's secure storage, and transforms the entire screen with the company's official logo and colors.
 
 ---
 

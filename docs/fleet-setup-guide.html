@@ -129,55 +129,95 @@
       </div>
 
       <!-- ================= SLIDE 2: FIRST-TIME SETUP ================= -->
-      <div id="slide-1" class="slide-content p-6 sm:p-10 flex-1 flex flex-col justify-between hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center flex-1">
-          <div class="lg:col-span-7 space-y-4">
+      <div id="slide-1" class="slide-content p-6 sm:p-8 flex-1 flex flex-col justify-between hidden overflow-y-auto">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-red-100 text-red-700">Slide 2 • Step 1</span>
               <span class="text-xs font-bold text-slate-600">First-Time Setup (Done Once Only)</span>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Connecting to Your Taxi Fleet
-            </h2>
-            <p class="text-slate-600 text-sm leading-relaxed">
-              When you install and open the app for the very first time, it asks which company you drive for.
-            </p>
-
-            <div class="space-y-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700">
-              <div class="flex items-start gap-2.5">
-                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">check_circle</span>
-                <div>
-                  <strong class="text-slate-900 block font-semibold">1. Enter Company ID & Fleet Key</strong>
-                  <span class="text-slate-600">Type the fleet ID (e.g. <code class="font-mono text-red-700 bg-white px-1 border rounded">org_first_taxis</code>) and secret key given by your office.</span>
-                </div>
-              </div>
-              <div class="flex items-start gap-2.5">
-                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">qr_code_scanner</span>
-                <div>
-                  <strong class="text-slate-900 block font-semibold">2. Or Scan Office QR Code</strong>
-                  <span class="text-slate-600">Tap the QR button to scan your onboarding sheet for 2-second instant connection.</span>
-                </div>
-              </div>
-              <div class="flex items-start gap-2.5">
-                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">lock</span>
-                <div>
-                  <strong class="text-slate-900 block font-semibold">3. Saved Permanently</strong>
-                  <span class="text-slate-600">Credentials and company colors are saved safely in your phone's secure memory.</span>
-                </div>
-              </div>
+            <!-- View Mode Switcher -->
+            <div class="hidden sm:flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
+              <button onclick="setSlide2View('both')" id="s2-btn-both" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-sm transition">Show Both Steps</button>
+              <button onclick="setSlide2View('form')" id="s2-btn-form" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition">1. Setup Form</button>
+              <button onclick="setSlide2View('qr')" id="s2-btn-qr" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition">2. QR Scan Auto-Fill</button>
             </div>
           </div>
 
-          <div class="lg:col-span-5 flex justify-center">
-            <div class="p-2 bg-slate-50 border border-slate-200 rounded-2xl shadow-md">
-              <img src="images/step1_fleet_setup.jpg" alt="First-time setup screen" class="h-64 sm:h-80 w-auto rounded-xl object-contain shadow" />
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <!-- Left Column: Explanation & Checklist -->
+            <div class="lg:col-span-5 space-y-3 text-xs text-slate-700">
+              <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                Connecting to Your Taxi Fleet
+              </h2>
+              <p class="text-slate-600 text-xs leading-relaxed">
+                When you install and open the app for the very first time, choose between typing manually or scanning the office QR code:
+              </p>
+
+              <div class="space-y-2.5 bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
+                <div class="flex items-start gap-2.5">
+                  <span class="material-symbols-outlined text-emerald-600 text-base shrink-0 mt-0.5">keyboard</span>
+                  <div>
+                    <strong class="text-slate-900 block font-semibold text-xs">Option A: Manual Entry</strong>
+                    <span class="text-slate-600 text-[11px]">Type Company ID (e.g. <code class="font-mono text-red-700 bg-white px-1 border rounded">org_first_taxis</code>) & Key.</span>
+                  </div>
+                </div>
+
+                <div class="flex items-start gap-2.5 p-2 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                  <span class="material-symbols-outlined text-emerald-700 text-lg shrink-0 mt-0.5">qr_code_scanner</span>
+                  <div>
+                    <strong class="text-emerald-900 block font-bold text-xs">Option B (Fastest): 1-Tap QR Scan</strong>
+                    <span class="text-emerald-800 text-[11px] leading-tight block mt-0.5">
+                      Tap <strong>"Scan Office QR Code"</strong> and point your camera at the office paper. The app instantly detects your fleet and <strong>auto-fills all fields</strong>!
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-start gap-2.5">
+                  <span class="material-symbols-outlined text-emerald-600 text-base shrink-0 mt-0.5">lock</span>
+                  <div>
+                    <strong class="text-slate-900 block font-semibold text-xs">Saved Permanently in Phone Memory</strong>
+                    <span class="text-slate-600 text-[11px]">Credentials and branding stay saved. You never have to repeat this step!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Visual Mockup Showcase (Both Phones Side-by-Side) -->
+            <div class="lg:col-span-7 flex items-center justify-center gap-3 sm:gap-4">
+              <!-- Phone 1: Setup Screen -->
+              <div id="phone-setup-wrapper" class="flex flex-col items-center">
+                <div class="p-1.5 bg-slate-50 border border-slate-200 rounded-2xl shadow-md hover:shadow-lg transition">
+                  <img src="images/step1_fleet_setup.jpg" alt="First-time setup screen" class="h-60 sm:h-72 w-auto rounded-xl object-contain" />
+                </div>
+                <span class="mt-2 text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">
+                  1. Tap "Scan QR Code"
+                </span>
+              </div>
+
+              <!-- Transition Arrow -->
+              <div id="phone-arrow" class="hidden sm:flex flex-col items-center justify-center text-emerald-600 shrink-0">
+                <span class="material-symbols-outlined text-2xl font-bold">arrow_forward</span>
+                <span class="text-[9px] font-extrabold uppercase tracking-widest text-emerald-700">Auto-Fills</span>
+              </div>
+
+              <!-- Phone 2: QR Scanner with Auto-Fill -->
+              <div id="phone-qr-wrapper" class="flex flex-col items-center">
+                <div class="p-1.5 bg-emerald-50/50 border-2 border-emerald-400 rounded-2xl shadow-md shadow-emerald-500/10 hover:shadow-lg transition">
+                  <img src="images/step1_qr_autofill.jpg" alt="QR code camera scanner with auto-fill preview" class="h-60 sm:h-72 w-auto rounded-xl object-contain" />
+                </div>
+                <span class="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">check_circle</span>
+                  2. Scans & Auto-Fills Details!
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
           <span>Done only once upon first installation</span>
-          <span class="font-semibold text-slate-700">Next: Everyday Driver Login</span>
+          <span class="font-semibold text-slate-700">Next: Everyday Driver Login ➔</span>
         </div>
       </div>
 
@@ -464,6 +504,41 @@
       if (e.key === 'ArrowRight') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
     });
+
+    function setSlide2View(mode) {
+      const p1 = document.getElementById('phone-setup-wrapper');
+      const arrow = document.getElementById('phone-arrow');
+      const p2 = document.getElementById('phone-qr-wrapper');
+      const btnBoth = document.getElementById('s2-btn-both');
+      const btnForm = document.getElementById('s2-btn-form');
+      const btnQr = document.getElementById('s2-btn-qr');
+
+      [btnBoth, btnForm, btnQr].forEach(b => {
+        if (b) {
+          b.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+
+      if (mode === 'both') {
+        p1?.classList.remove('hidden');
+        arrow?.classList.remove('hidden');
+        p2?.classList.remove('hidden');
+        btnBoth?.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        btnBoth?.classList.remove('text-slate-600');
+      } else if (mode === 'form') {
+        p1?.classList.remove('hidden');
+        arrow?.classList.add('hidden');
+        p2?.classList.add('hidden');
+        btnForm?.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        btnForm?.classList.remove('text-slate-600');
+      } else if (mode === 'qr') {
+        p1?.classList.add('hidden');
+        arrow?.classList.add('hidden');
+        p2?.classList.remove('hidden');
+        btnQr?.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        btnQr?.classList.remove('text-slate-600');
+      }
+    }
 
     // Initialize
     updateView();
