@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>First Taxis • Multi-Tenant & Fleet Branding Documentation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+              800: '#991b1b',
+              900: '#7f1d1d',
+              primary: '#CD1A21'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Outfit', '-apple-system', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .callout {
+      border-left-width: 4px;
+    }
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="h-full bg-white text-slate-700 antialiased font-sans selection:bg-red-100 selection:text-red-800">
+
+  <!-- TOP APPBAR NAVIGATION (MINTLIFY / STRIPE STYLE) -->
+  <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
+    <div class="max-w-8xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      
+      <!-- Brand & Version -->
+      <div class="flex items-center gap-4">
+        <!-- Mobile Menu Trigger -->
+        <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+          <span class="material-symbols-outlined text-2xl">menu</span>
+        </button>
+
+        <a href="#" class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-red-800 text-white shadow-sm shadow-red-500/30">
+            <span class="material-symbols-outlined text-xl">local_taxi</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-black tracking-wide text-slate-900 text-base">FIRST TAXIS</span>
+              <span class="rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 border border-red-200">DOCS</span>
+            </div>
+            <p class="text-[10px] text-slate-600 font-semibold tracking-wider uppercase">Multi-Tenant Fleet Architecture</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Quick Search Bar (Mintlify Style) -->
+      <div class="hidden sm:flex flex-1 max-w-md mx-8">
+        <div class="relative w-full">
+          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <span class="material-symbols-outlined text-lg">search</span>
+          </div>
+          <input 
+            type="text" 
+            id="doc-search" 
+            placeholder="Search documentation, APIs, schemas (Press / to focus)..." 
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-12 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-red-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-600 transition"
+            oninput="handleSearch(this.value)"
+          />
+          <div class="absolute inset-y-0 right-0 flex items-center pr-2.5">
+            <kbd class="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 shadow-sm">/</kbd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions & External Links -->
+      <div class="flex items-center gap-3">
+        <span class="hidden md:inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          v2.0 Ready
+        </span>
+        <button onclick="window.print()" title="Print Documentation" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition">
+          <span class="material-symbols-outlined text-xl">print</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN DOCUMENTATION CONTAINER (3-COLUMN LAYOUT) -->
+  <div class="max-w-8xl mx-auto flex px-4 sm:px-6 lg:px-8">
+
+    <!-- LEFT SIDEBAR: NAVIGATION -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 top-16 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white lg:sticky lg:flex lg:h-[calc(100vh-4rem)] lg:py-6 overflow-y-auto px-4">
+      <nav class="space-y-7 text-xs font-medium">
+        
+        <!-- Section: Overview -->
+        <div>
+          <h5 class="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-900">Getting Started</h5>
+          <ul class="space-y-1">
+            <li>
+              <a href="#overview" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-red-600 bg-red-50/80 font-bold">
+                <span class="material-symbols-outlined text-base">rocket_launch</span>
+                <span>Overview & Purpose</span>
+              </a>
+            </li>
+            <li>
+              <a href="#how-it-works" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">sync_alt</span>
+                <span>The 3-Step Lifecycle</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section: Driver Journey -->
+        <div>
+          <h5 class="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-900">Driver Experience</h5>
+          <ul class="space-y-1">
+            <li>
+              <a href="#step1" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">pin</span>
+                <span>Step 1: First-Time Setup</span>
+              </a>
+            </li>
+            <li>
+              <a href="#step2" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">login</span>
+                <span>Step 2: Everyday Login</span>
+              </a>
+            </li>
+            <li>
+              <a href="#step3" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">settings</span>
+                <span>Step 3: Change in Settings</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section: Technical Architecture -->
+        <div>
+          <h5 class="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-900">Backend API Contracts</h5>
+          <ul class="space-y-1">
+            <li>
+              <a href="#api-login" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">api</span>
+                <span>POST /api/UserProfile/Login</span>
+              </a>
+            </li>
+            <li>
+              <a href="#api-resolve" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">travel_explore</span>
+                <span>POST /api/Tenant/Resolve</span>
+              </a>
+            </li>
+            <li>
+              <a href="#db-schema" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">database</span>
+                <span>Database Tables (SQL)</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section: Client Architecture -->
+        <div>
+          <h5 class="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-900">Client Engine</h5>
+          <ul class="space-y-1">
+            <li>
+              <a href="#flutter-storage" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">phone_android</span>
+                <span>Flutter Secure Storage</span>
+              </a>
+            </li>
+            <li>
+              <a href="#angular-reskin" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">css</span>
+                <span>Angular CSS Variables</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section: FAQ & Help -->
+        <div>
+          <h5 class="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-900">Reference</h5>
+          <ul class="space-y-1">
+            <li>
+              <a href="#faq" class="nav-item flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold">
+                <span class="material-symbols-outlined text-base">quiz</span>
+                <span>FAQ & Troubleshooting</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </nav>
+    </aside>
+
+    <!-- CENTER CONTENT AREA -->
+    <main class="min-w-0 flex-1 py-8 lg:py-10 lg:pl-10 lg:pr-8">
+      
+      <!-- BREADCRUMBS -->
+      <nav class="flex items-center gap-1.5 text-xs text-slate-600 font-medium mb-4">
+        <a href="#" class="hover:text-slate-900">Documentation</a>
+        <span class="material-symbols-outlined text-xs text-slate-400">chevron_right</span>
+        <span class="text-slate-600">Architecture</span>
+        <span class="material-symbols-outlined text-xs text-slate-400">chevron_right</span>
+        <span class="font-semibold text-slate-900">Multi-Tenant Dynamic Reskinning</span>
+      </nav>
+
+      <!-- HERO ARTICLE HEADER -->
+      <div class="border-b border-slate-200 pb-8 mb-10">
+        <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+          Multi-Tenant Authentication & Dynamic Fleet Branding
+        </h1>
+        <p class="mt-3 text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl">
+          Learn how the First Taxis platform eliminates hardcoded configuration files, enabling a single mobile application build to dynamically rebrand its logos, colors, and titles for any partner taxi company.
+        </p>
+      </div>
+
+      <!-- SECTION: OVERVIEW -->
+      <section id="overview" class="mb-14 scroll-mt-20">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2.5">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-700 text-sm">01</span>
+          Executive Overview
+        </h2>
+        <p class="text-sm leading-relaxed text-slate-700 mb-4">
+          Historically, taxi driver applications required individual application builds or static configuration constants (e.g. <code class="px-1.5 py-0.5 rounded bg-slate-100 text-red-700 font-mono text-xs">defaultTenantId = 'org_ace_taxis'</code> in <code class="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-xs">constants.dart</code>) to identify the fleet organization. This created operational bottlenecks and prevented white-label deployment.
+        </p>
+
+        <!-- GitHub / Mintlify Style Callout Alert -->
+        <div class="callout bg-red-50/50 border-red-600 rounded-r-xl p-4 my-6 text-sm text-slate-800">
+          <div class="flex items-center gap-2 font-bold text-red-900 mb-1">
+            <span class="material-symbols-outlined text-red-600 text-lg">lightbulb</span>
+            The Core Architectural Philosophy
+          </div>
+          <p class="text-slate-700 text-xs leading-relaxed">
+            <strong>One Binary to Rule Them All:</strong> The app store distributes a single mobile build. When the driver opens the app, they connect once with their <strong>Tenant ID</strong> and <strong>Tenant Key</strong>. The server returns full branding metadata (logos, gradients, color tokens), which transforms the app instantly and permanently on the user's device.
+          </p>
+        </div>
+      </section>
+
+      <!-- SECTION: THE 3-STEP LIFECYCLE -->
+      <section id="how-it-works" class="mb-14 scroll-mt-20">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2.5">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-700 text-sm">02</span>
+          The 3-Step Driver Lifecycle
+        </h2>
+        <p class="text-sm leading-relaxed text-slate-700 mb-8">
+          The user experience is split into three deliberate states: one-time setup, everyday 2-field login, and in-app settings management.
+        </p>
+
+        <!-- STEP 1 CARD -->
+        <div id="step1" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 mb-8 scroll-mt-24">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-800">Step 1 • Initial Onboarding</span>
+            <span class="text-xs text-slate-600 font-semibold">Done Only Once</span>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div class="lg:col-span-7 space-y-3 text-sm text-slate-700">
+              <h3 class="text-xl font-bold text-slate-900">First-Time Setup (One-Time Prompt)</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                When a driver opens the freshly installed app, the device checks local secure storage for an existing <code class="font-mono text-xs bg-white px-1 border rounded">tenant_id</code>. If none is found, the onboarding modal appears:
+              </p>
+              <ul class="text-xs space-y-2 text-slate-700">
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-base flex-shrink-0">check_circle</span>
+                  <span><strong>Company ID:</strong> The fleet slug (e.g., <code class="font-mono text-red-700 bg-white px-1 border rounded">org_first_taxis</code>).</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-base flex-shrink-0">check_circle</span>
+                  <span><strong>Fleet Access Key:</strong> The fleet authentication secret key (<code class="font-mono bg-white px-1 border rounded">tk_live_...</code>).</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-base flex-shrink-0">qr_code_scanner</span>
+                  <span><strong>Instant QR Scanning:</strong> Drivers can scan an onboarding QR code from dispatch to auto-fill both credentials.</span>
+                </li>
+              </ul>
+              <div class="pt-2">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+                  <span class="material-symbols-outlined text-sm text-emerald-600">verified</span>
+                  Validated against <code class="font-mono text-red-600">POST /api/Tenant/Resolve</code>
+                </span>
+              </div>
+            </div>
+            <div class="lg:col-span-5 flex justify-center">
+              <img src="images/step1_fleet_setup.jpg" alt="First-Time Fleet Setup UI" class="w-56 sm:w-64 rounded-xl shadow-lg border border-slate-200 hover:scale-105 transition duration-300" />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 CARD -->
+        <div id="step2" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 mb-8 scroll-mt-24">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">Step 2 • Daily Operations</span>
+            <span class="text-xs text-slate-600 font-semibold">Subsequent Logins & Post-Logout</span>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div class="lg:col-span-7 space-y-3 text-sm text-slate-700">
+              <h3 class="text-xl font-bold text-slate-900">Everyday Work (Clean & Simple)</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Once saved locally, subsequent app launches and sign-out states <strong>never ask for the Tenant ID or Key again</strong>:
+              </p>
+              <ul class="text-xs space-y-2 text-slate-700">
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-base flex-shrink-0">check_circle</span>
+                  <span><strong>Only 2 Inputs:</strong> The form renders with strictly <strong>Driver Username</strong> and <strong>Password</strong>.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-base flex-shrink-0">check_circle</span>
+                  <span><strong>Zero Flicker Branding:</strong> Logo, curved crimson header, and app title are loaded from cached secure storage on the very first frame.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-base flex-shrink-0">check_circle</span>
+                  <span><strong>Auto-Injection:</strong> When the driver submits, <code class="font-mono text-xs bg-white px-1 border rounded">tenantId</code> and <code class="font-mono text-xs bg-white px-1 border rounded">tenantKey</code> are attached automatically in the background.</span>
+                </li>
+              </ul>
+              <div class="pt-2">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+                  <span class="material-symbols-outlined text-sm text-blue-600">domain</span>
+                  Includes quick <code class="font-bold text-red-600">[Change Fleet]</code> shortcut chip
+                </span>
+              </div>
+            </div>
+            <div class="lg:col-span-5 flex justify-center">
+              <img src="images/step2_everyday_login.jpg" alt="Everyday Branded Login UI" class="w-56 sm:w-64 rounded-xl shadow-lg border border-slate-200 hover:scale-105 transition duration-300" />
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 CARD -->
+        <div id="step3" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 mb-8 scroll-mt-24">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800">Step 3 • In-App Management</span>
+            <span class="text-xs text-slate-600 font-semibold">Available Anytime in Settings</span>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div class="lg:col-span-7 space-y-3 text-sm text-slate-700">
+              <h3 class="text-xl font-bold text-slate-900">Changing Companies (From Settings)</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                If a driver moves to a different taxi company or dispatch rotates their access key, they never need to delete the app:
+              </p>
+              <ul class="text-xs space-y-2 text-slate-700">
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-blue-600 text-base flex-shrink-0">check_circle</span>
+                  <span>Navigate to <strong>Settings</strong> ➔ <strong>Fleet & Company</strong> inside the app drawer.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-blue-600 text-base flex-shrink-0">check_circle</span>
+                  <span>Displays current fleet: <strong class="text-slate-900">First Taxis</strong> with a green <strong>Verified & Active</strong> badge.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-blue-600 text-base flex-shrink-0">check_circle</span>
+                  <span>Tapping <strong>"Change Taxi Company"</strong> lets them enter or scan new credentials, instantly re-dressing the app!</span>
+                </li>
+              </ul>
+            </div>
+            <div class="lg:col-span-5 flex justify-center">
+              <img src="images/step3_settings_fleet.jpg" alt="Settings Fleet Management UI" class="w-56 sm:w-64 rounded-xl shadow-lg border border-slate-200 hover:scale-105 transition duration-300" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: BACKEND API CONTRACTS -->
+      <section id="api-login" class="mb-14 scroll-mt-20">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2.5">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-700 text-sm">03</span>
+          Backend API Specifications
+        </h2>
+        <p class="text-sm leading-relaxed text-slate-700 mb-6">
+          The backend API gateway is upgraded to validate tenant credentials and serialize tenant branding objects within the standard authentication pipeline.
+        </p>
+
+        <!-- Route Header -->
+        <div class="flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-t-xl text-xs font-mono">
+          <span class="px-2 py-0.5 bg-blue-600 text-white font-bold rounded">POST</span>
+          <span class="text-slate-300">/api/UserProfile/Login</span>
+        </div>
+
+        <!-- Request / Response Tabs -->
+        <div class="border border-t-0 border-slate-200 rounded-b-xl p-5 bg-slate-50 space-y-4 mb-8">
+          <div>
+            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Request Payload</h4>
+            <pre class="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs overflow-x-auto leading-relaxed"><code>{
+  <span class="text-rose-400">"tenantId"</span>: <span class="text-emerald-300">"org_first_taxis"</span>,
+  <span class="text-rose-400">"tenantKey"</span>: <span class="text-emerald-300">"tk_live_8f93c72b10a94e82b7"</span>,
+  <span class="text-rose-400">"username"</span>: <span class="text-emerald-300">"driver101"</span>,
+  <span class="text-rose-400">"password"</span>: <span class="text-emerald-300">"Password123!"</span>
+}</code></pre>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Success Response (`200 OK`)</h4>
+            <pre class="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs overflow-x-auto leading-relaxed"><code>{
+  <span class="text-rose-400">"token"</span>: <span class="text-emerald-300">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span class="text-rose-400">"userId"</span>: <span class="text-amber-300">135822</span>,
+  <span class="text-rose-400">"tenant"</span>: {
+    <span class="text-rose-400">"id"</span>: <span class="text-emerald-300">"org_first_taxis"</span>,
+    <span class="text-rose-400">"name"</span>: <span class="text-emerald-300">"First Taxis"</span>,
+    <span class="text-rose-400">"branding"</span>: {
+      <span class="text-rose-400">"logos"</span>: {
+        <span class="text-rose-400">"lightUrl"</span>: <span class="text-emerald-300">"https://cdn.redtaxi.co.uk/tenants/first-taxis/logo-light.png"</span>,
+        <span class="text-rose-400">"darkUrl"</span>: <span class="text-emerald-300">"https://cdn.redtaxi.co.uk/tenants/first-taxis/logo-dark.png"</span>
+      },
+      <span class="text-rose-400">"colors"</span>: {
+        <span class="text-rose-400">"primary"</span>: <span class="text-emerald-300">"#CD1A21"</span>,
+        <span class="text-rose-400">"primaryDark"</span>: <span class="text-emerald-300">"#9E0E14"</span>,
+        <span class="text-rose-400">"accent"</span>: <span class="text-emerald-300">"#F59E0B"</span>
+      }
+    }
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- RESOLVE ENDPOINT -->
+        <div id="api-resolve" class="scroll-mt-24">
+          <div class="flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-t-xl text-xs font-mono">
+            <span class="px-2 py-0.5 bg-purple-600 text-white font-bold rounded">POST</span>
+            <span class="text-slate-300">/api/Tenant/Resolve</span>
+            <span class="text-slate-400 text-[11px] ml-auto">Pre-Login Validation & Instant Theming</span>
+          </div>
+          <div class="border border-t-0 border-slate-200 rounded-b-xl p-5 bg-slate-50 space-y-4 mb-8">
+            <p class="text-xs text-slate-600">Used by the client during Step 1 (or inside Settings) to validate credentials and fetch the branding kit prior to username/password entry.</p>
+            <pre class="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs overflow-x-auto leading-relaxed"><code>{
+  <span class="text-rose-400">"tenantId"</span>: <span class="text-emerald-300">"org_first_taxis"</span>,
+  <span class="text-rose-400">"tenantKey"</span>: <span class="text-emerald-300">"tk_live_8f93c72b10a94e82b7"</span>
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- DATABASE SCHEMA (SQL) -->
+        <div id="db-schema" class="scroll-mt-24">
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Database Architecture (SQL Server)</h3>
+          <pre class="bg-slate-900 text-slate-200 p-5 rounded-xl text-xs overflow-x-auto leading-relaxed font-mono"><code><span class="text-purple-400">CREATE TABLE</span> Tenants (
+    TenantId <span class="text-amber-400">VARCHAR</span>(64) <span class="text-purple-400">PRIMARY KEY</span>,           <span class="text-slate-400">-- 'org_first_taxis'</span>
+    TenantKeyHash <span class="text-amber-400">VARCHAR</span>(256) <span class="text-purple-400">NOT NULL</span>,        <span class="text-slate-400">-- SHA-256 hash</span>
+    DisplayName <span class="text-amber-400">VARCHAR</span>(128) <span class="text-purple-400">NOT NULL</span>,          <span class="text-slate-400">-- 'First Taxis'</span>
+    IsActive <span class="text-amber-400">BIT</span> <span class="text-purple-400">NOT NULL DEFAULT</span> 1
+);
+
+<span class="text-purple-400">CREATE TABLE</span> TenantBranding (
+    BrandingId <span class="text-amber-400">INT IDENTITY</span>(1,1) <span class="text-purple-400">PRIMARY KEY</span>,
+    TenantId <span class="text-amber-400">VARCHAR</span>(64) <span class="text-purple-400">FOREIGN KEY REFERENCES</span> Tenants(TenantId),
+    LogoLightUrl <span class="text-amber-400">VARCHAR</span>(512) <span class="text-purple-400">NOT NULL</span>,
+    LogoDarkUrl <span class="text-amber-400">VARCHAR</span>(512) <span class="text-purple-400">NOT NULL</span>,
+    PrimaryColor <span class="text-amber-400">VARCHAR</span>(9) <span class="text-purple-400">DEFAULT</span> <span class="text-emerald-400">'#CD1A21'</span>,
+    PrimaryDarkColor <span class="text-amber-400">VARCHAR</span>(9) <span class="text-purple-400">DEFAULT</span> <span class="text-emerald-400">'#9E0E14'</span>
+);</code></pre>
+        </div>
+      </section>
+
+      <!-- SECTION: CLIENT RESKINNING ENGINE -->
+      <section id="flutter-storage" class="mb-14 scroll-mt-20">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2.5">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-700 text-sm">04</span>
+          Client Reskinning Engine
+        </h2>
+
+        <!-- Flutter Integration -->
+        <div class="mb-8">
+          <h3 class="text-lg font-bold text-slate-900 mb-2">1. Flutter Mobile Shell (`FlutterSecureStorage`)</h3>
+          <p class="text-xs text-slate-600 mb-3">Upon resolution, the Flutter shell persists the tenant credentials and raw branding JSON locally:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-4">
+            <div class="p-3 bg-slate-50 border rounded-xl font-mono">
+              <span class="text-slate-400 block text-[10px]">KEY</span>
+              <strong class="text-red-700">tenant_id</strong>
+            </div>
+            <div class="p-3 bg-slate-50 border rounded-xl font-mono">
+              <span class="text-slate-400 block text-[10px]">KEY</span>
+              <strong class="text-red-700">tenant_key</strong>
+            </div>
+            <div class="p-3 bg-slate-50 border rounded-xl font-mono">
+              <span class="text-slate-400 block text-[10px]">KEY</span>
+              <strong class="text-red-700">tenant_branding</strong>
+            </div>
+          </div>
+          <p class="text-xs text-slate-600">The <code class="font-mono text-xs bg-slate-100 px-1 border rounded">TenantThemeProvider</code> Riverpod notifier reads this data on app start, instantaneously building the dynamic <code class="font-mono text-xs bg-slate-100 px-1 border rounded">ThemeData</code>.</p>
+        </div>
+
+        <!-- Angular Webview Integration -->
+        <div id="angular-reskin" class="scroll-mt-24">
+          <h3 class="text-lg font-bold text-slate-900 mb-2">2. Angular Webview CSS Custom Properties</h3>
+          <p class="text-xs text-slate-600 mb-3">When embedding WebViews, Flutter appends the theme palette to URL query parameters. Angular overrides its CSS variables in <code class="font-mono text-xs bg-slate-100 px-1 border rounded">:root</code> dynamically:</p>
+          <pre class="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs overflow-x-auto leading-relaxed font-mono"><code><span class="text-purple-400">function</span> <span class="text-blue-400">applyTenantBranding</span>(branding: TenantBranding) {
+  <span class="text-purple-400">const</span> root = document.documentElement;
+  root.style.setProperty(<span class="text-emerald-300">'--primary-color'</span>, branding.colors.primary);
+  root.style.setProperty(<span class="text-emerald-300">'--primary-dark'</span>, branding.colors.primaryDark);
+  document.title = <span class="text-emerald-300">`${branding.name} Driver Portal`</span>;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- SECTION: FAQ -->
+      <section id="faq" class="mb-14 scroll-mt-20">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2.5">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-700 text-sm">05</span>
+          Frequently Asked Questions
+        </h2>
+        
+        <div class="space-y-3 text-sm">
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <h4 class="font-bold text-slate-900 mb-1">Does the driver need to enter the Company ID & Key on every shift?</h4>
+            <p class="text-xs text-slate-600 leading-relaxed">No. They enter it exactly once on first launch. It is cached in hardware-backed encrypted storage. Everyday shifts only require Username and Password.</p>
+          </div>
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <h4 class="font-bold text-slate-900 mb-1">What happens if a driver logs out?</h4>
+            <p class="text-xs text-slate-600 leading-relaxed">The app stays locked into their fleet's branding (logo and colors remain active). The login screen resets to show only the 2 fields: Username and Password.</p>
+          </div>
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <h4 class="font-bold text-slate-900 mb-1">How does a driver switch companies if they change fleets?</h4>
+            <p class="text-xs text-slate-600 leading-relaxed">They can open <strong>Settings ➔ Fleet & Company ➔ Change Taxi Company</strong>, or tap the small <strong>[Change]</strong> button on the login screen. They enter the new fleet credentials, and the app adapts immediately.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOTTOM PAGE NAVIGATION (PREV / NEXT) -->
+      <div class="flex items-center justify-between border-t border-slate-200 pt-6 mt-12 text-xs font-semibold">
+        <a href="fleet-setup-and-branding-guide.md" class="flex items-center gap-1.5 text-slate-600 hover:text-red-700 transition">
+          <span class="material-symbols-outlined text-sm">arrow_back</span>
+          <span>Non-Tech Markdown Guide</span>
+        </a>
+        <a href="backend-tenant-auth-branding-spec.md" class="flex items-center gap-1.5 text-slate-600 hover:text-red-700 transition">
+          <span>Backend Technical Spec</span>
+          <span class="material-symbols-outlined text-sm">arrow_forward</span>
+        </a>
+      </div>
+
+    </main>
+
+    <!-- RIGHT SIDEBAR: ON-THIS-PAGE TOC (STRIPE / MINTLIFY STYLE) -->
+    <aside class="hidden xl:block w-56 flex-shrink-0 py-10 pl-6">
+      <div class="sticky top-24">
+        <h5 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 mb-3">On This Page</h5>
+        <ul class="space-y-2 text-xs border-l border-slate-200 pl-3">
+          <li><a href="#overview" class="block text-slate-500 hover:text-red-600 hover:border-l hover:-ml-3 hover:pl-3 hover:border-red-600 transition">Overview & Purpose</a></li>
+          <li><a href="#how-it-works" class="block text-slate-500 hover:text-red-600 hover:border-l hover:-ml-3 hover:pl-3 hover:border-red-600 transition">3-Step Lifecycle</a></li>
+          <li><a href="#step1" class="block text-slate-500 hover:text-red-600 pl-2">Step 1: Setup</a></li>
+          <li><a href="#step2" class="block text-slate-500 hover:text-red-600 pl-2">Step 2: Daily Login</a></li>
+          <li><a href="#step3" class="block text-slate-500 hover:text-red-600 pl-2">Step 3: Settings</a></li>
+          <li><a href="#api-login" class="block text-slate-500 hover:text-red-600 hover:border-l hover:-ml-3 hover:pl-3 hover:border-red-600 transition">Backend API Contracts</a></li>
+          <li><a href="#api-resolve" class="block text-slate-500 hover:text-red-600 pl-2">POST /api/Tenant/Resolve</a></li>
+          <li><a href="#db-schema" class="block text-slate-500 hover:text-red-600 pl-2">Database Tables (SQL)</a></li>
+          <li><a href="#flutter-storage" class="block text-slate-500 hover:text-red-600 hover:border-l hover:-ml-3 hover:pl-3 hover:border-red-600 transition">Client Reskinning</a></li>
+          <li><a href="#faq" class="block text-slate-500 hover:text-red-600 hover:border-l hover:-ml-3 hover:pl-3 hover:border-red-600 transition">FAQ & Reference</a></li>
+        </ul>
+
+        <!-- Fast Actions Widget -->
+        <div class="mt-8 rounded-xl bg-slate-50 border border-slate-200 p-3.5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Quick Action</span>
+          <p class="text-xs text-slate-700 font-medium mb-3">View the interactive live theme switcher simulation.</p>
+          <a href="fleet-setup-guide.html#simulator" class="inline-flex items-center justify-center w-full py-1.5 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition">
+            Launch Simulator
+          </a>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- JAVASCRIPT FOR QUICK SEARCH & MOBILE MENU -->
+  <script>
+    // Search filter
+    function handleSearch(query) {
+      const q = query.toLowerCase().trim();
+      const sections = document.querySelectorAll('main section');
+      if (!q) {
+        sections.forEach(s => s.style.display = 'block');
+        return;
+      }
+      sections.forEach(s => {
+        const text = s.innerText.toLowerCase();
+        s.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+
+    // Keyboard shortcut / for search
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('doc-search')?.focus();
+      }
+    });
+
+    // Mobile Menu Toggle
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    mobileBtn?.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+      sidebar.classList.toggle('flex');
+    });
+  </script>
+</body>
+</html>

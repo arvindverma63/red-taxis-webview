@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fleet Setup & Branding Guide • Slide Presentation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#CD1A21',
+              darkRed: '#9E0E14',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Outfit', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
+    .slide-card {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased select-none">
+
+  <!-- MINIMAL CLEAN DOC APPBAR (NO MARKETING HERO) -->
+  <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-black shadow-sm">
+        <span class="material-symbols-outlined text-lg">local_taxi</span>
+      </div>
+      <div>
+        <h1 class="text-sm font-extrabold text-slate-900 tracking-tight leading-none">FIRST TAXIS • DRIVER PORTAL</h1>
+        <p class="text-[11px] text-slate-600 font-medium mt-0.5">Fleet Setup & Custom Branding Guide</p>
+      </div>
+    </div>
+
+    <!-- Slide Indicators in Topbar -->
+    <div class="flex items-center gap-2">
+      <div class="hidden sm:flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <button onclick="goToSlide(0)" class="tab-btn px-3 py-1 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow-sm" data-slide="0">1. Overview</button>
+        <button onclick="goToSlide(1)" class="tab-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition" data-slide="1">2. First-Time Setup</button>
+        <button onclick="goToSlide(2)" class="tab-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition" data-slide="2">3. Daily Login</button>
+        <button onclick="goToSlide(3)" class="tab-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition" data-slide="3">4. Change Fleet</button>
+        <button onclick="goToSlide(4)" class="tab-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition" data-slide="4">5. Summary & FAQ</button>
+      </div>
+      <button onclick="toggleFullscreen()" title="Fullscreen presentation" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition ml-2">
+        <span class="material-symbols-outlined text-lg">fullscreen</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- PROGRESS BAR -->
+  <div class="w-full bg-slate-200 h-1 shrink-0">
+    <div id="progress-bar" class="bg-red-600 h-1 transition-all duration-300 w-1/5"></div>
+  </div>
+
+  <!-- MAIN SLIDES STAGE -->
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto">
+    <div class="w-full max-w-5xl bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col slide-card min-h-[520px] max-h-[85vh]">
+
+      <!-- ================= SLIDE 1: OVERVIEW & FIELD COMPARISON ================= -->
+      <div id="slide-0" class="slide-content p-6 sm:p-8 flex-1 flex flex-col justify-between overflow-y-auto">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-red-100 text-red-700">Slide 1 • Visual Comparison</span>
+              <span class="text-xs text-slate-600 font-semibold">• Easy Field Breakdown</span>
+            </div>
+            <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">How the fields change</span>
+          </div>
+
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            First-Time Setup vs. Everyday Shift Login
+          </h2>
+
+          <!-- High Resolution Side-by-Side Comparison Graphic -->
+          <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-50 flex justify-center">
+            <img src="images/fields_comparison.jpg" alt="Comparison: First-Time Setup vs Everyday Login" class="max-h-[260px] sm:max-h-[300px] w-auto object-contain" />
+          </div>
+
+          <!-- The 4 Fields Explained Simply -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-1">
+            <div class="p-3 bg-red-50/60 border border-red-200 rounded-xl">
+              <span class="inline-block px-1.5 py-0.5 rounded bg-red-600 text-white font-bold text-[10px] uppercase mb-1">Once Only</span>
+              <h4 class="font-bold text-slate-900 text-sm">1. Tenant / Company ID</h4>
+              <p class="text-slate-600 mt-1 text-[11px] leading-tight">e.g. <code class="font-mono text-red-700">org_first_taxis</code>. Tells the app which company brand to load.</p>
+            </div>
+            <div class="p-3 bg-red-50/60 border border-red-200 rounded-xl">
+              <span class="inline-block px-1.5 py-0.5 rounded bg-red-600 text-white font-bold text-[10px] uppercase mb-1">Once Only</span>
+              <h4 class="font-bold text-slate-900 text-sm">2. Tenant / Fleet Key</h4>
+              <p class="text-slate-600 mt-1 text-[11px] leading-tight">Secret office key (or scanned via QR code) unlocking your fleet's system.</p>
+            </div>
+            <div class="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl">
+              <span class="inline-block px-1.5 py-0.5 rounded bg-emerald-600 text-white font-bold text-[10px] uppercase mb-1">Everyday Shift</span>
+              <h4 class="font-bold text-slate-900 text-sm">3. Driver Username</h4>
+              <p class="text-slate-600 mt-1 text-[11px] leading-tight">Your personal driver username, badge number, or email.</p>
+            </div>
+            <div class="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl">
+              <span class="inline-block px-1.5 py-0.5 rounded bg-emerald-600 text-white font-bold text-[10px] uppercase mb-1">Everyday Shift</span>
+              <h4 class="font-bold text-slate-900 text-sm">4. Password</h4>
+              <p class="text-slate-600 mt-1 text-[11px] leading-tight">Your driver password to authenticate and start your shift.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between text-xs text-slate-600">
+          <span>Tenant ID & Key are saved locally so you never have to re-type them</span>
+          <span class="font-semibold text-slate-700">Next: Detailed Step 1 Setup ➔</span>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 2: FIRST-TIME SETUP ================= -->
+      <div id="slide-1" class="slide-content p-6 sm:p-10 flex-1 flex flex-col justify-between hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center flex-1">
+          <div class="lg:col-span-7 space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-red-100 text-red-700">Slide 2 • Step 1</span>
+              <span class="text-xs font-bold text-slate-600">First-Time Setup (Done Once Only)</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Connecting to Your Taxi Fleet
+            </h2>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              When you install and open the app for the very first time, it asks which company you drive for.
+            </p>
+
+            <div class="space-y-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700">
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">check_circle</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">1. Enter Company ID & Fleet Key</strong>
+                  <span class="text-slate-600">Type the fleet ID (e.g. <code class="font-mono text-red-700 bg-white px-1 border rounded">org_first_taxis</code>) and secret key given by your office.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">qr_code_scanner</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">2. Or Scan Office QR Code</strong>
+                  <span class="text-slate-600">Tap the QR button to scan your onboarding sheet for 2-second instant connection.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">lock</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">3. Saved Permanently</strong>
+                  <span class="text-slate-600">Credentials and company colors are saved safely in your phone's secure memory.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 flex justify-center">
+            <div class="p-2 bg-slate-50 border border-slate-200 rounded-2xl shadow-md">
+              <img src="images/step1_fleet_setup.jpg" alt="First-time setup screen" class="h-64 sm:h-80 w-auto rounded-xl object-contain shadow" />
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
+          <span>Done only once upon first installation</span>
+          <span class="font-semibold text-slate-700">Next: Everyday Driver Login</span>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 3: EVERYDAY LOGIN ================= -->
+      <div id="slide-2" class="slide-content p-6 sm:p-10 flex-1 flex flex-col justify-between hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center flex-1">
+          <div class="lg:col-span-7 space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800">Slide 3 • Step 2</span>
+              <span class="text-xs font-bold text-slate-600">Everyday Work (Fast & Clean)</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Daily Shifts & Post-Logout Screen
+            </h2>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              Once connected, you <strong>never</strong> have to enter the Company ID or Key again. The app is pre-dressed in your company's colors.
+            </p>
+
+            <div class="space-y-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700">
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">badge</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">Only 2 Input Fields</strong>
+                  <span class="text-slate-600">Simply enter your <strong>Driver Username</strong> and <strong>Password</strong> to start your shift.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">palette</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">Always Branded</strong>
+                  <span class="text-slate-600">Company badge, red curved banner, and title are always visible so you know you're in the right portal.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-emerald-600 text-lg shrink-0">logout</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">Seamless Logging Out</strong>
+                  <span class="text-slate-600">When you finish your shift and log out, it stays in your fleet's branding, waiting for your username/password next time.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 flex justify-center">
+            <div class="p-2 bg-slate-50 border border-slate-200 rounded-2xl shadow-md">
+              <img src="images/step2_everyday_login.jpg" alt="Everyday Login Screen" class="h-64 sm:h-80 w-auto rounded-xl object-contain shadow" />
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
+          <span>Fast 2-field sign in every morning</span>
+          <span class="font-semibold text-slate-700">Next: Changing Companies from Settings</span>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 4: CHANGE IN SETTINGS ================= -->
+      <div id="slide-3" class="slide-content p-6 sm:p-10 flex-1 flex flex-col justify-between hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center flex-1">
+          <div class="lg:col-span-7 space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800">Slide 4 • Step 3</span>
+              <span class="text-xs font-bold text-slate-600">Fleet Switching</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Changing Companies from Settings
+            </h2>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              If you drive for multiple fleets or change taxi companies, you don't need to delete the app.
+            </p>
+
+            <div class="space-y-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700">
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-blue-600 text-lg shrink-0">settings</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">1. Open Settings Menu</strong>
+                  <span class="text-slate-600">Scroll down to the <strong>Fleet & Company</strong> section.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-blue-600 text-lg shrink-0">verified</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">2. View Current Status</strong>
+                  <span class="text-slate-600">Shows current fleet (<strong class="text-slate-800">First Taxis</strong>) with a green <span class="text-emerald-700 font-bold">Verified & Active</span> badge.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-blue-600 text-lg shrink-0">sync</span>
+                <div>
+                  <strong class="text-slate-900 block font-semibold">3. Tap "Change Taxi Company"</strong>
+                  <span class="text-slate-600">Enter the new company ID & key (or scan a new QR code). The app switches instantly!</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 flex justify-center">
+            <div class="p-2 bg-slate-50 border border-slate-200 rounded-2xl shadow-md">
+              <img src="images/step3_settings_fleet.jpg" alt="Settings Fleet Screen" class="h-64 sm:h-80 w-auto rounded-xl object-contain shadow" />
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
+          <span>Switch fleets anytime without reinstalling</span>
+          <span class="font-semibold text-slate-700">Next: Summary & FAQs</span>
+        </div>
+      </div>
+
+      <!-- ================= SLIDE 5: SUMMARY & FAQ ================= -->
+      <div id="slide-4" class="slide-content p-6 sm:p-10 flex-1 flex flex-col justify-between hidden">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-purple-100 text-purple-700">Slide 5 • Summary</span>
+            <span class="text-xs text-slate-600 font-semibold">• Quick Reference & FAQs</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Summary Cheat Sheet & Common Questions
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 text-xs">
+            <!-- Cheat Sheet Table Card -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50">
+              <h3 class="font-bold text-sm text-slate-900 mb-2.5 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base text-red-600">table_chart</span>
+                When Do You See What?
+              </h3>
+              <ul class="space-y-2 text-slate-700">
+                <li class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center">
+                  <span><strong>First Launch</strong></span>
+                  <span class="text-red-700 font-semibold">Company ID & Key (Once Only)</span>
+                </li>
+                <li class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center">
+                  <span><strong>Everyday Login</strong></span>
+                  <span class="text-emerald-700 font-semibold">Username & Password Only</span>
+                </li>
+                <li class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center">
+                  <span><strong>After Logout</strong></span>
+                  <span class="text-emerald-700 font-semibold">Username & Password Only</span>
+                </li>
+                <li class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center">
+                  <span><strong>Changing Company</strong></span>
+                  <span class="text-blue-700 font-semibold">Settings ➔ Change Company</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- FAQ List Card -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-2.5">
+              <h3 class="font-bold text-sm text-slate-900 mb-1 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base text-blue-600">help</span>
+                Frequently Asked Questions
+              </h3>
+              <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                <strong class="text-slate-900 block">Do I enter the Company ID every morning?</strong>
+                <span class="text-slate-600 mt-0.5 block">No! Only once when first setting up. Daily shifts only require username and password.</span>
+              </div>
+              <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                <strong class="text-slate-900 block">What if I enter the wrong Company ID?</strong>
+                <span class="text-slate-600 mt-0.5 block">Tap the small <strong>[Change]</strong> button on the login screen to fix it immediately.</span>
+              </div>
+              <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                <strong class="text-slate-900 block">Can our office print a QR code?</strong>
+                <span class="text-slate-600 mt-0.5 block">Yes! Scanning the office QR code connects the driver automatically in 2 seconds.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
+          <span>End of presentation</span>
+          <button onclick="goToSlide(0)" class="text-red-700 font-bold hover:underline">Restart Slide Deck ↺</button>
+        </div>
+      </div>
+
+      <!-- BOTTOM NAVIGATION CONTROLS BAR -->
+      <div class="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex items-center justify-between shrink-0">
+        <button id="prev-btn" onclick="prevSlide()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 shadow-sm transition disabled:opacity-40 disabled:pointer-events-none">
+          <span class="material-symbols-outlined text-base">arrow_back</span>
+          <span>Previous</span>
+        </button>
+
+        <div class="flex items-center gap-3">
+          <!-- Dots -->
+          <div class="flex items-center gap-1.5">
+            <span class="dot w-2 h-2 rounded-full bg-red-600 transition-all cursor-pointer" onclick="goToSlide(0)"></span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-300 transition-all cursor-pointer" onclick="goToSlide(1)"></span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-300 transition-all cursor-pointer" onclick="goToSlide(2)"></span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-300 transition-all cursor-pointer" onclick="goToSlide(3)"></span>
+            <span class="dot w-2 h-2 rounded-full bg-slate-300 transition-all cursor-pointer" onclick="goToSlide(4)"></span>
+          </div>
+          <span id="slide-counter" class="text-xs font-extrabold text-slate-500 font-mono">1 / 5</span>
+        </div>
+
+        <button id="next-btn" onclick="nextSlide()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 shadow-sm shadow-red-600/20 transition disabled:opacity-40 disabled:pointer-events-none">
+          <span>Next</span>
+          <span class="material-symbols-outlined text-base">arrow_forward</span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT CONTROLLER -->
+  <script>
+    let currentSlide = 0;
+    const totalSlides = 5;
+
+    function updateView() {
+      // Toggle slides
+      for (let i = 0; i < totalSlides; i++) {
+        const slide = document.getElementById(`slide-${i}`);
+        if (slide) {
+          if (i === currentSlide) {
+            slide.classList.remove('hidden');
+          } else {
+            slide.classList.add('hidden');
+          }
+        }
+      }
+
+      // Update Top Tabs
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const slideIdx = parseInt(btn.getAttribute('data-slide'));
+        if (slideIdx === currentSlide) {
+          btn.className = 'tab-btn px-3 py-1 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow-sm';
+        } else {
+          btn.className = 'tab-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+
+      // Update Dots
+      document.querySelectorAll('.dot').forEach((dot, idx) => {
+        if (idx === currentSlide) {
+          dot.className = 'dot w-6 h-2 rounded-full bg-red-600 transition-all cursor-pointer';
+        } else {
+          dot.className = 'dot w-2 h-2 rounded-full bg-slate-300 transition-all cursor-pointer';
+        }
+      });
+
+      // Counter & Progress Bar
+      document.getElementById('slide-counter').innerText = `${currentSlide + 1} / ${totalSlides}`;
+      const progressPct = ((currentSlide + 1) / totalSlides) * 100;
+      document.getElementById('progress-bar').style.width = `${progressPct}%`;
+
+      // Buttons
+      document.getElementById('prev-btn').disabled = (currentSlide === 0);
+      document.getElementById('next-btn').disabled = (currentSlide === totalSlides - 1);
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateView();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateView();
+      }
+    }
+
+    function goToSlide(index) {
+      if (index >= 0 && index < totalSlides) {
+        currentSlide = index;
+        updateView();
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Keyboard navigation (Left / Right arrows)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // Initialize
+    updateView();
+  </script>
+</body>
+</html>
