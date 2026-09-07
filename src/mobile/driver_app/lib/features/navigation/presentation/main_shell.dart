@@ -64,7 +64,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           }
         },
         child: DriverWebviewScreen(
-          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
+          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/job-offer?jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
           title: 'New Job Offer',
           hideAppBar: true,
           onBack: () {

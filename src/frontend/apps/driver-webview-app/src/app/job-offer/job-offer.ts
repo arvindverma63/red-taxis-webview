@@ -801,21 +801,31 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
-      const id = params['jobId'] || '';
-      this.jobIdFromUrl = id.toString();
-      this.guid = (params['guid'] || params['Guid'] || params['notificationId'] || params['notification_id'] || '').toString();
-      const fareVal = parseFloat(params['fare'] || '0');
-      const pickup = params['pickup'] ? decodeURIComponent(params['pickup']) : '';
-      const dropoff = params['dropoff'] ? decodeURIComponent(params['dropoff']) : '';
-      const paymentType = params['paymentType'];
-      const vehicleType = params['vehicleType'];
-      const passenger = params['passenger'];
-      const notes = params['notes'];
+    const parseAllParams = (routeParams: any = {}) => {
+      let searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+      let hashParams = new URLSearchParams('');
+      if (typeof window !== 'undefined' && window.location.hash.includes('?')) {
+        hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
+      }
 
-      const statusParam = params['status'] || params['Status'] || '';
+      const getParam = (key: string): string => {
+        return (routeParams[key] ?? hashParams.get(key) ?? searchParams.get(key) ?? '').toString();
+      };
+
+      const id = getParam('jobId') || getParam('id') || getParam('bookingId') || getParam('jobno') || '';
+      this.jobIdFromUrl = id;
+      this.guid = getParam('guid') || getParam('Guid') || getParam('notificationId') || getParam('notification_id');
+      const fareVal = parseFloat(getParam('fare') || getParam('price') || '0');
+      const pickup = getParam('pickup') ? decodeURIComponent(getParam('pickup')) : '';
+      const dropoff = getParam('dropoff') ? decodeURIComponent(getParam('dropoff')) : '';
+      const paymentType = getParam('paymentType') || getParam('payment');
+      const vehicleType = getParam('vehicleType');
+      const passenger = getParam('passenger') || getParam('passengerName');
+      const notes = getParam('notes');
+
+      const statusParam = getParam('status') || getParam('Status');
       if (statusParam) {
-        const parsedStatus = statusParam.toString().toLowerCase();
+        const parsedStatus = statusParam.toLowerCase();
         if (parsedStatus === 'cancelled' || parsedStatus === 'unallocated' || parsedStatus === 'amended') {
           this.jobStatus = parsedStatus as any;
           this.timerSub?.unsubscribe();
@@ -826,7 +836,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
       if (id && !isNaN(fareVal) && pickup && dropoff && !isPlaceholder) {
         this.job = {
-          id: id.toString(),
+          id: id,
           fare: fareVal,
           pickup: pickup,
           dropoff: dropoff,
@@ -843,6 +853,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       if (!this.jobStatus || this.jobStatus === 'active') {
         this.startTimer();
       }
+    };
+
+    this.route.queryParams.subscribe(params => {
+      parseAllParams(params);
     });
   }
 
