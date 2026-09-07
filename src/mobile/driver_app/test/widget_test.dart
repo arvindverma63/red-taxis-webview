@@ -8,6 +8,7 @@ import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/core/location/location.dart';
+import 'package:driver_app/core/widgets/widgets.dart';
 
 class MockWebViewPlatform extends WebViewPlatform {
   @override
@@ -172,5 +173,65 @@ void main() {
     // Verify that it changes status to ONLINE.
     expect(find.text('On Duty'), findsOneWidget);
     expect(find.text('ONLINE'), findsOneWidget);
+  });
+
+  testWidgets('OfflineErrorWidget Fullscreen & Retry Test', (WidgetTester tester) async {
+    bool retryCalled = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: OfflineErrorWidget(
+              title: 'My Bookings',
+              onRetry: () {
+                retryCalled = true;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('No Internet Connection'), findsOneWidget);
+    expect(find.textContaining('Could not establish connection to My Bookings'), findsOneWidget);
+    expect(find.text('Retry Connection'), findsOneWidget);
+
+    await tester.tap(find.text('Retry Connection'));
+    await tester.pump();
+
+    expect(retryCalled, isTrue);
+    expect(find.text('Reconnecting...'), findsOneWidget);
+
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+  });
+
+  testWidgets('OfflineErrorWidget Compact Test', (WidgetTester tester) async {
+    bool retryCalled = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: OfflineErrorWidget(
+              title: 'Dashboard Stats',
+              isCompact: true,
+              onRetry: () {
+                retryCalled = true;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('No Internet Connection'), findsOneWidget);
+    expect(find.textContaining('Could not establish connection to Dashboard Stats'), findsOneWidget);
+    expect(find.text('Retry Connection'), findsOneWidget);
+
+    await tester.tap(find.text('Retry Connection'));
+    await tester.pump();
+
+    expect(retryCalled, isTrue);
+
+    await tester.pumpAndSettle(const Duration(seconds: 2));
   });
 }

@@ -8,6 +8,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/core/theme/theme.dart';
@@ -39,6 +40,17 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   static DateTime? _lastGlobalBackPressTime;
   WebViewController? _controller;
   bool _isLoading = true;
+  bool _hasError = false;
+
+  void _reloadWebView() {
+    if (_controller != null) {
+      setState(() {
+        _hasError = false;
+        _isLoading = true;
+      });
+      _controller!.loadRequest(Uri.parse(widget.url));
+    }
+  }
 
   @override
   void initState() {
@@ -157,17 +169,30 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (String url) {
-              setState(() {
-                _isLoading = true;
-              });
+              if (mounted) {
+                setState(() {
+                  _isLoading = true;
+                  _hasError = false;
+                });
+              }
             },
             onPageFinished: (String url) {
-              setState(() {
-                _isLoading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
             },
             onWebResourceError: (WebResourceError error) {
-              debugPrint("WebView Resource Error: ${error.description}");
+              debugPrint("WebView Resource Error (${error.errorCode}): ${error.description}, isForMainFrame: ${error.isForMainFrame}");
+              if (error.isForMainFrame ?? true) {
+                if (mounted) {
+                  setState(() {
+                    _hasError = true;
+                    _isLoading = false;
+                  });
+                }
+              }
             },
             onNavigationRequest: (NavigationRequest request) async {
               final url = request.url;
@@ -315,7 +340,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     tooltip: 'Refresh',
-                    onPressed: () => _controller?.reload(),
+                    onPressed: _reloadWebView,
                   ),
               ],
             ),
@@ -376,9 +401,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
           color: AppTheme.primaryRed,
           backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
           onRefresh: () async {
-            if (_controller != null) {
-              await _controller!.reload();
-            }
+            _reloadWebView();
           },
           child: kIsWeb
               ? Center(
@@ -406,8 +429,22 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               : Stack(
                   children: [
                     Container(color: isDark ? AppTheme.darkBackground : Colors.white),
-                    if (_controller != null) WebViewWidget(controller: _controller!),
-                    if (_isLoading)
+                    if (_controller != null)
+                      Opacity(
+                        opacity: _hasError ? 0.0 : 1.0,
+                        child: WebViewWidget(controller: _controller!),
+                      ),
+                    if (_hasError)
+                      Positioned.fill(
+                        child: Container(
+                          color: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+                          child: OfflineErrorWidget(
+                            title: widget.title,
+                            onRetry: _reloadWebView,
+                          ),
+                        ),
+                      ),
+                    if (_isLoading && !_hasError)
                       Positioned.fill(
                         child: Container(
                           color: isDark ? AppTheme.darkBackground : Colors.white,

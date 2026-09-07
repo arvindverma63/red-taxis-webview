@@ -24,6 +24,7 @@ class DriverDashboardView extends ConsumerStatefulWidget {
 class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   WebViewController? _controller;
   bool _isLoading = true;
+  bool _hasError = false;
   Timer? _locationTimer;
 
   @override
@@ -36,6 +37,21 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   void dispose() {
     _locationTimer?.cancel();
     super.dispose();
+  }
+
+  void _reloadWebView() {
+    if (_controller != null) {
+      setState(() {
+        _hasError = false;
+        _isLoading = true;
+      });
+      final token = ref.read(authProvider).token ?? '';
+      final shift = ref.read(shiftProvider);
+      final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
+      final themeStr = isDark ? 'dark' : 'light';
+      final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
+      _controller!.loadRequest(Uri.parse(url));
+    }
   }
 
   void _initWebViewController() {
@@ -54,6 +70,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             if (mounted) {
               setState(() {
                 _isLoading = true;
+                _hasError = false;
               });
             }
           },
@@ -65,7 +82,15 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             }
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint("Dashboard WebView Error: ${error.description}");
+            debugPrint("Dashboard WebView Error (${error.errorCode}): ${error.description}, isForMainFrame: ${error.isForMainFrame}");
+            if (error.isForMainFrame ?? true) {
+              if (mounted) {
+                setState(() {
+                  _hasError = true;
+                  _isLoading = false;
+                });
+              }
+            }
           },
           onNavigationRequest: (NavigationRequest request) async {
             final url = request.url;
@@ -261,9 +286,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
         color: AppTheme.primaryRed,
         backgroundColor: ref.watch(themeModeProvider) == ThemeMode.dark ? AppTheme.darkSurface : Colors.white,
         onRefresh: () async {
-          if (_controller != null) {
-            await _controller!.reload();
-          }
+          _reloadWebView();
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,7 +405,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             ),
 
             // Thin Loading bar for WebView loading state
-            if (_isLoading)
+            if (_isLoading && !_hasError)
               const SizedBox(
                 height: 3,
                 child: LinearProgressIndicator(
@@ -393,9 +416,25 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
             // 2. Hybrid Data WebView (displays Today's summary and Recent completed trips list)
             Expanded(
-              child: _controller != null
-                  ? WebViewWidget(controller: _controller!)
-                  : const Center(child: CircularProgressIndicator()),
+              child: Stack(
+                children: [
+                  if (_controller != null)
+                    Opacity(
+                      opacity: _hasError ? 0.0 : 1.0,
+                      child: WebViewWidget(controller: _controller!),
+                    ),
+                  if (_hasError)
+                    Positioned.fill(
+                      child: OfflineErrorWidget(
+                        title: 'Dashboard Stats',
+                        isCompact: true,
+                        onRetry: _reloadWebView,
+                      ),
+                    ),
+                  if (_controller == null)
+                    const Center(child: CircularProgressIndicator(color: AppTheme.primaryRed)),
+                ],
+              ),
             ),
           ],
         ),

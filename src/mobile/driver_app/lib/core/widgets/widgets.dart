@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+export 'offline_error_widget.dart';
 
 class CustomCard extends StatelessWidget {
   final Widget child;
