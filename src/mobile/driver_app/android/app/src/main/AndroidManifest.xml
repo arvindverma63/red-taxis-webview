@@ -49,6 +49,20 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance_channel" />
+
+        <!-- Geolocator Foreground Service for Background GPS Tracking -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!-- Flutter Background Service for Headless GPS Tracking -->
+        <service
+            android:name="id.flutter.flutter_background_service.BackgroundService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="location" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

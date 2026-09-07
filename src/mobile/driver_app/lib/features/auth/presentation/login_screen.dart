@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:driver_app/features/auth/auth.dart';
+import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/features/auth/presentation/widgets/qr_scanner_modal.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -11,23 +13,99 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _loginFormKey = GlobalKey<FormState>();
+  final _tenantFormKey = GlobalKey<FormState>();
+
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  final _tenantIdController = TextEditingController();
+  final _tenantKeyController = TextEditingController();
+
   bool _obscurePassword = true;
+  bool _obscureTenantKey = true;
   bool _rememberMe = true;
+  bool _isResolvingTenant = false;
   DateTime? _lastBackPressTime;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default initial test value if empty
+    _tenantIdController.text = 'org_first_taxis';
+    _tenantKeyController.text = 'tk_live_8f93c72b10a94e82b7';
+  }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _tenantIdController.dispose();
+    _tenantKeyController.dispose();
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _scanQrCode() async {
+    final result = await QrScannerModal.show(context);
+    if (result != null && mounted) {
+      final tenantId = result['tenantId'] ?? '';
+      final tenantKey = result['tenantKey'] ?? '';
+
+      setState(() {
+        _tenantIdController.text = tenantId;
+        _tenantKeyController.text = tenantKey;
+      });
+
+      // Automatically connect fleet upon successful scan
+      if (tenantId.isNotEmpty) {
+        _submitTenantConfig();
+      }
+    }
+  }
+
+  Future<void> _submitTenantConfig() async {
     FocusScope.of(context).unfocus();
-    if (_formKey.currentState!.validate()) {
+    final tenantId = _tenantIdController.text.trim();
+    final tenantKey = _tenantKeyController.text.trim();
+
+    if (tenantId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter or scan a Tenant ID')),
+      );
+      return;
+    }
+
+    setState(() => _isResolvingTenant = true);
+
+    final success = await ref.read(authProvider.notifier).resolveAndSaveTenant(
+          tenantId,
+          tenantKey,
+        );
+
+    if (mounted) {
+      setState(() => _isResolvingTenant = false);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF10B981),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Connected to ${ref.read(authProvider).tenantBranding?.name ?? tenantId}!'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _submitLogin() {
+    FocusScope.of(context).unfocus();
+    if (_loginFormKey.currentState!.validate()) {
       ref.read(authProvider.notifier).signIn(
             _usernameController.text.trim(),
             _passwordController.text,
@@ -35,13 +113,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _showSwitchFleetDialog() {
+    final authState = ref.watch(authProvider);
+    final currentFleetName = authState.tenantBranding?.name ?? authState.tenantId ?? 'Current Fleet';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.swap_horiz_rounded, color: Color(0xFFCD1A21)),
+            SizedBox(width: 8),
+            Text('Switch Fleet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'You are currently connected to $currentFleetName.\n\nDo you want to switch to a different fleet organization or scan a new onboarding QR code?',
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFCD1A21),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ref.read(authProvider.notifier).switchTenant();
+            },
+            child: const Text('Switch Fleet', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final isLoading = authState.status == AuthStatus.authenticating;
+    final isLoading = authState.status == AuthStatus.authenticating || _isResolvingTenant;
+    final isConfigured = authState.isTenantConfigured;
+    final branding = authState.tenantBranding ?? TenantBranding.defaultFirstTaxis();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF4F6F9),
       body: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
@@ -51,9 +174,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _lastBackPressTime = now;
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Press back again to exit First Taxis'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text('Press back again to exit ${branding.name}'),
+                duration: const Duration(seconds: 2),
               ),
             );
           } else {
@@ -62,527 +185,463 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         },
         child: Stack(
           children: [
-          // Background scrollable content
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                // Premium Hero Curved Header
-                ClipPath(
-                  clipper: HeaderClipper(),
-                  child: Container(
-                    height: 270,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFFCD1A21),
-                          Color(0xFF9E0E14),
-                          Color(0xFF6B0509),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+            // Main scrollable content
+            SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // Hero Header with Dynamic Branding
+                  _buildHeader(branding, isConfigured),
+
+                  // Dynamic Body based on configuration state
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: isConfigured
+                        ? _buildLoginForm(authState, branding, isDark)
+                        : _buildTenantSetupForm(isDark),
+                  ),
+
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+
+            // Loading Modal Progress Overlay
+            if (isLoading) _buildLoadingOverlay(branding),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(TenantBranding branding, bool isConfigured) {
+    return ClipPath(
+      clipper: HeaderClipper(),
+      child: Container(
+        height: 270,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              branding.gradientStart,
+              branding.gradientMid,
+              branding.gradientEnd,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Decorative background glowing bubbles
+            Positioned(
+              top: -30,
+              right: -30,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 20,
+              left: -40,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 24),
+                  // Glowing Badge
+                  Container(
+                    width: 78,
+                    height: 78,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 18,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: branding.primaryColor.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isConfigured ? Icons.local_taxi_rounded : Icons.domain_rounded,
+                        color: branding.primaryColor,
+                        size: 42,
                       ),
                     ),
-                    child: Stack(
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    isConfigured ? branding.name.toUpperCase() : 'FLEET ONBOARDING',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.5,
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isConfigured ? 'Driver Portal' : 'Fleet Activation & QR Setup',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // STATE A: FLEET SETUP & QR ONBOARDING
+  // ==========================================
+  Widget _buildTenantSetupForm(bool isDark) {
+    return Form(
+      key: _tenantFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
+
+          // Primary Scan QR Action Banner Card
+          InkWell(
+            onTap: _scanQrCode,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFCD1A21), Color(0xFF9E0E14)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFCD1A21).withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Color(0xFFCD1A21),
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Decorative glowing background circles
-                        Positioned(
-                          top: -30,
-                          right: -30,
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.06),
-                            ),
+                        Text(
+                          'Scan Fleet QR Code',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        Positioned(
-                          bottom: 20,
-                          left: -40,
-                          child: Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.05),
-                            ),
-                          ),
-                        ),
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 24),
-                              // Glowing Brand Badge
-                              Container(
-                                width: 78,
-                                height: 78,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.25),
-                                      blurRadius: 18,
-                                      spreadRadius: 2,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                    BoxShadow(
-                                      color: const Color(0xFFCD1A21).withValues(alpha: 0.4),
-                                      blurRadius: 10,
-                                      spreadRadius: -2,
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.local_taxi_rounded,
-                                    color: Color(0xFFCD1A21),
-                                    size: 42,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'FIRST TAXIS',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 3.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.25),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'DRIVER PARTNER PORTAL',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        SizedBox(height: 2),
+                        Text(
+                          '1-tap instant fleet activation',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                ],
+              ),
+            ),
+          ),
 
-                // Form Section (Overlapping card)
-                Transform.translate(
-                  offset: const Offset(0, -20),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22.0),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 20,
-                            spreadRadius: 0,
-                            offset: const Offset(0, 10),
-                          ),
-                          BoxShadow(
-                            color: const Color(0xFFCD1A21).withValues(alpha: 0.03),
-                            blurRadius: 40,
-                            spreadRadius: 4,
-                            offset: const Offset(0, 15),
-                          ),
-                        ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E293B),
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Enter your driver credentials to start your shift.',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-                            // Error Alert Banner
-                            if (authState.errorMessage != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFFCA5A5)),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline_rounded,
-                                      color: Color(0xFFDC2626),
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        authState.errorMessage!,
-                                        style: const TextStyle(
-                                          color: Color(0xFFB91C1C),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          height: 1.3,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                            ],
-
-                            // Username / Driver ID Input
-                            const Text(
-                              'DRIVER USERNAME',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF475569),
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _usernameController,
-                              keyboardType: TextInputType.text,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.username],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'e.g. driver or user ID',
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFF94A3B8),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                prefixIcon: Container(
-                                  margin: const EdgeInsets.fromLTRB(10, 8, 12, 8),
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.badge_outlined,
-                                    size: 18,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: Color(0xFFCD1A21), width: 2),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Driver username is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 18),
-
-                            // Password Input
-                            const Text(
-                              'PASSWORD',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF475569),
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.password],
-                              onFieldSubmitted: (_) => _submit(),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Enter account password',
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFF94A3B8),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                prefixIcon: Container(
-                                  margin: const EdgeInsets.fromLTRB(10, 8, 12, 8),
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 18,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    size: 20,
-                                    color: const Color(0xFF64748B),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(color: Color(0xFFCD1A21), width: 2),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Password is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Remember Me & Secure SSL row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: () {
-                                    setState(() {
-                                      _rememberMe = !_rememberMe;
-                                    });
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: Checkbox(
-                                            value: _rememberMe,
-                                            activeColor: const Color(0xFFCD1A21),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            onChanged: (val) {
-                                              setState(() {
-                                                _rememberMe = val ?? true;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Text(
-                                          'Remember me',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF475569),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const Row(
-                                  children: [
-                                    Icon(Icons.verified_user_outlined, size: 14, color: Color(0xFF16A34A)),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'SSL Secure',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF16A34A),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 28),
-
-                            // Gradient Action Button
-                            Container(
-                              width: double.infinity,
-                              height: 54,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFCD1A21),
-                                    Color(0xFF9E0E14),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFCD1A21).withValues(alpha: 0.35),
-                                    blurRadius: 14,
-                                    spreadRadius: 0,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: isLoading ? null : _submit,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: isLoading
-                                    ? const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2.5,
-                                            ),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
-                                            'Authenticating Driver...',
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.login_rounded, size: 20),
-                                          SizedBox(width: 10),
-                                          Text(
-                                            'Sign In to Portal',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+          // Separator "OR ENTER DETAILS MANUALLY"
+          Row(
+            children: [
+              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.grey[300])),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'OR ENTER MANUALLY',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
                   ),
                 ),
+              ),
+              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.grey[300])),
+            ],
+          ),
 
-                // Footer Info
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24.0),
+          const SizedBox(height: 16),
+
+          // Tenant ID Input Field
+          Text(
+            'Tenant ID / Organization Slug',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey[300] : const Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _tenantIdController,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: _buildInputDecoration(
+              hint: 'e.g. org_first_taxis',
+              icon: Icons.domain_rounded,
+              isDark: isDark,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Tenant Key Input Field
+          Text(
+            'Tenant Access Key',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey[300] : const Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _tenantKeyController,
+            obscureText: _obscureTenantKey,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: _buildInputDecoration(
+              hint: 'e.g. tk_live_...',
+              icon: Icons.vpn_key_rounded,
+              isDark: isDark,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureTenantKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  color: Colors.grey[500],
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscureTenantKey = !_obscureTenantKey),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Connect Fleet Button
+          ElevatedButton(
+            onPressed: _isResolvingTenant ? null : _submitTenantConfig,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFCD1A21),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isResolvingTenant)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                  )
+                else ...[
+                  const Icon(Icons.link_rounded, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Connect Fleet',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Demo Preset Chips
+          Center(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                _buildDemoChip('First Taxis', 'org_first_taxis', 'tk_live_8f93c72b10a94e82b7', const Color(0xFFCD1A21)),
+                _buildDemoChip('Ace Taxis', 'org_ace_taxis', 'tk_live_ace_staging_2026', const Color(0xFFE53935)),
+                _buildDemoChip('Red Taxis', 'org_red_taxis', 'tk_live_red_taxis_dev', const Color(0xFFD32F2F)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDemoChip(String label, String id, String key, Color color) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() {
+          _tenantIdController.text = id;
+          _tenantKeyController.text = key;
+        });
+        _submitTenantConfig();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flash_on_rounded, color: color, size: 14),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // STATE B: EVERYDAY DRIVER LOGIN (2-FIELD)
+  // ==========================================
+  Widget _buildLoginForm(AuthState authState, TenantBranding branding, bool isDark) {
+    return Form(
+      key: _loginFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Active Fleet Badge & Switch Fleet Action Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: branding.primaryColor.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: branding.primaryColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.domain_rounded, color: branding.primaryColor, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.shield_outlined, size: 14, color: Color(0xFF94A3B8)),
-                          const SizedBox(width: 6),
-                          Text(
-                            'First Taxis Driver Gateway • v1.0.0',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
                       Text(
-                        '© 2026 First Taxis Ltd. All Rights Reserved.',
+                        'Active Fleet',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
                           fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        branding.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: _showSwitchFleetDialog,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.swap_horiz_rounded, size: 14, color: branding.primaryColor),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Switch',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: branding.primaryColor,
                         ),
                       ),
                     ],
@@ -592,110 +651,242 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
 
-          // High-End Modal Progress Loader Overlay during Login API Calling
-          if (isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.45),
-                child: Center(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 30,
-                          spreadRadius: 4,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Animated Dual Spinner Container
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 76,
-                              height: 76,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  const Color(0xFFCD1A21).withValues(alpha: 0.2),
-                                ),
-                                strokeWidth: 5,
-                              ),
-                            ),
-                            const SizedBox(
-                              width: 76,
-                              height: 76,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFCD1A21)),
-                                strokeWidth: 5,
-                              ),
-                            ),
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFEF2F2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.local_taxi_rounded,
-                                  color: Color(0xFFCD1A21),
-                                  size: 26,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Signing In...',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF0F172A),
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Connecting to First Taxis secure server and verifying driver credentials...',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Linear progress indicator
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: const SizedBox(
-                            width: 180,
-                            height: 4,
-                            child: LinearProgressIndicator(
-                              backgroundColor: Color(0xFFF1F5F9),
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFCD1A21)),
-                            ),
-                          ),
-                        ),
-                      ],
+          const SizedBox(height: 20),
+
+          // Error Message Banner if any
+          if (authState.errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      authState.errorMessage!,
+                      style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
+            const SizedBox(height: 16),
+          ],
+
+          // Username Field
+          Text(
+            'Driver Username / ID',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey[300] : const Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _usernameController,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: _buildInputDecoration(
+              hint: 'Enter your driver username or ID',
+              icon: Icons.person_rounded,
+              isDark: isDark,
+            ),
+            validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your username' : null,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Password Field
+          Text(
+            'Password',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey[300] : const Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: _buildInputDecoration(
+              hint: 'Enter your password',
+              icon: Icons.lock_rounded,
+              isDark: isDark,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  color: Colors.grey[500],
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+            validator: (val) => val == null || val.isEmpty ? 'Please enter your password' : null,
+          ),
+
+          const SizedBox(height: 12),
+
+          // Remember Me Toggle
+          Row(
+            children: [
+              SizedBox(
+                height: 24,
+                width: 24,
+                child: Checkbox(
+                  value: _rememberMe,
+                  activeColor: branding.primaryColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  onChanged: (val) => setState(() => _rememberMe = val ?? true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Remember my login on this device',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Sign In Submit Button
+          ElevatedButton(
+            onPressed: _submitLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: branding.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              shadowColor: branding.primaryColor.withValues(alpha: 0.4),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.login_rounded, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Sign In',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Security SSL Badge
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.verified_user_rounded, size: 14, color: isDark ? Colors.grey[400] : const Color(0xFF64748B)),
+                const SizedBox(width: 6),
+                Text(
+                  '256-Bit Encrypted Driver Gateway',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String hint,
+    required IconData icon,
+    required bool isDark,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8), fontSize: 14),
+      prefixIcon: Icon(icon, color: isDark ? Colors.grey[400] : const Color(0xFF64748B), size: 20),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFCD1A21), width: 1.8),
+      ),
+    );
+  }
+
+  Widget _buildLoadingOverlay(TenantBranding branding) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.65),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: CircularProgressIndicator(
+                  color: branding.primaryColor,
+                  strokeWidth: 3.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Connecting...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Authenticating with ${branding.name} secure server',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -706,12 +897,12 @@ class HeaderClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 45);
+    path.lineTo(0, size.height - 40);
     path.quadraticBezierTo(
       size.width / 2,
-      size.height + 25,
+      size.height + 15,
       size.width,
-      size.height - 45,
+      size.height - 40,
     );
     path.lineTo(size.width, 0);
     path.close();
@@ -719,6 +910,5 @@ class HeaderClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
-

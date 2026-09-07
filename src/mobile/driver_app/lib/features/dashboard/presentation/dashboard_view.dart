@@ -340,7 +340,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                         ),
                         minimumSize: const Size.fromHeight(48),
                         elevation: 0,
-                        disabledBackgroundColor: isOnline ? Colors.grey[800]?.withOpacity(0.6) : AppTheme.primaryRed.withOpacity(0.6),
+                        disabledBackgroundColor: isOnline ? Colors.grey[800]?.withValues(alpha: 0.6) : AppTheme.primaryRed.withValues(alpha: 0.6),
                         disabledForegroundColor: Colors.white70,
                       ),
                       onPressed: shift.isLoading

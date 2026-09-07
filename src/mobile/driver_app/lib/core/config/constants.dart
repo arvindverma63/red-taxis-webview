@@ -9,10 +9,25 @@ class AppConfig {
 
   static String get webviewBaseUrl => useDevUrl ? devBaseUrl : prodBaseUrl;
 
-  // Statically configured Tenant ID
-  static const String defaultTenantId = 'org_ace_taxis';
+  // Default fallback Tenant configuration
+  static const String defaultTenantId = 'org_first_taxis';
+  static const String defaultTenantKey = 'tk_live_8f93c72b10a94e82b7';
+  static const String defaultFleetName = 'First Taxis';
 
+  // Secure Storage Keys
+  static const String keyTenantId = 'tenant_id';
+  static const String keyTenantKey = 'tenant_key';
+  static const String keyTenantBranding = 'tenant_branding';
+  static const String keyAuthToken = 'auth_token';
+  static const String keyAuthEmail = 'auth_email';
+  static const String keyAuthUserId = 'auth_user_id';
+
+  // Standard Webview Routes
   static String get bookingsUrl => '$webviewBaseUrl/#/bookings';
   static String get profileUrl => '$webviewBaseUrl/#/profile';
   static String get availabilityUrl => '$webviewBaseUrl/#/availability';
+  static String get expensesUrl => '$webviewBaseUrl/#/expenses';
+  static String get reportsUrl => '$webviewBaseUrl/#/reports';
+  static String get jobOfferUrl => '$webviewBaseUrl/#/job-offer';
+  static String get createBookingUrl => '$webviewBaseUrl/#/create-booking';
 }

@@ -157,6 +157,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final branding = authState.tenantBranding ?? TenantBranding.defaultFirstTaxis();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: Stack(
@@ -172,7 +175,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.primaryRed.withOpacity(0.06),
+                    branding.primaryColor.withValues(alpha: 0.06),
                     Colors.transparent,
                   ],
                 ),
@@ -189,7 +192,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.primaryDarkRed.withOpacity(0.04),
+                    branding.primaryDarkColor.withValues(alpha: 0.04),
                     Colors.transparent,
                   ],
                 ),
@@ -223,7 +226,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppTheme.primaryRed.withOpacity(0.35),
+                                    color: branding.primaryColor.withValues(alpha: 0.35),
                                     width: 4,
                                   ),
                                 ),
@@ -246,12 +249,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               color: Colors.white,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 18,
                                   offset: const Offset(0, 8),
                                 ),
                                 BoxShadow(
-                                  color: AppTheme.primaryRed.withOpacity(0.12),
+                                  color: branding.primaryColor.withValues(alpha: 0.12),
                                   blurRadius: 30,
                                   spreadRadius: -4,
                                 ),
@@ -263,11 +266,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 'assets/images/logo.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
-                                  // Fallback placeholder if asset fails to load
                                   return Center(
                                     child: Icon(
                                       Icons.local_taxi_rounded,
-                                      color: AppTheme.primaryRed,
+                                      color: branding.primaryColor,
                                       size: 55,
                                     ),
                                   );
@@ -293,19 +295,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'FIRST ',
+                                branding.name.toUpperCase(),
                                 style: TextStyle(
-                                  color: AppTheme.primaryRed,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                              Text(
-                                'TAXIS',
-                                style: TextStyle(
-                                  color: AppTheme.textLightPrimary,
-                                  fontSize: 32,
+                                  color: branding.primaryColor,
+                                  fontSize: 30,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 2.0,
                                 ),
@@ -313,7 +306,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text(
+                          const Text(
                             'SMARTER BOOKINGS. FASTER DESPATCH.',
                             style: TextStyle(
                               color: AppTheme.textLightSecondary,
@@ -330,7 +323,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   const Spacer(flex: 2),
 
                   // Custom Road-themed Progress Bar
-                  _buildRoadProgress(),
+                  _buildRoadProgress(branding),
 
                   const SizedBox(height: 40),
                 ],
@@ -342,7 +335,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
   }
 
-  Widget _buildRoadProgress() {
+  Widget _buildRoadProgress(TenantBranding branding) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -354,7 +347,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             borderRadius: BorderRadius.circular(4),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withValues(alpha: 0.12),
                 blurRadius: 3,
                 offset: const Offset(0, 1.5),
               ),
@@ -372,11 +365,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     (index) => Container(
                       width: 14,
                       height: 1.2,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-                // Animated progress indicator (simulated glowing red headlight sliding on the road)
+                // Animated progress indicator (simulated glowing headlight sliding on the road)
                 AnimatedBuilder(
                   animation: _progressValue,
                   builder: (context, child) {
@@ -387,13 +380,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              AppTheme.primaryRed.withOpacity(0.1),
-                              AppTheme.primaryRed,
+                              branding.primaryColor.withValues(alpha: 0.1),
+                              branding.primaryColor,
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryRed.withOpacity(0.8),
+                              color: branding.primaryColor.withValues(alpha: 0.8),
                               blurRadius: 8,
                               spreadRadius: 3,
                             ),
@@ -411,7 +404,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         Text(
           'Securing connection...',
           style: TextStyle(
-            color: AppTheme.textLightSecondary.withOpacity(0.7),
+            color: AppTheme.textLightSecondary.withValues(alpha: 0.7),
             fontSize: 12,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.6,

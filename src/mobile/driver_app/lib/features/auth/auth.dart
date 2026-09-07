@@ -7,6 +7,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:driver_app/core/config/constants.dart';
+import 'package:driver_app/core/theme/theme.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
 
@@ -16,6 +17,10 @@ class AuthState {
   final String? token;
   final String? errorMessage;
   final int? userId;
+  final String? tenantId;
+  final String? tenantKey;
+  final TenantBranding? tenantBranding;
+  final bool isTenantConfigured;
 
   const AuthState({
     required this.status,
@@ -23,6 +28,10 @@ class AuthState {
     this.token,
     this.errorMessage,
     this.userId,
+    this.tenantId,
+    this.tenantKey,
+    this.tenantBranding,
+    this.isTenantConfigured = false,
   });
 
   AuthState copyWith({
@@ -31,6 +40,10 @@ class AuthState {
     String? token,
     String? errorMessage,
     int? userId,
+    String? tenantId,
+    String? tenantKey,
+    TenantBranding? tenantBranding,
+    bool? isTenantConfigured,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -38,6 +51,10 @@ class AuthState {
       token: token ?? this.token,
       errorMessage: errorMessage ?? this.errorMessage,
       userId: userId ?? this.userId,
+      tenantId: tenantId ?? this.tenantId,
+      tenantKey: tenantKey ?? this.tenantKey,
+      tenantBranding: tenantBranding ?? this.tenantBranding,
+      isTenantConfigured: isTenantConfigured ?? this.isTenantConfigured,
     );
   }
 }
@@ -75,18 +92,113 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _tryAutoLogin() async {
     try {
-      final token = await _storage.read(key: 'auth_token');
-      final email = await _storage.read(key: 'auth_email');
-      final userIdStr = await _storage.read(key: 'auth_user_id');
+      final tenantId = await _storage.read(key: AppConfig.keyTenantId);
+      final tenantKey = await _storage.read(key: AppConfig.keyTenantKey);
+      final brandingJsonStr = await _storage.read(key: AppConfig.keyTenantBranding);
+      
+      TenantBranding? branding;
+      if (brandingJsonStr != null && brandingJsonStr.isNotEmpty) {
+        try {
+          branding = TenantBranding.fromJson(jsonDecode(brandingJsonStr));
+        } catch (_) {}
+      }
+
+      if (branding == null && tenantId != null) {
+        branding = _resolveDefaultBrandingForTenant(tenantId, tenantKey ?? '');
+      }
+
+      final isConfigured = tenantId != null && tenantId.isNotEmpty;
+
+      final token = await _storage.read(key: AppConfig.keyAuthToken);
+      final email = await _storage.read(key: AppConfig.keyAuthEmail);
+      final userIdStr = await _storage.read(key: AppConfig.keyAuthUserId);
       final userId = userIdStr != null ? int.tryParse(userIdStr) : null;
-      if (token != null) {
-        state = AuthState(status: AuthStatus.authenticated, token: token, email: email, userId: userId);
+
+      if (token != null && isConfigured) {
+        state = AuthState(
+          status: AuthStatus.authenticated,
+          token: token,
+          email: email,
+          userId: userId,
+          tenantId: tenantId,
+          tenantKey: tenantKey,
+          tenantBranding: branding,
+          isTenantConfigured: true,
+        );
         updateFcmToken();
       } else {
-        state = const AuthState(status: AuthStatus.unauthenticated);
+        state = AuthState(
+          status: AuthStatus.unauthenticated,
+          tenantId: tenantId,
+          tenantKey: tenantKey,
+          tenantBranding: branding,
+          isTenantConfigured: isConfigured,
+        );
       }
     } catch (e) {
-      state = const AuthState(status: AuthStatus.unauthenticated);
+      state = const AuthState(status: AuthStatus.unauthenticated, isTenantConfigured: false);
+    }
+  }
+
+  TenantBranding _resolveDefaultBrandingForTenant(String tenantId, String tenantKey) {
+    if (tenantId.toLowerCase().contains('ace')) {
+      return TenantBranding.defaultAceTaxis();
+    } else if (tenantId.toLowerCase().contains('red')) {
+      return TenantBranding.defaultRedTaxis();
+    }
+    return TenantBranding.defaultFirstTaxis();
+  }
+
+  Future<bool> resolveAndSaveTenant(
+    String tenantId,
+    String tenantKey, {
+    TenantBranding? customBranding,
+  }) async {
+    try {
+      TenantBranding resolvedBranding = customBranding ?? _resolveDefaultBrandingForTenant(tenantId, tenantKey);
+
+      // Attempt remote resolution if available
+      try {
+        final response = await _dio.post(
+          '/api/Tenant/Resolve',
+          data: {
+            'tenantId': tenantId,
+            'tenantKey': tenantKey,
+          },
+          options: Options(
+            headers: {'Content-Type': 'application/json', 'Accept': '*/*'},
+          ),
+        );
+        if (response.statusCode == 200 && response.data != null) {
+          final data = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : jsonDecode(response.data.toString());
+          resolvedBranding = TenantBranding.fromJson(data);
+        }
+      } catch (dioErr) {
+        debugPrint('[Auth] Remote Tenant/Resolve not available or returned error, using verified branding: $dioErr');
+      }
+
+      await _storage.write(key: AppConfig.keyTenantId, value: tenantId);
+      await _storage.write(key: AppConfig.keyTenantKey, value: tenantKey);
+      await _storage.write(
+        key: AppConfig.keyTenantBranding,
+        value: jsonEncode(resolvedBranding.toJson()),
+      );
+
+      state = state.copyWith(
+        tenantId: tenantId,
+        tenantKey: tenantKey,
+        tenantBranding: resolvedBranding,
+        isTenantConfigured: true,
+        errorMessage: null,
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('[Auth] Failed to resolve tenant: $e');
+      state = state.copyWith(
+        errorMessage: 'Failed to configure fleet: ${e.toString()}',
+      );
+      return false;
     }
   }
 
@@ -109,14 +221,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signIn(String username, String password) async {
     state = state.copyWith(status: AuthStatus.authenticating, errorMessage: null);
 
+    final activeTenantId = state.tenantId ?? AppConfig.defaultTenantId;
+    final activeTenantKey = state.tenantKey ?? AppConfig.defaultTenantKey;
+
     try {
-      debugPrint('[Auth] Sending Login to /api/UserProfile/Login: username=$username, tenantId=${AppConfig.defaultTenantId}');
+      debugPrint('[Auth] Sending Login to /api/UserProfile/Login: username=$username, tenantId=$activeTenantId');
       final response = await _dio.post(
         '/api/UserProfile/Login',
         data: {
           'username': username,
           'password': password,
-          'tenantId': AppConfig.defaultTenantId,
+          'tenantId': activeTenantId,
+          'tenantKey': activeTenantKey,
         },
         options: Options(
           headers: {
@@ -135,15 +251,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userId = userIdObj is int ? userIdObj : int.tryParse(userIdObj.toString());
       }
 
+      // If backend returns dynamic tenant branding object
+      if (data['tenant'] != null || data['tenantBranding'] != null) {
+        try {
+          final tenantObj = data['tenant'] ?? data['tenantBranding'];
+          final dynamicBranding = TenantBranding.fromJson(tenantObj is Map<String, dynamic> ? tenantObj : jsonDecode(tenantObj.toString()));
+          await _storage.write(key: AppConfig.keyTenantBranding, value: jsonEncode(dynamicBranding.toJson()));
+          state = state.copyWith(tenantBranding: dynamicBranding);
+        } catch (_) {}
+      }
+
       if (token != null) {
         userId ??= _parseUserIdFromJwt(token);
 
-        await _storage.write(key: 'auth_token', value: token);
-        await _storage.write(key: 'auth_email', value: username);
+        await _storage.write(key: AppConfig.keyAuthToken, value: token);
+        await _storage.write(key: AppConfig.keyAuthEmail, value: username);
         if (userId != null) {
-          await _storage.write(key: 'auth_user_id', value: userId.toString());
+          await _storage.write(key: AppConfig.keyAuthUserId, value: userId.toString());
         }
-        state = AuthState(
+        state = state.copyWith(
           status: AuthStatus.authenticated,
           token: token,
           email: username,
@@ -158,14 +284,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (dioErr.type == DioExceptionType.connectionError || dioErr.type == DioExceptionType.connectionTimeout) {
         errMsg = 'Staging server is currently unreachable. Error: ${dioErr.message ?? dioErr.error ?? dioErr.toString()}';
       } else if (dioErr.response?.statusCode == 400 || dioErr.response?.statusCode == 401) {
-        errMsg = 'Incorrect username or password.';
+        errMsg = 'Incorrect username or password for ${state.tenantBranding?.name ?? "this fleet"}.';
+      } else if (dioErr.response?.statusCode == 403) {
+        errMsg = 'Tenant Key is invalid or expired for ${state.tenantBranding?.name ?? "this fleet"}.';
       }
-      state = AuthState(
+      state = state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: errMsg,
       );
     } catch (e) {
-      state = AuthState(
+      state = state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: e.toString(),
       );
@@ -200,10 +328,33 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
-    await _storage.delete(key: 'auth_token');
-    await _storage.delete(key: 'auth_email');
-    await _storage.delete(key: 'auth_user_id');
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    await _storage.delete(key: AppConfig.keyAuthToken);
+    await _storage.delete(key: AppConfig.keyAuthEmail);
+    await _storage.delete(key: AppConfig.keyAuthUserId);
+    // Retain tenant_id, tenant_key and branding for clean 2-field login
+    state = state.copyWith(
+      status: AuthStatus.unauthenticated,
+      token: null,
+      email: null,
+      userId: null,
+      errorMessage: null,
+    );
+  }
+
+  Future<void> switchTenant() async {
+    await _storage.delete(key: AppConfig.keyTenantId);
+    await _storage.delete(key: AppConfig.keyTenantKey);
+    await _storage.delete(key: AppConfig.keyTenantBranding);
+    await _storage.delete(key: AppConfig.keyAuthToken);
+    await _storage.delete(key: AppConfig.keyAuthEmail);
+    await _storage.delete(key: AppConfig.keyAuthUserId);
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      isTenantConfigured: false,
+      tenantId: null,
+      tenantKey: null,
+      tenantBranding: null,
+    );
   }
 }
 

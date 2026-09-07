@@ -6,6 +6,7 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 import 'package:driver_app/main.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/shift/shift.dart';
+import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/core/location/location.dart';
 
 class MockWebViewPlatform extends WebViewPlatform {
@@ -42,6 +43,11 @@ class MockPlatformNavigationDelegate extends PlatformNavigationDelegate {
 
   @override
   Future<void> setOnWebResourceError(void Function(WebResourceError error) onWebResourceError) async {}
+
+  @override
+  Future<void> setOnNavigationRequest(
+    NavigationRequestCallback onNavigationRequest,
+  ) async {}
 }
 
 class MockPlatformWebViewController extends PlatformWebViewController {
@@ -64,6 +70,20 @@ class MockPlatformWebViewController extends PlatformWebViewController {
 
   @override
   Future<void> reload() async {}
+
+  @override
+  Future<void> setBackgroundColor(Color color) async {}
+
+  @override
+  Future<void> setOnPlatformPermissionRequest(
+    void Function(PlatformWebViewPermissionRequest request) onPermissionRequest,
+  ) async {}
+
+  @override
+  Future<void> addJavaScriptChannel(JavaScriptChannelParams javaScriptChannelParams) async {}
+
+  @override
+  Future<void> runJavaScript(String javaScript) async {}
 }
 
 class MockPlatformWebViewWidget extends PlatformWebViewWidget {
@@ -82,6 +102,7 @@ class AuthNotifierMock extends AuthNotifier {
       email: 'peter.parker@redtaxis.com',
       token: 'mock-token',
       userId: 65,
+      isTenantConfigured: true,
     );
   }
 
@@ -90,6 +111,13 @@ class AuthNotifierMock extends AuthNotifier {
 
   @override
   Future<void> signOut() async {}
+}
+
+class TripNotifierMock extends TripNotifier {
+  TripNotifierMock(super.ref);
+
+  @override
+  Future<void> checkActiveJob() async {}
 }
 
 class ShiftNotifierMock extends ShiftNotifier {
@@ -122,13 +150,16 @@ void main() {
         overrides: [
           authProvider.overrideWith((ref) => AuthNotifierMock()),
           shiftProvider.overrideWith((ref) => ShiftNotifierMock(ref)),
+          tripProvider.overrideWith((ref) => TripNotifierMock(ref)),
         ],
         child: const DriverApp(),
       ),
     );
 
-    // Trigger initial frame
-    await tester.pump();
+    // Advance past splash screen into dashboard
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Verify that the dashboard starts in OFFLINE mode.
     expect(find.text('Off Duty'), findsOneWidget);

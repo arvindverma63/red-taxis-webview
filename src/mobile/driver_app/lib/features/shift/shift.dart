@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 enum ShiftStatus { offline, online }
 
@@ -38,6 +39,7 @@ class ShiftState {
 class ShiftNotifier extends StateNotifier<ShiftState> {
   final Ref _ref;
   StreamSubscription<Position>? _locationSubscription;
+  Timer? _heartbeatTimer;
   final _locationService = LocationService();
   DateTime? _lastGpsSendTime;
   final _storage = const FlutterSecureStorage(
@@ -84,15 +86,70 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
 
         final permResult = await _locationService.checkPermissions();
         if (permResult == LocationPermissionResult.granted) {
-          _locationSubscription?.cancel();
-          _locationSubscription = _locationService.getLocationStream().listen((position) {
-            _sendGpsUpdate(position);
-          });
+          _startLocationTracking();
         }
       }
     } catch (e) {
       debugPrint("[ShiftNotifier] Restore shift state error: $e");
     }
+  }
+
+  void _startLocationTracking() {
+    _stopLocationTracking();
+
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      try {
+        FlutterBackgroundService().startService();
+      } catch (e) {
+        debugPrint("[ShiftNotifier] Background service start error: $e");
+      }
+    }
+
+    final auth = _ref.read(authProvider);
+    final fleetName = auth.tenantBranding?.name ?? 'First Taxis';
+
+    try {
+      _locationSubscription = _locationService
+          .getLocationStream(
+            notificationTitle: '$fleetName Online',
+            notificationText: 'Streaming live GPS location to dispatch',
+          )
+          .listen(
+            (position) {
+              _sendGpsUpdate(position);
+            },
+            onError: (err) {
+              debugPrint("[ShiftNotifier] Location stream error: $err");
+            },
+          );
+    } catch (e) {
+      debugPrint("[ShiftNotifier] Location stream setup error: $e");
+    }
+
+    // Periodic heartbeat timer (every 10s) ensuring location is sent even when stationary
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (state.status != ShiftStatus.online) return;
+      try {
+        final pos = await _locationService.getCurrentLocation();
+        _sendGpsUpdate(pos);
+      } catch (err) {
+        debugPrint("[ShiftNotifier] Periodic GPS heartbeat error: $err");
+      }
+    });
+  }
+
+  void _stopLocationTracking() {
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      try {
+        FlutterBackgroundService().invoke('stopService');
+      } catch (e) {
+        debugPrint("[ShiftNotifier] Background service stop error: $e");
+      }
+    }
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
   }
 
   String _formatDateTime(DateTime dt) {
@@ -116,20 +173,8 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         return permResult;
       }
 
-      // 2. Start location tracking locally
-      try {
-        _locationSubscription?.cancel();
-        _locationSubscription = _locationService.getLocationStream().listen(
-          (position) {
-            _sendGpsUpdate(position);
-          },
-          onError: (err) {
-            debugPrint("[ShiftNotifier] Location stream error: $err");
-          },
-        );
-      } catch (e) {
-        debugPrint("[ShiftNotifier] Location stream setup error: $e");
-      }
+      // 2. Start continuous background location tracking and periodic heartbeat
+      _startLocationTracking();
 
       // 3. Update state and local storage immediately (Optimistic UI Update)
       state = ShiftState(
@@ -179,9 +224,8 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     state = state.copyWith(isLoading: true);
 
     try {
-      // 1. Immediately cancel location tracking locally
-      _locationSubscription?.cancel();
-      _locationSubscription = null;
+      // 1. Immediately cancel location tracking and heartbeat
+      _stopLocationTracking();
 
       // 2. Update state and local storage immediately (Optimistic UI Update)
       state = const ShiftState(status: ShiftStatus.offline, isLoading: false);
@@ -252,7 +296,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
 
   @override
   void dispose() {
-    _locationSubscription?.cancel();
+    _stopLocationTracking();
     super.dispose();
   }
 }

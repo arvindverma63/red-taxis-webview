@@ -11,6 +11,7 @@ import 'package:driver_app/features/splash/presentation/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:driver_app/core/location/background_location_service.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -40,6 +41,9 @@ void main() async {
   try {
     await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    
+    // Initialize background location service
+    await initializeBackgroundLocationService();
     
     // Create Android High Importance Notification Channel
     await flutterLocalNotificationsPlugin
