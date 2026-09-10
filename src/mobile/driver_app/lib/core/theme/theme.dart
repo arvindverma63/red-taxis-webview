@@ -95,8 +95,58 @@ class TenantBranding {
     );
   }
 
+  TenantBranding copyWith({
+    String? tenantId,
+    String? tenantKey,
+    String? name,
+    String? legalName,
+    String? logoLightUrl,
+    String? logoDarkUrl,
+    String? symbolUrl,
+    Color? primaryColor,
+    Color? primaryDarkColor,
+    Color? primaryLightColor,
+    Color? accentColor,
+    Color? gradientStart,
+    Color? gradientMid,
+    Color? gradientEnd,
+    String? dispatchPhone,
+    String? supportEmail,
+  }) {
+    return TenantBranding(
+      tenantId: tenantId ?? this.tenantId,
+      tenantKey: tenantKey ?? this.tenantKey,
+      name: name ?? this.name,
+      legalName: legalName ?? this.legalName,
+      logoLightUrl: logoLightUrl ?? this.logoLightUrl,
+      logoDarkUrl: logoDarkUrl ?? this.logoDarkUrl,
+      symbolUrl: symbolUrl ?? this.symbolUrl,
+      primaryColor: primaryColor ?? this.primaryColor,
+      primaryDarkColor: primaryDarkColor ?? this.primaryDarkColor,
+      primaryLightColor: primaryLightColor ?? this.primaryLightColor,
+      accentColor: accentColor ?? this.accentColor,
+      gradientStart: gradientStart ?? this.gradientStart,
+      gradientMid: gradientMid ?? this.gradientMid,
+      gradientEnd: gradientEnd ?? this.gradientEnd,
+      dispatchPhone: dispatchPhone ?? this.dispatchPhone,
+      supportEmail: supportEmail ?? this.supportEmail,
+    );
+  }
+
+  static Color _darkenColor(Color color, [double amount = 0.18]) {
+    final hsl = HSLColor.fromColor(color);
+    final darkened = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return darkened.toColor();
+  }
+
+  static Color _lightenColor(Color color, [double amount = 0.18]) {
+    final hsl = HSLColor.fromColor(color);
+    final lightened = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    return lightened.toColor();
+  }
+
   static Color _parseColor(dynamic hex, Color fallback) {
-    if (hex == null || hex is! String || hex.isEmpty) return fallback;
+    if (hex == null || hex is! String || hex.trim().isEmpty) return fallback;
     try {
       String clean = hex.replaceAll('#', '').trim();
       if (clean.length == 6) {
@@ -115,29 +165,47 @@ class TenantBranding {
   String get primaryHex => _colorToHex(primaryColor);
   String get primaryDarkHex => _colorToHex(primaryDarkColor);
 
-  factory TenantBranding.fromJson(Map<String, dynamic> json) {
+  factory TenantBranding.fromJson(Map<String, dynamic> rawJson) {
+    final json = rawJson['data'] is Map<String, dynamic>
+        ? rawJson['data'] as Map<String, dynamic>
+        : (rawJson['branding'] is Map<String, dynamic> ? rawJson['branding'] as Map<String, dynamic> : rawJson);
+
     final branding = json['branding'] is Map<String, dynamic> ? json['branding'] as Map<String, dynamic> : json;
     final colors = branding['colors'] is Map<String, dynamic> ? branding['colors'] as Map<String, dynamic> : {};
     final logos = branding['logos'] is Map<String, dynamic> ? branding['logos'] as Map<String, dynamic> : {};
     final support = branding['support'] is Map<String, dynamic> ? branding['support'] as Map<String, dynamic> : {};
 
+    final tenantId = json['tenantId']?.toString() ?? json['id']?.toString() ?? rawJson['tenantId']?.toString() ?? 'org_red_taxis';
+    final tenantKey = json['tenantKey']?.toString() ?? rawJson['tenantKey']?.toString() ?? '';
+    final companyName = json['companyName']?.toString() ??
+        json['name']?.toString() ??
+        json['displayName']?.toString() ??
+        rawJson['companyName']?.toString() ??
+        rawJson['name']?.toString() ??
+        'Red Taxis';
+
+    final primaryParsed = _parseColor(
+      colors['primary'] ?? json['primaryColour'] ?? json['primaryColor'] ?? rawJson['primaryColour'] ?? rawJson['primaryColor'],
+      const Color(0xFFD32F2F),
+    );
+
     return TenantBranding(
-      tenantId: json['tenantId']?.toString() ?? json['id']?.toString() ?? 'org_first_taxis',
-      tenantKey: json['tenantKey']?.toString() ?? '',
-      name: json['name']?.toString() ?? json['displayName']?.toString() ?? 'First Taxis',
-      legalName: json['legalName']?.toString() ?? '',
-      logoLightUrl: logos['lightUrl']?.toString() ?? json['logoLightUrl']?.toString(),
-      logoDarkUrl: logos['darkUrl']?.toString() ?? json['logoDarkUrl']?.toString(),
+      tenantId: tenantId,
+      tenantKey: tenantKey,
+      name: companyName,
+      legalName: json['legalName']?.toString() ?? json['companyName']?.toString() ?? companyName,
+      logoLightUrl: logos['lightUrl']?.toString() ?? json['logoLightUrl']?.toString() ?? json['logoUrl']?.toString() ?? rawJson['logoUrl']?.toString(),
+      logoDarkUrl: logos['darkUrl']?.toString() ?? json['logoDarkUrl']?.toString() ?? json['logoUrl']?.toString(),
       symbolUrl: logos['symbolUrl']?.toString() ?? json['symbolUrl']?.toString(),
-      primaryColor: _parseColor(colors['primary'] ?? json['primaryColor'], const Color(0xFFCD1A21)),
-      primaryDarkColor: _parseColor(colors['primaryDark'] ?? json['primaryDarkColor'], const Color(0xFF9E0E14)),
-      primaryLightColor: _parseColor(colors['primaryLight'] ?? json['primaryLightColor'], const Color(0xFFFF5252)),
-      accentColor: _parseColor(colors['accent'] ?? json['accentColor'], const Color(0xFFF59E0B)),
-      gradientStart: _parseColor(colors['gradientStart'] ?? json['gradientStart'], const Color(0xFFCD1A21)),
-      gradientMid: _parseColor(colors['gradientMid'] ?? json['gradientMid'], const Color(0xFF9E0E14)),
-      gradientEnd: _parseColor(colors['gradientEnd'] ?? json['gradientEnd'], const Color(0xFF6B0509)),
-      dispatchPhone: support['dispatchPhone']?.toString() ?? json['dispatchPhone']?.toString(),
-      supportEmail: support['supportEmail']?.toString() ?? json['supportEmail']?.toString(),
+      primaryColor: primaryParsed,
+      primaryDarkColor: _parseColor(colors['primaryDark'] ?? json['primaryDarkColor'], _darkenColor(primaryParsed, 0.18)),
+      primaryLightColor: _parseColor(colors['primaryLight'] ?? json['primaryLightColor'], _lightenColor(primaryParsed, 0.18)),
+      accentColor: _parseColor(colors['accent'] ?? json['accentColor'], const Color(0xFFFFA000)),
+      gradientStart: _parseColor(colors['gradientStart'] ?? json['gradientStart'], primaryParsed),
+      gradientMid: _parseColor(colors['gradientMid'] ?? json['gradientMid'], _darkenColor(primaryParsed, 0.12)),
+      gradientEnd: _parseColor(colors['gradientEnd'] ?? json['gradientEnd'], _darkenColor(primaryParsed, 0.28)),
+      dispatchPhone: support['dispatchPhone']?.toString() ?? json['dispatchPhone']?.toString() ?? json['phone']?.toString() ?? rawJson['phone']?.toString(),
+      supportEmail: support['supportEmail']?.toString() ?? json['supportEmail']?.toString() ?? json['email']?.toString() ?? rawJson['email']?.toString(),
     );
   }
 
@@ -319,7 +387,7 @@ class TenantBrandingNotifier extends StateNotifier<TenantBranding> {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
-  TenantBrandingNotifier() : super(TenantBranding.defaultFirstTaxis()) {
+  TenantBrandingNotifier() : super(TenantBranding.defaultRedTaxis()) {
     _loadBranding();
   }
 

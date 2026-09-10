@@ -142,7 +142,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
               const TripDetails(
                 id: 'sim-cash-booking',
                 pickupAddress: 'Heathrow Airport Terminal 5',
-                dropoffAddress: 'First Taxis Office, London Central',
+                dropoffAddress: 'Red Taxis Office, London Central',
                 fare: 45.00,
                 paymentType: 'Cash',
               ),
@@ -262,7 +262,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: const Text('First Taxis Dashboard'),
+        title: Text('${ref.watch(authProvider).tenantBranding?.name ?? "Red Taxis"} Dashboard'),
         centerTitle: false,
         actions: [
           IconButton(
@@ -452,7 +452,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       message = 'GPS location services are disabled on your device. Please enable location services to go online.';
     } else {
       title = 'Location Permission Required';
-      message = 'First Taxis requires precise background location permissions to receive booking offers. Please grant permission in settings.';
+      message = '${ref.read(authProvider).tenantBranding?.name ?? "Red Taxis"} requires precise background location permissions to receive booking offers. Please grant permission in settings.';
     }
 
     showDialog(

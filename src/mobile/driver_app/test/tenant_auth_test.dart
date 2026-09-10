@@ -4,6 +4,13 @@ import 'package:driver_app/features/auth/auth.dart';
 
 void main() {
   group('Multi-Tenant Configuration & Branding Tests', () {
+    test('Default Red Taxis branding generates correct colors and tenantId', () {
+      final branding = TenantBranding.defaultRedTaxis();
+      expect(branding.tenantId, 'org_red_taxis');
+      expect(branding.name, 'Red Taxis');
+      expect(branding.primaryHex, '#D32F2F');
+    });
+
     test('Default First Taxis branding generates correct colors and tenantId', () {
       final branding = TenantBranding.defaultFirstTaxis();
       expect(branding.tenantId, 'org_first_taxis');
@@ -48,6 +55,36 @@ void main() {
       expect(state.isTenantConfigured, true);
       expect(state.tenantId, 'org_first_taxis');
       expect(state.tenantBranding?.name, 'First Taxis');
+    });
+
+    test('TenantBranding correctly parses /api/v2/public/tenant-info payload', () {
+      final apiResponse = {
+        "success": true,
+        "data": {
+          "tenantId": "org_08f19f20899e43308c1c1db3",
+          "companyName": "instacreator",
+          "phone": "7777777777",
+          "email": "officialadarsh2023@gmail.com",
+          "website": "",
+          "logoUrl": "",
+          "primaryColour": "#6366F1",
+          "address": {
+            "line1": "",
+            "line2": "",
+            "line3": "",
+            "line4": "",
+            "postcode": "208013"
+          }
+        },
+        "errors": []
+      };
+
+      final branding = TenantBranding.fromJson(apiResponse);
+      expect(branding.tenantId, 'org_08f19f20899e43308c1c1db3');
+      expect(branding.name, 'instacreator');
+      expect(branding.dispatchPhone, '7777777777');
+      expect(branding.supportEmail, 'officialadarsh2023@gmail.com');
+      expect(branding.primaryHex, '#6366F1');
     });
   });
 }

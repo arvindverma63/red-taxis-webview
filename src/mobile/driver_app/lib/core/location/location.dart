@@ -51,7 +51,7 @@ class LocationService {
   }
 
   Stream<Position> getLocationStream({
-    String notificationTitle = "First Taxis Online",
+    String notificationTitle = "Red Taxis Online",
     String notificationText = "Streaming live GPS location to dispatch",
   }) {
     LocationSettings locationSettings;

@@ -149,33 +149,91 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return TenantBranding.defaultFirstTaxis();
   }
 
+  Future<TenantBranding?> fetchTenantInfo(String tenantId, String tenantKey) async {
+    try {
+      final headers = <String, dynamic>{
+        'Accept': 'application/json',
+      };
+      if (tenantKey.isNotEmpty) {
+        headers['X-Tenant-Key'] = tenantKey;
+      }
+
+      debugPrint('[Auth] Querying /api/v2/public/tenant-info?tenantId=$tenantId');
+      final response = await _dio.get(
+        '/api/v2/public/tenant-info',
+        queryParameters: {
+          'tenantId': tenantId,
+        },
+        options: Options(
+          headers: headers,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : jsonDecode(response.data.toString()) as Map<String, dynamic>;
+
+        if (data['success'] == true || data['data'] != null) {
+          final payload = data['data'] is Map<String, dynamic> ? data['data'] as Map<String, dynamic> : data;
+          final branding = TenantBranding.fromJson({
+            ...payload,
+            'tenantId': tenantId,
+            'tenantKey': tenantKey,
+          });
+          debugPrint('[Auth] Successfully resolved company name: ${branding.name}');
+          return branding;
+        }
+      }
+    } catch (e) {
+      debugPrint('[Auth] /api/v2/public/tenant-info query failed: $e');
+    }
+    return null;
+  }
+
   Future<bool> resolveAndSaveTenant(
     String tenantId,
     String tenantKey, {
     TenantBranding? customBranding,
   }) async {
     try {
-      TenantBranding resolvedBranding = customBranding ?? _resolveDefaultBrandingForTenant(tenantId, tenantKey);
+      TenantBranding? resolvedBranding = customBranding;
 
-      // Attempt remote resolution if available
-      try {
-        final response = await _dio.post(
-          '/api/Tenant/Resolve',
-          data: {
-            'tenantId': tenantId,
-            'tenantKey': tenantKey,
-          },
-          options: Options(
-            headers: {'Content-Type': 'application/json', 'Accept': '*/*'},
-          ),
-        );
-        if (response.statusCode == 200 && response.data != null) {
-          final data = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : jsonDecode(response.data.toString());
-          resolvedBranding = TenantBranding.fromJson(data);
-        }
-      } catch (dioErr) {
-        debugPrint('[Auth] Remote Tenant/Resolve not available or returned error, using verified branding: $dioErr');
+      // 1. Attempt remote public tenant-info resolution
+      if (resolvedBranding == null) {
+        resolvedBranding = await fetchTenantInfo(tenantId, tenantKey);
       }
+
+      // 2. Secondary fallback to /api/Tenant/Resolve if not resolved
+      if (resolvedBranding == null) {
+        try {
+          final response = await _dio.post(
+            '/api/Tenant/Resolve',
+            data: {
+              'tenantId': tenantId,
+              'tenantKey': tenantKey,
+            },
+            options: Options(
+              headers: {'Content-Type': 'application/json', 'Accept': '*/*'},
+            ),
+          );
+          if (response.statusCode == 200 && response.data != null) {
+            final data = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : jsonDecode(response.data.toString());
+            resolvedBranding = TenantBranding.fromJson(data);
+          }
+        } catch (dioErr) {
+          debugPrint('[Auth] Remote Tenant/Resolve not available or returned error: $dioErr');
+        }
+      }
+
+      // 3. Fallback to default local branding based on tenantId
+      resolvedBranding ??= _resolveDefaultBrandingForTenant(tenantId, tenantKey);
+
+      // Ensure tenantId and tenantKey are populated
+      resolvedBranding = resolvedBranding.copyWith(
+        tenantId: tenantId,
+        tenantKey: tenantKey,
+      );
 
       await _storage.write(key: AppConfig.keyTenantId, value: tenantId);
       await _storage.write(key: AppConfig.keyTenantKey, value: tenantKey);

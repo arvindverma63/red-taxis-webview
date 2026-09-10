@@ -140,7 +140,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           ScaffoldMessenger.of(context).removeCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Press back again to exit First Taxis'),
+              content: Text('Press back again to exit Red Taxis'),
               duration: Duration(seconds: 2),
             ),
           );
@@ -403,7 +403,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           // Tiny Brand Footer
           Center(
             child: Text(
-              'FIRST TAXIS PARTNER v1.0.0',
+              '${(ref.watch(authProvider).tenantBranding?.name ?? "RED TAXIS").toUpperCase()} PARTNER v1.0.0',
               style: TextStyle(
                 color: Colors.grey.shade400,
                 fontSize: 9,

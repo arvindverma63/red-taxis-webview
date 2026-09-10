@@ -40,7 +40,7 @@ Future<void> initializeBackgroundLocationService() async {
       autoStart: false,
       isForegroundMode: true,
       notificationChannelId: _bgNotificationChannelId,
-      initialNotificationTitle: 'First Taxis Driver Active',
+      initialNotificationTitle: 'Red Taxis Driver Active',
       initialNotificationContent: 'Connecting continuous background GPS tracking...',
       foregroundServiceNotificationId: _bgNotificationId,
       foregroundServiceTypes: [AndroidForegroundType.location],
@@ -157,7 +157,7 @@ Future<void> _processAndSendLocation(
     final userId = userIdStr != null ? int.tryParse(userIdStr) : 65;
 
     final brandingJson = await storage.read(key: AppConfig.keyTenantBranding);
-    String fleetName = 'First Taxis';
+    String fleetName = 'Red Taxis';
     if (brandingJson != null) {
       try {
         final decoded = brandingJson;
@@ -165,6 +165,8 @@ Future<void> _processAndSendLocation(
           fleetName = 'Ace Taxis';
         } else if (decoded.contains('Red Taxis')) {
           fleetName = 'Red Taxis';
+        } else if (decoded.contains('First Taxis')) {
+          fleetName = 'First Taxis';
         }
       } catch (_) {}
     }

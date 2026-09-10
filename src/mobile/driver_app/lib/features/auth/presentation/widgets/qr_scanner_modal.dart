@@ -50,47 +50,69 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
   Map<String, String>? _parseBarcodeData(String raw) {
     final clean = raw.trim();
 
-    // 1. Check if JSON format: {"tenantId": "...", "tenantKey": "..."}
+    // 1. Check if JSON format: {"tenantId": "...", "tenantKey": "...", "companyName": "..."}
     if (clean.startsWith('{') && clean.endsWith('}')) {
       try {
         final decoded = jsonDecode(clean);
         if (decoded is Map<String, dynamic>) {
           final tenantId = decoded['tenantId']?.toString() ?? decoded['id']?.toString() ?? decoded['orgId']?.toString();
-          final tenantKey = decoded['tenantKey']?.toString() ?? decoded['key']?.toString() ?? decoded['accessKey']?.toString();
+          final tenantKey = decoded['tenantKey']?.toString() ?? decoded['key']?.toString() ?? decoded['accessKey']?.toString() ?? decoded['tenant_key']?.toString();
+          final companyName = decoded['companyName']?.toString() ?? decoded['name']?.toString() ?? decoded['displayName']?.toString();
+          final primaryColour = decoded['primaryColour']?.toString() ?? decoded['primaryColor']?.toString();
           if (tenantId != null && tenantId.isNotEmpty) {
-            return {
+            final map = <String, String>{
               'tenantId': tenantId,
               'tenantKey': tenantKey ?? '',
             };
+            if (companyName != null && companyName.isNotEmpty) {
+              map['companyName'] = companyName;
+            }
+            if (primaryColour != null && primaryColour.isNotEmpty) {
+              map['primaryColour'] = primaryColour;
+            }
+            return map;
           }
         }
       } catch (_) {}
     }
 
-    // 2. Check if URI / URL format (e.g. firsttaxis://setup?tenantId=...&tenantKey=... or tenant:org_first_taxis?key=...)
+    // 2. Check if URI / URL format (e.g. redtaxis://setup?tenantId=...&tenantKey=...)
     try {
       final uri = Uri.parse(clean);
-      if (uri.queryParameters.containsKey('tenantId') || uri.queryParameters.containsKey('tenant_id') || uri.queryParameters.containsKey('key')) {
-        final tenantId = uri.queryParameters['tenantId'] ?? uri.queryParameters['tenant_id'] ?? uri.path.replaceAll('/', '');
+      if (uri.queryParameters.containsKey('tenantId') || uri.queryParameters.containsKey('tenant_id') || uri.queryParameters.containsKey('key') || uri.queryParameters.containsKey('tenantKey')) {
+        final tenantId = uri.queryParameters['tenantId'] ?? uri.queryParameters['tenant_id'] ?? (uri.path.startsWith('org_') ? uri.path : uri.path.replaceAll('/', ''));
         final tenantKey = uri.queryParameters['tenantKey'] ?? uri.queryParameters['tenant_key'] ?? uri.queryParameters['key'] ?? '';
+        final companyName = uri.queryParameters['companyName'] ?? uri.queryParameters['name'] ?? uri.queryParameters['company'];
+        final primaryColour = uri.queryParameters['primaryColour'] ?? uri.queryParameters['primaryColor'] ?? uri.queryParameters['color'];
         if (tenantId.isNotEmpty) {
-          return {
+          final map = <String, String>{
             'tenantId': tenantId,
             'tenantKey': tenantKey,
           };
+          if (companyName != null && companyName.isNotEmpty) {
+            map['companyName'] = companyName;
+          }
+          if (primaryColour != null && primaryColour.isNotEmpty) {
+            map['primaryColour'] = primaryColour;
+          }
+          return map;
         }
       }
     } catch (_) {}
 
-    // 3. Check if colon / pipe separated format: "org_first_taxis:tk_live_..."
+    // 3. Check if colon / pipe separated format: "org_...:rtk_pub_..." or "org_...|rtk_pub_...|companyName"
     if (clean.contains(':') || clean.contains('|')) {
       final delimiter = clean.contains(':') ? ':' : '|';
       final parts = clean.split(delimiter);
       if (parts.length >= 2) {
-        return {
+        final map = <String, String>{
           'tenantId': parts[0].trim(),
           'tenantKey': parts[1].trim(),
         };
+        if (parts.length >= 3 && parts[2].trim().isNotEmpty) {
+          map['companyName'] = parts[2].trim();
+        }
+        return map;
       }
     }
 
@@ -388,11 +410,19 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                   child: Row(
                     children: [
                       _buildPresetChip(
-                        label: 'First Taxis (Live)',
-                        tenantId: 'org_first_taxis',
-                        tenantKey: 'tk_live_8f93c72b10a94e82b7',
-                        icon: Icons.local_taxi_rounded,
-                        color: const Color(0xFFCD1A21),
+                        label: 'Instacreator (Live API)',
+                        tenantId: 'org_08f19f20899e43308c1c1db3',
+                        tenantKey: 'rtk_pub_a7b32fd9677198faa9d8d2f932e62b433322e97991ffa144ee8d66b22416a0db',
+                        icon: Icons.business_rounded,
+                        color: const Color(0xFF6366F1),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildPresetChip(
+                        label: 'Red Taxis (Live)',
+                        tenantId: 'org_red_taxis',
+                        tenantKey: 'tk_live_red_taxis_dev',
+                        icon: Icons.directions_car_rounded,
+                        color: const Color(0xFFD32F2F),
                       ),
                       const SizedBox(width: 8),
                       _buildPresetChip(
@@ -404,11 +434,11 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                       ),
                       const SizedBox(width: 8),
                       _buildPresetChip(
-                        label: 'Red Taxis (Dev)',
-                        tenantId: 'org_red_taxis',
-                        tenantKey: 'tk_live_red_taxis_dev',
-                        icon: Icons.directions_car_rounded,
-                        color: const Color(0xFFD32F2F),
+                        label: 'First Taxis',
+                        tenantId: 'org_first_taxis',
+                        tenantKey: 'tk_live_8f93c72b10a94e82b7',
+                        icon: Icons.local_taxi_rounded,
+                        color: const Color(0xFFCD1A21),
                       ),
                     ],
                   ),

@@ -32,8 +32,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     // Default initial test value if empty
-    _tenantIdController.text = 'org_first_taxis';
-    _tenantKeyController.text = 'tk_live_8f93c72b10a94e82b7';
+    _tenantIdController.text = 'org_red_taxis';
+    _tenantKeyController.text = 'tk_live_red_taxis_dev';
   }
 
   @override
@@ -443,7 +443,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             controller: _tenantIdController,
             style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: _buildInputDecoration(
-              hint: 'e.g. org_first_taxis',
+              hint: 'e.g. org_red_taxis',
               icon: Icons.domain_rounded,
               isDark: isDark,
             ),
@@ -522,9 +522,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
-                _buildDemoChip('First Taxis', 'org_first_taxis', 'tk_live_8f93c72b10a94e82b7', const Color(0xFFCD1A21)),
-                _buildDemoChip('Ace Taxis', 'org_ace_taxis', 'tk_live_ace_staging_2026', const Color(0xFFE53935)),
+                _buildDemoChip('Instacreator', 'org_08f19f20899e43308c1c1db3', 'rtk_pub_a7b32fd9677198faa9d8d2f932e62b433322e97991ffa144ee8d66b22416a0db', const Color(0xFF6366F1)),
                 _buildDemoChip('Red Taxis', 'org_red_taxis', 'tk_live_red_taxis_dev', const Color(0xFFD32F2F)),
+                _buildDemoChip('Ace Taxis', 'org_ace_taxis', 'tk_live_ace_staging_2026', const Color(0xFFE53935)),
+                _buildDemoChip('First Taxis', 'org_first_taxis', 'tk_live_8f93c72b10a94e82b7', const Color(0xFFCD1A21)),
               ],
             ),
           ),

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Driver App</string>
+	<string>Red Taxis</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -71,11 +71,11 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires photo library access to upload driver compliance documents.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>First Taxis requires precise location access to track trips and send nearby booking offers while active.</string>
+	<string>Red Taxis requires precise location access to track trips and send nearby booking offers while active.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>First Taxis requires continuous precise background location access to track active bookings and receive jobs even when backgrounded.</string>
+	<string>Red Taxis requires continuous precise background location access to track active bookings and receive jobs even when backgrounded.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>First Taxis requires continuous background location access to receive booking offers.</string>
+	<string>Red Taxis requires continuous background location access to receive booking offers.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

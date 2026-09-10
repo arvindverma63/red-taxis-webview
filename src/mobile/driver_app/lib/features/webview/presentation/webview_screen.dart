@@ -128,7 +128,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                 const TripDetails(
                   id: 'sim-cash-booking',
                   pickupAddress: 'Heathrow Airport Terminal 5',
-                  dropoffAddress: 'First Taxis Office, London Central',
+                  dropoffAddress: 'Red Taxis Office, London Central',
                   fare: 45.00,
                   paymentType: 'Cash',
                 ),
@@ -388,7 +388,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               ScaffoldMessenger.of(currentContext).removeCurrentSnackBar();
               ScaffoldMessenger.of(currentContext).showSnackBar(
                 const SnackBar(
-                  content: Text('Press back again to exit First Taxis'),
+                  content: Text('Press back again to exit Red Taxis'),
                   duration: Duration(seconds: 2),
                 ),
               );

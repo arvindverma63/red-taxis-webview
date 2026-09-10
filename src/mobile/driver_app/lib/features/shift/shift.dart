@@ -106,7 +106,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     }
 
     final auth = _ref.read(authProvider);
-    final fleetName = auth.tenantBranding?.name ?? 'First Taxis';
+    final fleetName = auth.tenantBranding?.name ?? 'Red Taxis';
 
     try {
       _locationSubscription = _locationService
