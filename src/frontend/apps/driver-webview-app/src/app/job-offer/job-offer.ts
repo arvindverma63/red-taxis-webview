@@ -6,11 +6,17 @@ import { Subscription, interval } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
+interface ViaStop {
+  address: string;
+  postCode?: string;
+}
+
 interface JobDetails {
   id: string;
   fare: number;
   pickup: string;
   dropoff: string;
+  vias?: ViaStop[];
   paymentType: string;
   vehicleType: string;
   passenger: string;
@@ -45,6 +51,14 @@ interface JobDetails {
           <div class="status-row">
             <span class="status-lbl">Route:</span>
             <span class="status-val route-compact">{{ job.pickup }} ➔ {{ job.dropoff }}</span>
+          </div>
+          <div class="status-row" *ngIf="job.vias && job.vias.length > 0">
+            <span class="status-lbl">Vias ({{ job.vias.length }}):</span>
+            <span class="status-val route-compact">
+              <span *ngFor="let via of job.vias; let i = index">
+                {{ i + 1 }}. {{ via.address }}<br *ngIf="i < job.vias.length - 1"/>
+              </span>
+            </span>
           </div>
         </div>
 
@@ -136,23 +150,46 @@ interface JobDetails {
 
             <!-- Route timeline -->
             <div class="route-section">
-              <div class="route-timeline">
-                <div class="timeline-dot green">
-                  <div class="dot-inner"></div>
+              <!-- Pickup Stop -->
+              <div class="route-stop-row">
+                <div class="stop-indicator">
+                  <div class="timeline-dot green">
+                    <div class="dot-inner"></div>
+                  </div>
+                  <div class="stop-line"></div>
                 </div>
-                <div class="timeline-line"></div>
-                <div class="timeline-dot red">
-                  <div class="dot-inner"></div>
-                </div>
-              </div>
-              
-              <div class="route-addresses">
                 <div class="address-node">
-                  <span class="addr-label">PICKUP LOCATION</span>
+                  <span class="addr-label green-txt">PICKUP LOCATION</span>
                   <span class="addr-text">{{ job.pickup }}</span>
                 </div>
+              </div>
+
+              <!-- Via Stops -->
+              <div class="route-stop-row via-row" *ngFor="let via of job.vias; let i = index">
+                <div class="stop-indicator">
+                  <div class="timeline-dot yellow">
+                    <div class="dot-inner"></div>
+                  </div>
+                  <div class="stop-line"></div>
+                </div>
                 <div class="address-node">
-                  <span class="addr-label">DROPOFF LOCATION</span>
+                  <div class="via-label-row">
+                    <span class="addr-label yellow-txt">VIA STOP {{ i + 1 }}</span>
+                    <span class="via-badge" *ngIf="via.postCode">{{ via.postCode }}</span>
+                  </div>
+                  <span class="addr-text">{{ via.address }}</span>
+                </div>
+              </div>
+
+              <!-- Dropoff Stop -->
+              <div class="route-stop-row dropoff-row">
+                <div class="stop-indicator">
+                  <div class="timeline-dot red">
+                    <div class="dot-inner"></div>
+                  </div>
+                </div>
+                <div class="address-node">
+                  <span class="addr-label red-txt">DROPOFF LOCATION</span>
                   <span class="addr-text">{{ job.dropoff }}</span>
                 </div>
               </div>
@@ -199,7 +236,8 @@ interface JobDetails {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .sheet-grabber,
-    :host-context(.dark-theme) .timeline-line {
+    :host-context(.dark-theme) .timeline-line,
+    :host-context(.dark-theme) .stop-line {
       background-color: #2D2D35 !important;
     }
     :host-context(.dark-theme) .stub-notch {
@@ -217,7 +255,8 @@ interface JobDetails {
     :host-context(.dark-theme) .timeline-dot {
       background-color: #1E1E24 !important;
     }
-    :host-context(.dark-theme) .vehicle-badge {
+    :host-context(.dark-theme) .vehicle-badge,
+    :host-context(.dark-theme) .via-badge {
       background-color: #2D2D35 !important;
       border-color: #2D2D35 !important;
       color: #ECEFF1 !important;
@@ -245,12 +284,13 @@ interface JobDetails {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: flex-end; /* Aligns sheet to the bottom */
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
     }
 
+    /* Ambient glassmorphism overlay */
     .light-container::before {
       content: '';
       position: absolute;
@@ -260,39 +300,49 @@ interface JobDetails {
       z-index: 1;
     }
 
+    /* Modal bottom sheet container */
     .bottom-sheet {
       position: relative;
       z-index: 2;
       background-color: #FFFFFF;
-      border-radius: 28px 28px 0 0;
-      box-shadow: 0 -12px 36px rgba(0,0,0,0.12);
-      padding: 16px 20px 48px 20px;
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 12px 18px 24px 18px;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      gap: 12px;
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+      from {
+        transform: translateY(100%);
+      }
+      to {
+        transform: translateY(0);
+      }
     }
 
     .sheet-grabber {
-      width: 44px;
-      height: 5px;
-      background-color: #CFD8DC;
-      border-radius: 3px;
+      width: 36px;
+      height: 4px;
+      background-color: #E0E0E0;
+      border-radius: 2px;
       align-self: center;
       margin-bottom: 2px;
     }
 
+    /* Ticket Card */
     .details-card {
       background-color: #FFFFFF;
-      border-radius: 20px;
+      border-radius: 18px;
       border: 1px solid #ECEFF1;
-      display: flex;
-      flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
     }
 
     .ticket-header {
@@ -832,6 +882,32 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         }
       }
 
+      const viasParam = getParam('vias') || getParam('Vias') || getParam('viaStops') || getParam('via');
+      const paramVias: ViaStop[] = [];
+      if (viasParam) {
+        try {
+          const decoded = decodeURIComponent(viasParam);
+          const parsed = JSON.parse(decoded);
+          if (Array.isArray(parsed)) {
+            for (const v of parsed) {
+              if (typeof v === 'string' && v.trim()) {
+                paramVias.push({ address: v.trim() });
+              } else if (v && typeof v === 'object') {
+                const addr = v.address || v.Address || v.description || v.Description || v.stopAddress || '';
+                const pc = v.postCode || v.PostCode || v.postcode || '';
+                if (addr || pc) paramVias.push({ address: addr || pc, postCode: pc });
+              }
+            }
+          }
+        } catch (_) {
+          const decoded = decodeURIComponent(viasParam);
+          const parts = decoded.split(/;\s*|\|\s*/).map(s => s.trim()).filter(Boolean);
+          for (const p of parts) {
+            paramVias.push({ address: p });
+          }
+        }
+      }
+
       const isPlaceholder = !pickup || pickup === 'Pickup address' || pickup === 'Pickup location' || fareVal === 0;
 
       if (id && !isNaN(fareVal) && pickup && dropoff && !isPlaceholder) {
@@ -840,6 +916,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
           fare: fareVal,
           pickup: pickup,
           dropoff: dropoff,
+          vias: paramVias.length > 0 ? paramVias : undefined,
           paymentType: paymentType || 'Cash',
           vehicleType: vehicleType ? decodeURIComponent(vehicleType) : 'Standard Saloon',
           passenger: passenger ? decodeURIComponent(passenger) : 'Passenger',
@@ -874,11 +951,49 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     }
     if (!paymentType) paymentType = 'Cash';
 
+    // Parse vias from API payload
+    const vias: ViaStop[] = [];
+    const rawVias = item.vias || item.Vias || item.viaStops || item.ViaStops || item.viaPoints || item.ViaPoints || item.via || item.Via;
+    if (Array.isArray(rawVias) && rawVias.length > 0) {
+      for (const v of rawVias) {
+        if (typeof v === 'string') {
+          if (v.trim()) vias.push({ address: v.trim() });
+        } else if (v && typeof v === 'object') {
+          const addr = v.address || v.Address || v.stopAddress || v.StopAddress || v.description || v.Description || v.formattedAddress || v.name || '';
+          const pc = v.postCode || v.PostCode || v.postcode || v.Postcode || '';
+          if (addr || pc) {
+            vias.push({ address: addr || pc, postCode: pc });
+          }
+        }
+      }
+    } else if (typeof rawVias === 'string' && rawVias.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(rawVias);
+        if (Array.isArray(parsed)) {
+          for (const v of parsed) {
+            if (typeof v === 'string') {
+              if (v.trim()) vias.push({ address: v.trim() });
+            } else if (v && typeof v === 'object') {
+              const addr = v.address || v.Address || v.stopAddress || v.description || '';
+              const pc = v.postCode || v.postcode || '';
+              if (addr || pc) vias.push({ address: addr || pc, postCode: pc });
+            }
+          }
+        }
+      } catch (_) {
+        const parts = rawVias.split(/;\s*|\|\s*/).map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          vias.push({ address: p });
+        }
+      }
+    }
+
     return {
       id: (item.bookingId || item.BookingId || item.bookingNo || item.BookingNo || item.id || item.Id || this.jobIdFromUrl || '').toString(),
       fare: parseFloat((item.price || item.Price || item.fare || item.Fare || item.amount || item.Amount || item.driverPrice || item.DriverPrice || '0.00').toString()),
       pickup: item.pickupAddress || item.PickupAddress || item.pickup || item.Pickup || item.from || item.From || 'Pickup location',
       dropoff: item.destinationAddress || item.DestinationAddress || item.dropoff || item.Dropoff || item.dropoffAddress || item.DropoffAddress || item.to || item.To || 'Dropoff destination',
+      vias: vias.length > 0 ? vias : undefined,
       paymentType: paymentType,
       vehicleType: item.vehicleType || item.VehicleType || item.vehicle || item.Vehicle || 'Standard Saloon',
       passenger: item.passengerName || item.PassengerName || item.passenger || item.Passenger || item.customerName || item.CustomerName || 'Passenger',

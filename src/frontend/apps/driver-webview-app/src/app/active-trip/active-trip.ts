@@ -2,11 +2,17 @@ import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
+interface ViaStop {
+  address: string;
+  postCode?: string;
+}
+
 interface JobDetails {
   id: string;
   fare: number;
   pickup: string;
   dropoff: string;
+  vias?: ViaStop[];
   paymentType: string;
   vehicleType: string;
   passenger: string;
@@ -72,23 +78,46 @@ interface JobDetails {
 
             <!-- Route timeline -->
             <div class="route-section">
-              <div class="route-timeline">
-                <div class="timeline-dot green">
-                  <div class="dot-inner"></div>
+              <!-- Pickup Stop -->
+              <div class="route-stop-row">
+                <div class="stop-indicator">
+                  <div class="timeline-dot green">
+                    <div class="dot-inner"></div>
+                  </div>
+                  <div class="stop-line"></div>
                 </div>
-                <div class="timeline-line"></div>
-                <div class="timeline-dot red">
-                  <div class="dot-inner"></div>
-                </div>
-              </div>
-              
-              <div class="route-addresses">
                 <div class="address-node">
-                  <span class="addr-label">PICKUP LOCATION</span>
+                  <span class="addr-label green-txt">PICKUP LOCATION</span>
                   <span class="addr-text">{{ job.pickup }}</span>
                 </div>
+              </div>
+
+              <!-- Via Stops -->
+              <div class="route-stop-row via-row" *ngFor="let via of job.vias; let i = index">
+                <div class="stop-indicator">
+                  <div class="timeline-dot yellow">
+                    <div class="dot-inner"></div>
+                  </div>
+                  <div class="stop-line"></div>
+                </div>
                 <div class="address-node">
-                  <span class="addr-label">DROPOFF LOCATION</span>
+                  <div class="via-label-row">
+                    <span class="addr-label yellow-txt">VIA STOP {{ i + 1 }}</span>
+                    <span class="via-badge" *ngIf="via.postCode">{{ via.postCode }}</span>
+                  </div>
+                  <span class="addr-text">{{ via.address }}</span>
+                </div>
+              </div>
+
+              <!-- Dropoff Stop -->
+              <div class="route-stop-row dropoff-row">
+                <div class="stop-indicator">
+                  <div class="timeline-dot red">
+                    <div class="dot-inner"></div>
+                  </div>
+                </div>
+                <div class="address-node">
+                  <span class="addr-label red-txt">DROPOFF LOCATION</span>
                   <span class="addr-text">{{ job.dropoff }}</span>
                 </div>
               </div>
@@ -372,27 +401,37 @@ interface JobDetails {
       color: #37474F;
     }
 
+    .green-txt {
+      color: #2E7D32 !important;
+    }
+
+    .yellow-txt {
+      color: #F57F17 !important;
+    }
+
+    .red-txt {
+      color: #D32F2F !important;
+    }
+
     /* Route Timeline */
     .route-section {
       display: flex;
-      gap: 14px;
+      flex-direction: column;
       margin-top: 4px;
     }
 
-    .route-timeline {
+    .route-stop-row {
+      display: flex;
+      gap: 12px;
       position: relative;
+    }
+
+    .stop-indicator {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 12px;
-    }
-
-    .timeline-line {
-      position: absolute;
-      top: 12px;
-      bottom: 12px;
-      width: 2px;
-      background-color: #CFD8DC;
+      width: 14px;
+      flex-shrink: 0;
     }
 
     .timeline-dot {
@@ -404,15 +443,19 @@ interface JobDetails {
       justify-content: center;
       align-items: center;
       background-color: #FFFFFF;
+      margin-top: 2px;
     }
 
     .timeline-dot.green {
       border: 2px solid #4CAF50;
     }
 
+    .timeline-dot.yellow {
+      border: 2px solid #F57F17;
+    }
+
     .timeline-dot.red {
       border: 2px solid #D32F2F;
-      margin-top: auto;
     }
 
     .dot-inner {
@@ -425,8 +468,50 @@ interface JobDetails {
       background-color: #4CAF50;
     }
 
+    .timeline-dot.yellow .dot-inner {
+      background-color: #F57F17;
+    }
+
     .timeline-dot.red .dot-inner {
       background-color: #D32F2F;
+    }
+
+    .stop-line {
+      width: 2px;
+      flex: 1;
+      min-height: 18px;
+      background-color: #CFD8DC;
+      margin: 2px 0;
+    }
+
+    .address-node {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-bottom: 12px;
+      min-width: 0;
+    }
+
+    .route-stop-row.dropoff-row .address-node {
+      padding-bottom: 0;
+    }
+
+    .via-label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .via-badge {
+      font-size: 8px;
+      font-weight: 800;
+      color: #F57F17;
+      background-color: #FFF8E1;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #FFE082;
+      letter-spacing: 0.5px;
     }
 
     .route-addresses {
@@ -630,12 +715,39 @@ export class ActiveTripComponent implements OnInit {
       const notes = params['notes'];
       const statusParam = params['status'];
 
+      const viasParam = params['vias'] || params['Vias'];
+      const paramVias: ViaStop[] = [];
+      if (viasParam) {
+        try {
+          const decoded = decodeURIComponent(viasParam);
+          const parsed = JSON.parse(decoded);
+          if (Array.isArray(parsed)) {
+            for (const v of parsed) {
+              if (typeof v === 'string' && v.trim()) {
+                paramVias.push({ address: v.trim() });
+              } else if (v && typeof v === 'object') {
+                const addr = v.address || v.Address || v.description || v.Description || v.stopAddress || '';
+                const pc = v.postCode || v.PostCode || v.postcode || '';
+                if (addr || pc) paramVias.push({ address: addr || pc, postCode: pc });
+              }
+            }
+          }
+        } catch (_) {
+          const decoded = decodeURIComponent(viasParam);
+          const parts = decoded.split(/;\s*|\|\s*/).map(s => s.trim()).filter(Boolean);
+          for (const p of parts) {
+            paramVias.push({ address: p });
+          }
+        }
+      }
+
       if (id && !isNaN(fareVal) && pickup && dropoff) {
         this.job = {
           id: id.toString(),
           fare: fareVal,
           pickup: decodeURIComponent(pickup),
           dropoff: decodeURIComponent(dropoff),
+          vias: paramVias.length > 0 ? paramVias : undefined,
           paymentType: paymentType || 'Cash',
           vehicleType: vehicleType ? decodeURIComponent(vehicleType) : 'Standard Saloon',
           passenger: passenger ? decodeURIComponent(passenger) : 'Passenger',

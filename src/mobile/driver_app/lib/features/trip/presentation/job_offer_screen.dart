@@ -231,6 +231,7 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                         padding: const EdgeInsets.all(24.0),
                         child: Column(
                           children: [
+                            // Pickup row
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -246,15 +247,10 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                                     ),
                                     Container(
                                       width: 2,
-                                      height: 50,
+                                      height: 40,
                                       decoration: const BoxDecoration(
                                         color: Colors.grey,
                                       ),
-                                    ),
-                                    const Icon(
-                                      Icons.location_on,
-                                      color: AppTheme.primaryRed,
-                                      size: 20,
                                     ),
                                   ],
                                 ),
@@ -272,16 +268,89 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                                           letterSpacing: 0.5,
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 4),
                                       Text(
                                         widget.trip.pickupAddress,
                                         style: const TextStyle(
-                                          fontSize: 15,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w700,
                                           color: AppTheme.textLightPrimary,
                                         ),
                                       ),
-                                      const SizedBox(height: 24),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Via rows
+                            for (int i = 0; i < widget.trip.vias.length; i++)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Column(
+                                    children: [
+                                      Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.orange,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 2,
+                                        height: 40,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'VIA STOP ${i + 1}',
+                                          style: const TextStyle(
+                                            color: Colors.orange,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          widget.trip.vias[i],
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.textLightPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                            // Dropoff row
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  color: AppTheme.primaryRed,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                       const Text(
                                         'DROPOFF ADDRESS',
                                         style: TextStyle(
@@ -291,11 +360,11 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                                           letterSpacing: 0.5,
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 4),
                                       Text(
                                         widget.trip.dropoffAddress,
                                         style: const TextStyle(
-                                          fontSize: 15,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w700,
                                           color: AppTheme.textLightPrimary,
                                         ),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
@@ -14,6 +15,7 @@ class TripDetails {
   final String guid;
   final String pickupAddress;
   final String dropoffAddress;
+  final List<String> vias;
   final double fare;
   final String paymentType;
   final String vehicleType;
@@ -25,6 +27,7 @@ class TripDetails {
     this.guid = '',
     required this.pickupAddress,
     required this.dropoffAddress,
+    this.vias = const [],
     required this.fare,
     required this.paymentType,
     this.vehicleType = 'Standard Saloon',
@@ -158,11 +161,45 @@ class TripNotifier extends StateNotifier<TripState> {
     final passenger = (job['passengerName'] ?? job['PassengerName'] ?? job['passenger'] ?? job['Passenger'] ?? job['customerName'] ?? job['CustomerName'] ?? 'Passenger').toString();
     final notes = (job['details'] ?? job['Details'] ?? job['notes'] ?? job['Notes'] ?? job['comment'] ?? job['Comment'] ?? job['specialRequirements'] ?? job['SpecialRequirements'] ?? '').toString();
 
+    // Parse vias from payload
+    final List<String> vias = [];
+    final rawVias = job['vias'] ?? job['Vias'] ?? job['viaStops'] ?? job['ViaStops'] ?? job['viaPoints'] ?? job['ViaPoints'] ?? job['via'] ?? job['Via'];
+    if (rawVias is List) {
+      for (final v in rawVias) {
+        if (v is String && v.trim().isNotEmpty) {
+          vias.add(v.trim());
+        } else if (v is Map) {
+          final addr = (v['address'] ?? v['Address'] ?? v['stopAddress'] ?? v['StopAddress'] ?? v['description'] ?? v['Description'] ?? v['formattedAddress'] ?? '').toString();
+          if (addr.isNotEmpty) {
+            vias.add(addr);
+          }
+        }
+      }
+    } else if (rawVias is String && rawVias.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawVias);
+        if (decoded is List) {
+          for (final v in decoded) {
+            if (v is String && v.trim().isNotEmpty) {
+              vias.add(v.trim());
+            } else if (v is Map) {
+              final addr = (v['address'] ?? v['Address'] ?? v['stopAddress'] ?? v['description'] ?? '').toString();
+              if (addr.isNotEmpty) vias.add(addr);
+            }
+          }
+        }
+      } catch (_) {
+        final parts = rawVias.split(RegExp(r'[;|]')).map((s) => s.trim()).where((s) => s.isNotEmpty);
+        vias.addAll(parts);
+      }
+    }
+
     return TripDetails(
       id: id,
       guid: guid,
       pickupAddress: pickup,
       dropoffAddress: dropoff,
+      vias: vias,
       fare: fare,
       paymentType: paymentType,
       vehicleType: vehicleType,

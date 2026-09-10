@@ -197,6 +197,12 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Enhanced QR Code Parser**: Upgraded `_parseBarcodeData` in `qr_scanner_modal.dart` to parse JSON, URLs/URIs, and delimited codes containing custom company names or keys, and added live test preset for `instacreator` (`org_08f19f20899e43308c1c1db3`).
   - **Automated Test Coverage**: Added dedicated test cases in `tenant_auth_test.dart` verifying correct parsing and state updates from live public tenant-info payloads (100% passing).
 
+- [x] **Via Stops Display & Multi-Stop Route Timeline Integration**: Added full support for displaying intermediate via stops across Job Offers (`/#/job-offer`), Active Trips (`/#/active-trip`), and native mobile screens:
+  - **Dynamic Multi-Stop Timeline (`job-offer.ts` & `active-trip.ts`)**: Upgraded the route timeline into a flexible multi-row layout supporting any number of via stops. Renders color-coded indicators (Green for Pickup, Yellow for Via Stops with postcodes and index badges, Red for Dropoff) connected by vertical path lines that align with wrapping address text.
+  - **Status Screen & Overlay Via Details**: Added via listing to the full-screen alerts for cancelled, amended, and unallocated bookings when via stops are present.
+  - **Universal Via Parsing & Extraction**: Implemented defensive via parser in TypeScript and Dart supporting Array of objects (`address`, `postCode`, `description`), Array of strings, raw JSON strings, and semicolon/pipe delimited strings. Handles payload casing variants (`vias`, `Vias`, `viaStops`, `ViaStops`, `via`, `Via`) from both push notification payloads and direct API endpoints (`GetJobOffers`, `RetrieveJobOffer`, `FindById`).
+  - **Cross-Layer URL Bridge Synchronization**: Updated Flutter `TripDetails` model and `main_shell.dart` to serialize and propagate encoded via stops via URL query parameters (`&vias=...`) to remote WebViews. Updated push notification handler (`notification_handler.dart`) and native fallback screens (`job_offer_screen.dart`, `active_trip_screen.dart`) to render via stops seamlessly.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

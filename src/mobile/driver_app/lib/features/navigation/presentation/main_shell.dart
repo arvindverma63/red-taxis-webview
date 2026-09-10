@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert';
 import 'package:driver_app/core/config/constants.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/core/notifications/notification_handler.dart';
@@ -56,6 +57,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       final encodedPassenger = Uri.encodeComponent(trip.passenger);
       final encodedNotes = Uri.encodeComponent(trip.notes);
       final encodedGuid = Uri.encodeComponent(trip.guid);
+      final encodedVias = Uri.encodeComponent(jsonEncode(trip.vias));
       return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
@@ -64,7 +66,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           }
         },
         child: DriverWebviewScreen(
-          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/job-offer?jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes',
+          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/job-offer?jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes&vias=$encodedVias',
           title: 'New Job Offer',
           hideAppBar: true,
           onBack: () {

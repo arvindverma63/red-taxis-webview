@@ -117,30 +117,74 @@ class ActiveTripScreen extends ConsumerWidget {
                     const Divider(height: 24),
                     
                     // Show directions indicators
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Column(
                       children: [
-                        Column(
+                        // Pickup
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.my_location, color: Colors.blue, size: 20),
-                            Container(width: 2, height: 40, color: Colors.grey[350]),
-                            const Icon(Icons.location_on, color: AppTheme.primaryRed, size: 20),
+                            Column(
+                              children: [
+                                const Icon(Icons.my_location, color: Colors.blue, size: 20),
+                                Container(width: 2, height: 32, color: Colors.grey[350]),
+                              ],
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('PICKUP', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text(trip.pickupAddress, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
+
+                        // Vias
+                        for (int i = 0; i < trip.vias.length; i++)
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('PICKUP', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 2),
-                              Text(trip.pickupAddress, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                              const SizedBox(height: 24),
-                              const Text('DROP-OFF', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 2),
-                              Text(trip.dropoffAddress, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                              Column(
+                                children: [
+                                  const Icon(Icons.alt_route, color: Colors.orange, size: 20),
+                                  Container(width: 2, height: 32, color: Colors.grey[350]),
+                                ],
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('VIA STOP ${i + 1}', style: const TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 2),
+                                    Text(trip.vias[i], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
+
+                        // Dropoff
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.location_on, color: AppTheme.primaryRed, size: 20),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('DROP-OFF', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text(trip.dropoffAddress, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

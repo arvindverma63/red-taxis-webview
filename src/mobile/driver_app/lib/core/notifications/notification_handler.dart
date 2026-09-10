@@ -220,7 +220,37 @@ class NotificationNavigationHandler {
       final passenger = data['passengerName'] ?? data['passenger'] ?? 'Passenger';
       final notes = data['notes'] ?? '';
 
-      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId', guid='$guid'");
+      final rawVias = data['vias'] ?? data['Vias'] ?? data['via'] ?? data['Via'] ?? data['viaStops'] ?? data['ViaStops'];
+      final List<String> vias = [];
+      if (rawVias is List) {
+        for (final v in rawVias) {
+          if (v is String && v.trim().isNotEmpty) {
+            vias.add(v.trim());
+          } else if (v is Map) {
+            final addr = (v['address'] ?? v['Address'] ?? v['description'] ?? '').toString();
+            if (addr.isNotEmpty) vias.add(addr);
+          }
+        }
+      } else if (rawVias is String && rawVias.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(rawVias);
+          if (decoded is List) {
+            for (final v in decoded) {
+              if (v is String && v.trim().isNotEmpty) {
+                vias.add(v.trim());
+              } else if (v is Map) {
+                final addr = (v['address'] ?? v['description'] ?? '').toString();
+                if (addr.isNotEmpty) vias.add(addr);
+              }
+            }
+          }
+        } catch (_) {
+          final parts = rawVias.split(RegExp(r'[;|]')).map((s) => s.trim()).where((s) => s.isNotEmpty);
+          vias.addAll(parts);
+        }
+      }
+
+      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId', guid='$guid', viasCount=${vias.length}");
       targetRef.read(tripProvider.notifier).fetchAndOfferJob(
             bookingId,
             guid: guid,
@@ -229,6 +259,7 @@ class NotificationNavigationHandler {
               guid: guid,
               pickupAddress: pickup.toString(),
               dropoffAddress: dropoff.toString(),
+              vias: vias,
               fare: fare,
               paymentType: paymentType.toString(),
               vehicleType: vehicleType.toString(),
