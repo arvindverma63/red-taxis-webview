@@ -285,6 +285,7 @@ interface JobDetails {
       display: flex;
       flex-direction: column;
       justify-content: flex-end; /* Aligns sheet to the bottom */
+      align-items: center;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
@@ -315,6 +316,18 @@ interface JobDetails {
       animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       max-height: 90vh;
       overflow-y: auto;
+      width: 100%;
+      max-width: 500px;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 600px) {
+      .bottom-sheet {
+        border-radius: 28px;
+        margin-bottom: 20px;
+        width: 92%;
+      }
     }
 
     @keyframes slideUp {
@@ -538,46 +551,55 @@ interface JobDetails {
       line-height: 1.4;
     }
 
+    /* Route Section & Dynamic Multi-Stop Timeline */
     .route-section {
       display: flex;
-      gap: 14px;
+      flex-direction: column;
       margin-top: 4px;
+      width: 100%;
     }
 
-    .route-timeline {
+    .route-stop-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 12px;
       position: relative;
+      width: 100%;
+    }
+
+    .stop-indicator {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 12px;
-    }
-
-    .timeline-line {
-      position: absolute;
-      top: 12px;
-      bottom: 12px;
-      width: 2px;
-      background-color: #CFD8DC;
+      width: 14px;
+      flex-shrink: 0;
     }
 
     .timeline-dot {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       z-index: 2;
       display: flex;
       justify-content: center;
       align-items: center;
       background-color: #FFFFFF;
+      margin-top: 2px;
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
 
     .timeline-dot.green {
-      border: 2px solid #4CAF50;
+      border: 2px solid #2E7D32;
+    }
+
+    .timeline-dot.yellow {
+      border: 2px solid #F57F17;
     }
 
     .timeline-dot.red {
       border: 2px solid #D32F2F;
-      margin-top: auto;
     }
 
     .dot-inner {
@@ -587,24 +609,66 @@ interface JobDetails {
     }
 
     .timeline-dot.green .dot-inner {
-      background-color: #4CAF50;
+      background-color: #2E7D32;
+    }
+
+    .timeline-dot.yellow .dot-inner {
+      background-color: #F57F17;
     }
 
     .timeline-dot.red .dot-inner {
       background-color: #D32F2F;
     }
 
-    .route-addresses {
+    .stop-line {
+      width: 2px;
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      min-height: 18px;
+      background-color: #CFD8DC;
+      margin: 2px 0;
     }
 
     .address-node {
+      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 2px;
+      padding-bottom: 12px;
+      min-width: 0;
+    }
+
+    .route-stop-row.dropoff-row .address-node {
+      padding-bottom: 0;
+    }
+
+    .via-label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .via-badge {
+      font-size: 8px;
+      font-weight: 800;
+      color: #F57F17;
+      background-color: #FFF8E1;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #FFE082;
+      letter-spacing: 0.5px;
+    }
+
+    .green-txt {
+      color: #2E7D32 !important;
+    }
+
+    .yellow-txt {
+      color: #F57F17 !important;
+    }
+
+    .red-txt {
+      color: #D32F2F !important;
     }
 
     .addr-label {
@@ -612,6 +676,7 @@ interface JobDetails {
       font-weight: 800;
       color: #90A4AE;
       letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
     .addr-text {
@@ -619,6 +684,8 @@ interface JobDetails {
       font-weight: 700;
       color: #37474F;
       line-height: 1.4;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .action-footer {

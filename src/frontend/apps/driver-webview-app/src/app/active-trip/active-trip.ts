@@ -182,6 +182,7 @@ interface JobDetails {
       display: flex;
       flex-direction: column;
       justify-content: flex-end; /* Aligns sheet to the very bottom */
+      align-items: center;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
@@ -204,11 +205,23 @@ interface JobDetails {
       background-color: #FFFFFF;
       border-radius: 28px 28px 0 0;
       box-shadow: 0 -12px 36px rgba(0,0,0,0.12);
-      padding: 16px 20px 64px 20px; /* Safe padding for system nav */
+      padding: 16px 20px 48px 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
       animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 600px) {
+      .bottom-sheet {
+        border-radius: 28px;
+        margin-bottom: 20px;
+        width: 92%;
+      }
     }
 
     @keyframes slideUp {
@@ -514,24 +527,12 @@ interface JobDetails {
       letter-spacing: 0.5px;
     }
 
-    .route-addresses {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .address-node {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
     .addr-label {
       font-size: 8px;
       font-weight: 800;
       color: #90A4AE;
       letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
     .addr-text {
@@ -539,6 +540,8 @@ interface JobDetails {
       font-weight: 700;
       color: #37474F;
       line-height: 1.4;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     /* Utilities calling row */
