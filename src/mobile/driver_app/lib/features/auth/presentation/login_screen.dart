@@ -32,9 +32,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Default initial test value if empty
-    _tenantIdController.text = 'org_red_taxis';
-    _tenantKeyController.text = 'tk_live_red_taxis_dev';
   }
 
   @override
@@ -521,54 +518,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
             ),
           ),
-
-          const SizedBox(height: 20),
-
-          // Demo Preset Chips
-          Center(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                _buildDemoChip('Instacreator', 'org_08f19f20899e43308c1c1db3', 'rtk_pub_a7b32fd9677198faa9d8d2f932e62b433322e97991ffa144ee8d66b22416a0db', const Color(0xFF6366F1)),
-                _buildDemoChip('Red Taxis', 'org_red_taxis', 'tk_live_red_taxis_dev', const Color(0xFFD32F2F)),
-                _buildDemoChip('Ace Taxis', 'org_ace_taxis', 'tk_live_ace_staging_2026', const Color(0xFFE53935)),
-                _buildDemoChip('First Taxis', 'org_first_taxis', 'tk_live_8f93c72b10a94e82b7', const Color(0xFFCD1A21)),
-              ],
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDemoChip(String label, String id, String key, Color color) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() {
-          _tenantIdController.text = id;
-          _tenantKeyController.text = key;
-        });
-        _submitTenantConfig();
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.flash_on_rounded, color: color, size: 14),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
       ),
     );
   }
