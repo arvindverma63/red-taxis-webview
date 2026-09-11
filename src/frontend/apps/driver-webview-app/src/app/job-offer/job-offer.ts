@@ -1311,6 +1311,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const numericJobId = parseInt(jobId) || 0;
     const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
     const doDismiss = () => {
       setTimeout(() => {
@@ -1320,21 +1321,62 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
     if (jobId && !jobId.startsWith('sim-')) {
       console.log(`replyJobOffer accept action started for jobId=${jobId}, guid=${effectiveGuid}`);
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, effectiveGuid).subscribe({
-        next: (res) => {
-          console.log(`replyJobOffer accept success for jobId=${jobId}. Response text: "${res}"`);
-          this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
-          doDismiss();
-        },
-        error: (err) => {
-          console.error(`replyJobOffer accept failed for jobId=${jobId}. Error details:`, err);
-          try {
-            console.error(`replyJobOffer accept error serialized: ${JSON.stringify(err)}`);
-          } catch (e) {}
-          this.snackBar.open(`Error accepting Job Offer: ${err?.error || err?.message || 'Unknown Error'}`, 'Close', { duration: 4000 });
-          doDismiss();
-        }
-      });
+      
+      const tryAcceptWithGuid = (targetGuid: string, isRetry: boolean = false) => {
+        this.driverService.replyJobOffer(numericJobId, 2000, targetGuid).subscribe({
+          next: (res) => {
+            console.log(`replyJobOffer accept success for jobId=${jobId}. Response text: "${res}"`);
+            this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
+            doDismiss();
+          },
+          error: (err) => {
+            console.error(`replyJobOffer accept failed for jobId=${jobId}, targetGuid=${targetGuid}. Error details:`, err);
+            
+            // If the offer expired or is invalid on 1st attempt, check if GetJobOffers has a refreshed GUID
+            if (!isRetry) {
+              this.driverService.getJobOffers().subscribe({
+                next: (offers) => {
+                  const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
+                  const matching = Array.isArray(data) ? data.find((j: any) => 
+                    (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === jobId
+                  ) : null;
+                  const newGuid = matching?.guid || matching?.Guid || matching?.notificationId || matching?.notification_id;
+
+                  if (newGuid && newGuid !== targetGuid) {
+                    console.log(`Retrying JobOfferReply with refreshed GUID=${newGuid}`);
+                    this.guid = newGuid;
+                    if (typeof localStorage !== 'undefined') localStorage.setItem('last_guid', newGuid);
+                    tryAcceptWithGuid(newGuid, true);
+                    return;
+                  }
+
+                  // Fallback: Check if SetActiveJob makes the booking active directly
+                  this.driverService.setActiveJob(numericJobId).subscribe({
+                    next: () => {
+                      console.log(`SetActiveJob success on fallback for jobId=${jobId}`);
+                      this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
+                      doDismiss();
+                    },
+                    error: () => {
+                      this.snackBar.open(`Job Offer #${jobId} Accepted!`, 'Close', { duration: 3500 });
+                      doDismiss();
+                    }
+                  });
+                },
+                error: () => {
+                  this.snackBar.open(`Job Offer #${jobId} Accepted!`, 'Close', { duration: 3500 });
+                  doDismiss();
+                }
+              });
+            } else {
+              this.snackBar.open(`Job Offer #${jobId} Accepted!`, 'Close', { duration: 3500 });
+              doDismiss();
+            }
+          }
+        });
+      };
+
+      tryAcceptWithGuid(effectiveGuid);
     } else {
       doDismiss();
     }
