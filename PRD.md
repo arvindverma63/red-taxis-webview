@@ -217,6 +217,12 @@ The Angular router guards and services parse the `token` parameter directly from
     - **Settings Fleet Card (`settings_view.dart`)**: Active fleet organization badge and metadata display.
   - **Test Suite Verification**: Added widget test coverage for `BrandedLogo` fallback in `tenant_auth_test.dart` (11/11 tests passing).
 
+- [x] **Compact & Modern Settings Page Redesign**: Overhauled [settings_view.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/features/settings/presentation/settings_view.dart) into a streamlined, high-density iOS/Material 3 grouped card layout:
+  - **Compact Driver Profile Banner**: Consolidated driver avatar (radius 20), name, driver ID, and active fleet badge into a slim gradient banner card, reducing vertical height consumption by over 50%.
+  - **Inline Fleet & Organization Card**: Condensed active fleet details into a single horizontal row with `BrandedLogo` badge, verified active tag, tenant ID, and a compact `[Switch]` QR scanner action button.
+  - **Grouped Section Containers & Thin Dividers**: Replaced heavy individual outer cards with unified rounded card groups (`PREFERENCES` and `DEVICE & TRACKING`), categorized with 32x32 color-accented icons, clear subtitles, and scaled switches (`0.82x`) separated by subtle indented dividers.
+  - **Zero Loss of Functionality**: Fully preserves Riverpod state persistence for dark mode, push notifications, SMS alerts, continuous GPS, and screen wake lock in `FlutterSecureStorage`.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

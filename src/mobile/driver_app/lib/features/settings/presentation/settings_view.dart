@@ -25,18 +25,11 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   bool _smsAlerts = false;
   bool _screenAlwaysOn = true;
   bool _isLoading = true;
-  Timer? _loadTimer;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
-  }
-
-  @override
-  void dispose() {
-    _loadTimer?.cancel();
-    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -75,21 +68,20 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       final tenantKey = result['tenantKey'] ?? '';
 
       if (tenantId.isNotEmpty) {
-        // Confirm switch
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             title: const Row(
               children: [
                 Icon(Icons.swap_horiz_rounded, color: Color(0xFFCD1A21)),
                 SizedBox(width: 8),
-                Text('Confirm Fleet Switch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text('Confirm Fleet Switch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
             content: Text(
-              'Switching to fleet "$tenantId" will save the new fleet credentials and sign you out so you can log in with your credentials for this fleet.\n\nDo you want to proceed?',
-              style: const TextStyle(fontSize: 14, height: 1.4),
+              'Switching to fleet "$tenantId" will save the new fleet credentials and sign you out.\n\nDo you want to proceed?',
+              style: const TextStyle(fontSize: 13, height: 1.4),
             ),
             actions: [
               TextButton(
@@ -100,7 +92,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFCD1A21),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: () async {
                   Navigator.of(ctx).pop();
@@ -116,234 +109,6 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     }
   }
 
-  Widget _buildToggle({
-    required String label,
-    required bool value,
-    required IconData icon,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final primaryColor = theme.colorScheme.primary;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkSurface : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.grey.withValues(alpha: 0.12),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: primaryColor, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14.5,
-              ),
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            activeTrackColor: primaryColor,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionCard(String title, List<Widget> children) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final primaryColor = theme.colorScheme.primary;
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkSurface.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey.withValues(alpha: 0.08),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Title
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w900,
-                  color: isDark ? AppTheme.textDarkPrimary : AppTheme.textLightPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFleetCard(AuthState authState, bool isDark) {
-    final branding = authState.tenantBranding ?? TenantBranding.defaultFirstTaxis();
-    final tenantId = authState.tenantId ?? branding.tenantId;
-    final tenantKey = authState.tenantKey ?? branding.tenantKey;
-    final maskedKey = tenantKey.length > 8
-        ? '${tenantKey.substring(0, 6)}••••••••${tenantKey.substring(tenantKey.length - 4)}'
-        : '••••••••••••';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: branding.primaryColor.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: branding.primaryColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding: const EdgeInsets.all(8),
-                child: BrandedLogo(
-                  branding: branding,
-                  size: 28,
-                  fallbackIcon: Icons.domain_rounded,
-                  fallbackIconColor: branding.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      branding.name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'ID: $tenantId',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 12),
-                    SizedBox(width: 4),
-                    Text(
-                      'Active',
-                      style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w800),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tenant Key:',
-                style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF64748B)),
-              ),
-              Text(
-                maskedKey,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'monospace',
-                  color: isDark ? Colors.grey[300] : const Color(0xFF334155),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: _handleChangeFleet,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: branding.primaryColor,
-              side: BorderSide(color: branding.primaryColor, width: 1.5),
-              minimumSize: const Size.fromHeight(44),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
-            label: const Text('Change Fleet / Scan QR Code', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -352,8 +117,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     final branding = authState.tenantBranding ?? TenantBranding.defaultFirstTaxis();
     final name = authState.email ?? 'Driver';
     final userId = authState.userId?.toString() ?? 'No ID';
-    
-    // Watch ThemeMode to update switch
+
     final themeMode = ref.watch(themeModeProvider);
     final isThemeDark = themeMode == ThemeMode.dark;
 
@@ -364,7 +128,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+      backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF6F8FA),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -372,151 +136,437 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: const Text('Settings'),
+        title: const Text('Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
         children: [
-          // 1. Driver Profile Summary Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [branding.gradientStart, branding.gradientMid],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(26),
-              boxShadow: [
-                BoxShadow(
-                  color: branding.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  child: Text(
-                    (name.trim().isNotEmpty ? name.trim()[0] : 'D').toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Driver ID: $userId',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+          // 1. Compact Driver Profile Banner
+          _buildCompactProfileBanner(branding, name, userId),
 
-          // 2. Fleet & Organization Section
-          _buildSectionCard(
-            'FLEET & ORGANIZATION',
-            [
-              _buildFleetCard(authState, isDark),
-            ],
-          ),
+          const SizedBox(height: 14),
 
-          // 3. Appearance Section
-          _buildSectionCard(
-            'APPEARANCE',
-            [
-              _buildToggle(
-                label: 'Dark Theme',
-                value: isThemeDark,
+          // 2. Compact Fleet & Organization Card
+          _buildSectionHeader('FLEET & ORGANIZATION', isDark),
+          _buildCompactFleetCard(authState, branding, isDark),
+
+          const SizedBox(height: 14),
+
+          // 3. Compact Preferences Group
+          _buildSectionHeader('PREFERENCES', isDark),
+          _buildGroupCard(
+            isDark: isDark,
+            children: [
+              _buildCompactRow(
                 icon: Icons.dark_mode_outlined,
-                onChanged: (val) {
-                  ref.read(themeModeProvider.notifier).toggleTheme(val);
-                },
+                iconColor: const Color(0xFF818CF8),
+                title: 'Dark Theme',
+                subtitle: 'Toggle dark mode appearance',
+                isDark: isDark,
+                trailing: Switch.adaptive(
+                  value: isThemeDark,
+                  activeTrackColor: branding.primaryColor,
+                  onChanged: (val) {
+                    ref.read(themeModeProvider.notifier).toggleTheme(val);
+                  },
+                ),
               ),
-            ],
-          ),
-
-          // 4. Notifications Section
-          _buildSectionCard(
-            'NOTIFICATIONS',
-            [
-              _buildToggle(
-                label: 'Push Notifications',
-                value: _pushNotifications,
+              _buildDivider(isDark),
+              _buildCompactRow(
                 icon: Icons.notifications_none_outlined,
-                onChanged: (val) {
-                  setState(() => _pushNotifications = val);
-                  _saveSetting('settings_push', val);
-                },
+                iconColor: const Color(0xFF38BDF8),
+                title: 'Push Notifications',
+                subtitle: 'Job offers & booking status alerts',
+                isDark: isDark,
+                trailing: Switch.adaptive(
+                  value: _pushNotifications,
+                  activeTrackColor: branding.primaryColor,
+                  onChanged: (val) {
+                    setState(() => _pushNotifications = val);
+                    _saveSetting('settings_push', val);
+                  },
+                ),
               ),
-              _buildToggle(
-                label: 'SMS Dispatch Alerts',
-                value: _smsAlerts,
+              _buildDivider(isDark),
+              _buildCompactRow(
                 icon: Icons.sms_outlined,
-                onChanged: (val) {
-                  setState(() => _smsAlerts = val);
-                  _saveSetting('settings_sms', val);
-                },
+                iconColor: const Color(0xFF34D399),
+                title: 'SMS Dispatch Alerts',
+                subtitle: 'Direct SMS job dispatch notifications',
+                isDark: isDark,
+                trailing: Switch.adaptive(
+                  value: _smsAlerts,
+                  activeTrackColor: branding.primaryColor,
+                  onChanged: (val) {
+                    setState(() => _smsAlerts = val);
+                    _saveSetting('settings_sms', val);
+                  },
+                ),
               ),
             ],
           ),
 
-          // 5. Device Section
-          _buildSectionCard(
-            'DEVICE OPTIONS',
-            [
-              _buildToggle(
-                label: 'Background GPS Tracking',
-                value: _gpsTracking,
+          const SizedBox(height: 14),
+
+          // 4. Compact Device & Tracking Group
+          _buildSectionHeader('DEVICE & TRACKING', isDark),
+          _buildGroupCard(
+            isDark: isDark,
+            children: [
+              _buildCompactRow(
                 icon: Icons.gps_fixed_outlined,
-                onChanged: (val) {
-                  setState(() => _gpsTracking = val);
-                  _saveSetting('settings_gps', val);
-                },
+                iconColor: const Color(0xFFFB923C),
+                title: 'Background GPS',
+                subtitle: 'Continuous location streaming on duty',
+                isDark: isDark,
+                trailing: Switch.adaptive(
+                  value: _gpsTracking,
+                  activeTrackColor: branding.primaryColor,
+                  onChanged: (val) {
+                    setState(() => _gpsTracking = val);
+                    _saveSetting('settings_gps', val);
+                  },
+                ),
               ),
-              _buildToggle(
-                label: 'Keep Screen Awake',
-                value: _screenAlwaysOn,
+              _buildDivider(isDark),
+              _buildCompactRow(
                 icon: Icons.screen_lock_rotation_outlined,
-                onChanged: (val) {
-                  setState(() => _screenAlwaysOn = val);
-                  _saveSetting('settings_screen', val);
-                },
+                iconColor: const Color(0xFFA78BFA),
+                title: 'Keep Screen Awake',
+                subtitle: 'Prevent screen timeout during active shifts',
+                isDark: isDark,
+                trailing: Switch.adaptive(
+                  value: _screenAlwaysOn,
+                  activeTrackColor: branding.primaryColor,
+                  onChanged: (val) {
+                    setState(() => _screenAlwaysOn = val);
+                    _saveSetting('settings_screen', val);
+                  },
+                ),
               ),
             ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // 5. App Version Footer
+          Center(
+            child: Text(
+              '${branding.name.toUpperCase()} DRIVER • v1.0.0 (Build 42)',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey[600] : Colors.grey[400],
+                letterSpacing: 0.8,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactProfileBanner(TenantBranding branding, String name, String userId) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [branding.gradientStart, branding.gradientMid],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: branding.primaryColor.withValues(alpha: 0.22),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            child: Text(
+              (name.trim().isNotEmpty ? name.trim()[0] : 'D').toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Driver ID: $userId',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.verified, color: Colors.white, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  branding.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactFleetCard(AuthState authState, TenantBranding branding, bool isDark) {
+    final tenantId = authState.tenantId ?? branding.tenantId;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: branding.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.all(6),
+            child: BrandedLogo(
+              branding: branding,
+              size: 24,
+              fallbackIcon: Icons.domain_rounded,
+              fallbackIconColor: branding.primaryColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      branding.name,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Active',
+                        style: TextStyle(color: Color(0xFF10B981), fontSize: 9.5, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'ID: $tenantId',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: _handleChangeFleet,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: branding.primaryColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: branding.primaryColor.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.qr_code_scanner_rounded, size: 14, color: branding.primaryColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Switch',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: branding.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupCard({required bool isDark, required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactRow({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool isDark,
+    required Widget trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, color: iconColor, size: 17),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    color: isDark ? AppTheme.textDarkPrimary : AppTheme.textLightPrimary,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.82,
+            child: trailing,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider(bool isDark) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 52,
+      endIndent: 12,
+      color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey.withValues(alpha: 0.08),
     );
   }
 }
