@@ -254,11 +254,12 @@ export class DriverService {
   }
 
   replyJobOffer(jobId: number, response: number, guid: string = ''): Observable<any> {
+    const effectiveGuid = guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
     let url = `${this.baseUrl}/api/DriverApp/JobOfferReply?jobno=${jobId}&response=${response}`;
-    if (guid) {
-      url += `&guid=${encodeURIComponent(guid)}`;
+    if (effectiveGuid) {
+      url += `&guid=${encodeURIComponent(effectiveGuid)}`;
     }
-    console.log(`API Webview Request: GET ${url} - parameters: jobId=${jobId}, response=${response}, guid=${guid}`);
+    console.log(`API Webview Request: GET ${url} - parameters: jobId=${jobId}, response=${response}, guid=${effectiveGuid}`);
     return this.http.get(url, { 
       headers: this.getHeaders(),
       responseType: 'text'
@@ -266,7 +267,7 @@ export class DriverService {
       tap({
         next: (res) => console.log(`API Webview Response: GET /api/DriverApp/JobOfferReply success. Response text: "${res}"`),
         error: (err) => {
-          console.error(`API Webview Error: GET /api/DriverApp/JobOfferReply failed for jobId=${jobId}, response=${response}, guid=${guid}. Error details:`, err);
+          console.error(`API Webview Error: GET /api/DriverApp/JobOfferReply failed for jobId=${jobId}, response=${response}, guid=${effectiveGuid}. Error details:`, err);
           try {
             console.error(`API Webview Error Serialized: ${JSON.stringify(err)}`);
           } catch(e) {}

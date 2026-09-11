@@ -5,8 +5,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/shift/shift.dart';
+import 'package:driver_app/core/notifications/notification_handler.dart';
 
 enum TripStatus { idle, offered, enRouteToPickup, arrived, onTrip, complete }
 
@@ -34,6 +36,32 @@ class TripDetails {
     this.passenger = 'Passenger',
     this.notes = '',
   });
+
+  TripDetails copyWith({
+    String? id,
+    String? guid,
+    String? pickupAddress,
+    String? dropoffAddress,
+    List<String>? vias,
+    double? fare,
+    String? paymentType,
+    String? vehicleType,
+    String? passenger,
+    String? notes,
+  }) {
+    return TripDetails(
+      id: id ?? this.id,
+      guid: guid ?? this.guid,
+      pickupAddress: pickupAddress ?? this.pickupAddress,
+      dropoffAddress: dropoffAddress ?? this.dropoffAddress,
+      vias: vias ?? this.vias,
+      fare: fare ?? this.fare,
+      paymentType: paymentType ?? this.paymentType,
+      vehicleType: vehicleType ?? this.vehicleType,
+      passenger: passenger ?? this.passenger,
+      notes: notes ?? this.notes,
+    );
+  }
 }
 
 class TripState {
@@ -112,14 +140,58 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   TripDetails _mapJobToDetails(Map<String, dynamic> job, String fallbackId, {String fallbackGuid = ''}) {
-    final fare = double.tryParse((job['price'] ?? job['Price'] ?? job['fare'] ?? job['Fare'] ?? job['amount'] ?? job['Amount'] ?? job['driverPrice'] ?? job['DriverPrice'] ?? '0.0').toString()) ?? 0.0;
-    final pickup = (job['pickupAddress'] ?? job['PickupAddress'] ?? job['pickup'] ?? job['Pickup'] ?? job['from'] ?? job['From'] ?? 'Pickup address').toString();
-    final dropoff = (job['destinationAddress'] ?? job['DestinationAddress'] ?? job['dropoff'] ?? job['Dropoff'] ?? job['dropoffAddress'] ?? job['DropoffAddress'] ?? job['to'] ?? job['To'] ?? 'Dropoff destination').toString();
-    
+    final data = job['data'] is Map
+        ? Map<String, dynamic>.from(job['data'])
+        : (job['Data'] is Map ? Map<String, dynamic>.from(job['Data']) : <String, dynamic>{});
+
+    final fare = double.tryParse((job['price'] ??
+            job['Price'] ??
+            job['fare'] ??
+            job['Fare'] ??
+            job['amount'] ??
+            job['Amount'] ??
+            job['driverPrice'] ??
+            job['DriverPrice'] ??
+            data['price'] ??
+            data['fare'] ??
+            '0.0')
+        .toString()) ?? 0.0;
+
+    final pickup = (job['pickupAddress'] ??
+            job['PickupAddress'] ??
+            job['pickup'] ??
+            job['Pickup'] ??
+            job['from'] ??
+            job['From'] ??
+            data['pickup'] ??
+            data['pickupAddress'] ??
+            'Pickup address')
+        .toString();
+
+    final dropoff = (job['destinationAddress'] ??
+            job['DestinationAddress'] ??
+            job['dropoff'] ??
+            job['Dropoff'] ??
+            job['dropoffAddress'] ??
+            job['DropoffAddress'] ??
+            job['to'] ??
+            job['To'] ??
+            data['drop'] ??
+            data['dropoff'] ??
+            data['destinationAddress'] ??
+            'Dropoff destination')
+        .toString();
+
     // Payment scope mapping
-    String paymentType = (job['paymentType'] ?? job['PaymentType'] ?? job['paymentMethod'] ?? job['PaymentMethod'] ?? '').toString();
-    if (paymentType.isEmpty && (job['scope'] != null || job['Scope'] != null)) {
-      final scope = int.tryParse((job['scope'] ?? job['Scope']).toString()) ?? 0;
+    String paymentType = (job['paymentType'] ??
+            job['PaymentType'] ??
+            job['paymentMethod'] ??
+            job['PaymentMethod'] ??
+            data['paymentType'] ??
+            '')
+        .toString();
+    if (paymentType.isEmpty && (job['scope'] != null || job['Scope'] != null || data['scope'] != null)) {
+      final scope = int.tryParse((job['scope'] ?? job['Scope'] ?? data['scope']).toString()) ?? 0;
       switch (scope) {
         case 0:
           paymentType = 'Cash';
@@ -140,21 +212,82 @@ class TripNotifier extends StateNotifier<TripState> {
     }
     if (paymentType.isEmpty) paymentType = 'Cash';
 
-    final id = (job['bookingId'] ?? job['BookingId'] ?? job['bookingNo'] ?? job['BookingNo'] ?? job['id'] ?? job['Id'] ?? fallbackId).toString();
-    final guid = (job['guid'] ?? job['Guid'] ?? job['notificationId'] ?? job['notification_id'] ?? job['NotificationId'] ?? fallbackGuid).toString();
-    final vehicleType = (job['vehicleType'] ?? job['VehicleType'] ?? job['vehicle'] ?? job['Vehicle'] ?? 'Standard Saloon').toString();
-    final passenger = (job['passengerName'] ?? job['PassengerName'] ?? job['passenger'] ?? job['Passenger'] ?? job['customerName'] ?? job['CustomerName'] ?? 'Passenger').toString();
-    final notes = (job['details'] ?? job['Details'] ?? job['notes'] ?? job['Notes'] ?? job['comment'] ?? job['Comment'] ?? job['specialRequirements'] ?? job['SpecialRequirements'] ?? '').toString();
+    final id = (job['bookingId'] ??
+            job['BookingId'] ??
+            job['bookingNo'] ??
+            job['BookingNo'] ??
+            job['id'] ??
+            job['Id'] ??
+            data['bookingId'] ??
+            data['BookingId'] ??
+            fallbackId)
+        .toString();
 
-    // Parse vias from payload
+    final guid = (job['guid'] ??
+            job['Guid'] ??
+            job['notificationId'] ??
+            job['notification_id'] ??
+            job['NotificationId'] ??
+            data['guid'] ??
+            data['Guid'] ??
+            fallbackGuid)
+        .toString();
+
+    final vehicleType = (job['vehicleType'] ??
+            job['VehicleType'] ??
+            job['vehicle'] ??
+            job['Vehicle'] ??
+            data['vehicleType'] ??
+            'Standard Saloon')
+        .toString();
+
+    final passenger = (job['passengerName'] ??
+            job['PassengerName'] ??
+            job['passenger'] ??
+            job['Passenger'] ??
+            job['customerName'] ??
+            job['CustomerName'] ??
+            data['passenger'] ??
+            'Passenger')
+        .toString();
+
+    final notes = (job['details'] ??
+            job['Details'] ??
+            job['notes'] ??
+            job['Notes'] ??
+            job['comment'] ??
+            job['Comment'] ??
+            job['specialRequirements'] ??
+            job['SpecialRequirements'] ??
+            data['notes'] ??
+            '')
+        .toString();
+
+    // Parse vias from payload (both Bookings object and JobOffer Data dictionary)
     final List<String> vias = [];
-    final rawVias = job['vias'] ?? job['Vias'] ?? job['viaStops'] ?? job['ViaStops'] ?? job['viaPoints'] ?? job['ViaPoints'] ?? job['via'] ?? job['Via'];
+    final rawVias = job['vias'] ??
+        job['Vias'] ??
+        job['viaStops'] ??
+        job['ViaStops'] ??
+        job['viaPoints'] ??
+        job['ViaPoints'] ??
+        job['via'] ??
+        job['Via'];
+
     if (rawVias is List) {
       for (final v in rawVias) {
         if (v is String && v.trim().isNotEmpty) {
           vias.add(v.trim());
         } else if (v is Map) {
-          final addr = (v['address'] ?? v['Address'] ?? v['stopAddress'] ?? v['StopAddress'] ?? v['description'] ?? v['Description'] ?? v['formattedAddress'] ?? '').toString();
+          final addr = (v['address'] ??
+                  v['Address'] ??
+                  v['stopAddress'] ??
+                  v['StopAddress'] ??
+                  v['description'] ??
+                  v['Description'] ??
+                  v['formattedAddress'] ??
+                  '')
+              .toString();
           if (addr.isNotEmpty) {
             vias.add(addr);
           }
@@ -178,6 +311,16 @@ class TripNotifier extends StateNotifier<TripState> {
         vias.addAll(parts);
       }
     }
+
+    // Also extract vias from data dictionary (e.g. via-0, via-1)
+    data.forEach((key, val) {
+      if (key.toLowerCase().startsWith('via-') || key.toLowerCase().startsWith('via_')) {
+        final s = val?.toString().trim() ?? '';
+        if (s.isNotEmpty && !vias.contains(s)) {
+          vias.add(s);
+        }
+      }
+    });
 
     return TripDetails(
       id: id,
@@ -281,10 +424,23 @@ class TripNotifier extends StateNotifier<TripState> {
       return;
     }
 
-    final initialTrip = fallbackDetails ??
+    String effectiveGuid = guid;
+    if (effectiveGuid.isEmpty) {
+      effectiveGuid = NotificationNavigationHandler.getLastGuid() ?? '';
+    }
+    if (effectiveGuid.isEmpty) {
+      try {
+        const storage = FlutterSecureStorage(
+          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        );
+        effectiveGuid = await storage.read(key: 'last_guid') ?? '';
+      } catch (_) {}
+    }
+
+    final initialTrip = fallbackDetails?.copyWith(guid: effectiveGuid) ??
         TripDetails(
           id: bookingId,
-          guid: guid,
+          guid: effectiveGuid,
           pickupAddress: 'Pickup location',
           dropoffAddress: 'Dropoff destination',
           fare: 0.0,
@@ -301,7 +457,27 @@ class TripNotifier extends StateNotifier<TripState> {
 
     Map<String, dynamic>? jobData;
 
-    // 1. Try FindById?bookingId=
+    // 1. If we have a GUID, query RetrieveJobOffer first (the authoritative job offer entity from DB/Redis)
+    if (effectiveGuid.isNotEmpty) {
+      try {
+        final res = await _dio.get(
+          '/api/DriverApp/RetrieveJobOffer',
+          queryParameters: {'guid': effectiveGuid},
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+        if (res.data != null && res.data is Map) {
+          jobData = Map<String, dynamic>.from(res.data);
+          final resolvedBookingId = (jobData['bookingId'] ?? jobData['BookingId'] ?? jobData['data']?['bookingId'] ?? '').toString();
+          if (resolvedBookingId.isNotEmpty && resolvedBookingId != '0') {
+            bookingId = resolvedBookingId;
+          }
+        }
+      } catch (e) {
+        debugPrint("[TripNotifier] RetrieveJobOffer error: $e");
+      }
+    }
+
+    // 2. Query FindById to get full rich details
     if (bookingId.isNotEmpty) {
       try {
         final res = await _dio.get(
@@ -310,30 +486,17 @@ class TripNotifier extends StateNotifier<TripState> {
           options: Options(headers: {'Authorization': 'Bearer $token'}),
         );
         if (res.data != null && res.data is Map) {
-          jobData = Map<String, dynamic>.from(res.data);
+          final richDetails = Map<String, dynamic>.from(res.data);
+          // Preserve guid in rich details
+          richDetails['guid'] = effectiveGuid.isNotEmpty ? effectiveGuid : (jobData?['guid'] ?? jobData?['Guid'] ?? '');
+          jobData = richDetails;
         }
       } catch (e) {
         debugPrint("[TripNotifier] FindById error: $e");
       }
     }
 
-    // 2. Try RetrieveJobOffer?guid=
-    if (jobData == null && guid.isNotEmpty) {
-      try {
-        final res = await _dio.get(
-          '/api/DriverApp/RetrieveJobOffer',
-          queryParameters: {'guid': guid},
-          options: Options(headers: {'Authorization': 'Bearer $token'}),
-        );
-        if (res.data != null && res.data is Map) {
-          jobData = Map<String, dynamic>.from(res.data);
-        }
-      } catch (e) {
-        debugPrint("[TripNotifier] RetrieveJobOffer error: $e");
-      }
-    }
-
-    // 3. Try GetJobOffers
+    // 3. Fallback: GetJobOffers
     if (jobData == null) {
       try {
         final res = await _dio.get(
@@ -343,7 +506,8 @@ class TripNotifier extends StateNotifier<TripState> {
         final list = _parseJobsList(res.data);
         if (list.isNotEmpty) {
           final matching = list.firstWhere(
-            (j) => (j['bookingNo'] ?? j['bookingId'] ?? j['id'] ?? '').toString() == bookingId,
+            (j) => (j['bookingNo'] ?? j['bookingId'] ?? j['id'] ?? '').toString() == bookingId ||
+                   (j['guid'] ?? j['Guid'] ?? '').toString() == effectiveGuid,
             orElse: () => list.first,
           );
           jobData = Map<String, dynamic>.from(matching);
@@ -354,7 +518,7 @@ class TripNotifier extends StateNotifier<TripState> {
     }
 
     if (jobData != null) {
-      final details = _mapJobToDetails(jobData, bookingId, fallbackGuid: guid);
+      final details = _mapJobToDetails(jobData, bookingId, fallbackGuid: effectiveGuid);
       offerJob(details);
     }
   }

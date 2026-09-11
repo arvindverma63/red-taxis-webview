@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:driver_app/features/navigation/presentation/navigation_notifier.dart';
 import 'package:driver_app/features/trip/trip.dart';
 
 class NotificationNavigationHandler {
   static Map<String, dynamic>? _pendingPayload;
   static WidgetRef? _activeRef;
+  static String? _lastGuid;
+
+  static String? getLastGuid() => _lastGuid;
 
   /// Register active WidgetRef or container ref from the main shell
   static void registerRef(WidgetRef ref) {
@@ -107,9 +111,17 @@ class NotificationNavigationHandler {
             data['Guid'] ??
             data['NotificationId'] ??
             data['Notification_Id'] ??
+            data['id'] ??
             '')
         .toString()
         .trim();
+
+    if (guid.isNotEmpty) {
+      _lastGuid = guid;
+      const FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      ).write(key: 'last_guid', value: guid).ignore();
+    }
 
     final notificationTitle = (data['title'] ?? '').toString().trim().toLowerCase();
     final notificationBody = (data['body'] ?? data['message'] ?? '').toString().trim().toLowerCase();
@@ -208,17 +220,18 @@ class NotificationNavigationHandler {
         notificationType == 'job_offered' ||
         notificationType == 'job_offer' ||
         (deepLink.isNotEmpty && deepLink.toLowerCase().startsWith('booking')) ||
-        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType == '1' || notificationType == 'job_offer' || notificationType == 'allocated'))
+        (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType == '1' || notificationType == 'job_offer' || notificationType == 'allocated')) ||
+        (guid.isNotEmpty && (notificationType == '1' || notificationType.isEmpty || notificationType == 'job_offer' || notificationType == 'allocated'))
     );
 
-    if (isBookingOffer && bookingId.isNotEmpty) {
-      final fare = double.tryParse(data['fare']?.toString() ?? '0.0') ?? 0.0;
-      final pickup = data['pickupAddress'] ?? data['pickup'] ?? 'Pickup address';
-      final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? 'Dropoff destination';
-      final paymentType = data['paymentType'] ?? 'Cash';
-      final vehicleType = data['vehicleType'] ?? 'Standard Saloon';
-      final passenger = data['passengerName'] ?? data['passenger'] ?? 'Passenger';
-      final notes = data['notes'] ?? '';
+    if (isBookingOffer && (bookingId.isNotEmpty || guid.isNotEmpty)) {
+      final fare = double.tryParse(data['fare']?.toString() ?? data['price']?.toString() ?? '0.0') ?? 0.0;
+      final pickup = data['pickupAddress'] ?? data['pickup'] ?? data['from'] ?? 'Pickup address';
+      final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? data['to'] ?? 'Dropoff destination';
+      final paymentType = data['paymentType'] ?? data['payment'] ?? 'Cash';
+      final vehicleType = data['vehicleType'] ?? data['vehicle'] ?? 'Standard Saloon';
+      final passenger = data['passengerName'] ?? data['passenger'] ?? data['customerName'] ?? 'Passenger';
+      final notes = data['notes'] ?? data['details'] ?? '';
 
       final rawVias = data['vias'] ?? data['Vias'] ?? data['via'] ?? data['Via'] ?? data['viaStops'] ?? data['ViaStops'];
       final List<String> vias = [];

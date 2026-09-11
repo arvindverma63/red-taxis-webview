@@ -931,7 +931,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
       const id = getParam('jobId') || getParam('id') || getParam('bookingId') || getParam('jobno') || '';
       this.jobIdFromUrl = id;
-      this.guid = getParam('guid') || getParam('Guid') || getParam('notificationId') || getParam('notification_id');
+      this.guid = getParam('guid') || getParam('Guid') || getParam('notificationId') || getParam('notification_id') || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
+      if (this.guid && typeof localStorage !== 'undefined') {
+        localStorage.setItem('last_guid', this.guid);
+      }
       const fareVal = parseFloat(getParam('fare') || getParam('price') || '0');
       const pickup = getParam('pickup') ? decodeURIComponent(getParam('pickup')) : '';
       const dropoff = getParam('dropoff') ? decodeURIComponent(getParam('dropoff')) : '';
@@ -1005,9 +1008,11 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   private mapApiJobToJobDetails(item: any): JobDetails {
-    let paymentType = item.paymentType || item.PaymentType || item.paymentMethod || item.PaymentMethod || '';
-    if (!paymentType && (item.scope !== undefined && item.scope !== null || item.Scope !== undefined && item.Scope !== null)) {
-      const scope = parseInt((item.scope ?? item.Scope).toString()) || 0;
+    const data = item.data || item.Data || {};
+
+    let paymentType = item.paymentType || item.PaymentType || item.paymentMethod || item.PaymentMethod || data.paymentType || data.paymentMethod || '';
+    if (!paymentType && (item.scope !== undefined && item.scope !== null || item.Scope !== undefined && item.Scope !== null || data.scope !== undefined)) {
+      const scope = parseInt((item.scope ?? item.Scope ?? data.scope).toString()) || 0;
       switch (scope) {
         case 0: paymentType = 'Cash'; break;
         case 1: paymentType = 'Account'; break;
@@ -1055,57 +1060,104 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Extract vias from data dictionary (via-0, via-1)
+    if (data && typeof data === 'object') {
+      Object.keys(data).forEach(key => {
+        if (key.toLowerCase().startsWith('via-') || key.toLowerCase().startsWith('via_')) {
+          const val = (data[key] || '').toString().trim();
+          if (val && !vias.some(existing => existing.address === val)) {
+            vias.push({ address: val });
+          }
+        }
+      });
+    }
+
+    const guid = item.guid || item.Guid || item.notificationId || item.notification_id || item.NotificationId || data.guid || data.Guid;
+    if (guid) {
+      this.guid = guid;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('last_guid', guid);
+      }
+    }
+
     return {
-      id: (item.bookingId || item.BookingId || item.bookingNo || item.BookingNo || item.id || item.Id || this.jobIdFromUrl || '').toString(),
-      fare: parseFloat((item.price || item.Price || item.fare || item.Fare || item.amount || item.Amount || item.driverPrice || item.DriverPrice || '0.00').toString()),
-      pickup: item.pickupAddress || item.PickupAddress || item.pickup || item.Pickup || item.from || item.From || 'Pickup location',
-      dropoff: item.destinationAddress || item.DestinationAddress || item.dropoff || item.Dropoff || item.dropoffAddress || item.DropoffAddress || item.to || item.To || 'Dropoff destination',
+      id: (item.bookingId || item.BookingId || item.bookingNo || item.BookingNo || item.id || item.Id || data.bookingId || data.BookingId || this.jobIdFromUrl || '').toString(),
+      fare: parseFloat((item.price || item.Price || item.fare || item.Fare || item.amount || item.Amount || item.driverPrice || item.DriverPrice || data.price || data.fare || '0.00').toString()),
+      pickup: item.pickupAddress || item.PickupAddress || item.pickup || item.Pickup || item.from || item.From || data.pickup || data.pickupAddress || 'Pickup location',
+      dropoff: item.destinationAddress || item.DestinationAddress || item.dropoff || item.Dropoff || item.dropoffAddress || item.DropoffAddress || item.to || item.To || data.drop || data.dropoff || data.destinationAddress || 'Dropoff destination',
       vias: vias.length > 0 ? vias : undefined,
       paymentType: paymentType,
-      vehicleType: item.vehicleType || item.VehicleType || item.vehicle || item.Vehicle || 'Standard Saloon',
-      passenger: item.passengerName || item.PassengerName || item.passenger || item.Passenger || item.customerName || item.CustomerName || 'Passenger',
-      notes: item.details || item.Details || item.notes || item.Notes || item.comment || item.Comment || item.specialRequirements || item.SpecialRequirements || ''
+      vehicleType: item.vehicleType || item.VehicleType || item.vehicle || item.Vehicle || data.vehicleType || 'Standard Saloon',
+      passenger: item.passengerName || item.PassengerName || item.passenger || item.Passenger || item.customerName || item.CustomerName || data.passenger || 'Passenger',
+      notes: item.details || item.Details || item.notes || item.Notes || item.comment || item.Comment || item.specialRequirements || item.SpecialRequirements || data.notes || ''
     };
   }
 
   fetchJobFromApi(): void {
-    // 1. Try FindById?bookingId=
-    if (this.jobIdFromUrl) {
-      this.driverService.getJobById(this.jobIdFromUrl).subscribe({
-        next: (data) => {
-          if (data && (data.bookingId || data.BookingId || data.pickupAddress || data.Price || data.price)) {
-            this.job = this.mapApiJobToJobDetails(data);
-            const guid = data.guid || data.Guid || data.notificationId || data.notification_id || data.NotificationId;
-            if (guid && !this.guid) this.guid = guid;
-            this.cdr.detectChanges();
-          } else {
-            this.fetchViaRetrieveJobOfferOrOffers();
-          }
-        },
-        error: () => this.fetchViaRetrieveJobOfferOrOffers()
-      });
-    } else {
-      this.fetchViaRetrieveJobOfferOrOffers();
-    }
-  }
-
-  private fetchViaRetrieveJobOfferOrOffers(): void {
-    // 2. Try RetrieveJobOffer?guid=
+    // 1. If we have a GUID, query RetrieveJobOffer first to ensure authoritative offer match
     if (this.guid) {
       this.driverService.retrieveJobOffer(this.guid).subscribe({
-        next: (data) => {
-          if (data && (data.bookingId || data.pickupAddress || data.price)) {
-            this.job = this.mapApiJobToJobDetails(data);
-            this.cdr.detectChanges();
+        next: (offerData) => {
+          if (offerData && (offerData.bookingId || offerData.BookingId || offerData.pickupAddress || offerData.price || offerData.data)) {
+            const bookingId = (offerData.bookingId || offerData.BookingId || offerData.data?.bookingId || '').toString();
+            if (bookingId) {
+              this.driverService.getJobById(bookingId).subscribe({
+                next: (richDetails) => {
+                  if (richDetails && (richDetails.bookingId || richDetails.BookingId || richDetails.pickupAddress)) {
+                    richDetails.guid = this.guid;
+                    this.job = this.mapApiJobToJobDetails(richDetails);
+                  } else {
+                    this.job = this.mapApiJobToJobDetails(offerData);
+                  }
+                  this.cdr.detectChanges();
+                },
+                error: () => {
+                  this.job = this.mapApiJobToJobDetails(offerData);
+                  this.cdr.detectChanges();
+                }
+              });
+            } else {
+              this.job = this.mapApiJobToJobDetails(offerData);
+              this.cdr.detectChanges();
+            }
+          } else if (this.jobIdFromUrl) {
+            this.fetchViaGetJobById();
           } else {
             this.fetchViaGetJobOffers();
           }
         },
-        error: () => this.fetchViaGetJobOffers()
+        error: () => {
+          if (this.jobIdFromUrl) {
+            this.fetchViaGetJobById();
+          } else {
+            this.fetchViaGetJobOffers();
+          }
+        }
       });
+    } else if (this.jobIdFromUrl) {
+      this.fetchViaGetJobById();
     } else {
       this.fetchViaGetJobOffers();
     }
+  }
+
+  private fetchViaGetJobById(): void {
+    this.driverService.getJobById(this.jobIdFromUrl).subscribe({
+      next: (data) => {
+        if (data && (data.bookingId || data.BookingId || data.pickupAddress || data.Price || data.price)) {
+          this.job = this.mapApiJobToJobDetails(data);
+          const guid = data.guid || data.Guid || data.notificationId || data.notification_id || data.NotificationId;
+          if (guid && !this.guid) {
+            this.guid = guid;
+            if (typeof localStorage !== 'undefined') localStorage.setItem('last_guid', guid);
+          }
+          this.cdr.detectChanges();
+        } else {
+          this.fetchViaGetJobOffers();
+        }
+      },
+      error: () => this.fetchViaGetJobOffers()
+    });
   }
 
   private fetchViaGetJobOffers(): void {
@@ -1114,10 +1166,16 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       next: (offers) => {
         const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
         if (Array.isArray(data) && data.length > 0) {
-          const matching = data.find((j: any) => (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === this.jobIdFromUrl) || data[0];
+          const matching = data.find((j: any) => 
+            (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === this.jobIdFromUrl ||
+            (j.guid || j.Guid || '').toString() === this.guid
+          ) || data[0];
           this.job = this.mapApiJobToJobDetails(matching);
           const guid = matching.guid || matching.Guid || matching.notificationId || matching.notification_id || matching.NotificationId;
-          if (guid && !this.guid) this.guid = guid;
+          if (guid && !this.guid) {
+            this.guid = guid;
+            if (typeof localStorage !== 'undefined') localStorage.setItem('last_guid', guid);
+          }
           this.cdr.detectChanges();
         } else if (this.jobIdFromUrl) {
           if (!this.job) {
@@ -1253,6 +1311,7 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
     const doDismiss = () => {
       setTimeout(() => {
         this.notifyNativeApp('job_accepted');
@@ -1260,8 +1319,8 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     };
 
     if (jobId && !jobId.startsWith('sim-')) {
-      console.log(`replyJobOffer accept action started for jobId=${jobId}, guid=${this.guid}`);
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, this.guid).subscribe({
+      console.log(`replyJobOffer accept action started for jobId=${jobId}, guid=${effectiveGuid}`);
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2000, effectiveGuid).subscribe({
         next: (res) => {
           console.log(`replyJobOffer accept success for jobId=${jobId}. Response text: "${res}"`);
           this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
@@ -1288,9 +1347,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
     if (jobId && !jobId.startsWith('sim-')) {
-      console.log(`replyJobOffer decline action started for jobId=${jobId}, guid=${this.guid}`);
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
+      console.log(`replyJobOffer decline action started for jobId=${jobId}, guid=${effectiveGuid}`);
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, effectiveGuid).subscribe({
         next: (res) => {
           console.log(`replyJobOffer decline success for jobId=${jobId}. Response text: "${res}"`);
           this.snackBar.open(`Job Offer #${jobId} Declined successfully.`, 'Close', { duration: 3500 });
@@ -1314,9 +1374,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     if (this.isSubmitting) return;
     this.isSubmitting = true;
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
     if (jobId && !jobId.startsWith('sim-')) {
-      console.log(`replyJobOffer autoReject action started for jobId=${jobId}, guid=${this.guid}`);
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, this.guid).subscribe({
+      console.log(`replyJobOffer autoReject action started for jobId=${jobId}, guid=${effectiveGuid}`);
+      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, effectiveGuid).subscribe({
         next: (res) => {
           console.log(`replyJobOffer autoReject success for jobId=${jobId}. Response text: "${res}"`);
           this.snackBar.open(`Job offer expired and auto-rejected.`, 'Close', { duration: 3500 });
