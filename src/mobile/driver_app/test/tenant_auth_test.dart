@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/auth/auth.dart';
 
 void main() {
@@ -85,6 +87,22 @@ void main() {
       expect(branding.dispatchPhone, '7777777777');
       expect(branding.supportEmail, 'officialadarsh2023@gmail.com');
       expect(branding.primaryHex, '#6366F1');
+    });
+
+    testWidgets('BrandedLogo renders cleanly with fallback icon when logo URL is empty', (tester) async {
+      final branding = TenantBranding.defaultRedTaxis();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: BrandedLogo(
+              branding: branding,
+              size: 48,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(BrandedLogo), findsOneWidget);
     });
   });
 }

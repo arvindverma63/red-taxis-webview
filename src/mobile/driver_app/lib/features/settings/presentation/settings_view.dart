@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/presentation/widgets/qr_scanner_modal.dart';
@@ -252,7 +253,13 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                   color: branding.primaryColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(Icons.domain_rounded, color: branding.primaryColor, size: 24),
+                padding: const EdgeInsets.all(8),
+                child: BrandedLogo(
+                  branding: branding,
+                  size: 28,
+                  fallbackIcon: Icons.domain_rounded,
+                  fallbackIconColor: branding.primaryColor,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(

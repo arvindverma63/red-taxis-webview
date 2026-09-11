@@ -10,7 +10,7 @@ import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/settings/presentation/settings_view.dart';
-
+import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:flutter/services.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -137,13 +137,14 @@ class _MainShellState extends ConsumerState<MainShell> {
 
         // 4. On Dashboard, double-tap back within 2 seconds to exit app
         final now = DateTime.now();
+        final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
         if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
           _lastBackPressTime = now;
           ScaffoldMessenger.of(context).removeCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Press back again to exit Red Taxis'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text('Press back again to exit ${branding.name}'),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else {
@@ -250,6 +251,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   Widget _buildDrawer(BuildContext context, int activeIndex) {
     final authState = ref.watch(authProvider);
+    final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
     final email = authState.email ?? 'Partner Driver';
     final name = email.contains('@') ? email.split('@')[0] : email;
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
@@ -274,13 +276,13 @@ class _MainShellState extends ConsumerState<MainShell> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(24, 64, 24, 24),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppTheme.primaryRed, AppTheme.primaryDarkRed],
+                        colors: [branding.gradientStart, branding.gradientMid],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.only(
+                      borderRadius: const BorderRadius.only(
                         topRight: Radius.circular(32),
                       ),
                     ),
@@ -301,13 +303,22 @@ class _MainShellState extends ConsumerState<MainShell> {
                               ),
                             ],
                           ),
+                          padding: const EdgeInsets.all(6),
                           child: Center(
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : 'D',
-                              style: const TextStyle(
-                                fontSize: 26.0,
-                                fontWeight: FontWeight.w900,
-                                color: AppTheme.primaryRed,
+                            child: BrandedLogo(
+                              branding: branding,
+                              size: 52,
+                              shape: BoxShape.circle,
+                              fit: BoxFit.contain,
+                              customFallback: Center(
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'D',
+                                  style: TextStyle(
+                                    fontSize: 26.0,
+                                    fontWeight: FontWeight.w900,
+                                    color: branding.primaryColor,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -338,14 +349,14 @@ class _MainShellState extends ConsumerState<MainShell> {
                             color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.verified, color: Colors.white, size: 14),
-                              SizedBox(width: 4),
+                              const Icon(Icons.verified, color: Colors.white, size: 14),
+                              const SizedBox(width: 4),
                               Text(
-                                'Verified Driver',
-                                style: TextStyle(
+                                '${branding.name} Driver',
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -405,7 +416,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           // Tiny Brand Footer
           Center(
             child: Text(
-              '${(ref.watch(authProvider).tenantBranding?.name ?? "RED TAXIS").toUpperCase()} PARTNER v1.0.0',
+              '${branding.name.toUpperCase()} PARTNER v1.0.0',
               style: TextStyle(
                 color: Colors.grey.shade400,
                 fontSize: 9,

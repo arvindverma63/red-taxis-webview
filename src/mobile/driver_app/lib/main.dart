@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:driver_app/core/theme/theme.dart';
@@ -214,11 +215,22 @@ class DriverApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final authState = ref.watch(authProvider);
+    final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
+    final appTitle = branding.name.isNotEmpty ? '${branding.name} Driver' : 'Red Taxis Driver';
+
+    // Dynamically update the OS Recent Apps / Task Switcher title and brand primary color
+    SystemChrome.setApplicationSwitcherDescription(
+      ApplicationSwitcherDescription(
+        label: appTitle,
+        primaryColor: branding.primaryColor.toARGB32(),
+      ),
+    );
 
     return MaterialApp.router(
-      title: 'Red Taxis Driver',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      title: appTitle,
+      theme: AppTheme.getDynamicLightTheme(branding),
+      darkTheme: AppTheme.getDynamicDarkTheme(branding),
       themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,

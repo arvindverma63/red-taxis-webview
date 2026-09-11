@@ -203,6 +203,20 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Universal Via Parsing & Extraction**: Implemented defensive via parser in TypeScript and Dart supporting Array of objects (`address`, `postCode`, `description`), Array of strings, raw JSON strings, and semicolon/pipe delimited strings. Handles payload casing variants (`vias`, `Vias`, `viaStops`, `ViaStops`, `via`, `Via`) from both push notification payloads and direct API endpoints (`GetJobOffers`, `RetrieveJobOffer`, `FindById`).
   - **Cross-Layer URL Bridge Synchronization**: Updated Flutter `TripDetails` model and `main_shell.dart` to serialize and propagate encoded via stops via URL query parameters (`&vias=...`) to remote WebViews. Updated push notification handler (`notification_handler.dart`) and native fallback screens (`job_offer_screen.dart`, `active_trip_screen.dart`) to render via stops seamlessly.
 
+- [x] **Dynamic App Title & Branded Logo System with 3-Tier Progressive Fallback**: Implemented dynamic application title synchronization and a branded logo component throughout the mobile application:
+  - **Dynamic OS Task Switcher & App Title**: Configured `DriverApp` (`main.dart`) to dynamically update `MaterialApp.title` and the Android/iOS task switcher description via `SystemChrome.setApplicationSwitcherDescription` with the scanned fleet's `companyName` and primary brand color.
+  - **3-Tier Progressive Fallback (`BrandedLogo`)**: Created `BrandedLogo` widget (`branded_logo.dart` in `lib/core/widgets`) that progressively resolves:
+    1. Remote uploaded logo URL (`logoLightUrl`, `logoDarkUrl`, `symbolUrl`, `logoUrl`) with network loading and error trapping.
+    2. Local bundled asset logo (`assets/images/logo.png`) if remote URL is missing or fails to load.
+    3. Standardized Material vector icon (`Icons.local_taxi_rounded` or `Icons.domain_rounded`) with semantic brand color.
+  - **All-Screen In-App Brand Integration**:
+    - **Splash Screen (`splash_screen.dart`)**: Dynamic logo inside the pulsing circular ripple container.
+    - **Login Screen (`login_screen.dart`)**: Header glowing badge and Active Fleet badge in 2-field login state.
+    - **Drawer Sidebar (`main_shell.dart`)**: Header avatar, verified fleet badge, dynamic gradient backdrop, and company footer.
+    - **Dashboard Header (`dashboard_view.dart`)**: Top AppBar showing active company logo badge with `${branding.name} Dashboard`.
+    - **Settings Fleet Card (`settings_view.dart`)**: Active fleet organization badge and metadata display.
+  - **Test Suite Verification**: Added widget test coverage for `BrandedLogo` fallback in `tenant_auth_test.dart` (11/11 tests passing).
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

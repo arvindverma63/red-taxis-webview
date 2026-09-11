@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/auth/presentation/widgets/qr_scanner_modal.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -284,12 +285,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
+                    padding: const EdgeInsets.all(12),
                     child: Center(
-                      child: Icon(
-                        isConfigured ? Icons.local_taxi_rounded : Icons.domain_rounded,
-                        color: branding.primaryColor,
-                        size: 42,
-                      ),
+                      child: isConfigured
+                          ? BrandedLogo(
+                              branding: branding,
+                              size: 54,
+                              fit: BoxFit.contain,
+                              fallbackIcon: Icons.local_taxi_rounded,
+                            )
+                          : const Icon(
+                              Icons.domain_rounded,
+                              color: Color(0xFFCD1A21),
+                              size: 42,
+                            ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -594,12 +603,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: branding.primaryColor.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.domain_rounded, color: branding.primaryColor, size: 18),
+                  child: BrandedLogo(
+                    branding: branding,
+                    size: 20,
+                    fallbackIcon: Icons.domain_rounded,
+                    fallbackIconColor: branding.primaryColor,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/core/widgets/widgets.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -262,18 +263,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ),
                             padding: const EdgeInsets.all(12),
                             child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/logo.png',
+                              child: BrandedLogo(
+                                branding: branding,
+                                size: 100,
                                 fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Center(
-                                    child: Icon(
-                                      Icons.local_taxi_rounded,
-                                      color: branding.primaryColor,
-                                      size: 55,
-                                    ),
-                                  );
-                                },
                               ),
                             ),
                           ),

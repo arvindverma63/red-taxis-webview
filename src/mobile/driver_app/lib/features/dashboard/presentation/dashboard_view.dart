@@ -191,6 +191,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   Widget build(BuildContext context) {
     final shift = ref.watch(shiftProvider);
     final isOnline = shift.status == ShiftStatus.online;
+    final authState = ref.watch(authProvider);
+    final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
 
     // Listen for shift changes to keep the WebView URL synchronized reactively
     ref.listen(shiftProvider, (previous, next) {
@@ -262,7 +264,24 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: Text('${ref.watch(authProvider).tenantBranding?.name ?? "Red Taxis"} Dashboard'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BrandedLogo(
+              branding: branding,
+              size: 26,
+              shape: BoxShape.circle,
+              fallbackIcon: Icons.local_taxi_rounded,
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                '${branding.name} Dashboard',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         centerTitle: false,
         actions: [
           IconButton(
