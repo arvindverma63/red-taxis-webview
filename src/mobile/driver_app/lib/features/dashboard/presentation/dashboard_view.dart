@@ -285,14 +285,6 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications feature coming soon.')),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.logout_outlined),
             tooltip: 'Sign Out',
             onPressed: () {
