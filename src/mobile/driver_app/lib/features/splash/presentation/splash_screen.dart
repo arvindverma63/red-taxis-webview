@@ -282,33 +282,42 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     position: _textSlide,
                     child: FadeTransition(
                       opacity: _textFade,
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
                                 branding.name.toUpperCase(),
                                 style: TextStyle(
                                   color: branding.primaryColor,
-                                  fontSize: 30,
+                                  fontSize: 28,
                                   fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'SMARTER BOOKINGS. FASTER DESPATCH.',
+                                style: TextStyle(
+                                  color: AppTheme.textLightSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 2.0,
                                 ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'SMARTER BOOKINGS. FASTER DESPATCH.',
-                            style: TextStyle(
-                              color: AppTheme.textLightSecondary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 2.2,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
