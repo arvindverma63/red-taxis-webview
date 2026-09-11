@@ -58,7 +58,6 @@ class TripState {
 
 class TripNotifier extends StateNotifier<TripState> {
   final Ref _ref;
-  Timer? _pollTimer;
 
   final _dio = Dio(BaseOptions(
     baseUrl: 'https://staging-api.redtaxi.co.uk',
@@ -83,32 +82,18 @@ class TripNotifier extends StateNotifier<TripState> {
         logPrint: (obj) => debugPrint('[Dio/Trip] $obj'),
       ));
     }
-    // Listen to shiftProvider to start/stop polling
+    // Listen to shiftProvider to check active job on online transition
     _ref.listen<ShiftState>(shiftProvider, (previous, next) {
-      if (next.status == ShiftStatus.online) {
-        _startPolling();
+      if (next.status == ShiftStatus.online && previous?.status != ShiftStatus.online) {
         checkActiveJob();
-      } else {
-        _stopPolling();
       }
     });
 
     // Check initial state
     final shift = _ref.read(shiftProvider);
     if (shift.status == ShiftStatus.online) {
-      _startPolling();
       checkActiveJob();
     }
-  }
-
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollJobOffer());
-  }
-
-  void _stopPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
   }
 
   List<dynamic> _parseJobsList(dynamic responseData) {
@@ -206,33 +191,6 @@ class TripNotifier extends StateNotifier<TripState> {
       passenger: passenger,
       notes: notes,
     );
-  }
-
-  Future<void> _pollJobOffer() async {
-    // Only poll if currently idle
-    if (state.status != TripStatus.idle) return;
-
-    final auth = _ref.read(authProvider);
-    final token = auth.token;
-    if (token == null) return;
-
-    try {
-      final response = await _dio.get(
-        '/api/DriverApp/GetJobOffers',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-
-      final List<dynamic> data = _parseJobsList(response.data);
-      if (data.isNotEmpty) {
-        final job = Map<String, dynamic>.from(data.first);
-        final details = _mapJobToDetails(job, '');
-        offerJob(details);
-      }
-    } catch (e) {
-      debugPrint("[TripNotifier] Background poll error: $e");
-    }
   }
 
   Future<void> checkActiveJob() async {
@@ -541,12 +499,6 @@ class TripNotifier extends StateNotifier<TripState> {
     } catch (e) {
       debugPrint("[TripNotifier] SetActiveJob error: $e");
     }
-  }
-
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
   }
 }
 

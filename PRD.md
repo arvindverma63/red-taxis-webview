@@ -222,6 +222,7 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Inline Fleet & Organization Card**: Condensed active fleet details into a single horizontal row with `BrandedLogo` badge, verified active tag, tenant ID, and a compact `[Switch]` QR scanner action button.
   - **Grouped Section Containers & Thin Dividers**: Replaced heavy individual outer cards with unified rounded card groups (`PREFERENCES` and `DEVICE & TRACKING`), categorized with 32x32 color-accented icons, clear subtitles, and scaled switches (`0.82x`) separated by subtle indented dividers.
   - **Zero Loss of Functionality**: Fully preserves Riverpod state persistence for dark mode, push notifications, SMS alerts, continuous GPS, and screen wake lock in `FlutterSecureStorage`.
+- [x] **Pure Push-Driven Job Dispatch (Eliminated 5s Polling Loop)**: Removed legacy 5-second `Timer.periodic` background `GET /api/DriverApp/GetJobOffers` polling loop in [trip.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/features/trip/trip.dart). The application now relies 100% on real-time Firebase Cloud Messaging (FCM) push notifications and targeted payload dispatching (`fetchAndOfferJob`), significantly optimizing battery usage, network data, and backend server load.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
