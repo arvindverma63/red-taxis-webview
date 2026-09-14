@@ -296,7 +296,11 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Live Booking Requests**: Wired `POST /api/v2/public/bookings/request` matching the `CreatePublicBookingRequestDto` schema contract.
   - **Live Customer Rides & History**: Connected `GET /api/v2/customers/me/bookings` to display real database trips with empty state handling.
   - **Live Saved Places**: Connected `GET`, `POST`, and `DELETE` endpoints for `/api/v2/customers/me/addresses`.
-  - **Live Profile Management**: Connected `GET` and `PUT` `/api/v2/customers/me/profile`.
+- [x] **Native Hybrid Sign Out Bridge & Webview Login Prevention**:
+  - **Eliminated Webview Login Card inside Mobile Shell**: Resolved the issue where signing out from the webview profile tab loaded the web login page inside the mobile tab bar.
+  - **Javascript Bridge Sign Out Channel (`profile.ts` & `customer_webview_screen.dart`)**: Updated `signOut()` in `ProfileComponent` to detect the Flutter `FlutterChannel` Javascript interface and dispatch `sign_out` messages rather than performing client-side route navigation to `/login`.
+  - **Native Session Teardown & Route Transfer**: Configured `CustomerWebviewScreen` to handle `sign_out` messages by invoking `authProvider.notifier.signOut()`, clearing secure storage credentials, and seamlessly transferring navigation to the native Flutter `LoginScreen` (`/auth/login`).
+  - **Defense-in-Depth Guard & Navigation Intercept**: Added checks in `authGuard` and `LoginComponent.ngOnInit` to automatically forward unauthenticated webview states to the native Flutter bridge. Intercepted `/login` and `#/login` routes inside Flutter's `NavigationDelegate.onNavigationRequest` to prevent the webview from ever loading a web authentication view inside the mobile app.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

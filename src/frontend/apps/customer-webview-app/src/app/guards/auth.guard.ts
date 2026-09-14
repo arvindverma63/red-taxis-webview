@@ -52,6 +52,11 @@ export const authGuard = () => {
     return true;
   }
   
+  if (typeof window !== 'undefined' && (window as any).FlutterChannel) {
+    (window as any).FlutterChannel.postMessage('sign_out');
+    return false;
+  }
+
   const attemptedUrl = window.location.hash.split('?')[0].replace('#', '');
   router.navigate(['/login'], { queryParams: { returnUrl: attemptedUrl } });
   return false;

@@ -107,6 +107,11 @@ class _CustomerWebviewScreenState extends ConsumerState<CustomerWebviewScreen> {
             context.push('/auth/qr-scan');
           } else if (msg == 'open_saved_places') {
             context.push('/saved-places');
+          } else if (msg == 'sign_out' || msg == 'logout') {
+            ref.read(authProvider.notifier).signOut();
+            if (mounted) {
+              context.go('/auth/login');
+            }
           }
         },
       )
@@ -134,6 +139,13 @@ class _CustomerWebviewScreenState extends ConsumerState<CustomerWebviewScreen> {
           },
           onNavigationRequest: (NavigationRequest request) async {
             final url = request.url.toLowerCase();
+            if (url.contains('/login') || url.contains('#/login')) {
+              ref.read(authProvider.notifier).signOut();
+              if (mounted) {
+                context.go('/auth/login');
+              }
+              return NavigationDecision.prevent;
+            }
             if (url.startsWith('tel:') ||
                 url.startsWith('sms:') ||
                 url.startsWith('geo:') ||

@@ -44,6 +44,11 @@ export class LoginComponent implements OnInit {
   forgotSubmitted = false;
 
   ngOnInit() {
+    if (typeof window !== 'undefined' && (window as any).FlutterChannel) {
+      (window as any).FlutterChannel.postMessage('sign_out');
+      return;
+    }
+
     this.route.queryParams.subscribe(params => {
       if (params['token']) {
         localStorage.setItem('auth_token', params['token']);

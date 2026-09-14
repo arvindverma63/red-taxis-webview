@@ -111,6 +111,10 @@ export class ProfileComponent implements OnInit {
 
   signOut() {
     localStorage.removeItem('auth_token');
-    this.router.navigate(['/login']);
+    if (typeof window !== 'undefined' && (window as any).FlutterChannel) {
+      (window as any).FlutterChannel.postMessage('sign_out');
+    } else {
+      this.router.navigate(['/login']);
+    }
   }
 }
