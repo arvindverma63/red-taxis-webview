@@ -283,7 +283,9 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Instant Guest Booking & Fleet Switcher**: Prominent "Instant Ride (Continue as Guest)" shortcut and 1-tap QR fleet switcher pill badge at the footer with 256-bit SSL encryption trust badges.
   - **Test Suite Verification**: 100% passing tests in `widget_test.dart` and 0 linter warnings on `flutter analyze`.
 
+- [x] **Customer App Logo Asset & Progressive Rendering**: Generated a high-resolution vector emblem integrating modern aerodynamic red taxi cab curves and location marker geometries. Bundled the asset into `src/mobile/customer_app/assets/images/logo.png` and `src/frontend/apps/customer-webview-app/public/logo.png`.
+- [x] **Angular Webview Dynamic CSS Theming Injection**: Built dynamic `--primary-color` and `--primary-dark` CSS variable extraction in `auth.guard.ts` from URL parameters (`?primaryColor=...&tenantId=...`), allowing the webview to inherit custom fleet colors at runtime with automatic `localStorage` persistence.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
-- [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

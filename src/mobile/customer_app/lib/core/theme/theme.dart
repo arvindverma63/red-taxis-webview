@@ -60,6 +60,8 @@ class TenantBranding {
     );
   }
 
+  String get primaryColorHex => '#${primaryColor.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+
   factory TenantBranding.fromJson(Map<String, dynamic> json) {
     Color parseColor(dynamic hex, Color fallback) {
       if (hex == null) return fallback;

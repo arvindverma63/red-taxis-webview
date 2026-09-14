@@ -22,6 +22,7 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  showFallbackLogo = false;
 
   // Login Form
   loginUsername = 'customer@redtaxi.co.uk';

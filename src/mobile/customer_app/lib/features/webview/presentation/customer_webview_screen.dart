@@ -46,12 +46,13 @@ class _CustomerWebviewScreenState extends ConsumerState<CustomerWebviewScreen> {
     final token = auth.token ?? '';
     final themeParam = themeMode == ThemeMode.dark ? 'dark' : 'light';
     final tenantId = branding.tenantId;
+    final primaryColorHex = branding.primaryColorHex.replaceAll('#', '%23');
 
     const baseUrl = AppConfig.webviewBaseUrl;
     final sub = widget.subRoute;
 
     final delimiter = sub.contains('?') ? '&' : '?';
-    return '$baseUrl$sub${delimiter}token=$token&theme=$themeParam&tenantId=$tenantId';
+    return '$baseUrl$sub${delimiter}token=$token&theme=$themeParam&tenantId=$tenantId&primaryColor=$primaryColorHex';
   }
 
   void _reloadWebView() {

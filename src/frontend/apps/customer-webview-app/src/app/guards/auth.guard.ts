@@ -39,6 +39,13 @@ export const authGuard = () => {
     localStorage.setItem('tenant_id', tenantId);
   }
 
+  const primaryColor = extractParam('primaryColor') || extractParam('color');
+  if (primaryColor) {
+    const formattedColor = primaryColor.startsWith('#') ? primaryColor : `#${primaryColor}`;
+    document.documentElement.style.setProperty('--primary-color', formattedColor);
+    localStorage.setItem('primary_color', formattedColor);
+  }
+
   const activeToken = token || localStorage.getItem('auth_token');
   
   if (activeToken) {
