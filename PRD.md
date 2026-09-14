@@ -301,6 +301,10 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Javascript Bridge Sign Out Channel (`profile.ts` & `customer_webview_screen.dart`)**: Updated `signOut()` in `ProfileComponent` to detect the Flutter `FlutterChannel` Javascript interface and dispatch `sign_out` messages rather than performing client-side route navigation to `/login`.
   - **Native Session Teardown & Route Transfer**: Configured `CustomerWebviewScreen` to handle `sign_out` messages by invoking `authProvider.notifier.signOut()`, clearing secure storage credentials, and seamlessly transferring navigation to the native Flutter `LoginScreen` (`/auth/login`).
   - **Defense-in-Depth Guard & Navigation Intercept**: Added checks in `authGuard` and `LoginComponent.ngOnInit` to automatically forward unauthenticated webview states to the native Flutter bridge. Intercepted `/login` and `#/login` routes inside Flutter's `NavigationDelegate.onNavigationRequest` to prevent the webview from ever loading a web authentication view inside the mobile app.
+- [x] **Branded Android/iOS Launcher Icons & Resilient Multi-Endpoint Authentication**:
+  - **Generated Branded Mobile Launcher Icons**: Configured `flutter_launcher_icons` in `customer_app` and compiled adaptive icons across all Android mipmap densities (`hdpi`, `mdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`, `anydpi-v26`) and iOS sets, eliminating the default Flutter icon.
+  - **Resilient Multi-Endpoint Auth & Omitted Auth Headers (`api_client.dart` & `auth_notifier.dart`)**: Prevented stale `Authorization` headers on login/register endpoints and implemented multi-tier login fallback across `/api/v2/customer-auth/login`, `/api/UserProfile/Login`, and staging `/dev/token` with clean error messages.
+  - **Dynamic Booking Initial State (`book.ts`)**: Removed hardcoded static pickup strings (`High Street, City Centre`) to ensure clean placeholder and live dynamic address search.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

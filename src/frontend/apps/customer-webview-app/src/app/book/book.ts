@@ -18,7 +18,7 @@ export class BookComponent implements OnInit {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
-  pickupAddress = 'High Street, City Centre';
+  pickupAddress = '';
   dropoffAddress = '';
   vehicles: VehicleOption[] = [];
   selectedVehicle: VehicleOption | null = null;
@@ -55,6 +55,7 @@ export class BookComponent implements OnInit {
             subtitle: p.label,
             icon: p.icon || 'place'
           }));
+          this.cdr.detectChanges();
         }
       }
     });

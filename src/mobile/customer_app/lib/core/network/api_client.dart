@@ -30,9 +30,18 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await storage.read(AppConfig.keyAuthToken);
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
+        final path = options.path.toLowerCase();
+        final isAuthEndpoint = path.contains('login') ||
+            path.contains('register') ||
+            path.contains('tenant-info') ||
+            path.contains('token') ||
+            path.contains('public');
+
+        if (!isAuthEndpoint) {
+          final token = await storage.read(AppConfig.keyAuthToken);
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
 
         final tenantKey = await storage.read(AppConfig.keyTenantKey) ?? AppConfig.defaultTenantKey;

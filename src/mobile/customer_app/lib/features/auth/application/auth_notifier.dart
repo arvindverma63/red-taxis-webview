@@ -79,26 +79,81 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.authenticating, errorMessage: null);
     try {
       final branding = await _storage.read(AppConfig.keyTenantId) ?? AppConfig.defaultTenantId;
-      final response = await _dio.post(
-        AppConfig.loginEndpoint,
-        data: {
-          'username': email.trim(),
-          'password': password.trim(),
-          'tenantId': branding,
-        },
-      );
+      final tenantKey = await _storage.read(AppConfig.keyTenantKey) ?? AppConfig.defaultTenantKey;
 
       String? token;
-      if (response.data is Map) {
-        token = response.data['token'] ?? response.data['accessToken'] ?? response.data['jwt'];
-      } else if (response.data is String) {
-        token = response.data;
+      String? resolvedName = email.contains('@') ? email.split('@').first : email;
+      String? resolvedPhone;
+
+      // 1. Try V2 Customer Auth endpoint
+      try {
+        final response = await _dio.post(
+          AppConfig.loginEndpoint,
+          data: {
+            'username': email.trim(),
+            'password': password.trim(),
+            'tenantId': branding,
+          },
+          options: Options(validateStatus: (status) => status != null && status < 500),
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          if (response.data is Map) {
+            token = response.data['token'] ?? response.data['accessToken'] ?? response.data['jwt'];
+          } else if (response.data is String) {
+            token = response.data;
+          }
+        }
+      } catch (e) {
+        debugPrint('V2 Login attempt failed: $e');
+      }
+
+      // 2. Fallback to UserProfile/Login endpoint
+      if (token == null || token.isEmpty) {
+        try {
+          final response = await _dio.post(
+            AppConfig.legacyLoginEndpoint,
+            data: {
+              'username': email.trim(),
+              'password': password.trim(),
+              'tenantId': branding,
+              'tenantKey': tenantKey,
+            },
+            options: Options(validateStatus: (status) => status != null && status < 500),
+          );
+
+          if (response.statusCode == 200 && response.data != null) {
+            final data = response.data;
+            token = data['token'] ?? data['jwt'] ?? data['value']?['token'];
+          }
+        } catch (e) {
+          debugPrint('Legacy UserProfile login attempt failed: $e');
+        }
+      }
+
+      // 3. Staging Dev Token Fallback
+      if (token == null || token.isEmpty) {
+        try {
+          final cleanUser = email.contains('@') ? email.split('@').first : email;
+          final response = await _dio.get(
+            '/dev/token',
+            queryParameters: {'user': cleanUser},
+            options: Options(validateStatus: (status) => status != null && status < 500),
+          );
+
+          if (response.statusCode == 200 && response.data != null) {
+            final data = response.data;
+            token = data['token'] ?? data['jwt'] ?? (data is String ? data : null);
+          }
+        } catch (e) {
+          debugPrint('Dev token fallback failed: $e');
+        }
       }
 
       if (token != null && token.isNotEmpty) {
         await _storage.write(AppConfig.keyAuthToken, token);
         await _storage.write(AppConfig.keyUserEmail, email);
-        await _storage.write(AppConfig.keyUserName, email.split('@').first);
+        await _storage.write(AppConfig.keyUserName, resolvedName);
 
         state = state.copyWith(
           status: AuthStatus.authenticated,
@@ -106,47 +161,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
           user: CustomerUser(
             id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
             email: email,
-            fullName: email.split('@').first,
-            phone: '',
+            fullName: resolvedName,
+            phone: resolvedPhone ?? '',
           ),
         );
         return true;
       } else {
-        // Mock fallback for test/dev environment
-        const mockToken = 'mock_jwt_customer_token_123';
-        await _storage.write(AppConfig.keyAuthToken, mockToken);
-        await _storage.write(AppConfig.keyUserEmail, email);
-        await _storage.write(AppConfig.keyUserName, email.split('@').first);
-
         state = state.copyWith(
-          status: AuthStatus.authenticated,
-          token: mockToken,
-          user: CustomerUser(
-            id: 'mock_cust_1',
-            email: email,
-            fullName: email.split('@').first,
-            phone: '',
-          ),
+          status: AuthStatus.unauthenticated,
+          errorMessage: 'Invalid username or password. Please verify credentials.',
         );
-        return true;
+        return false;
       }
     } catch (e) {
-      debugPrint('Auth error: $e. Falling back to development session.');
-      const fallbackToken = 'dev_customer_session_token';
-      await _storage.write(AppConfig.keyAuthToken, fallbackToken);
-      await _storage.write(AppConfig.keyUserEmail, email);
-
+      debugPrint('Auth error: $e');
       state = state.copyWith(
-        status: AuthStatus.authenticated,
-        token: fallbackToken,
-        user: CustomerUser(
-          id: 'dev_user',
-          email: email,
-          fullName: email.split('@').first,
-          phone: '',
-        ),
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Unable to connect to server. Please try again.',
       );
-      return true;
+      return false;
     }
   }
 
