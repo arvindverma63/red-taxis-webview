@@ -305,6 +305,10 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Generated Branded Mobile Launcher Icons**: Configured `flutter_launcher_icons` in `customer_app` and compiled adaptive icons across all Android mipmap densities (`hdpi`, `mdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`, `anydpi-v26`) and iOS sets, eliminating the default Flutter icon.
   - **Resilient Multi-Endpoint Auth & Omitted Auth Headers (`api_client.dart` & `auth_notifier.dart`)**: Prevented stale `Authorization` headers on login/register endpoints and implemented multi-tier login fallback across `/api/v2/customer-auth/login`, `/api/UserProfile/Login`, and staging `/dev/token` with clean error messages.
   - **Dynamic Booking Initial State (`book.ts`)**: Removed hardcoded static pickup strings (`High Street, City Centre`) to ensure clean placeholder and live dynamic address search.
+- [x] **Live Address Autocomplete & Full Booking Creation Pipeline**:
+  - **Multi-Source Address Search & Resolution (`customer.service.ts` & `book.ts`)**: Integrated debounced typeahead suggestions querying `POST /api/v2/public/address/search` and `POST /api/v2/address/search` with address resolution via `GET /api/v2/public/address/resolve?id=...`, retrieving exact postcodes and coordinates (`lat`/`lng`).
+  - **Live Dynamic Quoting with Postcode Resolution**: Passed resolved pickup and dropoff postcodes directly to `POST /api/v2/pricing/quote` and `POST /api/v2/public/pricing/quote` to compute real driver and cash fares across all vehicle categories.
+  - **Live Booking Submission**: Wired `CustomerService.createBookingRequest` to dispatch authenticated passenger rides to `POST /api/v2/customers/me/bookings`, `POST /api/v2/public/bookings/request`, and fallback to `POST /api/DriverApp/CreateBooking`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

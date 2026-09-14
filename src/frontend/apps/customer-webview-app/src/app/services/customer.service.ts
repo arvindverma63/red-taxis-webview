@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
 
 export interface VehicleOption {
   type: string;
@@ -23,7 +23,15 @@ export interface QuoteResult {
 }
 
 export interface AddressSearchResult {
+  id?: string;
   description: string;
+  postcode?: string;
+  lat?: number;
+  lng?: number;
+}
+
+export interface ResolvedAddressResult {
+  formattedAddress: string;
   postcode?: string;
   lat?: number;
   lng?: number;
@@ -81,16 +89,33 @@ export class CustomerService {
   private getHeaders(): HttpHeaders {
     let token = '';
     let tenantId = 'org_ace_taxis';
-    if (typeof localStorage !== 'undefined') {
-      token = localStorage.getItem('auth_token') || '';
-      tenantId = localStorage.getItem('tenant_id') || 'org_ace_taxis';
+    let tenantKey = 'demo_key';
+
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+      const hashParams = hash.includes('?') ? new URLSearchParams(hash.split('?')[1]) : null;
+
+      token = urlParams.get('token') || hashParams?.get('token') || localStorage.getItem('auth_token') || '';
+      tenantId = urlParams.get('tenantId') || hashParams?.get('tenantId') || localStorage.getItem('tenant_id') || 'org_ace_taxis';
+      tenantKey = urlParams.get('tenantKey') || hashParams?.get('tenantKey') || localStorage.getItem('tenant_key') || 'demo_key';
+
+      if (token) localStorage.setItem('auth_token', token);
+      if (tenantId) localStorage.setItem('tenant_id', tenantId);
     }
-    return new HttpHeaders({
+
+    let headers = new HttpHeaders({
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-Tenant-ID': tenantId
+      'X-Tenant-ID': tenantId,
+      'X-Tenant-Key': tenantKey
     });
+
+    if (token && token.trim()) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return headers;
   }
 
   getVehicleOptions(): VehicleOption[] {
@@ -212,16 +237,84 @@ export class CustomerService {
   // ==========================================
   // V2 Address Search & Resolution APIs
   // ==========================================
-  searchAddress(query: string): Observable<AddressSearchResult[]> {
-    return this.http.post<any>(`${this.apiUrl}/v2/public/address/search`, { query }, { headers: this.getHeaders() }).pipe(
+  searchAddress(query: string, sessionToken?: string): Observable<AddressSearchResult[]> {
+    const payload = {
+      query: query.trim(),
+      limit: 10,
+      sessionToken: sessionToken || undefined
+    };
+
+    return this.http.post<any>(`${this.apiUrl}/v2/public/address/search`, payload, { headers: this.getHeaders() }).pipe(
       map(res => {
-        const list = Array.isArray(res) ? res : (res?.data || res?.results || res?.value || []);
-        return list.map((item: any) => ({
-          description: item.description || item.formattedAddress || item.address || '',
+        const raw = res?.data?.suggestions || res?.suggestions || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+        return raw.map((item: any) => ({
+          id: item.id || item.placeId,
+          description: item.label || item.description || item.formattedAddress || item.address || item.name || '',
           postcode: item.postcode || item.postalCode || '',
           lat: item.lat || item.latitude,
           lng: item.lng || item.longitude
         }));
+      }),
+      catchError(() => {
+        // Fallback to /api/v2/address/search
+        return this.http.post<any>(`${this.apiUrl}/v2/address/search`, payload, { headers: this.getHeaders() }).pipe(
+          map(res => {
+            const raw = res?.data?.suggestions || res?.suggestions || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+            return raw.map((item: any) => ({
+              id: item.id || item.placeId,
+              description: item.label || item.description || item.formattedAddress || item.address || item.name || '',
+              postcode: item.postcode || item.postalCode || '',
+              lat: item.lat || item.latitude,
+              lng: item.lng || item.longitude
+            }));
+          }),
+          catchError(() => {
+            // Fallback to /api/Address/Search or /api/Address/Lookup
+            return this.http.get<any>(`${this.apiUrl}/Address/Search?query=${encodeURIComponent(query)}`, { headers: this.getHeaders() }).pipe(
+              map(res => {
+                const list = Array.isArray(res) ? res : (res?.data || res?.suggestions || []);
+                return list.map((item: any) => ({
+                  id: item.id,
+                  description: item.label || item.description || item.address || '',
+                  postcode: item.postcode || '',
+                  lat: item.lat,
+                  lng: item.lng
+                }));
+              }),
+              catchError(() => of([]))
+            );
+          })
+        );
+      })
+    );
+  }
+
+  resolveAddress(id: string, sessionToken?: string): Observable<ResolvedAddressResult> {
+    const params = sessionToken ? `?id=${encodeURIComponent(id)}&sessionToken=${encodeURIComponent(sessionToken)}` : `?id=${encodeURIComponent(id)}`;
+    
+    return this.http.get<any>(`${this.apiUrl}/v2/public/address/resolve${params}`, { headers: this.getHeaders() }).pipe(
+      map(res => {
+        const data = res?.data || res?.value || res || {};
+        return {
+          formattedAddress: data.formattedAddress || data.displayLabel || data.address || '',
+          postcode: data.postcode || data.postalCode || '',
+          lat: data.lat || data.latitude,
+          lng: data.lng || data.longitude
+        };
+      }),
+      catchError(() => {
+        return this.http.get<any>(`${this.apiUrl}/v2/address/resolve${params}`, { headers: this.getHeaders() }).pipe(
+          map(res => {
+            const data = res?.data || res?.value || res || {};
+            return {
+              formattedAddress: data.formattedAddress || data.displayLabel || data.address || '',
+              postcode: data.postcode || data.postalCode || '',
+              lat: data.lat || data.latitude,
+              lng: data.lng || data.longitude
+            };
+          }),
+          catchError(() => of({ formattedAddress: id }))
+        );
       })
     );
   }
@@ -229,10 +322,20 @@ export class CustomerService {
   // ==========================================
   // V2 Pricing & Quotes
   // ==========================================
-  getQuote(pickup: string, dropoff: string, vehicleType: string, accountNo: string = '9999'): Observable<QuoteResult> {
+  getQuote(
+    pickup: string,
+    dropoff: string,
+    vehicleType: string,
+    pickupPostcode?: string,
+    dropoffPostcode?: string,
+    accountNo: string = '9999'
+  ): Observable<QuoteResult> {
     const payload = {
       pickupAddress: pickup,
       destinationAddress: dropoff,
+      pickupPostcode: pickupPostcode || undefined,
+      destinationPostcode: dropoffPostcode || undefined,
+      viaPostcodes: [],
       vehicleType: vehicleType,
       accountNo: accountNo,
       passengers: 1,
@@ -242,15 +345,31 @@ export class CustomerService {
 
     return this.http.post<any>(`${this.apiUrl}/v2/pricing/quote`, payload, { headers: this.getHeaders() }).pipe(
       map(res => {
-        const data = res?.value || res?.data || res;
+        const data = res?.data || res?.value || res || {};
         return {
-          fare: Number(data.fare || data.price || data.priceCash || 0),
+          fare: Number(data.fare || data.price || data.priceCash || data.priceDriver || 0),
           distanceMiles: Number(data.distance || data.distanceMiles || 0),
           durationMinutes: Number(data.duration || data.durationMinutes || 0),
-          pickupPostcode: data.pickupPostcode,
-          dropoffPostcode: data.dropoffPostcode,
+          pickupPostcode: data.pickupPostcode || pickupPostcode,
+          dropoffPostcode: data.dropoffPostcode || dropoffPostcode,
           currency: '£'
         };
+      }),
+      catchError(() => {
+        // Fallback to /api/v2/public/pricing/quote
+        return this.http.post<any>(`${this.apiUrl}/v2/public/pricing/quote`, payload, { headers: this.getHeaders() }).pipe(
+          map(res => {
+            const data = res?.data || res?.value || res || {};
+            return {
+              fare: Number(data.fare || data.price || data.priceCash || data.priceDriver || 0),
+              distanceMiles: Number(data.distance || data.distanceMiles || 0),
+              durationMinutes: Number(data.duration || data.durationMinutes || 0),
+              pickupPostcode: data.pickupPostcode || pickupPostcode,
+              dropoffPostcode: data.dropoffPostcode || dropoffPostcode,
+              currency: '£'
+            };
+          })
+        );
       })
     );
   }
@@ -259,7 +378,50 @@ export class CustomerService {
   // V2 Customer Bookings & Ride Management
   // ==========================================
   createBookingRequest(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/v2/public/bookings/request`, data, { headers: this.getHeaders() });
+    const customerPayload = {
+      pickupAddress: data.pickup?.description || data.pickupAddress || '',
+      pickupPostcode: data.pickup?.postcode || data.pickupPostcode || '',
+      pickupLat: data.pickup?.lat,
+      pickupLng: data.pickup?.lng,
+      destinationAddress: data.destination?.description || data.dropoffAddress || '',
+      destinationPostcode: data.destination?.postcode || data.dropoffPostcode || '',
+      destinationLat: data.destination?.lat,
+      destinationLng: data.destination?.lng,
+      vehicleType: data.vehicleType || 'Saloon',
+      passengers: data.passengers || 1,
+      luggage: data.luggage || 0,
+      pickupDateTime: data.scheduledFor || data.pickupDateTime || new Date().toISOString(),
+      paymentMethod: data.paymentMethod || 'cash',
+      notes: data.details || data.notes || '',
+      fare: data.quote?.priceCash || data.fare || 0,
+      asap: data.asap ?? true,
+      passengerName: data.passengerName || 'Valued Customer',
+      phoneNumber: data.phoneNumber || '',
+      email: data.email || ''
+    };
+
+    // 1. Try customer authenticated bookings endpoint
+    return this.http.post<any>(`${this.apiUrl}/v2/customers/me/bookings`, customerPayload, { headers: this.getHeaders() }).pipe(
+      catchError(() => {
+        // 2. Fallback to /api/v2/public/bookings/request
+        return this.http.post<any>(`${this.apiUrl}/v2/public/bookings/request`, data, { headers: this.getHeaders() }).pipe(
+          catchError(() => {
+            // 3. Fallback to /api/DriverApp/CreateBooking
+            const legacyPayload = {
+              pickup: customerPayload.pickupAddress,
+              destination: customerPayload.destinationAddress,
+              pickupDateTime: customerPayload.pickupDateTime,
+              vehicleType: customerPayload.vehicleType,
+              passengers: customerPayload.passengers,
+              paymentMethod: customerPayload.paymentMethod,
+              price: customerPayload.fare,
+              notes: customerPayload.notes
+            };
+            return this.http.post<any>(`${this.apiUrl}/DriverApp/CreateBooking`, legacyPayload, { headers: this.getHeaders() });
+          })
+        );
+      })
+    );
   }
 
   getMyBookings(status?: string): Observable<CustomerBookingDto[]> {

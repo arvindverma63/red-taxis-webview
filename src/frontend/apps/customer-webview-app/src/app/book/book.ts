@@ -88,16 +88,54 @@ export class BookComponent implements OnInit {
     this.searchSubject.next({ query, field });
   }
 
+  pickupPostcode = '';
+  dropoffPostcode = '';
+  pickupLat?: number;
+  pickupLng?: number;
+  dropoffLat?: number;
+  dropoffLng?: number;
+
   selectAddressSuggestion(field: 'pickup' | 'dropoff', item: AddressSearchResult) {
+    const fullText = item.description || item.postcode || '';
     if (field === 'pickup') {
-      this.pickupAddress = item.description || item.postcode || this.pickupAddress;
+      this.pickupAddress = fullText;
+      this.pickupPostcode = item.postcode || '';
+      this.pickupLat = item.lat;
+      this.pickupLng = item.lng;
       this.pickupSuggestions = [];
     } else {
-      this.dropoffAddress = item.description || item.postcode || this.dropoffAddress;
+      this.dropoffAddress = fullText;
+      this.dropoffPostcode = item.postcode || '';
+      this.dropoffLat = item.lat;
+      this.dropoffLng = item.lng;
       this.dropoffSuggestions = [];
     }
     this.activeSearchField = null;
-    this.calculateQuote();
+
+    if (item.id) {
+      this.customerService.resolveAddress(item.id).subscribe({
+        next: (resolved) => {
+          if (field === 'pickup') {
+            this.pickupAddress = resolved.formattedAddress || this.pickupAddress;
+            this.pickupPostcode = resolved.postcode || this.pickupPostcode;
+            this.pickupLat = resolved.lat || this.pickupLat;
+            this.pickupLng = resolved.lng || this.pickupLng;
+          } else {
+            this.dropoffAddress = resolved.formattedAddress || this.dropoffAddress;
+            this.dropoffPostcode = resolved.postcode || this.dropoffPostcode;
+            this.dropoffLat = resolved.lat || this.dropoffLat;
+            this.dropoffLng = resolved.lng || this.dropoffLng;
+          }
+          this.calculateQuote();
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.calculateQuote();
+        }
+      });
+    } else {
+      this.calculateQuote();
+    }
   }
 
   selectDestination(dest: string) {
@@ -118,9 +156,11 @@ export class BookComponent implements OnInit {
     this.isLoadingQuote = true;
     this.quoteError = '';
     this.customerService.getQuote(
-      this.pickupAddress,
+      this.pickupAddress || 'Current Location',
       this.dropoffAddress,
       this.selectedVehicle.name,
+      this.pickupPostcode,
+      this.dropoffPostcode,
       this.paymentMethod === 'account' ? '1001' : '9999'
     ).subscribe({
       next: (q) => {
@@ -152,12 +192,16 @@ export class BookComponent implements OnInit {
     this.isSubmitting = true;
     const payload = {
       pickup: {
-        description: this.pickupAddress,
-        postcode: this.quote?.pickupPostcode || ''
+        description: this.pickupAddress || 'Current Location',
+        postcode: this.pickupPostcode || this.quote?.pickupPostcode || '',
+        lat: this.pickupLat,
+        lng: this.pickupLng
       },
       destination: {
         description: this.dropoffAddress,
-        postcode: this.quote?.dropoffPostcode || ''
+        postcode: this.dropoffPostcode || this.quote?.dropoffPostcode || '',
+        lat: this.dropoffLat,
+        lng: this.dropoffLng
       },
       vehicleType: this.selectedVehicle.name,
       passengers: this.passengers,
