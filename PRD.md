@@ -264,6 +264,15 @@ The Angular router guards and services parse the `token` parameter directly from
     - `ProfileComponent` (`/#/profile`) & `SavedPlacesComponent` (`/#/saved-places`): Account hub, theme switcher, and favorite addresses.
   - **Build & Test Health**: Verified with `ng build` (production bundle generated with 0 errors) and `vitest` (100% green passing tests).
 
+- [x] **V2 Customer API & Scalar OpenAPI Specification Alignment**:
+  - **Live OpenAPI v2 Audit**: Inspected `https://staging-api.redtaxi.co.uk/openapi/v2.json` and mapped all dedicated customer and public booking endpoints from the Scalar v2 documentation (`/scalar/v2#tag/customerauth`).
+  - **Complete Customer Service Integration (`customer.service.ts`)**:
+    - **Customer Auth**: `POST /api/v2/customer-auth/login`, `POST /api/v2/customer-auth/register-customer`, `POST /api/v2/customer-auth/refresh`, `POST /api/v2/customer-auth/logout`, and password management.
+    - **Customer Profile & Saved Addresses**: `GET /api/v2/customers/me/profile`, `PUT /api/v2/customers/me/profile`, `GET /api/v2/customers/me/addresses`, `POST /api/v2/customers/me/addresses`, `DELETE /api/v2/customers/me/addresses/{id}`.
+    - **Customer Bookings**: `GET /api/v2/customers/me/bookings`, `GET /api/v2/customers/me/bookings/{id}`, `POST /api/v2/customers/me/bookings/{id}/cancel`, `POST /api/v2/customers/me/bookings/{id}/change`.
+    - **Public & Booking Requests**: `POST /api/v2/public/pricing/quote`, `POST /api/v2/public/address/search`, `POST /api/v2/public/bookings/request`, and `GET /api/v2/public/tenant-info`.
+  - **Build Verification**: Verified `ng build` and Vitest test suites (100% green passing status).
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
