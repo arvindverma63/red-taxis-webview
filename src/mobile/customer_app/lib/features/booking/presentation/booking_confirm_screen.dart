@@ -1,156 +1,179 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/theme.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/status_badge.dart';
-import '../application/booking_notifier.dart';
 
+import '../../../core/config/app_config.dart';
+import '../../../core/router/route_paths.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/format.dart';
+import '../../../core/utils/phone_launcher.dart';
+import '../../../core/widgets/widgets.dart';
+import '../application/booking_draft_controller.dart';
+import '../domain/booking_draft.dart';
+import '../domain/vehicle_type.dart';
+import 'widgets/widgets.dart';
+
+/// Success screen after a request is sent. The operator still has to ACCEPT the
+/// request (webbooking → dispatch model), so the copy says "awaiting
+/// confirmation". Shows a summary and a "Call office" shortcut.
 class BookingConfirmScreen extends ConsumerWidget {
-  const BookingConfirmScreen({super.key});
+  const BookingConfirmScreen({super.key, required this.requestId});
+
+  final String requestId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(bookingProvider);
-    final booking = state.activeBooking;
-    final branding = ref.watch(tenantBrandingProvider);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    // Read (not watch) — the draft is reset on "Done"; we snapshot it for the
+    // summary so the page doesn't blank when the draft clears.
+    final draft = ref.read(bookingDraftProvider);
+    final config = AppConfig.fromEnvironment();
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              // Animated Pulse Check
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: branding.primaryColor.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [branding.gradientStart, branding.gradientEnd],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.check_rounded, color: Colors.white, size: 36),
-                  ),
-                ),
+    return AppScaffold(
+      title: 'Booking sent',
+      leading: const SizedBox.shrink(), // no back — this is a terminal step
+      body: ListView(
+        children: [
+          const SizedBox(height: AppSpacing.xl),
+          Center(
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Ride Request Sent!',
-                style: theme.textTheme.headlineMedium,
-                textAlign: TextAlign.center,
+              child: Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Your booking request has been received by ${branding.name} dispatch. An operator is assigning your driver now.',
-                style: theme.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 28),
-
-              // Booking Details Summary Card
-              if (booking != null)
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Booking ID: ${booking.id}',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                          ),
-                          const StatusBadge(status: 'Request Sent'),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        children: [
-                          const Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF10B981)),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              booking.pickupAddress,
-                              style: const TextStyle(fontSize: 13),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_rounded, size: 16, color: branding.primaryColor),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              booking.dropoffAddress,
-                              style: const TextStyle(fontSize: 13),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Vehicle: ${booking.vehicleType}', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                          Text(
-                            '£${booking.fare.toStringAsFixed(2)}',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: branding.primaryColor),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-              const Spacer(),
-              AppButton(
-                text: 'Track Ride Live',
-                icon: Icons.navigation_rounded,
-                onPressed: () {
-                  context.go('/rides/active');
-                },
-                branding: branding,
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'Back to Home',
-                variant: ButtonVariant.secondary,
-                onPressed: () {
-                  context.go('/home');
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Request sent',
+            style: theme.textTheme.headlineMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Awaiting confirmation from the office. We\'ll let you know as soon '
+            'as your ride is accepted.',
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Center(
+            child: StatusChip(
+              label: 'Ref $requestId',
+              kind: StatusKind.pending,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _SummaryCard(draft: draft),
+          if (_isOutOfHours(draft, config)) ...[
+            const SizedBox(height: AppSpacing.lg),
+            const OutOfHoursNote(),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: 'Call office',
+            variant: AppButtonVariant.secondary,
+            icon: Icons.call,
+            onPressed: () => callOffice(context, config.supportPhone),
+          ),
+        ],
+      ),
+      bottomBar: AppButton(
+        label: 'Done',
+        onPressed: () {
+          ref.read(bookingDraftProvider.notifier).reset();
+          context.go(Routes.home);
+        },
       ),
     );
   }
+
+  /// Out-of-hours when an ASAP ride is requested while the office is closed, or
+  /// a scheduled ride falls in the closed window.
+  bool _isOutOfHours(BookingDraft draft, AppConfig config) {
+    final when = draft.scheduledFor ?? DateTime.now();
+    return config.isOutsideOperatingHours(when.hour);
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.draft});
+
+  final BookingDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final vehicle = vehicleById(draft.vehicleId);
+    final when = draft.isAsap
+        ? 'Now (ASAP)'
+        : Fmt.dateTime(draft.scheduledFor!);
+    final price = draft.paymentMethod == 'account'
+        ? draft.quote?.priceAccount
+        : draft.quote?.priceCash;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _row(theme, Icons.my_location, 'Pickup',
+              draft.pickup?.description ?? '—'),
+          const SizedBox(height: AppSpacing.md),
+          _row(theme, Icons.location_on, 'Destination',
+              draft.dropoff?.description ?? '—'),
+          const Divider(height: AppSpacing.xl),
+          _row(theme, Icons.schedule, 'When', when),
+          const SizedBox(height: AppSpacing.md),
+          _row(theme, Icons.directions_car_outlined, 'Vehicle', vehicle.name),
+          const SizedBox(height: AppSpacing.md),
+          _row(theme, Icons.payments_outlined, 'Payment',
+              _paymentLabel(draft.paymentMethod)),
+          if (price != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            _row(theme, Icons.receipt_long_outlined, 'Estimated fare',
+                Fmt.money(price)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _row(ThemeData theme, IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: theme.colorScheme.primary),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Text(label, style: theme.textTheme.bodyMedium),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          flex: 2,
+          child: Text(
+            value,
+            style: theme.textTheme.titleMedium,
+            textAlign: TextAlign.right,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _paymentLabel(String method) => switch (method) {
+        'cash' => 'Cash',
+        'card' => 'Card',
+        'applePay' => 'Apple Pay',
+        'account' => 'Billed to account',
+        _ => method,
+      };
 }

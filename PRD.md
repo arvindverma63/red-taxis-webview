@@ -310,6 +310,17 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Live Dynamic Quoting with Postcode Resolution**: Passed resolved pickup and dropoff postcodes directly to `POST /api/v2/pricing/quote` and `POST /api/v2/public/pricing/quote` to compute real driver and cash fares across all vehicle categories.
   - **Live Booking Submission**: Wired `CustomerService.createBookingRequest` to dispatch authenticated passenger rides to `POST /api/v2/customers/me/bookings`, `POST /api/v2/public/bookings/request`, and fallback to `POST /api/DriverApp/CreateBooking`.
 
+- [x] **GoRide Design System & Full Native Screen Architecture Integration (`src/mobile/customer_app`)**:
+  - **GoRide Design System Foundation**: Implemented full GoRide design system with Red Taxi brand red (`#FE2020`), custom neutral ramp (`neutral0` through `neutral900`), and Google Fonts Urbanist typography across all headings and body styles.
+  - **Complete UI Kit Components**: Built reusable core widgets (`AppButton`, `AppTextField`, `AppScaffold`, `AppCard`, `AppListTile`, `StatusChip`, `AppBottomSheet`, `AppAvatar`, `ConfirmDialog`, `AdaptiveCenter`, `LoadingView`, `ErrorView`, `EmptyView`, `MapView`, `SectionHeader`).
+  - **Full Native Auth Flow**: Built native screens for Onboarding (`OnboardingScreen`), Sign In (`SignInScreen`), Sign Up (`SignUpScreen`), Forgot Password (`ForgotPasswordScreen`), Verify Email (`VerifyEmailScreen`), Reset Password (`ResetPasswordScreen`), and Brand Splash (`SplashScreen`) with `AuthHeader`, `TermsCheckbox`, `AuthErrorBanner`, `PasswordField`, and `SocialAuthButtons`.
+  - **Native Booking Experience**: Implemented GoRide `HomeScreen` with Map preview, greeting chip, "Where to?" action card, saved place pills, `AddressSearchScreen` with live API typeahead, `BookingReviewScreen` with vehicle carousel, passenger/luggage counters, and fare quote breakdown, and `PickOnMapScreen`.
+  - **Native Live Tracking & Activity**: Implemented `TrackingScreen` with dynamic driver status cards, ETA countdown, and route header, plus `ActivityScreen` with Ongoing vs History segmented tabs and trip receipts.
+  - **Native Profile & Settings**: Implemented `ProfileScreen`, `SavedAddressesScreen`, `PaymentMethodsScreen`, `SettingsScreen`, and `NotificationsScreen`.
+  - **Static Tenant ID & Public Key Configuration**: Configured static default tenant ID (`org_ace_taxis`) and public tenant key (`rtk_pub_47b2f6dc71b5dd024f7f6d23bdeb9fe2782c3ed4a46d15b7`) in `AppConfig` and `DioClient` with automatic `X-Tenant-Key` and `X-Tenant-Id` header propagation on registration and all customer API requests.
+  - **Android Build & Desugaring Compatibility**: Enabled `isCoreLibraryDesugaringEnabled = true` and configured `desugar_jdk_libs:2.1.4` in `android/app/build.gradle.kts` for `flutter_local_notifications`, and resolved multi-drive Kotlin incremental compilation paths on Windows.
+  - **Build & Test Health**: 100% clean analyzer report (`flutter analyze` with 0 warnings), all test suites passing (`flutter test`), and verified successful debug APK compilation (`flutter build apk --debug`).
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

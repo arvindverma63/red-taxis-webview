@@ -1,228 +1,268 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/theme.dart';
-import '../../auth/application/auth_notifier.dart';
 
+import '../../../core/router/route_paths.dart';
+import '../../../core/session/session_controller.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../application/notifications_controller.dart';
+import '../../../core/widgets/widgets.dart';
+import 'widgets/profile_identity_card.dart';
+import 'widgets/settings_group_card.dart';
+import 'widgets/settings_row.dart';
+
+/// Account tab root, faithful to the GoRide "Account" frame. Wired by the app
+/// shell as the `/profile` tab body — NOT a pushed route, so it has no back
+/// button. Shows the centred "Account" header (brand mark + overflow), the
+/// identity + wallet card, the grouped settings menu and a red Logout row.
+///
+/// All wiring is preserved: sub-page navigation, the unread-notifications
+/// badge, and sign-out (confirm dialog → [SessionController.signOut]).
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final branding = ref.watch(tenantBrandingProvider);
+    final user = ref.watch(currentUserProvider);
+    final unread = ref.watch(unreadNotificationsCountProvider);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final user = authState.user;
+    final scheme = theme.colorScheme;
+    final isGuest = user == null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Account'),
+        centerTitle: true,
+        title: const Text('Account'),
+        // Brand mark in place of GoRide's logo (no asset shipped yet) — themed
+        // so a real logo swaps in here later without touching layout.
+        leading: Center(
+          child: Icon(Icons.local_taxi, color: scheme.primary, size: 28),
+        ),
+        actions: [
+          // The overflow only offers Settings + Logout, both of which require a
+          // signed-in user; hide it for guests (they get the sign-in prompt).
+          if (!isGuest)
+            IconButton(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More',
+              onPressed: () => _showMore(context, ref),
+            ),
+        ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            children: [
-              // Profile Header Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      branding.gradientStart,
-                      branding.gradientEnd,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: branding.primaryColor.withOpacity(0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: Text(
-                        user?.fullName.isNotEmpty == true ? user!.fullName.substring(0, 1).toUpperCase() : 'C',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: branding.primaryColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.fullName ?? 'Valued Customer',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            user?.email ?? 'customer@redtaxi.co.uk',
-                            style: const TextStyle(fontSize: 13, color: Colors.white70),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              user?.isGuest == true ? 'Guest Session' : 'Verified Customer',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Account Options
-              _buildMenuCard(
-                context,
-                isDark,
-                [
-                  _MenuItem(
-                    icon: Icons.bookmark_border_rounded,
-                    title: 'Saved Places',
-                    subtitle: 'Home, Work and favourite addresses',
-                    onTap: () => context.push('/saved-places'),
-                  ),
-                  _MenuItem(
-                    icon: Icons.credit_card_rounded,
-                    title: 'Payment Methods',
-                    subtitle: 'Cash, Card and Apple/Google Pay',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Payment cards managed at checkout')),
-                      );
-                    },
-                  ),
-                  _MenuItem(
-                    icon: Icons.tune_rounded,
-                    title: 'Settings & Theme',
-                    subtitle: 'Dark mode, Notifications & Fleet switcher',
-                    onTap: () => context.push('/settings'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Fleet Info Card
-              _buildMenuCard(
-                context,
-                isDark,
-                [
-                  _MenuItem(
-                    icon: Icons.domain_rounded,
-                    title: branding.name,
-                    subtitle: 'Fleet Tenant: ${branding.tenantId}',
-                    trailing: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-                    onTap: () => context.push('/auth/qr-scan'),
-                  ),
-                  _MenuItem(
-                    icon: Icons.support_agent_rounded,
-                    title: 'Customer Support',
-                    subtitle: branding.supportEmail ?? 'support@redtaxi.co.uk',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Sign Out Button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await ref.read(authProvider.notifier).signOut();
-                    if (context.mounted) {
-                      context.go('/auth/login');
-                    }
-                  },
-                  icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFEF4444)),
-                  label: const Text('Sign Out', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w600)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            ],
+      // Guests reach this tab without authenticating (other tabs redirect to
+      // Sign in). Show a sign-in prompt rather than the authenticated menu +
+      // Logout, which would act on no session.
+      body: isGuest
+          ? _GuestPrompt(onSignIn: () => context.go(Routes.signIn))
+          : SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.xl,
           ),
+          children: [
+            ProfileIdentityCard(
+              user: user,
+              onTapIdentity: () => _editProfile(context),
+              // Wallet/top-up isn't a built feature yet; omit the balance row
+              // until it ships rather than show a fake balance. The card
+              // degrades gracefully to identity-only.
+              balanceLabel: null,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SettingsGroupCard(
+              children: [
+                SettingsRow(
+                  icon: Icons.location_on_outlined,
+                  label: 'Saved addresses',
+                  onTap: () => context.push(Routes.savedAddresses),
+                ),
+                SettingsRow(
+                  icon: Icons.notifications_none,
+                  label: 'Notifications',
+                  trailing: unread > 0 ? _CountBadge(count: unread) : null,
+                  onTap: () => context.push(Routes.notifications),
+                ),
+                SettingsRow(
+                  icon: Icons.credit_card,
+                  label: 'Payment methods',
+                  onTap: () => context.push(Routes.paymentMethods),
+                ),
+                SettingsRow(
+                  icon: Icons.tune,
+                  label: 'Settings',
+                  onTap: () => context.push(Routes.settings),
+                ),
+                SettingsRow(
+                  icon: Icons.help_outline,
+                  label: 'Help & Support',
+                  onTap: () => _comingSoon(context, 'Help & Support'),
+                ),
+                SettingsRow(
+                  icon: Icons.star_border,
+                  label: 'Rate us',
+                  onTap: () => _comingSoon(context, 'Rate us'),
+                ),
+                SettingsRow(
+                  icon: Icons.logout,
+                  label: 'Logout',
+                  destructive: true,
+                  trailing: const SizedBox.shrink(),
+                  onTap: () => _signOut(context, ref),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMenuCard(BuildContext context, bool isDark, List<_MenuItem> items) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-          width: 1.5,
+  void _editProfile(BuildContext context) {
+    // Profile editing isn't a built sub-page yet; settings is the closest
+    // existing destination. Surface a hint rather than dead-tap.
+    _comingSoon(context, 'Edit profile');
+  }
+
+  void _comingSoon(BuildContext context, String what) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$what is coming soon.')),
+    );
+  }
+
+  Future<void> _showMore(BuildContext context, WidgetRef ref) async {
+    // GoRide's header overflow; offer the sign-out action here too.
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.tune),
+              title: const Text('Settings'),
+              onTap: () => Navigator.of(sheetContext).pop('settings'),
+            ),
+            ListTile(
+              leading: Icon(Icons.logout,
+                  color: Theme.of(sheetContext).colorScheme.error),
+              title: Text(
+                'Logout',
+                style: TextStyle(
+                    color: Theme.of(sheetContext).colorScheme.error),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop('logout'),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        children: items.asMap().entries.map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          return Column(
-            children: [
-              ListTile(
-                leading: Icon(item.icon, color: Theme.of(context).colorScheme.primary, size: 22),
-                title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text(item.subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                trailing: item.trailing ?? const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF94A3B8)),
-                onTap: item.onTap,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              ),
-              if (index < items.length - 1)
-                const Divider(height: 1, indent: 56),
-            ],
-          );
-        }).toList(),
+    );
+    if (!context.mounted) return;
+    switch (action) {
+      case 'settings':
+        context.push(Routes.settings);
+      case 'logout':
+        await _signOut(context, ref);
+    }
+  }
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Logout',
+      message: 'You will need to sign in again to book a taxi.',
+      confirmLabel: 'Logout',
+      destructive: true,
+    );
+    if (!confirmed || !context.mounted) return;
+    try {
+      await ref.read(sessionProvider.notifier).signOut();
+      if (context.mounted) context.go(Routes.signIn);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not sign out. Please try again.')),
+        );
+      }
+    }
+  }
+}
+
+/// Sign-in prompt shown on the Account tab for guests (no session). Mirrors the
+/// app's empty-state language ([EmptyView] + [AppButton]) so a guest gets a
+/// clear call to action instead of the authenticated menu and Logout.
+class _GuestPrompt extends StatelessWidget {
+  const _GuestPrompt({required this.onSignIn});
+
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const EmptyView(
+              icon: Icons.account_circle_outlined,
+              title: 'Sign in to your account',
+              subtitle: 'Sign in to manage your saved addresses, payment '
+                  'methods and notifications.',
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            AppButton(
+              label: 'Sign in',
+              icon: Icons.login,
+              fullWidth: false,
+              onPressed: onSignIn,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _MenuItem {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  final VoidCallback onTap;
+/// Small brand pill showing the unread-notifications count, with a trailing
+/// chevron — the Account row's trailing affordance when there are unread items.
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
 
-  _MenuItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-    required this.onTap,
-  });
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 2,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          child: Text(
+            '$count',
+            style: theme.textTheme.labelSmall
+                ?.copyWith(color: theme.colorScheme.onPrimary),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Icon(
+          Icons.chevron_right,
+          size: 22,
+          color: theme.textTheme.bodySmall?.color,
+        ),
+      ],
+    );
+  }
 }

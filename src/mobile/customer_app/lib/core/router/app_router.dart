@@ -1,137 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../config/constants.dart';
-import '../../features/auth/application/auth_notifier.dart';
-import '../../features/auth/presentation/login_screen.dart';
-import '../../features/auth/presentation/register_screen.dart';
-import '../../features/auth/presentation/tenant_qr_screen.dart';
-import '../../features/profile/presentation/settings_screen.dart';
-import '../../features/shell/customer_main_shell.dart';
-import '../../features/splash/presentation/splash_screen.dart';
-import '../../features/webview/presentation/customer_webview_screen.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorBookKey = GlobalKey<NavigatorState>(debugLabel: 'book');
-final _shellNavigatorRidesKey = GlobalKey<NavigatorState>(debugLabel: 'rides');
-final _shellNavigatorProfileKey = GlobalKey<NavigatorState>(debugLabel: 'profile');
+import '../network/dio_client.dart';
+import '../session/session_controller.dart';
+import 'main_shell.dart';
+import 'route_paths.dart';
 
+// Feature route bundles + tab-root screens.
+import '../../features/auth/auth_routes.dart';
+import '../../features/booking/presentation/booking_routes.dart';
+import '../../features/booking/presentation/home_screen.dart';
+import '../../features/tracking/tracking_routes.dart';
+import '../../features/activity/presentation/activity_routes.dart';
+import '../../features/activity/presentation/activity_screen.dart';
+import '../../features/payment/presentation/payment_routes.dart';
+import '../../features/profile/presentation/profile_routes.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+
+/// Routes reachable without a session. Everything else redirects to sign-in.
+const _publicRoutes = <String>{
+  Routes.splash,
+  Routes.onboarding,
+  Routes.signIn,
+  Routes.signUp,
+  Routes.forgotPassword,
+  Routes.resetPassword,
+  Routes.verifyEmail,
+};
+
+final _homeKey = GlobalKey<NavigatorState>();
+final _activityKey = GlobalKey<NavigatorState>();
+final _profileKey = GlobalKey<NavigatorState>();
+
+/// The app router. Rebuilt-free: auth changes drive redirects via the
+/// [_RouterRefresh] listenable rather than recreating the router.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refresh = _RouterRefresh(ref);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
-    initialLocation: '/splash',
+    initialLocation: Routes.splash,
+    refreshListenable: refresh,
     redirect: (context, state) {
-      if (state.matchedLocation == '/splash') {
-        return null;
-      }
+      final loggedIn = ref.read(sessionProvider) != null;
+      final expired = ref.read(sessionExpiredProvider);
+      final loc = state.matchedLocation;
+      final isPublic =
+          _publicRoutes.contains(loc) || loc == Routes.splash;
 
-      final isAuth = authState.isAuthenticated;
-      final isLoggingIn = state.matchedLocation == '/auth/login' ||
-          state.matchedLocation == '/auth/register' ||
-          state.matchedLocation == '/auth/qr-scan';
+      // Forced logout (refresh failed) → sign-in.
+      if (expired && loc != Routes.signIn) return Routes.signIn;
 
-      if (!isAuth && !isLoggingIn) {
-        return '/auth/login';
-      }
-      if (isAuth && isLoggingIn) {
-        return '/home';
+      // Gate protected routes.
+      if (!loggedIn && !isPublic) return Routes.signIn;
+
+      // Bounce signed-in users away from the auth entry screens.
+      if (loggedIn &&
+          (loc == Routes.signIn ||
+              loc == Routes.signUp ||
+              loc == Routes.onboarding)) {
+        return Routes.home;
       }
       return null;
     },
     routes: [
-      // Splash Route
-      GoRoute(
-        path: '/splash',
-        builder: (context, state) => const SplashScreen(),
-      ),
-
-      // Native Auth & Onboarding Routes
-      GoRoute(
-        path: '/auth/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/auth/register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: '/auth/qr-scan',
-        builder: (context, state) => const TenantQrScreen(),
-      ),
-
-      // Native Settings Route
-      GoRoute(
-        path: '/settings',
-        builder: (context, state) => const CustomerSettingsScreen(),
-      ),
-
-      // Webview Full-Screen Overlays (Active Tracking & Saved Places)
-      GoRoute(
-        path: '/rides/active',
-        builder: (context, state) => const CustomerWebviewScreen(
-          subRoute: AppConfig.webviewActiveRideRoute,
-          title: 'Live Tracking',
-          showBackButton: true,
-        ),
-      ),
-      GoRoute(
-        path: '/saved-places',
-        builder: (context, state) => const CustomerWebviewScreen(
-          subRoute: AppConfig.webviewSavedPlacesRoute,
-          title: 'Saved Places',
-          showBackButton: true,
-        ),
-      ),
-
-      // Hybrid Webview Navigation Shell
+      ...authRoutes,
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return CustomerMainShell(navigationShell: navigationShell);
-        },
+        builder: (context, state, shell) => MainShell(shell: shell),
         branches: [
-          // Branch 0: Book / Home (Webview)
           StatefulShellBranch(
-            navigatorKey: _shellNavigatorBookKey,
+            navigatorKey: _homeKey,
             routes: [
               GoRoute(
-                path: '/home',
-                builder: (context, state) => const CustomerWebviewScreen(
-                  subRoute: AppConfig.webviewBookRoute,
-                  title: 'Book a Taxi',
-                ),
+                path: Routes.home,
+                builder: (context, state) => const HomeScreen(),
               ),
             ],
           ),
-          // Branch 1: Activity / Rides (Webview)
           StatefulShellBranch(
-            navigatorKey: _shellNavigatorRidesKey,
+            navigatorKey: _activityKey,
             routes: [
               GoRoute(
-                path: '/rides/history',
-                builder: (context, state) => const CustomerWebviewScreen(
-                  subRoute: AppConfig.webviewActivityRoute,
-                  title: 'My Rides',
-                ),
+                path: Routes.activity,
+                builder: (context, state) => const ActivityScreen(),
               ),
             ],
           ),
-          // Branch 2: Account / Profile (Webview)
           StatefulShellBranch(
-            navigatorKey: _shellNavigatorProfileKey,
+            navigatorKey: _profileKey,
             routes: [
               GoRoute(
-                path: '/profile',
-                builder: (context, state) => const CustomerWebviewScreen(
-                  subRoute: AppConfig.webviewProfileRoute,
-                  title: 'My Account',
-                ),
+                path: Routes.profile,
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),
         ],
       ),
+      ...bookingRoutes,
+      ...trackingRoutes,
+      ...activityRoutes,
+      ...profileRoutes,
+      ...paymentRoutes,
     ],
+    errorBuilder: (context, state) => const _RouteError(),
   );
 });
+
+/// Notifies go_router to re-run [redirect] when the session or expiry flips.
+class _RouterRefresh extends ChangeNotifier {
+  _RouterRefresh(Ref ref) {
+    _subs = [
+      ref.listen(sessionProvider, (_, __) => notifyListeners()),
+      ref.listen(sessionExpiredProvider, (_, __) => notifyListeners()),
+    ];
+  }
+  late final List<ProviderSubscription> _subs;
+
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.close();
+    }
+    super.dispose();
+  }
+}
+
+class _RouteError extends StatelessWidget {
+  const _RouteError();
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text('Page not found')));
+}
