@@ -1,21 +1,275 @@
-<div class="login-container">
-  <div class="card login-card">
-    <div class="brand-logo">
-      <span class="material-symbols-outlined">local_taxi</span>
-    </div>
-    <h2>Passenger Portal</h2>
-    <p>Sign in to access your bookings and live tracking.</p>
+<div class="auth-page-wrapper">
+  <!-- Subtle dynamic glowing backdrop particles -->
+  <div class="glow-orb orb-primary"></div>
+  <div class="glow-orb orb-secondary"></div>
 
-    <div class="form-group">
-      <label>Email Address</label>
-      <input type="email" [(ngModel)]="email" placeholder="customer@example.com" />
+  <div class="auth-card">
+    <!-- Header with animated logo -->
+    <div class="auth-header">
+      <div class="logo-aura">
+        <div class="logo-inner">
+          <span class="material-symbols-outlined logo-icon">local_taxi</span>
+        </div>
+      </div>
+      <h1 class="brand-title">{{ tenantName }}</h1>
+      <p class="brand-subtitle">Fast, Reliable Rides at Your Fingertips</p>
     </div>
 
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" [(ngModel)]="password" placeholder="••••••••" />
+    <!-- Segmented Capsule Mode Switcher -->
+    <div class="mode-switch-wrapper">
+      <div class="mode-switch-track" [class.register-active]="mode === 'register'">
+        <button
+          type="button"
+          class="mode-btn"
+          [class.active]="mode === 'login'"
+          (click)="setMode('login')"
+        >
+          <span class="material-symbols-outlined btn-icon">login</span>
+          <span>Sign In</span>
+        </button>
+        <button
+          type="button"
+          class="mode-btn"
+          [class.active]="mode === 'register'"
+          (click)="setMode('register')"
+        >
+          <span class="material-symbols-outlined btn-icon">person_add</span>
+          <span>Register</span>
+        </button>
+      </div>
     </div>
 
-    <button class="btn btn-primary btn-block" (click)="login()">Sign In</button>
+    <!-- Notifications / Alerts -->
+    <div class="alert-box error-alert" *ngIf="errorMessage">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <div class="alert-box success-alert" *ngIf="successMessage">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ successMessage }}</span>
+    </div>
+
+    <!-- SIGN IN FORM -->
+    <form class="auth-form animated-fade" *ngIf="mode === 'login'" (ngSubmit)="onLogin()">
+      <div class="field-group">
+        <label class="field-label">Username / Email</label>
+        <div class="field-input-box">
+          <span class="material-symbols-outlined field-icon">person</span>
+          <input
+            type="text"
+            name="username"
+            [(ngModel)]="loginUsername"
+            placeholder="Username or email address"
+            required
+            autocomplete="username"
+          />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="label-row">
+          <label class="field-label">Password</label>
+          <button type="button" class="forgot-link" (click)="toggleForgotPassword()">
+            Forgot?
+          </button>
+        </div>
+        <div class="field-input-box">
+          <span class="material-symbols-outlined field-icon">lock</span>
+          <input
+            [type]="showLoginPassword ? 'text' : 'password'"
+            name="password"
+            [(ngModel)]="loginPassword"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="toggle-eye"
+            (click)="showLoginPassword = !showLoginPassword"
+          >
+            <span class="material-symbols-outlined">
+              {{ showLoginPassword ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <label class="custom-checkbox">
+          <input type="checkbox" name="rememberMe" [(ngModel)]="rememberMe" />
+          <span class="checkbox-box"></span>
+          <span class="checkbox-label">Remember me</span>
+        </label>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading">
+        <span class="spinner" *ngIf="isLoading"></span>
+        <span *ngIf="!isLoading" class="btn-text">
+          <span>Sign In to Account</span>
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </span>
+      </button>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form class="auth-form animated-fade" *ngIf="mode === 'register'" (ngSubmit)="onRegister()">
+      <div class="field-group">
+        <label class="field-label">Full Name</label>
+        <div class="field-input-box">
+          <span class="material-symbols-outlined field-icon">badge</span>
+          <input
+            type="text"
+            name="fullName"
+            [(ngModel)]="regFullName"
+            placeholder="e.g. Alex Morgan"
+            required
+            autocomplete="name"
+          />
+        </div>
+      </div>
+
+      <div class="field-row-compact">
+        <div class="field-group flex-1">
+          <label class="field-label">Email</label>
+          <div class="field-input-box">
+            <span class="material-symbols-outlined field-icon">mail</span>
+            <input
+              type="email"
+              name="regEmail"
+              [(ngModel)]="regEmail"
+              placeholder="alex@example.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <div class="field-group flex-1">
+          <label class="field-label">Mobile Phone</label>
+          <div class="field-input-box">
+            <span class="material-symbols-outlined field-icon">call</span>
+            <input
+              type="tel"
+              name="regPhone"
+              [(ngModel)]="regPhone"
+              placeholder="07700 900000"
+              required
+              autocomplete="tel"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row-compact">
+        <div class="field-group flex-1">
+          <label class="field-label">Password</label>
+          <div class="field-input-box">
+            <span class="material-symbols-outlined field-icon">lock</span>
+            <input
+              [type]="showRegPassword ? 'text' : 'password'"
+              name="regPassword"
+              [(ngModel)]="regPassword"
+              placeholder="Min. 6 chars"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="field-group flex-1">
+          <label class="field-label">Confirm</label>
+          <div class="field-input-box">
+            <span class="material-symbols-outlined field-icon">lock_reset</span>
+            <input
+              [type]="showRegPassword ? 'text' : 'password'"
+              name="regConfirmPassword"
+              [(ngModel)]="regConfirmPassword"
+              placeholder="Repeat password"
+              required
+            />
+            <button
+              type="button"
+              class="toggle-eye"
+              (click)="showRegPassword = !showRegPassword"
+            >
+              <span class="material-symbols-outlined">
+                {{ showRegPassword ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading">
+        <span class="spinner" *ngIf="isLoading"></span>
+        <span *ngIf="!isLoading" class="btn-text">
+          <span>Create Passenger Account</span>
+          <span class="material-symbols-outlined">how_to_reg</span>
+        </span>
+      </button>
+    </form>
+
+    <!-- Divider & Quick Guest Booking Option -->
+    <div class="auth-divider">
+      <span>OR</span>
+    </div>
+
+    <button type="button" class="guest-btn" (click)="continueAsGuest()">
+      <span class="material-symbols-outlined">directions_car</span>
+      <span>Instant Ride (Continue as Guest)</span>
+    </button>
+
+    <!-- Footer Trust Badge -->
+    <div class="auth-footer">
+      <span class="material-symbols-outlined shield-icon">lock</span>
+      <span>256-bit Encrypted & Secure Booking Service</span>
+    </div>
+  </div>
+
+  <!-- Forgot Password Sheet Modal -->
+  <div class="modal-backdrop" *ngIf="showForgotPassword" (click)="toggleForgotPassword()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <span class="material-symbols-outlined modal-icon">lock_reset</span>
+          <h3>Reset Your Password</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="toggleForgotPassword()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div *ngIf="!forgotSubmitted">
+        <p class="modal-desc">
+          Enter your registered email address or username to receive password recovery instructions.
+        </p>
+        <div class="field-group">
+          <div class="field-input-box">
+            <span class="material-symbols-outlined field-icon">mail</span>
+            <input
+              type="text"
+              [(ngModel)]="forgotEmail"
+              placeholder="email@example.com"
+              name="forgotEmailInput"
+            />
+          </div>
+        </div>
+        <button type="button" class="submit-btn" (click)="sendPasswordReset()">
+          Send Reset Instructions
+        </button>
+      </div>
+
+      <div *ngIf="forgotSubmitted" class="forgot-success">
+        <span class="material-symbols-outlined check-icon">mark_email_read</span>
+        <h4>Check your email</h4>
+        <p>
+          We've sent a password reset link to <strong>{{ forgotEmail }}</strong>.
+        </p>
+        <button type="button" class="submit-btn btn-secondary" (click)="toggleForgotPassword()">
+          Back to Login
+        </button>
+      </div>
+    </div>
   </div>
 </div>

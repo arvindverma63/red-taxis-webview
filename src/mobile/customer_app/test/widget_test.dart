@@ -67,11 +67,12 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Verify sign in / welcome screen components
-      expect(find.text('Sign In'), findsOneWidget);
-      expect(find.text('Book as Guest'), findsOneWidget);
+      expect(find.text('Sign In'), findsWidgets);
+      expect(find.textContaining('Instant Ride'), findsOneWidget);
     });
   });
 }

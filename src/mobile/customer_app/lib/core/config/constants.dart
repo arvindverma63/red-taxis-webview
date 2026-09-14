@@ -13,8 +13,9 @@ class AppConfig {
   static const String webviewSavedPlacesRoute = '/#/saved-places';
 
   // API Endpoints
-  static const String loginEndpoint = '/api/UserProfile/Login';
-  static const String registerCustomerEndpoint = '/api/v2/auth/register-customer';
+  static const String loginEndpoint = '/api/v2/customer-auth/login';
+  static const String legacyLoginEndpoint = '/api/UserProfile/Login';
+  static const String registerCustomerEndpoint = '/api/v2/customer-auth/register-customer';
   static const String tenantInfoEndpoint = '/api/v2/public/tenant-info';
   static const String quoteEndpoint = '/api/v2/pricing/quote';
   static const String searchAddressEndpoint = '/api/v2/address/search';

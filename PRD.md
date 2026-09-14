@@ -273,6 +273,16 @@ The Angular router guards and services parse the `token` parameter directly from
     - **Public & Booking Requests**: `POST /api/v2/public/pricing/quote`, `POST /api/v2/public/address/search`, `POST /api/v2/public/bookings/request`, and `GET /api/v2/public/tenant-info`.
   - **Build Verification**: Verified `ng build` and Vitest test suites (100% green passing status).
 
+- [x] **Native Flutter Animated Customer Login & Registration System**:
+  - **Animated Staggered Entrance**: Built smooth `AnimationController` entrance sequencing with `CurvedAnimation` (Cubic ease-out) and vertical translation physics for floating headers, brand logos, inputs, and action buttons.
+  - **Pulsing Brand Logo Aura**: Integrated an animated breathing circle around the `BrandedLogo` badge with dynamic shadow expansion tailored to the active fleet's primary brand color.
+  - **Sliding Capsule Mode Switcher**: Built a tactile segmented dock (`[ Sign In ]` / `[ Register ]`) with physics-based animated sliding pills, Material rounded geometry, and zero-flicker mode switching.
+  - **High-Density Compact Form Layout**:
+    - **Sign In Mode**: Email/Username input, password input with animated visibility reveal eye toggle, custom Remember Me checkbox, and "Forgot Password?" bottom sheet modal with email auto-populate.
+    - **Register Mode**: Compact 2-column input rows (Full Name, Email Address, Mobile Phone, Password & Confirmation) with responsive `AnimatedSize` height interpolation.
+  - **Instant Guest Booking & Fleet Switcher**: Prominent "Instant Ride (Continue as Guest)" shortcut and 1-tap QR fleet switcher pill badge at the footer with 256-bit SSL encryption trust badges.
+  - **Test Suite Verification**: 100% passing tests in `widget_test.dart` and 0 linter warnings on `flutter analyze`.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
