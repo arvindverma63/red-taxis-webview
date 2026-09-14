@@ -1,0 +1,54 @@
+<div class="profile-container">
+  <h1>My Account</h1>
+
+  <!-- Profile Card -->
+  <div class="card profile-header-card">
+    <div class="avatar-box">
+      {{ customerName.substring(0, 1) }}
+    </div>
+    <div class="profile-meta">
+      <h2>{{ customerName }}</h2>
+      <p>{{ email }}</p>
+      <span class="badge badge-success">Verified Passenger</span>
+    </div>
+  </div>
+
+  <!-- Account Menu List -->
+  <div class="card menu-card">
+    <div class="menu-item" (click)="goToSavedPlaces()">
+      <span class="material-symbols-outlined menu-icon">bookmark</span>
+      <div class="menu-text">
+        <div class="menu-title">Saved Places</div>
+        <div class="menu-sub">Home, Work and frequent destinations</div>
+      </div>
+      <span class="material-symbols-outlined chevron">chevron_right</span>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-item" (click)="toggleTheme()">
+      <span class="material-symbols-outlined menu-icon">dark_mode</span>
+      <div class="menu-text">
+        <div class="menu-title">Dark Theme</div>
+        <div class="menu-sub">{{ isDarkMode ? 'Dark mode enabled' : 'Light mode enabled' }}</div>
+      </div>
+      <span class="theme-switch-indicator">{{ isDarkMode ? 'ON' : 'OFF' }}</span>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-item">
+      <span class="material-symbols-outlined menu-icon">domain</span>
+      <div class="menu-text">
+        <div class="menu-title">Fleet Tenant</div>
+        <div class="menu-sub">{{ tenantName }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign Out Button -->
+  <button class="btn-signout" (click)="signOut()">
+    <span class="material-symbols-outlined">logout</span>
+    Sign Out
+  </button>
+</div>

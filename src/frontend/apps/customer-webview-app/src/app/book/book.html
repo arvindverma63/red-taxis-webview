@@ -1,0 +1,167 @@
+<div class="book-container">
+  <!-- Booking Success Modal View -->
+  <div *ngIf="bookingSuccessId" class="success-card">
+    <div class="success-icon-circle">
+      <span class="material-symbols-outlined success-icon">check_circle</span>
+    </div>
+    <h2>Ride Request Sent!</h2>
+    <p class="success-msg">Your ride request has been dispatched. An operator is matching your driver now.</p>
+
+    <div class="booking-summary-box">
+      <div class="summary-row">
+        <span class="summary-label">Booking ID</span>
+        <span class="summary-val">{{ bookingSuccessId }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Pickup</span>
+        <span class="summary-val">{{ pickupAddress }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Dropoff</span>
+        <span class="summary-val">{{ dropoffAddress }}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Vehicle & Fare</span>
+        <span class="summary-val highlight">{{ selectedVehicle?.name }} • £{{ (quote?.fare || selectedVehicle?.basePrice || 0) | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" (click)="trackRide()">
+      <span class="material-symbols-outlined btn-icon">navigation</span>
+      Track Driver Live
+    </button>
+    <button class="btn btn-secondary btn-block" (click)="resetBooking()">
+      Book Another Ride
+    </button>
+  </div>
+
+  <!-- Main Booking Flow -->
+  <div *ngIf="!bookingSuccessId">
+    <!-- Hero Banner Card -->
+    <div class="hero-banner">
+      <div class="hero-tag">
+        <span class="material-symbols-outlined tag-icon">bolt</span>
+        Instant Dispatch
+      </div>
+      <h1>Where to today?</h1>
+      <p>Local drivers nearby • Fast pickups</p>
+    </div>
+
+    <!-- Address Inputs Card -->
+    <div class="card route-card">
+      <div class="route-input-group">
+        <div class="dot pickup-dot"></div>
+        <div class="input-wrap">
+          <label>PICKUP LOCATION</label>
+          <input type="text" [(ngModel)]="pickupAddress" placeholder="Enter pickup address" (change)="calculateQuote()" />
+        </div>
+      </div>
+      <div class="route-divider"></div>
+      <div class="route-input-group">
+        <div class="dot dropoff-dot"></div>
+        <div class="input-wrap">
+          <label>DESTINATION</label>
+          <input type="text" [(ngModel)]="dropoffAddress" placeholder="Enter destination or postcode" (change)="calculateQuote()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Vehicle Class Selection -->
+    <div class="section-header">
+      <h2>Vehicle Class</h2>
+      <span *ngIf="isLoadingQuote" class="quote-spinner">Calculating fare...</span>
+    </div>
+
+    <div class="vehicle-list">
+      <div *ngFor="let v of vehicles"
+           class="vehicle-card"
+           [class.selected]="selectedVehicle?.type === v.type"
+           (click)="selectVehicle(v)">
+        <div class="vehicle-icon-box">
+          <span class="material-symbols-outlined">{{ v.icon }}</span>
+        </div>
+        <div class="vehicle-info">
+          <div class="vehicle-name">{{ v.name }}</div>
+          <div class="vehicle-caps">
+            <span><i class="material-symbols-outlined micro-icon">person</i> {{ v.capacity }}</span>
+            <span><i class="material-symbols-outlined micro-icon">luggage</i> {{ v.luggageCapacity }}</span>
+          </div>
+        </div>
+        <div class="vehicle-price">
+          <div class="price-val">£{{ (quote && selectedVehicle?.type === v.type ? quote.fare : v.basePrice) | number:'1.2-2' }}</div>
+          <div class="price-label">Est.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passenger & Luggage Counters -->
+    <div class="card counter-card">
+      <div class="counter-col">
+        <label>Passengers</label>
+        <div class="counter-control">
+          <button class="cnt-btn" (click)="setPassengers(passengers - 1)">-</button>
+          <span class="cnt-val">{{ passengers }}</span>
+          <button class="cnt-btn" (click)="setPassengers(passengers + 1)">+</button>
+        </div>
+      </div>
+      <div class="col-divider"></div>
+      <div class="counter-col">
+        <label>Luggage Items</label>
+        <div class="counter-control">
+          <button class="cnt-btn" (click)="setLuggage(luggage - 1)">-</button>
+          <span class="cnt-val">{{ luggage }}</span>
+          <button class="cnt-btn" (click)="setLuggage(luggage + 1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Selector -->
+    <div class="section-header">
+      <h2>Payment Method</h2>
+    </div>
+
+    <div class="payment-tabs">
+      <button class="payment-chip" [class.active]="paymentMethod === 'cash'" (click)="paymentMethod = 'cash'; calculateQuote()">
+        <span class="material-symbols-outlined">payments</span> Cash
+      </button>
+      <button class="payment-chip" [class.active]="paymentMethod === 'card'" (click)="paymentMethod = 'card'; calculateQuote()">
+        <span class="material-symbols-outlined">credit_card</span> Card / Pay
+      </button>
+      <button class="payment-chip" [class.active]="paymentMethod === 'account'" (click)="paymentMethod = 'account'; calculateQuote()">
+        <span class="material-symbols-outlined">domain</span> Account
+      </button>
+    </div>
+
+    <!-- Popular Destinations -->
+    <div class="section-header">
+      <h2>Quick Suggestions</h2>
+    </div>
+
+    <div class="popular-list">
+      <div *ngFor="let place of popularDestinations" class="popular-item" (click)="selectDestination(place.title)">
+        <div class="popular-icon-box">
+          <span class="material-symbols-outlined">{{ place.icon }}</span>
+        </div>
+        <div class="popular-text">
+          <div class="pop-title">{{ place.title }}</div>
+          <div class="pop-sub">{{ place.subtitle }}</div>
+        </div>
+        <span class="material-symbols-outlined chevron">chevron_right</span>
+      </div>
+    </div>
+
+    <!-- Fixed Bottom Request Dock -->
+    <div class="bottom-dock">
+      <div class="dock-fare">
+        <div class="dock-label">Total Estimate</div>
+        <div class="dock-price">£{{ (quote?.fare || selectedVehicle?.basePrice || 0) | number:'1.2-2' }}</div>
+      </div>
+      <button class="btn btn-primary btn-dock"
+              [disabled]="isSubmitting || !dropoffAddress"
+              (click)="requestRide()">
+        <span *ngIf="!isSubmitting">Request Ride</span>
+        <span *ngIf="isSubmitting">Dispatching...</span>
+      </button>
+    </div>
+  </div>
+</div>

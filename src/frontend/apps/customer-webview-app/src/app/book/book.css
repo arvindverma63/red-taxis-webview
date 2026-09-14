@@ -1,0 +1,444 @@
+.book-container {
+  padding-bottom: 90px;
+}
+
+.hero-banner {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 22px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.tag-icon {
+  font-size: 14px;
+}
+
+.hero-banner h1 {
+  font-size: 22px;
+  margin: 0 0 4px 0;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.hero-banner p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Route Inputs Card */
+.route-card {
+  padding: 14px 16px;
+}
+
+.route-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pickup-dot { background-color: #10B981; }
+.dropoff-dot { background-color: var(--primary-color); }
+
+.input-wrap {
+  flex: 1;
+}
+
+.input-wrap label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.input-wrap input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0;
+}
+
+.route-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 10px 0 10px 22px;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0 10px 0;
+}
+
+.section-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.quote-spinner {
+  font-size: 12px;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Vehicle List */
+.vehicle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vehicle-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface-color);
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vehicle-card.selected {
+  border-color: var(--primary-color);
+  background-color: rgba(229, 9, 20, 0.05);
+}
+
+.vehicle-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-color: var(--surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+}
+
+.vehicle-info {
+  flex: 1;
+}
+
+.vehicle-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.vehicle-caps {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.micro-icon {
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.vehicle-price {
+  text-align: right;
+}
+
+.price-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.price-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Counters */
+.counter-card {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.counter-col {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.counter-col label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.counter-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cnt-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cnt-val {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 14px;
+  text-align: center;
+}
+
+.col-divider {
+  width: 1px;
+  height: 30px;
+  background: var(--border-color);
+  margin: 0 16px;
+}
+
+/* Payment Tabs */
+.payment-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.payment-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-chip.active {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgba(229, 9, 20, 0.08);
+}
+
+/* Popular Destinations */
+.popular-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popular-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-color);
+  cursor: pointer;
+}
+
+.popular-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+}
+
+.popular-text {
+  flex: 1;
+}
+
+.pop-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pop-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.chevron {
+  color: var(--text-secondary);
+  font-size: 18px;
+}
+
+/* Bottom Dock */
+.bottom-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface-color);
+  border-top: 1px solid var(--border-color);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+}
+
+.dock-fare {
+  min-width: 90px;
+}
+
+.dock-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.dock-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.btn {
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-dock {
+  flex: 1;
+}
+
+.btn-block {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+/* Success Card */
+.success-card {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.success-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.success-icon {
+  font-size: 40px;
+  color: #10B981;
+}
+
+.success-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+}
+
+.success-msg {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.booking-summary-box {
+  background: var(--surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.summary-label {
+  color: var(--text-secondary);
+}
+
+.summary-val {
+  font-weight: 600;
+}
+
+.summary-val.highlight {
+  color: var(--primary-color);
+  font-weight: 800;
+}

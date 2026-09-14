@@ -1,0 +1,86 @@
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90vh;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  padding: 30px 24px;
+}
+
+.brand-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(229, 9, 20, 0.1);
+  color: var(--primary-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.brand-logo span {
+  font-size: 32px;
+}
+
+.login-card h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+}
+
+.login-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+}
+
+.form-group {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.btn {
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+.btn-block {
+  width: 100%;
+}

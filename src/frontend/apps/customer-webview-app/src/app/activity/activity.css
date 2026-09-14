@@ -1,0 +1,266 @@
+.activity-container {
+  padding-bottom: 80px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.header-row h1 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.refresh-btn {
+  background: var(--surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Filter Pills */
+.filter-pills {
+  display: flex;
+  background: var(--surface-hover);
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.pill {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill.active {
+  background: var(--surface-color);
+  color: var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Rides List */
+.rides-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ride-card {
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.ride-card.live-card {
+  border-color: var(--primary-color);
+  background: rgba(229, 9, 20, 0.03);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.booking-id {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Status Badges */
+.badge-success { background: rgba(16, 185, 129, 0.12); color: #10B981; }
+.badge-primary { background: rgba(59, 130, 246, 0.12); color: #3B82F6; }
+.badge-warning { background: rgba(245, 158, 11, 0.12); color: #D97706; }
+.badge-danger { background: rgba(239, 68, 68, 0.12); color: #EF4444; }
+.badge-neutral { background: rgba(100, 116, 139, 0.12); color: #64748B; }
+
+.card-body {
+  margin-bottom: 12px;
+}
+
+.route-point {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.route-text {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-line {
+  width: 1px;
+  height: 14px;
+  background: var(--border-color);
+  margin-left: 4px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.pickup-dot { background: #10B981; }
+.dropoff-dot { background: var(--primary-color); }
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.vehicle-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.fare-amount {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+/* States */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.spinner-icon {
+  font-size: 32px;
+  animation: spin 1.2s linear infinite;
+  color: var(--primary-color);
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+
+.modal-card {
+  background: var(--surface-color);
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.modal-body {
+  margin-bottom: 20px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.total-row {
+  border-bottom: none;
+  padding-top: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.price-highlight {
+  color: var(--primary-color);
+  font-weight: 800;
+}
+
+.plate-badge {
+  background: #FFD100;
+  color: black;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn {
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+.btn-block {
+  width: 100%;
+}

@@ -1,0 +1,97 @@
+<div class="activity-container">
+  <div class="header-row">
+    <h1>My Activity</h1>
+    <button class="refresh-btn" (click)="loadBookings()">
+      <span class="material-symbols-outlined">refresh</span>
+    </button>
+  </div>
+
+  <!-- Segmented Filter Tabs -->
+  <div class="filter-pills">
+    <button class="pill" [class.active]="selectedTab === 'all'" (click)="selectedTab = 'all'">All</button>
+    <button class="pill" [class.active]="selectedTab === 'active'" (click)="selectedTab = 'active'">Active</button>
+    <button class="pill" [class.active]="selectedTab === 'completed'" (click)="selectedTab = 'completed'">Completed</button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <span class="material-symbols-outlined spinner-icon">progress_activity</span>
+    <p>Loading your trips...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && filteredBookings.length === 0" class="empty-state">
+    <span class="material-symbols-outlined empty-icon">history</span>
+    <h3>No trips found</h3>
+    <p>Book a ride from the home screen to see your trip logs here.</p>
+  </div>
+
+  <!-- Rides List -->
+  <div *ngIf="!isLoading && filteredBookings.length > 0" class="rides-list">
+    <div *ngFor="let ride of filteredBookings"
+         class="card ride-card"
+         [class.live-card]="ride.status !== 'completed' && ride.status !== 'cancelled'"
+         (click)="openBookingDetails(ride)">
+      <div class="card-header">
+        <div class="booking-id">ID: {{ ride.id }}</div>
+        <span class="badge" [ngClass]="getStatusClass(ride.status)">{{ ride.status | uppercase }}</span>
+      </div>
+
+      <div class="card-body">
+        <div class="route-point">
+          <span class="dot pickup-dot"></span>
+          <div class="route-text">{{ ride.pickupAddress }}</div>
+        </div>
+        <div class="route-line"></div>
+        <div class="route-point">
+          <span class="dot dropoff-dot"></span>
+          <div class="route-text">{{ ride.dropoffAddress }}</div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="vehicle-info">{{ ride.vehicleType }} • {{ ride.paymentMethod | uppercase }}</div>
+        <div class="fare-amount">£{{ ride.fare | number:'1.2-2' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal Dialog -->
+  <div *ngIf="selectedBooking" class="modal-overlay" (click)="closeDetails()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Trip Receipt</h2>
+        <button class="close-btn" (click)="closeDetails()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="receipt-row">
+          <span>Booking Reference</span>
+          <strong>{{ selectedBooking.id }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Pickup Address</span>
+          <span>{{ selectedBooking.pickupAddress }}</span>
+        </div>
+        <div class="receipt-row">
+          <span>Dropoff Address</span>
+          <span>{{ selectedBooking.dropoffAddress }}</span>
+        </div>
+        <div class="receipt-row">
+          <span>Driver Name</span>
+          <span>{{ selectedBooking.driverName || 'Ace Driver' }}</span>
+        </div>
+        <div class="receipt-row">
+          <span>Vehicle Reg</span>
+          <strong class="plate-badge">{{ selectedBooking.vehicleReg || 'LD67 WRX' }}</strong>
+        </div>
+        <div class="receipt-row total-row">
+          <span>Total Fare Paid</span>
+          <span class="price-highlight">£{{ selectedBooking.fare | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" (click)="closeDetails()">Done</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,265 @@
+.active-tracking-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.tracking-app-bar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  height: 52px;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+}
+
+.bar-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.back-btn, .help-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* Map Area */
+.map-view {
+  flex: 1;
+  background: var(--surface-hover);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-pin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.pulse-ring {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(229, 9, 20, 0.15);
+  position: absolute;
+  top: -15px;
+  animation: pulse 2s infinite ease-out;
+}
+
+.car-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+  position: relative;
+  z-index: 2;
+}
+
+.car-badge span {
+  font-size: 30px;
+}
+
+.eta-floating-tag {
+  margin-top: 10px;
+  background: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Driver Bottom Sheet */
+.driver-sheet {
+  background: var(--surface-color);
+  border-top: 1.5px solid var(--border-color);
+  border-radius: 24px 24px 0 0;
+  padding: 20px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 40;
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10B981;
+}
+
+.status-text-wrap {
+  flex: 1;
+}
+
+.status-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.status-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 14px 0;
+}
+
+.driver-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.driver-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(229, 9, 20, 0.12);
+  color: var(--primary-color);
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.driver-meta {
+  flex: 1;
+}
+
+.driver-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.vehicle-model {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.uk-plate {
+  background: #FFD100;
+  color: black;
+  font-family: monospace;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+}
+
+/* Route Box */
+.trip-route-box {
+  background: var(--surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.route-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.node-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.node-dot.pickup { background: #10B981; }
+.node-dot.dropoff { background: var(--primary-color); }
+
+.node-label {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-line {
+  width: 1px;
+  height: 12px;
+  background: var(--border-color);
+  margin-left: 3.5px;
+}
+
+/* Actions */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.btn-action {
+  flex: 1;
+  background: var(--surface-hover);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 11px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-cancel {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #EF4444;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px;
+}

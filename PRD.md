@@ -5,9 +5,11 @@ This document serves as the high-level source of truth for the **Red Taxis Webvi
 ---
 
 ## 🎯 Project Overview
-Red Taxis Webview is a hybrid driver portal system consisting of:
-1. **Flutter Mobile App (`src/mobile/driver_app`)**: A native application for drivers. It handles device services (location, auth, navigation, etc.) and uses standard Webviews for server-rendered or static components.
-2. **Angular Webview App (`src/frontend/apps/driver-webview-app`)**: A web portal deployed to Vercel that is embedded directly into the native Flutter application's bottom navigation tabs.
+Red Taxis is a comprehensive multi-tenant taxi platform consisting of:
+1. **Driver Mobile App (`src/mobile/driver_app`)**: A Flutter native application for drivers handling hardware services (location, auth, background GPS, notifications) and hosting webviews for remote portal features.
+2. **Customer Mobile App (`src/mobile/customer_app`)**: A Flutter native customer application for booking rides, tracking assigned drivers live, multi-tenant fleet switching, managing ride activity, saved places, and payment methods.
+3. **Driver Webview App (`src/frontend/apps/driver-webview-app`)**: An Angular web portal deployed to Vercel embedded into the native Flutter driver application's navigation tabs.
+4. **Customer Webview App (`src/frontend/apps/customer-webview-app`)**: An Angular web portal deployed to Vercel embedded into the native Flutter customer application's navigation tabs.
 
 ---
 
@@ -21,14 +23,25 @@ Red Taxis Webview is a hybrid driver portal system consisting of:
 ---
 
 ## 📁 Repository Structure
-- `src/mobile/driver_app/` - The Flutter mobile codebase.
+- `src/mobile/driver_app/` - The Flutter driver mobile codebase.
   - `lib/core/config/constants.dart` - App configuration and webview base URLs.
   - `lib/core/location/` - Device location tracking services.
   - `lib/core/widgets/` - Shared UI widgets.
   - `lib/features/auth/` - Native authentication states and login screen.
   - `lib/features/dashboard/` - Native driver dashboard interface.
   - `lib/features/webview/` - Native Webview host screen.
-- `src/frontend/apps/driver-webview-app/` - The Angular frontend codebase.
+- `src/mobile/customer_app/` - The Flutter customer mobile codebase (Hybrid Core + Native Shell).
+  - `lib/core/config/constants.dart` - App configuration, base API, and webview sub-route definitions (`/#/book`, `/#/activity`, `/#/active-ride`, `/#/profile`, `/#/saved-places`).
+  - `lib/core/theme/theme.dart` - Dynamic tenant branding, Google Fonts (Outfit), Light & Dark mode synchronization.
+  - `lib/core/network/api_client.dart` - Resilient Dio HTTP client with auth & tenant headers.
+  - `lib/core/storage/storage_service.dart` - Secure storage wrapper for credentials & branding persistence.
+  - `lib/core/widgets/` - 3-tier progressive `BrandedLogo`, `AppButton`, `AppTextField`, `OfflineErrorWidget`, and `StatusBadge`.
+  - `lib/core/router/app_router.dart` - GoRouter with stateful navigation shells and authentication guards.
+  - `lib/features/auth/` - Native customer login, registration, guest booking, and fleet QR scanner onboarding.
+  - `lib/features/webview/presentation/customer_webview_screen.dart` - Native Webview host screen with pull-to-refresh, session token propagation, external scheme intercepts (`tel:`, `sms:`, `geo:`), and offline error fallback.
+  - `lib/features/shell/customer_main_shell.dart` - Native floating bottom navigation bar dock hosting web-based sub-tabs.
+  - `lib/features/profile/presentation/settings_screen.dart` - Native fleet switching & dark theme preferences.
+- `src/frontend/apps/driver-webview-app/` - The Angular driver frontend codebase.
   - `src/app/bookings/` - Driver bookings dashboard view.
   - `src/app/profile/` - Profile and vehicle compliance details view.
   - `src/app/availability/` - Weekly shift planner view.
@@ -36,7 +49,17 @@ Red Taxis Webview is a hybrid driver portal system consisting of:
   - `src/app/login/` - Standalone webview login component (backup).
   - `src/app/guards/` - Router guard implementing parameter-aware token checks.
   - `src/app/services/` - `DriverService` providing staging API integration.
-  - `src/app/app.routes.ts` - Routing configuration for web pages.
+  - `src/app/app.routes.ts` - Routing configuration for driver web pages.
+- `src/frontend/apps/customer-webview-app/` - The Angular customer frontend codebase.
+  - `src/app/book/` - Customer ride booking, address autocomplete, vehicle selection, and live quote calculation.
+  - `src/app/activity/` - Customer trip history, live ride filter tabs, and receipt breakdown dialog.
+  - `src/app/active-ride/` - Live driver GPS tracking, ETA countdown, vehicle plate styling, and direct calling.
+  - `src/app/profile/` - Customer account details, verified passenger badge, and dark theme toggling.
+  - `src/app/saved-places/` - Saved favorite destinations management (Home, Work, Custom).
+  - `src/app/login/` - Standalone webview login component and token parameter receiver.
+  - `src/app/guards/` - `authGuard` extracting `token`, `theme`, and `tenantId` from URL/hash params.
+  - `src/app/services/` - `CustomerService` providing staging API integration for quotes, bookings, and activity.
+  - `src/app/app.routes.ts` - Hash-based customer routing configuration.
 
 ---
 
@@ -229,8 +252,19 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Inline Fleet & Organization Card**: Condensed active fleet details into a single horizontal row with `BrandedLogo` badge, verified active tag, tenant ID, and a compact `[Switch]` QR scanner action button.
   - **Grouped Section Containers & Thin Dividers**: Replaced heavy individual outer cards with unified rounded card groups (`PREFERENCES` and `DEVICE & TRACKING`), categorized with 32x32 color-accented icons, clear subtitles, and scaled switches (`0.82x`) separated by subtle indented dividers.
   - **Zero Loss of Functionality**: Fully preserves Riverpod state persistence for dark mode, push notifications, SMS alerts, continuous GPS, and screen wake lock in `FlutterSecureStorage`.
-- [x] **Pure Push-Driven Job Dispatch (Eliminated 5s Polling Loop)**: Removed legacy 5-second `Timer.periodic` background `GET /api/DriverApp/GetJobOffers` polling loop in [trip.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/features/trip/trip.dart). The application now relies 100% on real-time Firebase Cloud Messaging (FCM) push notifications and targeted payload dispatching (`fetchAndOfferJob`), significantly optimizing battery usage, network data, and backend server load.
+- [x] **Customer Webview Angular Application (`src/frontend/apps/customer-webview-app`) Setup & Integration**:
+  - **Angular 21 Project Scaffolding**: Created a modern Angular 21 web application configured with `@angular/material`, `material-symbols` local vector fonts, RxJS, and Vitest test runner.
+  - **CORS Reverse Proxy Configuration**: Configured `vercel.json` rewrites and `proxy.conf.json` proxying `/api/*` requests to `https://staging-api.redtaxi.co.uk/api/*`, eliminating cross-origin blocks.
+  - **Parameter-Aware Auth Guard**: Built `authGuard` in `guards/auth.guard.ts` that dynamically extracts `token`, `theme`, and `tenantId` from both search query and hash fragments, caching credentials to `localStorage` and applying `.dark-theme` root classes synchronously.
+  - **Customer Staging API Service (`CustomerService`)**: Integrated pricing quotes (`/api/v2/pricing/quote`), booking dispatching (`/api/DriverApp/CreateBooking`), and activity listings (`/api/v2/customers/me/bookings`) with defensive error unwrapping and fallback models.
+  - **Feature Modules**:
+    - `BookComponent` (`/#/book`): Real-time pickup/dropoff routing, vehicle carousel (Saloon, Estate, Executive, 6-Seater, 8-Seater), passenger/luggage counters, payment switcher, and instant dispatch request submission.
+    - `ActivityComponent` (`/#/activity`): Multi-tab segmented filter (`All`, `Active`, `Completed`), status badges, and full trip receipt modal.
+    - `ActiveRideComponent` (`/#/active-ride`): Live tracking view with ETA countdown, driver avatar & name, UK license plate styling, and `tel:` call actions.
+    - `ProfileComponent` (`/#/profile`) & `SavedPlacesComponent` (`/#/saved-places`): Account hub, theme switcher, and favorite addresses.
+  - **Build & Test Health**: Verified with `ng build` (production bundle generated with 0 errors) and `vitest` (100% green passing tests).
 
 ### ⏳ Remaining Work / Roadmap
+- [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Angular Webview Dynamic CSS Theming Injection**: Inject dynamic CSS variables (`--primary-color`, `--primary-dark`, etc.) and brand logos into the Angular Webview application based on the active session's tenant branding query parameters.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

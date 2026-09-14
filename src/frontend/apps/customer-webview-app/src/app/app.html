@@ -1,0 +1,15 @@
+<!-- Offline network banner -->
+<div *ngIf="isOffline" class="network-banner offline-banner">
+  <span class="material-symbols-outlined banner-icon">wifi_off</span>
+  <span>No internet connection. Waiting for network...</span>
+</div>
+
+<!-- Connection restored banner -->
+<div *ngIf="showRestoredBanner" class="network-banner restored-banner">
+  <span class="material-symbols-outlined banner-icon">wifi</span>
+  <span>Connection restored!</span>
+</div>
+
+<main class="portal-container">
+  <router-outlet></router-outlet>
+</main>

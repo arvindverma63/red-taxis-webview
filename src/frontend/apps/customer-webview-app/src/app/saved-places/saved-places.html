@@ -1,0 +1,28 @@
+<div class="saved-container">
+  <div class="header-row">
+    <button class="back-btn" (click)="goBack()">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1>Saved Places</h1>
+  </div>
+
+  <div class="places-list">
+    <div *ngFor="let place of places" class="card place-card">
+      <div class="place-icon-box">
+        <span class="material-symbols-outlined">{{ place.icon }}</span>
+      </div>
+      <div class="place-meta">
+        <div class="place-title">{{ place.title }}</div>
+        <div class="place-address">{{ place.address }}</div>
+      </div>
+      <button class="edit-btn">
+        <span class="material-symbols-outlined">edit</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-block" (click)="addPlace()">
+    <span class="material-symbols-outlined">add</span>
+    Add New Place
+  </button>
+</div>
