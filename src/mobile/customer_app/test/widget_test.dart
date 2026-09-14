@@ -60,15 +60,19 @@ void main() {
       expect(find.byType(BrandedLogo), findsOneWidget);
     });
 
-    testWidgets('CustomerApp smoke test renders login on initial start', (WidgetTester tester) async {
+    testWidgets('CustomerApp smoke test renders splash and navigates to login', (WidgetTester tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: CustomerApp(),
         ),
       );
 
-      await tester.pump(const Duration(milliseconds: 800));
-      await tester.pump(const Duration(milliseconds: 200));
+      // Verify splash screen renders branded logo
+      expect(find.byType(BrandedLogo), findsOneWidget);
+
+      // Advance past splash timer (1800ms)
+      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump(const Duration(milliseconds: 600));
 
       // Verify sign in / welcome screen components
       expect(find.text('Sign In'), findsWidgets);

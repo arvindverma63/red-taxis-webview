@@ -48,12 +48,15 @@ class BrandedLogo extends StatelessWidget {
   }
 
   Widget _buildAssetFallback() {
-    return Image.asset(
-      'assets/images/logo.png',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => _buildIconFallback(),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size * 0.22),
+      child: Image.asset(
+        'assets/images/logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildIconFallback(),
+      ),
     );
   }
 

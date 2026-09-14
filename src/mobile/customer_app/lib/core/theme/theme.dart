@@ -162,15 +162,17 @@ final tenantBrandingProvider = StateNotifierProvider<TenantBrandingNotifier, Ten
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   final StorageService _storage;
 
-  ThemeModeNotifier(this._storage) : super(ThemeMode.system) {
+  ThemeModeNotifier(this._storage) : super(ThemeMode.light) {
     _loadThemeMode();
   }
 
   Future<void> _loadThemeMode() async {
     final mode = await _storage.read(AppConfig.keyThemeMode);
-    if (mode == 'light') state = ThemeMode.light;
-    if (mode == 'dark') state = ThemeMode.dark;
-    if (mode == 'system') state = ThemeMode.system;
+    if (mode == 'dark') {
+      state = ThemeMode.dark;
+    } else {
+      state = ThemeMode.light;
+    }
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

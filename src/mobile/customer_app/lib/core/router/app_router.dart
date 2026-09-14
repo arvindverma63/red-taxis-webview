@@ -8,6 +8,7 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/tenant_qr_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
 import '../../features/shell/customer_main_shell.dart';
+import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/webview/presentation/customer_webview_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -20,8 +21,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: '/splash',
     redirect: (context, state) {
+      if (state.matchedLocation == '/splash') {
+        return null;
+      }
+
       final isAuth = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/auth/login' ||
           state.matchedLocation == '/auth/register' ||
@@ -36,6 +41,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      // Splash Route
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+
       // Native Auth & Onboarding Routes
       GoRoute(
         path: '/auth/login',

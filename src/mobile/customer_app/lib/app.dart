@@ -9,15 +9,13 @@ class CustomerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final branding = ref.watch(tenantBrandingProvider);
-    final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: branding.name,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme(branding),
-      darkTheme: AppTheme.darkTheme(branding),
-      themeMode: themeMode,
+      themeMode: ThemeMode.light,
       routerConfig: router,
     );
   }

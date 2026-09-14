@@ -285,6 +285,10 @@ The Angular router guards and services parse the `token` parameter directly from
 
 - [x] **Customer App Logo Asset & Progressive Rendering**: Generated a high-resolution vector emblem integrating modern aerodynamic red taxi cab curves and location marker geometries. Bundled the asset into `src/mobile/customer_app/assets/images/logo.png` and `src/frontend/apps/customer-webview-app/public/logo.png`.
 - [x] **Angular Webview Dynamic CSS Theming Injection**: Built dynamic `--primary-color` and `--primary-dark` CSS variable extraction in `auth.guard.ts` from URL parameters (`?primaryColor=...&tenantId=...`), allowing the webview to inherit custom fleet colors at runtime with automatic `localStorage` persistence.
+- [x] **Animated Customer Splash Screen & Light Theme Default**:
+  - **Animated Splash Screen (`SplashScreen`)**: Designed and integrated a smooth, animated light-themed launch screen featuring the pulsing `BrandedLogo` badge with radiant aura rings, company title, and automated 1.8-second session routing (`/home` for authenticated passengers, `/auth/login` for new users).
+  - **Light Mode Enforcement**: Configured `themeMode: ThemeMode.light` across the Flutter customer application and disabled system dark mode detection in the Angular webview (`index.html`), guaranteeing a clean, consistent light presentation.
+  - **Google Material Symbols & Icons Link**: Injected Google Fonts CDN stylesheets in `index.html` ensuring vector icons always render sharply on any device.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
