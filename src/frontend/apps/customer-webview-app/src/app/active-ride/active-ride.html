@@ -1,7 +1,7 @@
 <div class="active-tracking-container">
   <!-- Top Floating App Bar -->
   <div class="tracking-app-bar">
-    <button class="back-btn" (click)="goBack()">
+    <button class="back-btn" (click)="goToBook()">
       <span class="material-symbols-outlined">arrow_back</span>
     </button>
     <span class="bar-title">Live Ride Tracking</span>
@@ -10,75 +10,101 @@
     </button>
   </div>
 
-  <!-- Simulated Live Map Area -->
-  <div class="map-view">
-    <div class="gps-pin-container">
-      <div class="pulse-ring"></div>
-      <div class="car-badge">
-        <span class="material-symbols-outlined">local_taxi</span>
-      </div>
-      <div class="eta-floating-tag">
-        {{ etaMinutes > 0 ? (etaMinutes + ' mins away') : 'Vehicle Arrived' }}
-      </div>
-    </div>
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <span class="material-symbols-outlined spinner-icon">progress_activity</span>
+    <p>Checking live ride status...</p>
   </div>
 
-  <!-- Bottom Driver & Trip Information Sheet -->
-  <div class="driver-sheet">
-    <!-- Live Status Banner -->
-    <div class="status-banner">
-      <div class="live-dot"></div>
-      <div class="status-text-wrap">
-        <div class="status-title">
-          {{ status === 'driver_allocated' ? 'Driver En Route' : (status === 'arrived' ? 'Driver Has Arrived!' : 'On Trip to Destination') }}
-        </div>
-        <div class="status-sub">
-          {{ status === 'driver_allocated' ? ('Arriving in ~' + etaMinutes + ' mins') : (status === 'arrived' ? 'Taxi waiting outside pickup location' : 'Heading towards destination') }}
-        </div>
-      </div>
-      <span class="badge badge-primary">{{ status | uppercase }}</span>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Driver & Vehicle Profile -->
-    <div class="driver-profile-row">
-      <div class="driver-avatar">
-        {{ driverName.substring(0, 1) }}
-      </div>
-      <div class="driver-meta">
-        <div class="driver-name">{{ driverName }}</div>
-        <div class="vehicle-model">{{ vehicleModel }}</div>
-      </div>
-      <div class="uk-plate">{{ vehicleReg }}</div>
-    </div>
-
-    <!-- Route Overview -->
-    <div class="trip-route-box">
-      <div class="route-node">
-        <span class="node-dot pickup"></span>
-        <span class="node-label">{{ pickupAddress }}</span>
-      </div>
-      <div class="route-line"></div>
-      <div class="route-node">
-        <span class="node-dot dropoff"></span>
-        <span class="node-label">{{ dropoffAddress }}</span>
-      </div>
-    </div>
-
-    <!-- Contact & Action Buttons -->
-    <div class="action-buttons">
-      <button class="btn btn-action" (click)="callDriver()">
-        <span class="material-symbols-outlined">call</span> Call Driver
-      </button>
-      <button class="btn btn-action" (click)="callOffice()">
-        <span class="material-symbols-outlined">support_agent</span> Call Office
-      </button>
-    </div>
-
-    <!-- Cancel Trip Button -->
-    <button class="btn-cancel" (click)="cancelRide()">
-      Cancel Booking
+  <!-- No Active Ride State -->
+  <div *ngIf="!isLoading && !activeBooking" class="no-ride-card">
+    <span class="material-symbols-outlined no-ride-icon">local_taxi</span>
+    <h2>No Active Ride</h2>
+    <p>You do not have any active trip in progress. Request a taxi from the home screen.</p>
+    <button class="btn btn-primary" (click)="goToBook()">
+      <span class="material-symbols-outlined">add_circle</span>
+      Book a Taxi Now
     </button>
+  </div>
+
+  <!-- Live Ride View -->
+  <div *ngIf="!isLoading && activeBooking" class="live-ride-wrapper">
+    <!-- Map Area -->
+    <div class="map-view">
+      <div class="gps-pin-container">
+        <div class="pulse-ring"></div>
+        <div class="car-badge">
+          <span class="material-symbols-outlined">local_taxi</span>
+        </div>
+        <div class="eta-floating-tag">
+          {{ activeBooking.status === 'arrived' ? 'Vehicle Arrived' : (activeBooking.status === 'on_trip' ? 'On Trip' : 'Driver En Route') }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Driver & Trip Information Sheet -->
+    <div class="driver-sheet">
+      <!-- Live Status Banner -->
+      <div class="status-banner">
+        <div class="live-dot"></div>
+        <div class="status-text-wrap">
+          <div class="status-title">
+            {{ activeBooking.status === 'driver_allocated' ? 'Driver En Route' : (activeBooking.status === 'arrived' ? 'Driver Waiting Outside' : (activeBooking.status === 'on_trip' ? 'On Trip to Destination' : 'Ride Request Dispatched')) }}
+          </div>
+          <div class="status-sub">
+            Booking Reference: #{{ activeBooking.id }}
+          </div>
+        </div>
+        <span class="badge badge-primary">{{ activeBooking.status | uppercase }}</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Driver & Vehicle Profile -->
+      <div class="driver-profile-row">
+        <div class="driver-avatar">
+          {{ (activeBooking.driverName || 'D').substring(0, 1).toUpperCase() }}
+        </div>
+        <div class="driver-meta">
+          <div class="driver-name">{{ activeBooking.driverName || 'Allocated Driver' }}</div>
+          <div class="vehicle-model">{{ activeBooking.vehicleModel || activeBooking.vehicleType }}</div>
+        </div>
+        <div class="uk-plate" *ngIf="activeBooking.vehicleReg">{{ activeBooking.vehicleReg }}</div>
+      </div>
+
+      <!-- Route Overview -->
+      <div class="trip-route-box">
+        <div class="route-node">
+          <span class="node-dot pickup"></span>
+          <span class="node-label">{{ activeBooking.pickupAddress }}</span>
+        </div>
+        <div class="route-line"></div>
+        <div class="route-node">
+          <span class="node-dot dropoff"></span>
+          <span class="node-label">{{ activeBooking.dropoffAddress }}</span>
+        </div>
+      </div>
+
+      <!-- Fare -->
+      <div class="fare-row">
+        <span class="fare-label">Trip Fare</span>
+        <span class="fare-amount">£{{ activeBooking.fare | number:'1.2-2' }} ({{ activeBooking.paymentMethod | uppercase }})</span>
+      </div>
+
+      <!-- Contact & Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-action" (click)="callDriver()" [disabled]="!activeBooking.driverPhone">
+          <span class="material-symbols-outlined">call</span> Call Driver
+        </button>
+        <button class="btn btn-action" (click)="callOffice()">
+          <span class="material-symbols-outlined">support_agent</span> Call Office
+        </button>
+      </div>
+
+      <!-- Cancel Trip Button -->
+      <button class="btn-cancel" (click)="cancelRide()" [disabled]="isCancelling">
+        {{ isCancelling ? 'Cancelling Booking...' : 'Cancel Booking' }}
+      </button>
+    </div>
   </div>
 </div>

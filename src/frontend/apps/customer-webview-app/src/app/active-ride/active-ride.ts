@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { CustomerService, CustomerBookingDto } from '../services/customer.service';
 
 @Component({
   selector: 'app-active-ride',
@@ -10,45 +11,47 @@ import { Router } from '@angular/router';
   styleUrl: './active-ride.css'
 })
 export class ActiveRideComponent implements OnInit, OnDestroy {
+  private customerService = inject(CustomerService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
-  status: 'driver_allocated' | 'arrived' | 'on_trip' | 'completed' = 'driver_allocated';
-  etaMinutes = 4;
-  driverName = 'Mohammed Tariq';
-  driverPhone = '07123 456789';
-  vehicleModel = 'Toyota Prius (Silver)';
-  vehicleReg = 'LD67 WRX';
-  fare = 18.50;
-  pickupAddress = 'High Street, City Centre';
-  dropoffAddress = 'Terminal 2, Heathrow Airport';
-
-  private timer: any;
+  activeBooking: CustomerBookingDto | null = null;
+  isLoading = true;
+  isCancelling = false;
+  private pollInterval: any;
 
   ngOnInit() {
-    this.startSimulation();
+    this.loadActiveRide();
+    // Poll active ride status every 10 seconds
+    this.pollInterval = setInterval(() => this.loadActiveRide(false), 10000);
   }
 
   ngOnDestroy() {
-    if (this.timer) clearInterval(this.timer);
+    if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
-  startSimulation() {
-    this.timer = setInterval(() => {
-      if (this.status === 'driver_allocated') {
-        this.status = 'arrived';
-        this.etaMinutes = 0;
+  loadActiveRide(showLoader: boolean = true) {
+    if (showLoader) this.isLoading = true;
+
+    this.customerService.getMyBookings().subscribe({
+      next: (list) => {
+        const active = list.find(b => b.status !== 'completed' && b.status !== 'cancelled');
+        this.activeBooking = active || null;
+        this.isLoading = false;
         this.cdr.detectChanges();
-      } else if (this.status === 'arrived') {
-        this.status = 'on_trip';
-        this.etaMinutes = 15;
+      },
+      error: () => {
+        this.activeBooking = null;
+        this.isLoading = false;
         this.cdr.detectChanges();
       }
-    }, 20000);
+    });
   }
 
   callDriver() {
-    window.location.href = `tel:${this.driverPhone}`;
+    if (this.activeBooking?.driverPhone) {
+      window.location.href = `tel:${this.activeBooking.driverPhone}`;
+    }
   }
 
   callOffice() {
@@ -56,12 +59,23 @@ export class ActiveRideComponent implements OnInit, OnDestroy {
   }
 
   cancelRide() {
+    if (!this.activeBooking) return;
     if (confirm('Are you sure you want to cancel this booking?')) {
-      this.router.navigate(['/activity']);
+      this.isCancelling = true;
+      this.customerService.cancelBooking(this.activeBooking.id).subscribe({
+        next: () => {
+          this.isCancelling = false;
+          this.router.navigate(['/activity']);
+        },
+        error: () => {
+          this.isCancelling = false;
+          this.router.navigate(['/activity']);
+        }
+      });
     }
   }
 
-  goBack() {
-    this.router.navigate(['/activity']);
+  goToBook() {
+    this.router.navigate(['/book']);
   }
 }

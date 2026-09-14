@@ -4,25 +4,82 @@
       <span class="material-symbols-outlined">arrow_back</span>
     </button>
     <h1>Saved Places</h1>
+    <button class="refresh-btn" (click)="loadPlaces()">
+      <span class="material-symbols-outlined">refresh</span>
+    </button>
   </div>
 
-  <div class="places-list">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <span class="material-symbols-outlined spinner-icon">progress_activity</span>
+    <p>Loading saved addresses...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && places.length === 0" class="empty-state">
+    <span class="material-symbols-outlined empty-icon">bookmark_border</span>
+    <h3>No saved places</h3>
+    <p>Save your home, work, and frequent destinations for fast 1-tap bookings.</p>
+  </div>
+
+  <!-- Places List -->
+  <div *ngIf="!isLoading && places.length > 0" class="places-list">
     <div *ngFor="let place of places" class="card place-card">
       <div class="place-icon-box">
-        <span class="material-symbols-outlined">{{ place.icon }}</span>
+        <span class="material-symbols-outlined">{{ place.icon || 'place' }}</span>
       </div>
       <div class="place-meta">
-        <div class="place-title">{{ place.title }}</div>
-        <div class="place-address">{{ place.address }}</div>
+        <div class="place-title">{{ place.label }}</div>
+        <div class="place-address">{{ place.addressLine }} {{ place.postcode ? '(' + place.postcode + ')' : '' }}</div>
       </div>
-      <button class="edit-btn">
-        <span class="material-symbols-outlined">edit</span>
+      <button class="delete-btn" (click)="deletePlace(place.id)">
+        <span class="material-symbols-outlined">delete_outline</span>
       </button>
     </div>
   </div>
 
-  <button class="btn btn-primary btn-block" (click)="addPlace()">
+  <button class="btn btn-primary btn-block add-btn" (click)="openAddModal()">
     <span class="material-symbols-outlined">add</span>
     Add New Place
   </button>
+
+  <!-- Add Place Modal -->
+  <div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Saved Place</h2>
+        <button class="close-btn" (click)="closeAddModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label>Label</label>
+        <select [(ngModel)]="newLabel" class="form-select">
+          <option value="Home">Home</option>
+          <option value="Work">Work</option>
+          <option value="Gym">Gym</option>
+          <option value="Airport">Airport</option>
+          <option value="Favorite">Favorite</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Address Line</label>
+        <input type="text" [(ngModel)]="newAddress" placeholder="e.g. 24 Elm Road, City" class="form-input" />
+      </div>
+
+      <div class="form-group">
+        <label>Postcode (Optional)</label>
+        <input type="text" [(ngModel)]="newPostcode" placeholder="e.g. SW1A 1AA" class="form-input" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="savePlace()" [disabled]="isSaving || !newAddress.trim()">
+          {{ isSaving ? 'Saving...' : 'Save Place' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

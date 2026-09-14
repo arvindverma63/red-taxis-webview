@@ -28,12 +28,13 @@ export class ActivityComponent implements OnInit {
     this.isLoading = true;
     this.customerService.getMyBookings().subscribe({
       next: (list) => {
-        this.bookings = list;
+        this.bookings = list || [];
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.bookings = this.customerService.getMockBookings();
+      error: (err) => {
+        console.warn('Live API response error loading bookings:', err);
+        this.bookings = [];
         this.isLoading = false;
         this.cdr.detectChanges();
       }

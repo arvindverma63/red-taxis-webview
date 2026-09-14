@@ -2,7 +2,9 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { CustomerService, VehicleOption, QuoteResult } from '../services/customer.service';
+import { CustomerService, VehicleOption, QuoteResult, AddressSearchResult } from '../services/customer.service';
+import { Subject, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-book',
@@ -22,6 +24,7 @@ export class BookComponent implements OnInit {
   selectedVehicle: VehicleOption | null = null;
   quote: QuoteResult | null = null;
   isLoadingQuote = false;
+  quoteError = '';
   isSubmitting = false;
 
   passengers = 1;
@@ -29,18 +32,71 @@ export class BookComponent implements OnInit {
   paymentMethod = 'cash';
   bookingSuccessId: string | null = null;
 
-  popularDestinations = [
-    { title: 'Airport Terminal 2', subtitle: 'International Departures', icon: 'flight_takeoff' },
-    { title: 'Central Train Station', subtitle: 'Station Rd, City Centre', icon: 'train' },
-    { title: 'General Hospital', subtitle: 'Main Entrance & A&E', icon: 'local_hospital' },
-    { title: 'Grand Mall & Plaza', subtitle: 'Shopping & Leisure Centre', icon: 'shopping_bag' }
-  ];
+  popularDestinations: { title: string; subtitle: string; icon: string }[] = [];
+
+  // Live Address Search
+  pickupSuggestions: AddressSearchResult[] = [];
+  dropoffSuggestions: AddressSearchResult[] = [];
+  activeSearchField: 'pickup' | 'dropoff' | null = null;
+  private searchSubject = new Subject<{ query: string; field: 'pickup' | 'dropoff' }>();
 
   ngOnInit() {
     this.vehicles = this.customerService.getVehicleOptions();
     if (this.vehicles.length > 0) {
       this.selectedVehicle = this.vehicles[0];
     }
+
+    // Load saved places into quick suggestions
+    this.customerService.getSavedAddresses().subscribe({
+      next: (places) => {
+        if (places && places.length > 0) {
+          this.popularDestinations = places.map(p => ({
+            title: p.addressLine || p.label,
+            subtitle: p.label,
+            icon: p.icon || 'place'
+          }));
+        }
+      }
+    });
+
+    // Set up debounced live address search
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged((prev, curr) => prev.query === curr.query && prev.field === curr.field),
+      switchMap(({ query, field }) => {
+        if (!query || query.length < 2) {
+          return of({ results: [], field });
+        }
+        return this.customerService.searchAddress(query).pipe(
+          switchMap(results => of({ results, field })),
+          catchError(() => of({ results: [], field }))
+        );
+      })
+    ).subscribe(({ results, field }) => {
+      if (field === 'pickup') {
+        this.pickupSuggestions = results;
+      } else {
+        this.dropoffSuggestions = results;
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  onAddressInput(field: 'pickup' | 'dropoff', query: string) {
+    this.activeSearchField = field;
+    this.searchSubject.next({ query, field });
+  }
+
+  selectAddressSuggestion(field: 'pickup' | 'dropoff', item: AddressSearchResult) {
+    if (field === 'pickup') {
+      this.pickupAddress = item.description || item.postcode || this.pickupAddress;
+      this.pickupSuggestions = [];
+    } else {
+      this.dropoffAddress = item.description || item.postcode || this.dropoffAddress;
+      this.dropoffSuggestions = [];
+    }
+    this.activeSearchField = null;
+    this.calculateQuote();
   }
 
   selectDestination(dest: string) {
@@ -59,18 +115,24 @@ export class BookComponent implements OnInit {
     if (!this.dropoffAddress.trim() || !this.selectedVehicle) return;
 
     this.isLoadingQuote = true;
-    this.customerService.getQuote(this.pickupAddress, this.dropoffAddress, this.selectedVehicle.name, this.paymentMethod === 'account' ? '1001' : '9999')
-      .subscribe({
-        next: (q) => {
-          this.quote = q;
-          this.isLoadingQuote = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.isLoadingQuote = false;
-          this.cdr.detectChanges();
-        }
-      });
+    this.quoteError = '';
+    this.customerService.getQuote(
+      this.pickupAddress,
+      this.dropoffAddress,
+      this.selectedVehicle.name,
+      this.paymentMethod === 'account' ? '1001' : '9999'
+    ).subscribe({
+      next: (q) => {
+        this.quote = q;
+        this.isLoadingQuote = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isLoadingQuote = false;
+        this.quoteError = 'Fare will be calculated on meter';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   setPassengers(count: number) {
@@ -88,19 +150,29 @@ export class BookComponent implements OnInit {
 
     this.isSubmitting = true;
     const payload = {
-      pickupAddress: this.pickupAddress,
-      destinationAddress: this.dropoffAddress,
+      pickup: {
+        description: this.pickupAddress,
+        postcode: this.quote?.pickupPostcode || ''
+      },
+      destination: {
+        description: this.dropoffAddress,
+        postcode: this.quote?.dropoffPostcode || ''
+      },
       vehicleType: this.selectedVehicle.name,
-      price: this.quote ? this.quote.fare : this.selectedVehicle.basePrice,
       passengers: this.passengers,
       luggage: this.luggage,
-      paymentMethod: this.paymentMethod
+      asap: true,
+      paymentMethod: this.paymentMethod,
+      quote: this.quote ? {
+        priceCash: this.quote.fare,
+        priceAccount: this.quote.fare
+      } : undefined
     };
 
     this.customerService.createBookingRequest(payload).subscribe({
       next: (res) => {
         this.isSubmitting = false;
-        this.bookingSuccessId = res.bookingId || `BK${Date.now().toString().substring(6)}`;
+        this.bookingSuccessId = res?.bookingId || res?.id || res?.value?.bookingId || `BK${Date.now().toString().substring(6)}`;
         this.cdr.detectChanges();
       },
       error: () => {

@@ -53,7 +53,27 @@
         <div class="dot pickup-dot"></div>
         <div class="input-wrap">
           <label>PICKUP LOCATION</label>
-          <input type="text" [(ngModel)]="pickupAddress" placeholder="Enter pickup address" (change)="calculateQuote()" />
+          <input
+            type="text"
+            [(ngModel)]="pickupAddress"
+            (input)="onAddressInput('pickup', pickupAddress)"
+            placeholder="Enter pickup address or postcode"
+            (change)="calculateQuote()"
+          />
+          <!-- Live Pickup Autocomplete Dropdown -->
+          <div *ngIf="activeSearchField === 'pickup' && pickupSuggestions.length > 0" class="suggestions-dropdown">
+            <div
+              *ngFor="let item of pickupSuggestions"
+              class="suggestion-item"
+              (click)="selectAddressSuggestion('pickup', item)"
+            >
+              <span class="material-symbols-outlined sugg-icon">place</span>
+              <div class="sugg-text">
+                <span class="sugg-main">{{ item.description }}</span>
+                <span *ngIf="item.postcode" class="sugg-postcode">{{ item.postcode }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="route-divider"></div>
@@ -61,15 +81,49 @@
         <div class="dot dropoff-dot"></div>
         <div class="input-wrap">
           <label>DESTINATION</label>
-          <input type="text" [(ngModel)]="dropoffAddress" placeholder="Enter destination or postcode" (change)="calculateQuote()" />
+          <input
+            type="text"
+            [(ngModel)]="dropoffAddress"
+            (input)="onAddressInput('dropoff', dropoffAddress)"
+            placeholder="Enter destination or postcode"
+            (change)="calculateQuote()"
+          />
+          <!-- Live Dropoff Autocomplete Dropdown -->
+          <div *ngIf="activeSearchField === 'dropoff' && dropoffSuggestions.length > 0" class="suggestions-dropdown">
+            <div
+              *ngFor="let item of dropoffSuggestions"
+              class="suggestion-item"
+              (click)="selectAddressSuggestion('dropoff', item)"
+            >
+              <span class="material-symbols-outlined sugg-icon">near_me</span>
+              <div class="sugg-text">
+                <span class="sugg-main">{{ item.description }}</span>
+                <span *ngIf="item.postcode" class="sugg-postcode">{{ item.postcode }}</span>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Live Quote Metrics Chip -->
+    <div *ngIf="quote && quote.fare > 0" class="quote-metrics-bar">
+      <div class="metric-item">
+        <span class="material-symbols-outlined">route</span>
+        <span>{{ quote.distanceMiles | number:'1.1-1' }} miles</span>
+      </div>
+      <div class="metric-divider">•</div>
+      <div class="metric-item">
+        <span class="material-symbols-outlined">schedule</span>
+        <span>Est. {{ quote.durationMinutes }} mins</span>
       </div>
     </div>
 
     <!-- Vehicle Class Selection -->
     <div class="section-header">
       <h2>Vehicle Class</h2>
-      <span *ngIf="isLoadingQuote" class="quote-spinner">Calculating fare...</span>
+      <span *ngIf="isLoadingQuote" class="quote-spinner">Calculating live fare...</span>
+      <span *ngIf="quoteError" class="quote-error">{{ quoteError }}</span>
     </div>
 
     <div class="vehicle-list">
@@ -88,8 +142,8 @@
           </div>
         </div>
         <div class="vehicle-price">
-          <div class="price-val">£{{ (quote && selectedVehicle?.type === v.type ? quote.fare : v.basePrice) | number:'1.2-2' }}</div>
-          <div class="price-label">Est.</div>
+          <div class="price-val">£{{ (quote && selectedVehicle?.type === v.type && quote.fare > 0 ? quote.fare : v.basePrice) | number:'1.2-2' }}</div>
+          <div class="price-label">{{ quote && selectedVehicle?.type === v.type && quote.fare > 0 ? 'Fixed Quote' : 'From' }}</div>
         </div>
       </div>
     </div>

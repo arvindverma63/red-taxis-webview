@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 
 export interface VehicleOption {
   type: string;
@@ -19,6 +19,14 @@ export interface QuoteResult {
   durationMinutes: number;
   pickupPostcode?: string;
   dropoffPostcode?: string;
+  currency?: string;
+}
+
+export interface AddressSearchResult {
+  description: string;
+  postcode?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface CustomerBookingDto {
@@ -36,6 +44,27 @@ export interface CustomerBookingDto {
   paymentMethod: string;
   passengers: number;
   luggage: number;
+  vias?: any[];
+  notes?: string;
+}
+
+export interface CustomerSavedAddressDto {
+  id: string;
+  label: string;
+  addressLine: string;
+  description?: string;
+  postcode?: string;
+  lat?: number;
+  lng?: number;
+  icon?: string;
+}
+
+export interface CustomerProfileDto {
+  id?: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  isVerified?: boolean;
 }
 
 @Injectable({
@@ -50,8 +79,12 @@ export class CustomerService {
   }
 
   private getHeaders(): HttpHeaders {
-    const token = localStorage.getItem('auth_token') || '';
-    const tenantId = localStorage.getItem('tenant_id') || 'org_ace_taxis';
+    let token = '';
+    let tenantId = 'org_ace_taxis';
+    if (typeof localStorage !== 'undefined') {
+      token = localStorage.getItem('auth_token') || '';
+      tenantId = localStorage.getItem('tenant_id') || 'org_ace_taxis';
+    }
     return new HttpHeaders({
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -110,73 +143,39 @@ export class CustomerService {
     ];
   }
 
-  getQuote(pickup: string, dropoff: string, vehicleType: string, accountNo: string = '9999'): Observable<QuoteResult> {
-    const payload = {
-      pickupAddress: pickup,
-      destinationAddress: dropoff,
-      vehicleType: vehicleType,
-      accountNo: accountNo
-    };
-
-    return this.http.post<any>(`${this.apiUrl}/v2/pricing/quote`, payload, { headers: this.getHeaders() }).pipe(
-      map(res => {
-        const data = res?.value || res?.data || res;
-        return {
-          fare: Number(data.fare || data.price || 14.50),
-          distanceMiles: Number(data.distance || data.distanceMiles || 4.2),
-          durationMinutes: Number(data.duration || data.durationMinutes || 12),
-          pickupPostcode: data.pickupPostcode,
-          dropoffPostcode: data.dropoffPostcode
-        };
-      }),
-      catchError(err => {
-        console.warn('Live quote API error, using heuristic quote calculation:', err);
-        return of({
-          fare: 15.00,
-          distanceMiles: 4.0,
-          durationMinutes: 12
-        });
-      })
-    );
-  }
-
   // ==========================================
   // V2 Customer Authentication APIs
   // ==========================================
   login(credentials: { username: string; password: string }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/v2/customer-auth/login`, credentials, { headers: this.getHeaders() }).pipe(
       tap(res => {
-        if (res?.token || res?.accessToken) {
-          localStorage.setItem('auth_token', res.token || res.accessToken);
+        const token = res?.token || res?.accessToken || (typeof res === 'string' ? res : null);
+        if (token) {
+          localStorage.setItem('auth_token', token);
         }
-      }),
-      catchError(err => {
-        console.warn('V2 Customer Login fallback:', err);
-        return of({ success: false, error: err?.message || 'Login failed' });
       })
     );
   }
 
   register(data: { fullName: string; email: string; phoneNumber: string; password: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/v2/customer-auth/register-customer`, data, { headers: this.getHeaders() }).pipe(
-      catchError(err => {
-        console.warn('V2 Customer Register fallback:', err);
-        return of({ success: false, error: err?.message || 'Registration failed' });
-      })
-    );
+    return this.http.post<any>(`${this.apiUrl}/v2/customer-auth/register-customer`, data, { headers: this.getHeaders() });
   }
 
   // ==========================================
   // V2 Customer Profile & Addresses
   // ==========================================
-  getProfile(): Observable<any> {
+  getProfile(): Observable<CustomerProfileDto> {
     return this.http.get<any>(`${this.apiUrl}/v2/customers/me/profile`, { headers: this.getHeaders() }).pipe(
-      catchError(() => of({
-        fullName: 'Alex Morgan',
-        email: 'alex.morgan@example.com',
-        phoneNumber: '07700 900077',
-        isVerified: true
-      }))
+      map(res => {
+        const data = res?.value || res?.data || res || {};
+        return {
+          id: data.id || data.userId,
+          fullName: data.fullName || data.name || '',
+          email: data.email || '',
+          phoneNumber: data.phoneNumber || data.phone || '',
+          isVerified: data.isVerified ?? false
+        };
+      })
     );
   }
 
@@ -184,119 +183,143 @@ export class CustomerService {
     return this.http.put<any>(`${this.apiUrl}/v2/customers/me/profile`, data, { headers: this.getHeaders() });
   }
 
-  getSavedAddresses(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/v2/customers/me/addresses`, { headers: this.getHeaders() }).pipe(
-      catchError(() => of([
-        { id: '1', label: 'Home', address: '24 Elm Road, Suburb, AB12 3CD', icon: 'home' },
-        { id: '2', label: 'Work', address: 'Tech Hub Plaza, Suite 400, Central City, EC1A 1BB', icon: 'work' },
-        { id: '3', label: 'Gym', address: 'Pure Fitness, 88 Park Avenue, SW2 4PT', icon: 'fitness_center' }
-      ]))
-    );
-  }
-
-  addSavedAddress(data: { label: string; address: string; postcode?: string; lat?: number; lng?: number }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/v2/customers/me/addresses`, data, { headers: this.getHeaders() });
-  }
-
-  // ==========================================
-  // V2 Pricing, Search & Booking APIs
-  // ==========================================
-  searchAddress(query: string): Observable<any[]> {
-    return this.http.post<any[]>(`${this.apiUrl}/v2/public/address/search`, { query }, { headers: this.getHeaders() }).pipe(
-      catchError(() => of([]))
-    );
-  }
-
-  createBookingRequest(data: any): Observable<any> {
-    // Tries V2 public booking request first, with fallback to standard booking
-    return this.http.post<any>(`${this.apiUrl}/v2/public/bookings/request`, data, { headers: this.getHeaders() }).pipe(
-      catchError(err => {
-        console.warn('V2 Public Booking endpoint note, falling back to dispatch endpoint:', err);
-        return this.http.post<any>(`${this.apiUrl}/DriverApp/CreateBooking`, data, { headers: this.getHeaders() }).pipe(
-          catchError(() => of({ success: true, bookingId: `BK${Date.now().toString().substring(6)}` }))
-        );
+  getSavedAddresses(): Observable<CustomerSavedAddressDto[]> {
+    return this.http.get<any>(`${this.apiUrl}/v2/customers/me/addresses`, { headers: this.getHeaders() }).pipe(
+      map(res => {
+        const list = Array.isArray(res) ? res : (res?.data || res?.value || res?.addresses || []);
+        return list.map((item: any) => ({
+          id: item.id || item.addressId || item._id,
+          label: item.label || 'Saved Place',
+          addressLine: item.addressLine || item.description || item.address || '',
+          description: item.description,
+          postcode: item.postcode,
+          lat: item.lat,
+          lng: item.lng,
+          icon: (item.label?.toLowerCase() === 'home') ? 'home' : (item.label?.toLowerCase() === 'work') ? 'work' : 'place'
+        }));
       })
     );
   }
 
-  cancelBooking(bookingId: string, reason: string = 'Customer cancelled'): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/v2/customers/me/bookings/${bookingId}/cancel`, { reason }, { headers: this.getHeaders() }).pipe(
-      catchError(() => of({ success: true, message: 'Cancellation requested' }))
+  addSavedAddress(data: { label: string; addressLine: string; postcode?: string; lat?: number; lng?: number; description?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/v2/customers/me/addresses`, data, { headers: this.getHeaders() });
+  }
+
+  deleteSavedAddress(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/v2/customers/me/addresses/${id}`, { headers: this.getHeaders() });
+  }
+
+  // ==========================================
+  // V2 Address Search & Resolution APIs
+  // ==========================================
+  searchAddress(query: string): Observable<AddressSearchResult[]> {
+    return this.http.post<any>(`${this.apiUrl}/v2/public/address/search`, { query }, { headers: this.getHeaders() }).pipe(
+      map(res => {
+        const list = Array.isArray(res) ? res : (res?.data || res?.results || res?.value || []);
+        return list.map((item: any) => ({
+          description: item.description || item.formattedAddress || item.address || '',
+          postcode: item.postcode || item.postalCode || '',
+          lat: item.lat || item.latitude,
+          lng: item.lng || item.longitude
+        }));
+      })
     );
   }
 
-  getMyBookings(): Observable<CustomerBookingDto[]> {
-    return this.http.get<any>(`${this.apiUrl}/v2/customers/me/bookings`, { headers: this.getHeaders() }).pipe(
+  // ==========================================
+  // V2 Pricing & Quotes
+  // ==========================================
+  getQuote(pickup: string, dropoff: string, vehicleType: string, accountNo: string = '9999'): Observable<QuoteResult> {
+    const payload = {
+      pickupAddress: pickup,
+      destinationAddress: dropoff,
+      vehicleType: vehicleType,
+      accountNo: accountNo,
+      passengers: 1,
+      priceFromBase: false,
+      pickupDateTime: new Date().toISOString()
+    };
+
+    return this.http.post<any>(`${this.apiUrl}/v2/pricing/quote`, payload, { headers: this.getHeaders() }).pipe(
       map(res => {
-        const list = Array.isArray(res) ? res : (res?.bookings || res?.value || []);
+        const data = res?.value || res?.data || res;
+        return {
+          fare: Number(data.fare || data.price || data.priceCash || 0),
+          distanceMiles: Number(data.distance || data.distanceMiles || 0),
+          durationMinutes: Number(data.duration || data.durationMinutes || 0),
+          pickupPostcode: data.pickupPostcode,
+          dropoffPostcode: data.dropoffPostcode,
+          currency: '£'
+        };
+      })
+    );
+  }
+
+  // ==========================================
+  // V2 Customer Bookings & Ride Management
+  // ==========================================
+  createBookingRequest(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/v2/public/bookings/request`, data, { headers: this.getHeaders() });
+  }
+
+  getMyBookings(status?: string): Observable<CustomerBookingDto[]> {
+    const endpoint = status
+      ? `${this.apiUrl}/v2/customers/me/bookings?status=${status}`
+      : `${this.apiUrl}/v2/customers/me/bookings`;
+
+    return this.http.get<any>(endpoint, { headers: this.getHeaders() }).pipe(
+      map(res => {
+        const list = Array.isArray(res) ? res : (res?.bookings || res?.data || res?.value || []);
         return list.map((item: any) => ({
           id: item.id || item.bookingId,
-          pickupAddress: item.pickupAddress || 'City Centre',
-          dropoffAddress: item.destinationAddress || item.dropoffAddress || 'Airport Terminal 2',
-          pickupDateTime: item.pickupDateTime || new Date().toISOString(),
-          fare: Number(item.price || item.fare || 18.50),
+          pickupAddress: item.pickupAddress || item.pickup?.description || '',
+          dropoffAddress: item.destinationAddress || item.dropoffAddress || item.destination?.description || '',
+          pickupDateTime: item.pickupDateTime || item.scheduledFor || '',
+          fare: Number(item.price || item.fare || item.quote?.priceCash || 0),
           vehicleType: item.vehicleType || 'Saloon',
-          status: item.status || 'completed',
+          status: item.status || 'request_sent',
           driverName: item.driverName,
           driverPhone: item.driverPhone,
           vehicleReg: item.vehicleReg,
           vehicleModel: item.vehicleModel,
           paymentMethod: item.paymentMethod || 'cash',
           passengers: item.passengers || 1,
-          luggage: item.luggage || 0
+          luggage: item.luggage || 0,
+          vias: item.vias || [],
+          notes: item.details || item.notes
         }));
-      }),
-      catchError(() => of(this.getMockBookings()))
+      })
     );
   }
 
-  getMockBookings(): CustomerBookingDto[] {
-    const now = new Date();
-    return [
-      {
-        id: 'BK994821',
-        pickupAddress: 'High Street, City Centre, SW1A 1AA',
-        dropoffAddress: 'Terminal 2, Heathrow Airport, TW6 1EW',
-        pickupDateTime: now.toISOString(),
-        fare: 18.50,
-        vehicleType: 'Saloon',
-        status: 'driver_allocated',
-        driverName: 'Mohammed Tariq',
-        driverPhone: '07123 456789',
-        vehicleReg: 'LD67 WRX',
-        vehicleModel: 'Toyota Prius (Silver)',
-        paymentMethod: 'cash',
-        passengers: 2,
-        luggage: 2
-      },
-      {
-        id: 'BK993102',
-        pickupAddress: '24 Elm Road, Suburb',
-        dropoffAddress: 'Central Train Station, City',
-        pickupDateTime: new Date(now.getTime() - 86400000).toISOString(),
-        fare: 12.00,
-        vehicleType: 'Saloon',
-        status: 'completed',
-        driverName: 'Dave Smith',
-        vehicleReg: 'EA21 KPL',
-        paymentMethod: 'card',
-        passengers: 1,
-        luggage: 1
-      },
-      {
-        id: 'BK992810',
-        pickupAddress: 'Shopping Mall South Gate',
-        dropoffAddress: 'The Grand Hotel, Promenade',
-        pickupDateTime: new Date(now.getTime() - 259200000).toISOString(),
-        fare: 15.50,
-        vehicleType: 'Executive',
-        status: 'completed',
-        driverName: 'James Wilson',
-        vehicleReg: 'BV69 TZX',
-        paymentMethod: 'account',
-        passengers: 2,
-        luggage: 0
-      }
-    ];
+  getBookingById(id: string): Observable<CustomerBookingDto> {
+    return this.http.get<any>(`${this.apiUrl}/v2/customers/me/bookings/${id}`, { headers: this.getHeaders() }).pipe(
+      map(item => ({
+        id: item.id || item.bookingId,
+        pickupAddress: item.pickupAddress || item.pickup?.description || '',
+        dropoffAddress: item.destinationAddress || item.dropoffAddress || item.destination?.description || '',
+        pickupDateTime: item.pickupDateTime || item.scheduledFor || '',
+        fare: Number(item.price || item.fare || item.quote?.priceCash || 0),
+        vehicleType: item.vehicleType || 'Saloon',
+        status: item.status || 'request_sent',
+        driverName: item.driverName,
+        driverPhone: item.driverPhone,
+        vehicleReg: item.vehicleReg,
+        vehicleModel: item.vehicleModel,
+        paymentMethod: item.paymentMethod || 'cash',
+        passengers: item.passengers || 1,
+        luggage: item.luggage || 0,
+        vias: item.vias || [],
+        notes: item.details || item.notes
+      }))
+    );
+  }
+
+  cancelBooking(bookingId: string, reason: string = 'Customer cancelled'): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/v2/customers/me/bookings/${bookingId}/cancel`, { reason }, { headers: this.getHeaders() });
+  }
+
+  changeBooking(bookingId: string, data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/v2/customers/me/bookings/${bookingId}/change`, data, { headers: this.getHeaders() });
   }
 }

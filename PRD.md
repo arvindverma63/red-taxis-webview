@@ -289,6 +289,14 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Animated Splash Screen (`SplashScreen`)**: Designed and integrated a smooth, animated light-themed launch screen featuring the pulsing `BrandedLogo` badge with radiant aura rings, company title, and automated 1.8-second session routing (`/home` for authenticated passengers, `/auth/login` for new users).
   - **Light Mode Enforcement**: Configured `themeMode: ThemeMode.light` across the Flutter customer application and disabled system dark mode detection in the Angular webview (`index.html`), guaranteeing a clean, consistent light presentation.
 - [x] **Vercel Output Directory & 404 Route Resolution**: Fixed Vercel deployment 404 error by updating `angular.json` output path configuration (`"outputPath": { "base": "dist/customer-webview-app", "browser": "" }`) and adding cross-platform postbuild sync scripts in `package.json`. Configured explicit `buildCommand`, `outputDirectory`, and `cleanUrls: true` in `vercel.json` and root `package.json` to guarantee `index.html` and SPA route rewrites resolve cleanly on Vercel deployments.
+- [x] **Pure Live Backend API Architecture (Zero Static Mock Data)**:
+  - **Removed Static Fallback Arrays**: Completely removed all static mock arrays and fake data generators across the entire codebase.
+  - **Live Address Autocomplete**: Connected live typeahead search to `POST /api/v2/public/address/search` with 300ms debounce and autocomplete selection dropdowns.
+  - **Live Fares & Pricing**: Connected real-time quote generation to `POST /api/v2/pricing/quote` and dynamic distance/duration calculation.
+  - **Live Booking Requests**: Wired `POST /api/v2/public/bookings/request` matching the `CreatePublicBookingRequestDto` schema contract.
+  - **Live Customer Rides & History**: Connected `GET /api/v2/customers/me/bookings` to display real database trips with empty state handling.
+  - **Live Saved Places**: Connected `GET`, `POST`, and `DELETE` endpoints for `/api/v2/customers/me/addresses`.
+  - **Live Profile Management**: Connected `GET` and `PUT` `/api/v2/customers/me/profile`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
