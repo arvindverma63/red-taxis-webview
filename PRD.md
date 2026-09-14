@@ -17,8 +17,8 @@ Red Taxis is a comprehensive multi-tenant taxi platform consisting of:
 - **Native Shell**: Flutter (Dart) with Riverpod for state management, `webview_flutter` for rendering the web pages, `go_router` for reactive navigation, `dio` for network calls, and `flutter_secure_storage` for token persistence.
 - **Web Portal**: Angular 21 with Material Components.
 - **Hosting**:
-  - Web Portal is hosted on Vercel at [https://red-taxis-webview.vercel.app](https://red-taxis-webview.vercel.app).
-  - Configured in Flutter via [constants.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/core/config/constants.dart).
+  - Driver Web Portal is hosted on Vercel at [https://red-taxis-webview.vercel.app](https://red-taxis-webview.vercel.app) (Configured in [driver_app constants.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/core/config/constants.dart)).
+  - Customer Web Portal is hosted on Vercel at [https://red-taxis-webview-kktx.vercel.app](https://red-taxis-webview-kktx.vercel.app) (Configured in [customer_app constants.dart](file:///d:/redtaxis/src/mobile/customer_app/lib/core/config/constants.dart)).
 
 ---
 

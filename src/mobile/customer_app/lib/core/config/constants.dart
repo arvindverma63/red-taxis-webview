@@ -1,7 +1,7 @@
 class AppConfig {
   static const String appName = 'Red Taxi';
   static const String apiBaseUrl = 'https://staging-api.redtaxi.co.uk';
-  static const String webviewBaseUrl = 'https://red-taxis-webview.vercel.app';
+  static const String webviewBaseUrl = 'https://red-taxis-webview-kktx.vercel.app';
   static const String defaultTenantId = 'org_ace_taxis';
   static const String defaultTenantKey = 'demo_key';
 
