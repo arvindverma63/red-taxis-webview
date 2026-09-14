@@ -1,0 +1,10 @@
+{
+  "name": "red-taxis-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix src/frontend/apps/customer-webview-app run build",
+    "build:customer": "npm --prefix src/frontend/apps/customer-webview-app run build",
+    "build:driver": "npm --prefix src/frontend/apps/driver-webview-app run build"
+  }
+}

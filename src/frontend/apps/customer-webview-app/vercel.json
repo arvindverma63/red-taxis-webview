@@ -1,4 +1,7 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/customer-webview-app",
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",

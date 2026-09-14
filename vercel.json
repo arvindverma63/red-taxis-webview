@@ -1,8 +1,11 @@
 {
+  "buildCommand": "npm --prefix src/frontend/apps/customer-webview-app run build",
+  "outputDirectory": "src/frontend/apps/customer-webview-app/dist/customer-webview-app",
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://staging-api.redtaxi.co.uk/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://staging-api.redtaxi.co.uk/api/$1"
     },
     {
       "source": "/(.*)",

@@ -288,7 +288,7 @@ The Angular router guards and services parse the `token` parameter directly from
 - [x] **Animated Customer Splash Screen & Light Theme Default**:
   - **Animated Splash Screen (`SplashScreen`)**: Designed and integrated a smooth, animated light-themed launch screen featuring the pulsing `BrandedLogo` badge with radiant aura rings, company title, and automated 1.8-second session routing (`/home` for authenticated passengers, `/auth/login` for new users).
   - **Light Mode Enforcement**: Configured `themeMode: ThemeMode.light` across the Flutter customer application and disabled system dark mode detection in the Angular webview (`index.html`), guaranteeing a clean, consistent light presentation.
-  - **Google Material Symbols & Icons Link**: Injected Google Fonts CDN stylesheets in `index.html` ensuring vector icons always render sharply on any device.
+- [x] **Vercel Output Directory & 404 Route Resolution**: Fixed Vercel deployment 404 error by updating `angular.json` output path configuration (`"outputPath": { "base": "dist/customer-webview-app", "browser": "" }`) and adding cross-platform postbuild sync scripts in `package.json`. Configured explicit `buildCommand`, `outputDirectory`, and `cleanUrls: true` in `vercel.json` and root `package.json` to guarantee `index.html` and SPA route rewrites resolve cleanly on Vercel deployments.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
-    "build": "ng build",
+    "build": "ng build && node -e \"const fs=require('fs'),p=require('path');const b=p.join('dist','customer-webview-app','browser');if(fs.existsSync(b))fs.cpSync(b,p.join('dist','customer-webview-app'),{recursive:true});\"",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
