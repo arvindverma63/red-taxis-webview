@@ -358,14 +358,15 @@ The Angular router guards and services parse the `token` parameter directly from
   - Modernized the expense creation form with category icon selectors (Fuel, Maintenance, Tolls, Vehicle Wash, Parking, Insurance, Other), fast amount stepper chips (`+£10`, `+£20`, `+£50`, `Clear`), interactive date picker, camera receipt scan trigger, and real-time validation.
   - Added a high-resolution modal receipt dialog with zoom inspection, metadata header, and full download action.
   - Verified with 100% passing Vitest test suite and clean Angular compilation.
-- [x] **Driver Profile & Compliance Hub UI Overhaul (`profile.ts`)**:
-  - Redesigned the Driver Profile view with an Executive Driver Identity Hero card featuring verified partner driver badge, avatar with pulsing live status dot, driver ID reference chip, star rating (`4.98 ★ • 1,420+ trips`), and ambient branding glow.
-  - Built a 3-column quick telemetry metrics row for Compliance Health (`X/Y Verified` with live progress bar), Assigned Vehicle, and Driver Standing (`Gold • Tier 1`).
-  - Redesigned Driver Profile & Credentials card with 1-tap copy clipboard triggers and SnackBar notifications for email and telephone.
-  - Created an authentic UK License Plate showcase (yellow reflective background, bold UK font, blue euroband with UK text, and verified registration indicator).
-  - Overhauled the Compliance Licences & Certifications Hub with visual health meter, dynamic 3-pill filters (`All`, `Needs Action`, `Verified`), and color-accented document rows (Valid, Expiring Soon, Expired, Pending Verification, Missing) with 1-tap upload routing.
-  - Added a glassmorphic Document Inspection Modal with high-resolution image viewing, status notification bar, and direct "Update / Replace" action.
-  - Added pull-to-refresh mobile gesture support and verified with 100% passing Vitest and Flutter test suites.
+- [x] **Driver Profile Clean Up & Compact Compliance Documentation (`profile.ts`)**:
+  - Removed all artificial static/mock data (fake 4.98 ratings, mock trips count, fake tier standing) and strictly bound all profile cards to real live data (driver name, email, contact, registration plate, dynamic theme color, and decoded driver ID).
+  - Compacted the Compliance Documents section: reduced excessive padding/margins, tightened document row height, optimized icon containers, and added high-density status chips with direct upload routing.
+- [x] **Professional Compliance Document Upload Portal (`upload.ts`)**:
+  - Built an executive document upload portal with requirement specification headers, drag-and-drop file dropzone, and dual triggers for gallery file selection and live camera capture.
+  - Implemented live camera HUD with alignment corner brackets, animated scan line, and responsive shutter capture.
+  - Designed interactive document cropping and optimization workspace with drag-to-resize handles, width/height range fine-tuners, and 90-degree rotation tool.
+  - Added a verified preview card with legibility checklist, upload progress bar, and sticky verification submission button.
+  - Verified with 100% passing Vitest (`npx vitest run`) and clean Angular compilation (`ng build`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

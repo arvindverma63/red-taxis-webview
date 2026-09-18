@@ -23,70 +23,108 @@ import { HttpEventType } from '@angular/common/http';
     MatSnackBarModule
   ],
   template: `
-    <div class="material-container">
-      <!-- Back Navigation Header -->
-      <div class="nav-header">
-        <button mat-icon-button (click)="goBack()" class="back-btn">
+    <div class="upload-container">
+      <!-- 1. Header Bar -->
+      <header class="upload-header">
+        <button class="back-nav-btn" (click)="goBack()" title="Back to Profile">
           <span class="material-symbols-outlined">arrow_back</span>
         </button>
-        <span class="nav-title">Upload Document</span>
+        <div class="header-titles">
+          <h1 class="header-main-title">{{ docName }}</h1>
+          <span class="header-sub-title">Compliance Verification Portal</span>
+        </div>
+      </header>
+
+      <!-- 2. Document Information Card -->
+      <div class="doc-badge-card">
+        <div class="badge-icon-box">
+          <span class="material-symbols-outlined">verified_user</span>
+        </div>
+        <div class="badge-text-col">
+          <span class="badge-label">Document Requirement</span>
+          <span class="badge-title">{{ docName }}</span>
+          <span class="badge-hint">Upload a sharp, legible image or scan. Ensure all 4 corners and dates are clearly visible.</span>
+        </div>
       </div>
 
-      <!-- Document Information -->
-      <mat-card class="doc-info-card">
-        <mat-card-content class="info-content">
-          <span class="material-symbols-outlined doc-card-icon">description</span>
-          <div class="doc-details">
-            <h3 class="doc-name">{{ docName }}</h3>
-            <p class="doc-helper">Please upload a clear, legible photo or PDF scan of this document for compliance verification.</p>
-          </div>
-        </mat-card-content>
-      </mat-card>
+      <!-- 3. Main Workspace -->
+      <main class="upload-workspace">
 
-      <!-- Upload & Cropping Section -->
-      <main class="upload-section">
-        <!-- 1. Selection State -->
-        <div class="selection-workspace animated-fade-in" *ngIf="!selectedFile && !isCameraActive">
-          <mat-card class="action-card">
-            <mat-card-content class="action-content">
-              <span class="material-symbols-outlined camera-main-icon">photo_camera</span>
-              <p class="select-helper-text">Select or snap a photo of your compliance document to verify and crop it.</p>
-              
-              <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                <button mat-flat-button color="primary" class="select-action-btn" (click)="triggerFileSelect()">
-                  <mat-icon>add_photo_alternate</mat-icon> Select Image File
-                </button>
-                
-                <button mat-flat-button color="accent" class="camera-action-btn" (click)="startCamera()">
-                  <mat-icon>videocam</mat-icon> Live Camera Capture
-                </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
+        <!-- STATE 1: File Selection & Camera Launch -->
+        <div class="selection-card animated-fade-in" *ngIf="!selectedFile && !isCameraActive">
+          <div 
+            class="drop-zone"
+            (click)="triggerFileSelect()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onFileDrop($event)"
+            [class.dragover]="isDragging"
+          >
+            <div class="drop-icon-wrapper">
+              <span class="material-symbols-outlined">cloud_upload</span>
+            </div>
+            <h3 class="drop-title">Upload Certificate</h3>
+            <p class="drop-sub">Tap to browse files or snap a fresh photo</p>
+            <span class="drop-formats">Supports JPG, PNG, PDF (Up to 10MB)</span>
+          </div>
+
+          <!-- Dual Action Buttons -->
+          <div class="action-buttons-grid">
+            <button class="btn-file-select" (click)="triggerFileSelect()">
+              <span class="material-symbols-outlined">add_photo_alternate</span>
+              <span>Select File / Gallery</span>
+            </button>
+
+            <button class="btn-camera-launch" (click)="startCamera()">
+              <span class="material-symbols-outlined">photo_camera</span>
+              <span>Take Photo</span>
+            </button>
+          </div>
+
+          <!-- Verification Guidelines Checklist -->
+          <div class="guidelines-box">
+            <span class="guidelines-head">
+              <span class="material-symbols-outlined">info</span>
+              <span>Submission Guidelines:</span>
+            </span>
+            <ul class="guidelines-list">
+              <li>Place the document on a flat, dark background</li>
+              <li>Avoid flash glare, deep shadows, and blur</li>
+              <li>Ensure issue and expiry dates are clearly readable</li>
+            </ul>
+          </div>
         </div>
 
-        <!-- 2. Live Camera Capture State -->
-        <div class="camera-workspace animated-fade-in" *ngIf="isCameraActive">
-          <div class="camera-player-outer">
-            <div class="camera-player-container">
-              <video #videoElement autoplay playsinline class="camera-video"></video>
-              <div class="camera-guide-overlay">
-                <div class="guide-box"></div>
-                <span class="guide-text">Align document borders here</span>
-              </div>
+        <!-- STATE 2: Live Camera Viewport -->
+        <div class="camera-card animated-fade-in" *ngIf="isCameraActive">
+          <div class="camera-viewport-wrapper">
+            <video #videoElement autoplay playsinline class="camera-video"></video>
+            
+            <!-- Scanning HUD & Alignment Guides -->
+            <div class="camera-hud-overlay">
+              <div class="hud-corner top-left"></div>
+              <div class="hud-corner top-right"></div>
+              <div class="hud-corner bottom-left"></div>
+              <div class="hud-corner bottom-right"></div>
+              <div class="hud-scan-line"></div>
+              <span class="hud-instruction">Align document within the frame</span>
             </div>
           </div>
-          
-          <div class="camera-controls-row">
-            <button mat-stroked-button color="warn" (click)="stopCamera()" class="cam-cancel-btn">
-              <mat-icon>close</mat-icon> Cancel
+
+          <div class="camera-controls-bar">
+            <button class="btn-cam-cancel" (click)="stopCamera()">
+              <span class="material-symbols-outlined">close</span>
+              <span>Cancel</span>
             </button>
-            <button mat-fab color="primary" (click)="capturePhoto()" class="cam-shutter-btn">
-              <mat-icon>photo_camera</mat-icon>
+            <button class="btn-cam-shutter" (click)="capturePhoto()" title="Capture Document">
+              <div class="shutter-inner">
+                <span class="material-symbols-outlined">camera_alt</span>
+              </div>
             </button>
           </div>
         </div>
 
+        <!-- Hidden Native File Input -->
         <input 
           #fileInput 
           type="file" 
@@ -95,14 +133,30 @@ import { HttpEventType } from '@angular/common/http';
           style="display: none;" 
         />
 
-        <!-- 3. Cropping State -->
-        <div class="crop-workspace animated-fade-in" *ngIf="selectedFile && !isCropped && !isCameraActive">
-          <div class="crop-container-outer">
-            <div class="crop-container" #cropContainer>
-              <img [src]="imageSrc" class="crop-image" #cropImg (load)="onImageLoaded()" [style.transform]="'rotate(' + rotationAngle + 'deg)'" />
-              <!-- Draggable Crop Box Overlay -->
+        <!-- STATE 3: Cropping & Fine-Tuning Workspace -->
+        <div class="cropping-card animated-fade-in" *ngIf="selectedFile && !isCropped && !isCameraActive">
+          <div class="crop-header-bar">
+            <span class="crop-title">Adjust & Crop Document</span>
+            <button class="rotate-tool-btn" (click)="rotateRight()">
+              <span class="material-symbols-outlined">rotate_right</span>
+              <span>Rotate 90°</span>
+            </button>
+          </div>
+
+          <!-- Crop Viewport -->
+          <div class="crop-viewport-outer">
+            <div class="crop-viewport" #cropContainer>
+              <img 
+                [src]="imageSrc" 
+                class="crop-base-img" 
+                #cropImg 
+                (load)="onImageLoaded()" 
+                [style.transform]="'rotate(' + rotationAngle + 'deg)'" 
+              />
+              
+              <!-- Draggable / Resizable Crop Box -->
               <div 
-                class="crop-overlay-box" 
+                class="crop-box-rect" 
                 [style.top.%]="cropBoxY" 
                 [style.left.%]="cropBoxX" 
                 [style.width.%]="cropBoxW" 
@@ -110,732 +164,876 @@ import { HttpEventType } from '@angular/common/http';
                 (mousedown)="onDragStart($event)"
                 (touchstart)="onDragStart($event)"
               >
-                <div class="resize-handle top-left" (mousedown)="onResizeStart($event, 'top-left'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'top-left'); $event.stopPropagation()"></div>
-                <div class="resize-handle top-right" (mousedown)="onResizeStart($event, 'top-right'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'top-right'); $event.stopPropagation()"></div>
-                <div class="resize-handle bottom-left" (mousedown)="onResizeStart($event, 'bottom-left'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'bottom-left'); $event.stopPropagation()"></div>
-                <div class="resize-handle bottom-right" (mousedown)="onResizeStart($event, 'bottom-right'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'bottom-right'); $event.stopPropagation()"></div>
+                <div class="resize-handle tl" (mousedown)="onResizeStart($event, 'top-left'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'top-left'); $event.stopPropagation()"></div>
+                <div class="resize-handle tr" (mousedown)="onResizeStart($event, 'top-right'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'top-right'); $event.stopPropagation()"></div>
+                <div class="resize-handle bl" (mousedown)="onResizeStart($event, 'bottom-left'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'bottom-left'); $event.stopPropagation()"></div>
+                <div class="resize-handle br" (mousedown)="onResizeStart($event, 'bottom-right'); $event.stopPropagation()" (touchstart)="onResizeStart($event, 'bottom-right'); $event.stopPropagation()"></div>
               </div>
             </div>
           </div>
 
-          <!-- Adjusters and Rotation controls -->
-          <mat-card class="adjusters-card">
-            <mat-card-content class="adjusters-content">
-              <div class="controls-header">
-                <span class="controls-title">Adjust Crop Area</span>
-                <button mat-icon-button (click)="rotateRight()" matTooltip="Rotate 90°" class="rotate-btn">
-                  <mat-icon>rotate_right</mat-icon> Rotate
-                </button>
-              </div>
+          <!-- Crop Controls & Sliders -->
+          <div class="crop-sliders-box">
+            <div class="slider-row">
+              <span class="slider-label">Crop Width</span>
+              <input type="range" min="20" max="95" [value]="cropBoxW" (input)="onCropWidthChange($event)" class="range-input" />
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">Crop Height</span>
+              <input type="range" min="20" max="95" [value]="cropBoxH" (input)="onCropHeightChange($event)" class="range-input" />
+            </div>
+          </div>
 
-              <div class="sliders-grid">
-                <div class="slider-group">
-                  <span class="slider-lbl">Width</span>
-                  <input type="range" min="20" max="95" [value]="cropBoxW" (input)="cropBoxW = Number($any($event.target).value); updateCropBox()" class="range-slider" />
-                </div>
-                <div class="slider-group">
-                  <span class="slider-lbl">Height</span>
-                  <input type="range" min="20" max="95" [value]="cropBoxH" (input)="cropBoxH = Number($any($event.target).value); updateCropBox()" class="range-slider" />
-                </div>
-              </div>
-
-              <button mat-flat-button color="accent" (click)="performCrop()" class="crop-apply-btn">
-                <mat-icon>crop</mat-icon> Crop & Legibility Lock
-              </button>
-            </mat-card-content>
-          </mat-card>
+          <div class="crop-actions-row">
+            <button class="btn-crop-cancel" (click)="clearSelectedFile()">
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Reset</span>
+            </button>
+            <button class="btn-crop-apply" (click)="performCrop()">
+              <span class="material-symbols-outlined">crop</span>
+              <span>Crop & Inspect</span>
+            </button>
+          </div>
         </div>
 
-        <!-- 3. Cropped Verified State -->
-        <div class="cropped-locked-workspace animated-fade-in" *ngIf="selectedFile && isCropped && !isCameraActive">
-          <mat-card class="preview-result-card">
-            <mat-card-header class="preview-header">
-              <mat-card-title class="preview-title">Legibility & Borders Verification</mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="preview-content">
-              <div class="preview-img-container">
-                <img [src]="croppedPreviewSrc" class="cropped-preview-img" />
-              </div>
-              
-              <div class="verification-checks-list">
-                <div class="check-item">
-                  <mat-icon class="verified-icon">check_circle</mat-icon>
-                  <span>Document text is clear and readable</span>
-                </div>
-                <div class="check-item">
-                  <mat-icon class="verified-icon">check_circle</mat-icon>
-                  <span>All borders and edges are visible</span>
-                </div>
-                <div class="check-item">
-                  <mat-icon class="verified-icon">check_circle</mat-icon>
-                  <span>No shadows or glare block information</span>
-                </div>
-              </div>
+        <!-- STATE 4: Cropped & Verified Preview -->
+        <div class="preview-result-card animated-fade-in" *ngIf="selectedFile && isCropped && !isCameraActive">
+          <div class="result-header">
+            <span class="material-symbols-outlined check-icon">verified</span>
+            <div class="result-header-text">
+              <span class="result-title">Ready for Verification</span>
+              <span class="result-sub">Review your document before final submission</span>
+            </div>
+          </div>
 
-              <div class="change-file-row">
-                <button mat-stroked-button color="warn" (click)="clearSelectedFile()" class="reset-btn">
-                  <mat-icon>refresh</mat-icon> Retake / Reset Photo
-                </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
+          <!-- Image Preview -->
+          <div class="cropped-image-view">
+            <img [src]="croppedPreviewSrc" alt="Cropped Document" class="result-img" />
+          </div>
+
+          <!-- Quality Verification Checklist -->
+          <div class="quality-checklist">
+            <div class="quality-item">
+              <span class="material-symbols-outlined quality-icon">check_circle</span>
+              <span>All 4 document borders are contained</span>
+            </div>
+            <div class="quality-item">
+              <span class="material-symbols-outlined quality-icon">check_circle</span>
+              <span>Certificate text & dates are sharp</span>
+            </div>
+            <div class="quality-item">
+              <span class="material-symbols-outlined quality-icon">check_circle</span>
+              <span>No harsh reflections or shadows</span>
+            </div>
+          </div>
+
+          <button class="btn-retake" (click)="clearSelectedFile()">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Retake / Choose Another Photo</span>
+          </button>
         </div>
 
-        <!-- Upload Progress Indicator -->
-        <div class="progress-container" *ngIf="uploadProgress > 0 && uploadProgress < 100">
-          <div class="progress-bar-wrapper">
+        <!-- 4. Upload Progress Bar (during submission) -->
+        <div class="upload-progress-box animated-fade-in" *ngIf="uploadProgress > 0 && uploadProgress < 100">
+          <div class="progress-bar-track">
             <div class="progress-bar-fill" [style.width.%]="uploadProgress"></div>
           </div>
-          <span class="progress-text">Uploading File... {{ uploadProgress }}%</span>
+          <div class="progress-labels">
+            <span>Uploading Document...</span>
+            <span class="progress-pct">{{ uploadProgress }}%</span>
+          </div>
         </div>
+
       </main>
 
-      <!-- Submit Footer -->
-      <footer class="footer-actions">
+      <!-- 5. Sticky Bottom Action Footer -->
+      <footer class="upload-footer">
         <button 
-          mat-raised-button 
-          color="primary" 
-          class="submit-btn" 
+          class="btn-submit-upload"
           [disabled]="!croppedFile || isSubmitting"
           (click)="submitDocument()"
         >
-          <span class="material-symbols-outlined btn-icon" *ngIf="!isSubmitting">check_circle</span>
-          {{ isSubmitting ? 'Submitting File...' : 'Submit for Approval' }}
+          <span class="material-symbols-outlined" *ngIf="!isSubmitting">cloud_upload</span>
+          <span class="material-symbols-outlined spinning" *ngIf="isSubmitting">refresh</span>
+          <span>{{ isSubmitting ? 'Submitting to Dispatch...' : 'Submit for Verification' }}</span>
         </button>
       </footer>
     </div>
   `,
   styles: [`
-    .material-container {
-      padding: 16px 16px 88px 16px;
-      background-color: var(--background-color);
+    :host {
+      display: block;
       min-height: 100vh;
-      font-family: 'Roboto', sans-serif;
+      background-color: var(--background-color, #F8F9FA);
+      color: var(--text-primary, #263238);
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .upload-container {
+      padding: 12px 14px 80px 14px;
+      max-width: 580px;
+      margin: 0 auto;
       box-sizing: border-box;
     }
 
-    /* Header Nav */
-    .nav-header {
+    /* 1. Header Bar */
+    .upload-header {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
-    .back-btn {
-      color: var(--text-primary);
+    .back-nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #1E293B;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
-    .nav-title {
-      font-size: 18px;
-      font-weight: 900;
-      color: var(--text-primary);
-      letter-spacing: 0.15px;
+    .back-nav-btn .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .header-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .header-main-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0F172A;
+      letter-spacing: -0.2px;
+    }
+    .header-sub-title {
+      font-size: 11px;
+      color: #64748B;
     }
 
-    /* Doc Info Card */
-    .doc-info-card {
-      border: 1px solid rgba(0, 0, 0, 0.025);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.01) !important;
-      border-radius: 16px !important;
-      background-color: var(--surface-color);
-      margin-bottom: 20px;
-    }
-    .info-content {
+    /* 2. Document Info Card */
+    .doc-badge-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
       display: flex;
       align-items: flex-start;
-      gap: 14px;
-      padding: 18px 20px !important;
+      gap: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
-    .doc-card-icon {
-      font-size: 32px;
-      color: var(--primary-color);
+    .badge-icon-box {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #FEE2E2;
+      color: #DC2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
-    .doc-details {
-      flex: 1;
+    .badge-icon-box .material-symbols-outlined {
+      font-size: 20px;
     }
-    .doc-name {
-      margin: 0 0 6px 0;
-      font-size: 15px;
-      font-weight: 900;
-      color: var(--text-primary);
+    .badge-text-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
-    .doc-helper {
+    .badge-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #DC2626;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .badge-hint {
+      font-size: 10.5px;
+      color: #64748B;
+      line-height: 1.35;
+    }
+
+    /* 3. Selection Card */
+    .selection-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+    .drop-zone {
+      border: 2px dashed #CBD5E1;
+      border-radius: 12px;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      background: #F8FAFC;
+      transition: all 0.2s ease;
+      margin-bottom: 12px;
+    }
+    .drop-zone.dragover, .drop-zone:hover {
+      border-color: #CD1A21;
+      background: #FFF5F5;
+    }
+    .drop-icon-wrapper {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #FEE2E2;
+      color: #DC2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .drop-icon-wrapper .material-symbols-outlined {
+      font-size: 26px;
+    }
+    .drop-title {
+      margin: 0 0 2px 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .drop-sub {
+      margin: 0 0 4px 0;
+      font-size: 11px;
+      color: #64748B;
+    }
+    .drop-formats {
+      font-size: 10px;
+      color: #94A3B8;
+      font-weight: 500;
+    }
+
+    .action-buttons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .btn-file-select, .btn-camera-launch {
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-file-select {
+      background: #F1F5F9;
+      color: #1E293B;
+    }
+    .btn-camera-launch {
+      background: #CD1A21;
+      color: #FFFFFF;
+      border-color: #CD1A21;
+    }
+    .btn-file-select .material-symbols-outlined,
+    .btn-camera-launch .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    .guidelines-box {
+      background: #F8FAFC;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid #E2E8F0;
+    }
+    .guidelines-head {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .guidelines-head .material-symbols-outlined {
+      font-size: 14px;
+      color: #CD1A21;
+    }
+    .guidelines-list {
       margin: 0;
-      font-size: 11.5px;
-      color: var(--text-secondary);
+      padding-left: 16px;
+      font-size: 10.5px;
+      color: #64748B;
       line-height: 1.5;
     }
 
-    /* Upload & Cropping Section */
-    .upload-section {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* Animation */
-    .animated-fade-in {
-      animation: fadeIn 0.25s ease-in-out forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Selection Card */
-    .action-card {
-      border: 1px solid rgba(0, 0, 0, 0.025);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.01) !important;
-      border-radius: 16px !important;
-      background-color: var(--surface-color);
-      text-align: center;
-      padding: 48px 24px !important;
-    }
-    .camera-main-icon {
-      font-size: 56px;
-      color: #CFD8DC;
-      margin-bottom: 16px;
-    }
-    .select-helper-text {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin-bottom: 28px;
-      line-height: 1.6;
-    }
-    .select-action-btn {
-      height: 48px;
-      background-color: #37474F !important;
-      color: #FFFFFF !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      padding: 0 24px !important;
-      box-shadow: 0 4px 12px rgba(55, 71, 79, 0.15) !important;
-      transition: all 0.2s ease !important;
-    }
-    .select-action-btn:hover {
-      background-color: #263238 !important;
-      transform: translateY(-1px);
-    }
-    .camera-action-btn {
-      height: 48px;
-      background-color: var(--primary-color) !important;
-      color: #FFFFFF !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      padding: 0 24px !important;
-      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.15) !important;
-      transition: all 0.2s ease !important;
-    }
-    .camera-action-btn:hover {
-      background-color: var(--primary-dark) !important;
-      transform: translateY(-1px);
-    }
-
-    /* Cropping Workspace */
-    .crop-container-outer {
-      background-color: #1A1A1A;
-      border-radius: 12px;
+    /* Live Camera HUD */
+    .camera-card {
+      background: #000000;
+      border-radius: 16px;
       overflow: hidden;
-      margin-bottom: 16px;
-      border: 1px solid var(--border-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
-    .crop-container {
-      position: relative;
-      overflow: hidden;
-      width: 100%;
-      max-width: 320px;
-      height: 280px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #000;
-    }
-    .crop-image {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      user-select: none;
-      pointer-events: none;
-      transition: transform 0.2s ease-in-out;
-    }
-    .crop-overlay-box {
-      position: absolute;
-      border: 2px dashed var(--primary-color);
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
-      cursor: move;
-      box-sizing: border-box;
-      touch-action: none;
-    }
-    
-    /* Resize handles in the corners */
-    .resize-handle {
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      background-color: var(--primary-color);
-      border: 2px solid #FFFFFF;
-      border-radius: 50%;
-      box-sizing: border-box;
-    }
-    .resize-handle.top-left { top: -8px; left: -8px; cursor: nwse-resize; }
-    .resize-handle.top-right { top: -8px; right: -8px; cursor: nesw-resize; }
-    .resize-handle.bottom-left { bottom: -8px; left: -8px; cursor: nesw-resize; }
-    .resize-handle.bottom-right { bottom: -8px; right: -8px; cursor: nwse-resize; }
-
-    /* Adjusters Card */
-    .adjusters-card {
-      border: 1px solid var(--border-color);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-      border-radius: 12px !important;
-      background-color: var(--surface-color);
-      margin-bottom: 16px;
-    }
-    .adjusters-content {
-      padding: 16px !important;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .controls-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-    }
-    .controls-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .rotate-btn {
-      font-weight: 850;
-      color: var(--primary-color);
-      font-size: 12px;
-    }
-    .sliders-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .slider-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .slider-lbl {
-      width: 48px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-    }
-    .range-slider {
-      flex: 1;
-      height: 6px;
-      border-radius: 3px;
-      outline: none;
-      accent-color: var(--primary-color);
-    }
-    .crop-apply-btn {
-      width: 100%;
-      height: 44px;
-      background-color: var(--primary-color) !important;
-      color: #FFFFFF !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      margin-top: 8px;
-    }
-
-    /* Verified Preview Card */
-    .preview-result-card {
-      border: 1px solid var(--border-color);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-      border-radius: 12px !important;
-      background-color: var(--surface-color);
-      margin-bottom: 16px;
-    }
-    .preview-header {
-      padding: 14px 16px 8px 16px !important;
-    }
-    .preview-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .preview-content {
-      padding: 0 16px 16px 16px !important;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .preview-img-container {
-      background-color: #F8F9FA;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      max-height: 200px;
-    }
-    .cropped-preview-img {
-      max-width: 100%;
-      max-height: 200px;
-      object-fit: contain;
-    }
-    .verification-checks-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background-color: rgba(76, 175, 80, 0.03);
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(76, 175, 80, 0.1);
-    }
-    .check-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      color: #2E7D32;
-    }
-    .verified-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #4CAF50;
-    }
-    .change-file-row {
-      display: flex;
-      justify-content: center;
-    }
-    .reset-btn {
-      font-size: 12px !important;
-      font-weight: 800 !important;
-      border-radius: 12px !important;
-      border-color: #ECEFF1 !important;
-      color: #546E7A !important;
-    }
-
-    /* Progress bar */
-    .progress-container {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 0 4px;
-    }
-    .progress-bar-wrapper {
-      height: 4px;
-      background-color: var(--border-color);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background-color: var(--primary-color);
-      transition: width 0.1s ease;
-    }
-    .progress-text {
-      font-size: 10px;
-      color: var(--text-secondary);
-      font-weight: 700;
-    }
-
-    /* Fixed Submit Footer */
-    .footer-actions {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 16px;
-      background-color: var(--background-color);
-      border-top: 1px solid var(--border-color);
-      z-index: 100;
-    }
-    .submit-btn {
-      width: 100%;
-      height: 50px;
-      background-color: var(--primary-color) !important;
-      color: #FFFFFF !important;
-      border-radius: 14px !important;
-      font-size: 15px !important;
-      font-weight: 800 !important;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 18px rgba(229, 57, 53, 0.2) !important;
-      transition: all 0.25s ease !important;
-    }
-    .submit-btn:disabled {
-      background-color: #ECEFF1 !important;
-      color: #90A4AE !important;
-      box-shadow: none !important;
-    }
-    .btn-icon {
-      font-size: 20px;
-    }
-
-    /* Camera Workspace Styles */
-    .camera-workspace {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .camera-player-outer {
-      background-color: #000000;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .camera-player-container {
+    .camera-viewport-wrapper {
       position: relative;
       width: 100%;
-      max-width: 320px;
-      height: 280px;
+      height: 360px;
       overflow: hidden;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      background: #000000;
     }
     .camera-video {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-    .camera-guide-overlay {
+    .camera-hud-overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hud-corner {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-color: #10B981;
+      border-style: solid;
+    }
+    .hud-corner.top-left { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 8px; }
+    .hud-corner.top-right { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 8px; }
+    .hud-corner.bottom-left { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 8px; }
+    .hud-corner.bottom-right { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 8px; }
+    .hud-instruction {
+      background: rgba(0, 0, 0, 0.65);
+      color: #FFFFFF;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      position: absolute;
+      bottom: 10px;
+    }
+
+    .camera-controls-bar {
+      padding: 14px 20px;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .btn-cam-cancel {
+      background: transparent;
+      border: 1px solid #374151;
+      color: #E5E7EB;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .btn-cam-shutter {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 3px solid #E5E7EB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.3);
+    }
+    .shutter-inner {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #CD1A21;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Cropping Viewport */
+    .cropping-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+    .crop-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .crop-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .rotate-tool-btn {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .rotate-tool-btn .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    .crop-viewport-outer {
+      background: #0F172A;
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .crop-viewport {
+      position: relative;
+      max-width: 100%;
+      max-height: 280px;
+      display: inline-block;
+      overflow: hidden;
+    }
+    .crop-base-img {
+      max-width: 100%;
+      max-height: 280px;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+    .crop-box-rect {
+      position: absolute;
+      border: 2px solid #38BDF8;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+      cursor: move;
+      touch-action: none;
+    }
+    .resize-handle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #38BDF8;
+      border: 2px solid #FFFFFF;
+      border-radius: 50%;
+    }
+    .resize-handle.tl { top: -7px; left: -7px; cursor: nwse-resize; }
+    .resize-handle.tr { top: -7px; right: -7px; cursor: nesw-resize; }
+    .resize-handle.bl { bottom: -7px; left: -7px; cursor: nesw-resize; }
+    .resize-handle.br { bottom: -7px; right: -7px; cursor: nwse-resize; }
+
+    .crop-sliders-box {
+      background: #F8FAFC;
+      border-radius: 8px;
+      padding: 8px 10px;
+      border: 1px solid #E2E8F0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      pointer-events: none;
+      gap: 6px;
+      margin-bottom: 10px;
     }
-    .guide-box {
-      width: 85%;
-      height: 65%;
-      border: 2px dashed rgba(255, 255, 255, 0.65);
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slider-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #64748B;
+      width: 65px;
+      flex-shrink: 0;
+    }
+    .range-input {
+      flex: 1;
+      accent-color: #CD1A21;
+    }
+
+    .crop-actions-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .btn-crop-cancel {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      padding: 8px 14px;
       border-radius: 8px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-    }
-    .guide-text {
-      position: absolute;
-      bottom: 12px;
-      font-size: 11px;
-      color: #FFFFFF;
-      background-color: rgba(0, 0, 0, 0.6);
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-    }
-    .camera-controls-row {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
       display: flex;
-      justify-content: space-around;
       align-items: center;
-      margin-top: 8px;
+      gap: 4px;
+      cursor: pointer;
     }
-    .cam-cancel-btn {
-      height: 44px;
-      border-radius: 8px !important;
-      font-weight: 700 !important;
-      padding: 0 16px !important;
+    .btn-crop-apply {
+      background: #10B981;
+      color: #FFFFFF;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
     }
-    .cam-shutter-btn {
-      width: 60px;
-      height: 60px;
-      background-color: #E53935 !important;
-      color: #FFFFFF !important;
+
+    /* Preview Result Card */
+    .preview-result-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .check-icon {
+      font-size: 22px;
+      color: #10B981;
+    }
+    .result-header-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .result-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .result-sub {
+      font-size: 10.5px;
+      color: #64748B;
+    }
+    .cropped-image-view {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 6px;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .result-img {
+      max-width: 100%;
+      max-height: 240px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .quality-checklist {
+      background: #F8FAFC;
+      border-radius: 8px;
+      padding: 8px 10px;
+      border: 1px solid #E2E8F0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .quality-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #334155;
+    }
+    .quality-icon {
+      font-size: 14px;
+      color: #10B981;
+    }
+    .btn-retake {
+      width: 100%;
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50% !important;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    /* Upload Progress Box */
+    .upload-progress-box {
+      margin-top: 12px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .progress-bar-track {
+      width: 100%;
+      height: 6px;
+      background: #E2E8F0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #CD1A21, #EF4444);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #475569;
+      font-weight: 600;
+    }
+    .progress-pct {
+      color: #CD1A21;
+    }
+
+    /* Sticky Bottom Footer */
+    .upload-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 16px 14px 16px;
+      background: #FFFFFF;
+      border-top: 1px solid #E2E8F0;
+      box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: center;
+      z-index: 100;
+    }
+    .btn-submit-upload {
+      max-width: 580px;
+      width: 100%;
+      background: linear-gradient(135deg, #CD1A21 0%, #B71C1C 100%);
+      color: #FFFFFF;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.25);
+      transition: opacity 0.15s ease;
+    }
+    .btn-submit-upload:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .spinning {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .animated-fade-in {
+      animation: fadeIn 0.25s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Dark Mode Support */
+    :host-context(.dark-theme) {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .upload-footer {
+      background: #1E1E24;
+      border-top-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .back-nav-btn {
+      background: #1E1E24;
+      border-color: #2D2D35;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .header-main-title {
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .doc-badge-card,
+    :host-context(.dark-theme) .selection-card,
+    :host-context(.dark-theme) .cropping-card,
+    :host-context(.dark-theme) .preview-result-card,
+    :host-context(.dark-theme) .upload-progress-box {
+      background: #1E1E24;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .badge-title,
+    :host-context(.dark-theme) .drop-title,
+    :host-context(.dark-theme) .crop-title,
+    :host-context(.dark-theme) .result-title {
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .drop-zone {
+      background: #16161A;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .btn-file-select,
+    :host-context(.dark-theme) .guidelines-box,
+    :host-context(.dark-theme) .crop-sliders-box,
+    :host-context(.dark-theme) .cropped-image-view,
+    :host-context(.dark-theme) .quality-checklist,
+    :host-context(.dark-theme) .btn-retake {
+      background: #16161A;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .btn-file-select,
+    :host-context(.dark-theme) .rotate-tool-btn,
+    :host-context(.dark-theme) .btn-crop-cancel {
+      background: #2D2D35;
+      color: #ECEFF1;
+      border-color: #3E3E48;
     }
   `]
 })
 export class DocumentUploadComponent implements OnInit, OnDestroy {
-  @ViewChild('cropImg') cropImg!: ElementRef<HTMLImageElement>;
-  @ViewChild('cropContainer') cropContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
+  @ViewChild('cropContainer') cropContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('cropImg') cropImg!: ElementRef<HTMLImageElement>;
 
-  Number = Number;
-  docName = 'Hackney Carriage / PHV License';
   docType = 0;
+  docName = 'Document';
+
   selectedFile: File | null = null;
-  uploadProgress = 0;
-  isSubmitting = false;
-
-  // Camera State variables
-  isCameraActive = false;
-  cameraStream: MediaStream | null = null;
-
-  // Cropper State variables
   imageSrc: string | null = null;
   croppedPreviewSrc: string | null = null;
   croppedFile: File | null = null;
-  isCropped = false;
-  rotationAngle = 0;
 
-  // Crop overlay box position & dimension (in %)
+  isCameraActive = false;
+  mediaStream: MediaStream | null = null;
+
+  isCropped = false;
+  isSubmitting = false;
+  uploadProgress = 0;
+  isDragging = false;
+
+  // Cropping variables
   cropBoxX = 10;
   cropBoxY = 10;
   cropBoxW = 80;
   cropBoxH = 80;
+  rotationAngle = 0;
 
-  // Drag & Resize mouse tracking
+  isDraggingBox = false;
+  isResizing = false;
+  resizeHandleType = '';
   dragStartMouseX = 0;
   dragStartMouseY = 0;
   dragStartBoxX = 0;
   dragStartBoxY = 0;
   dragStartBoxW = 0;
   dragStartBoxH = 0;
-  isDragging = false;
-  isResizing = false;
-  resizeHandleType = '';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private snackBar: MatSnackBar,
     private driverService: DriverService,
+    private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      if (params['name']) {
-        this.docName = params['name'];
-      }
-      if (params['type'] !== undefined) {
-        this.docType = Number(params['type']);
-      }
+      this.docType = Number(params['type']) || 0;
+      this.docName = params['name'] || 'Document';
     });
   }
 
+  ngOnDestroy(): void {
+    this.stopCamera();
+  }
+
   goBack(): void {
+    this.stopCamera();
     this.router.navigate(['/profile']);
   }
 
   triggerFileSelect(): void {
-    if (this.fileInput) {
-      this.fileInput.nativeElement.click();
-    }
-  }
-
-  startCamera(): void {
-    this.isCameraActive = true;
-    this.selectedFile = null;
-    this.imageSrc = null;
-    this.croppedFile = null;
-    this.isCropped = false;
-    this.cdr.detectChanges();
-
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    }).then(stream => {
-      this.cameraStream = stream;
-      if (this.videoElement) {
-        this.videoElement.nativeElement.srcObject = stream;
-      }
-      this.cdr.detectChanges();
-    }).catch(err => {
-      console.error('[Camera] Access failed:', err);
-      this.isCameraActive = false;
-      this.snackBar.open('Failed to access device camera. Please check permissions or select an image file instead.', 'Dismiss', {
-        duration: 5000
-      });
-      this.cdr.detectChanges();
-    });
-  }
-
-  capturePhoto(): void {
-    if (!this.cameraStream || !this.videoElement) return;
-    const video = this.videoElement.nativeElement;
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      this.imageSrc = dataUrl;
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const timestamp = new Date().getTime();
-          this.selectedFile = new File([blob], `camera_scan_${timestamp}.jpg`, { type: 'image/jpeg' });
-          this.isCropped = false;
-          this.croppedFile = null;
-          this.isCameraActive = false;
-          this.stopCameraStream();
-          
-          this.cropBoxX = 15;
-          this.cropBoxY = 15;
-          this.cropBoxW = 70;
-          this.cropBoxH = 70;
-          this.cdr.detectChanges();
-        }
-      }, 'image/jpeg', 0.95);
-    }
-  }
-
-  stopCamera(): void {
-    this.isCameraActive = false;
-    this.stopCameraStream();
-    this.cdr.detectChanges();
-  }
-
-  private stopCameraStream(): void {
-    if (this.cameraStream) {
-      this.cameraStream.getTracks().forEach(track => track.stop());
-      this.cameraStream = null;
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.stopCameraStream();
+    this.fileInput.nativeElement.click();
   }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
+    if (input.files && input.files[0]) {
       this.handleFile(input.files[0]);
     }
   }
 
-  handleFile(file: File): void {
-    if (file.size > 10 * 1024 * 1024) {
-      this.snackBar.open('File size exceeds the 10MB limit.', 'Dismiss', {
-        duration: 3000
-      });
-      return;
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging = true;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging = false;
+  }
+
+  onFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging = false;
+    if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
+      this.handleFile(event.dataTransfer.files[0]);
     }
-    
+  }
+
+  handleFile(file: File): void {
     this.selectedFile = file;
     this.isCropped = false;
-    this.croppedFile = null;
-    this.croppedPreviewSrc = null;
     this.rotationAngle = 0;
-    this.cropBoxX = 15;
-    this.cropBoxY = 15;
-    this.cropBoxW = 70;
-    this.cropBoxH = 70;
-
-    // Load file as base64 dataUrl for cropper
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       this.imageSrc = e.target?.result as string;
@@ -844,8 +1042,60 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
   }
 
+  startCamera(): void {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      }).then(stream => {
+        this.mediaStream = stream;
+        this.isCameraActive = true;
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          if (this.videoElement) {
+            this.videoElement.nativeElement.srcObject = stream;
+          }
+        }, 100);
+      }).catch(err => {
+        console.error('Camera access error:', err);
+        this.snackBar.open('Unable to access device camera. Please check camera permissions.', 'Dismiss', {
+          duration: 3500
+        });
+      });
+    }
+  }
+
+  stopCamera(): void {
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+    this.isCameraActive = false;
+  }
+
+  capturePhoto(): void {
+    if (!this.videoElement) return;
+    const video = this.videoElement.nativeElement;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `document_capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          this.stopCamera();
+          this.handleFile(file);
+        }
+      }, 'image/jpeg', 0.92);
+    }
+  }
+
   onImageLoaded(): void {
-    console.log('[Cropper] Original Image loaded successfully');
+    this.cropBoxX = 10;
+    this.cropBoxY = 10;
+    this.cropBoxW = 80;
+    this.cropBoxH = 80;
     this.cdr.detectChanges();
   }
 
@@ -854,19 +1104,31 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  onCropWidthChange(event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    if (!isNaN(val)) {
+      this.cropBoxW = val;
+      this.updateCropBox();
+    }
+  }
+
+  onCropHeightChange(event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    if (!isNaN(val)) {
+      this.cropBoxH = val;
+      this.updateCropBox();
+    }
+  }
+
   updateCropBox(): void {
-    if (this.cropBoxX + this.cropBoxW > 100) {
-      this.cropBoxX = 100 - this.cropBoxW;
-    }
-    if (this.cropBoxY + this.cropBoxH > 100) {
-      this.cropBoxY = 100 - this.cropBoxH;
-    }
+    if (this.cropBoxX + this.cropBoxW > 100) this.cropBoxX = 100 - this.cropBoxW;
+    if (this.cropBoxY + this.cropBoxH > 100) this.cropBoxY = 100 - this.cropBoxH;
     this.cdr.detectChanges();
   }
 
   onDragStart(event: MouseEvent | TouchEvent): void {
     event.preventDefault();
-    this.isDragging = true;
+    this.isDraggingBox = true;
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
     const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
     this.dragStartMouseX = clientX;
@@ -875,27 +1137,25 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     this.dragStartBoxY = this.cropBoxY;
 
     const moveListener = (moveEvent: MouseEvent | TouchEvent) => {
-      if (!this.isDragging) return;
+      if (!this.isDraggingBox) return;
       const mX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
       const mY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
       const dx = ((mX - this.dragStartMouseX) / this.cropContainer.nativeElement.clientWidth) * 100;
       const dy = ((mY - this.dragStartMouseY) / this.cropContainer.nativeElement.clientHeight) * 100;
-      
-      let nextX = this.dragStartBoxX + dx;
-      let nextY = this.dragStartBoxY + dy;
 
-      if (nextX < 0) nextX = 0;
-      if (nextY < 0) nextY = 0;
-      if (nextX + this.cropBoxW > 100) nextX = 100 - this.cropBoxW;
-      if (nextY + this.cropBoxH > 100) nextY = 100 - this.cropBoxH;
+      let newX = this.dragStartBoxX + dx;
+      let newY = this.dragStartBoxY + dy;
 
-      this.cropBoxX = Math.round(nextX);
-      this.cropBoxY = Math.round(nextY);
+      newX = Math.max(0, Math.min(100 - this.cropBoxW, newX));
+      newY = Math.max(0, Math.min(100 - this.cropBoxH, newY));
+
+      this.cropBoxX = Math.round(newX);
+      this.cropBoxY = Math.round(newY);
       this.cdr.detectChanges();
     };
 
     const upListener = () => {
-      this.isDragging = false;
+      this.isDraggingBox = false;
       window.removeEventListener('mousemove', moveListener);
       window.removeEventListener('mouseup', upListener);
       window.removeEventListener('touchmove', moveListener);
@@ -991,7 +1251,6 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Build the rotated intermediate canvas
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     if (!tempCtx) return;
@@ -1010,7 +1269,6 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     tempCtx.rotate((angle * Math.PI) / 180);
     tempCtx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
-    // Calculate crop window boundaries based on percentages
     const x = (this.cropBoxX / 100) * tempCanvas.width;
     const y = (this.cropBoxY / 100) * tempCanvas.height;
     const w = (this.cropBoxW / 100) * tempCanvas.width;
@@ -1020,16 +1278,14 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     canvas.height = h;
     ctx.drawImage(tempCanvas, x, y, w, h, 0, 0, w, h);
 
-    // Draw preview
     this.croppedPreviewSrc = canvas.toDataURL('image/jpeg', 0.9);
 
-    // Output File blob
     canvas.toBlob((blob) => {
       if (blob) {
         this.croppedFile = new File([blob], this.selectedFile!.name, { type: 'image/jpeg' });
         this.isCropped = true;
         this.cdr.detectChanges();
-        this.snackBar.open('Document cropped & locked successfully!', 'Dismiss', {
+        this.snackBar.open('Document cropped successfully!', 'Dismiss', {
           duration: 2000
         });
       }
@@ -1078,7 +1334,6 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         this.uploadProgress = 100;
         
-        // Save pending status locally to display instant feedback in profile listing
         try {
           localStorage.setItem('pending_upload_' + this.docType, 'true');
         } catch (e) {
@@ -1086,12 +1341,12 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
         }
 
         this.snackBar.open('Document uploaded for verification successfully!', 'Dismiss', {
-          duration: 3000
+          duration: 2500
         });
         
         setTimeout(() => {
           this.router.navigate(['/profile']);
-        }, 1500);
+        }, 1200);
       }
     });
   }

@@ -65,12 +65,7 @@ export interface DriverDoc {
           <div class="skeleton-hero-lines">
             <div class="skeleton-line title"></div>
             <div class="skeleton-line subtitle"></div>
-            <div class="skeleton-line pill"></div>
           </div>
-        </div>
-
-        <div class="skeleton-metrics-row">
-          <div class="skeleton-metric-card" *ngFor="let i of [1, 2, 3]"></div>
         </div>
 
         <div class="skeleton-card" *ngFor="let i of [1, 2]">
@@ -82,123 +77,50 @@ export interface DriverDoc {
       <!-- Loaded Profile Content -->
       <div *ngIf="!isLoading" class="profile-content animated-fade-in">
         
-        <!-- 1. Executive Driver Identity Hero Card -->
+        <!-- 1. Real Driver Identity Hero Card -->
         <div class="hero-profile-card">
-          <!-- Subtle dynamic ambient glow -->
-          <div class="hero-ambient-glow" [style.background]="getAmbientGlowStyle()"></div>
-          
           <div class="hero-inner">
             <div class="hero-top-row">
-              <!-- Driver Avatar with Verified Ring -->
+              <!-- Driver Avatar Circle -->
               <div class="avatar-wrapper">
-                <div class="avatar-ring" [style.border-color]="getAccentColor()">
-                  <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : '#CD1A21'">
-                    <span class="avatar-initials">{{ getInitials() }}</span>
-                  </div>
-                </div>
-                <div class="online-status-badge" title="Active on Fleet">
-                  <span class="pulse-dot"></span>
+                <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : '#CD1A21'">
+                  <span class="avatar-initials">{{ getInitials() }}</span>
                 </div>
               </div>
 
-              <!-- Driver Name & Official Status -->
+              <!-- Driver Real Identity Info -->
               <div class="driver-identity-info">
-                <div class="name-with-badge">
-                  <h1 class="driver-name">{{ driverName }}</h1>
-                  <span class="verified-icon-badge" title="Verified Driver Partner">
-                    <span class="material-symbols-outlined">verified</span>
-                  </span>
-                </div>
-
+                <h1 class="driver-name">{{ driverName }}</h1>
                 <div class="role-and-id-row">
-                  <span class="badge-pill role-badge">
-                    <span class="material-symbols-outlined pill-icon">local_taxi</span>
-                    <span>Official Partner Driver</span>
+                  <span class="badge-pill id-badge" *ngIf="driverId">
+                    <span>ID: #DRV-{{ driverId }}</span>
                   </span>
-                  <span class="badge-pill id-badge">
-                    <span>ID: {{ getFormattedDriverId() }}</span>
+                  <span class="badge-pill active-badge">
+                    <span class="pulse-dot-inline"></span>
+                    <span>Driver Account</span>
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- Hero Meta Bar: Rating, Trips, and Last Login -->
-            <div class="hero-meta-bar">
-              <div class="meta-item rating">
-                <span class="material-symbols-outlined star-icon">star</span>
-                <span class="meta-bold">4.98</span>
-                <span class="meta-sub">(1,420+ trips)</span>
-              </div>
-              <div class="meta-divider"></div>
-              <div class="meta-item fleet">
-                <span class="material-symbols-outlined meta-icon">hub</span>
-                <span class="meta-text">Red Taxis Network</span>
-              </div>
-              <div class="meta-divider" *ngIf="lastLogin"></div>
-              <div class="meta-item login-time" *ngIf="lastLogin">
+            <!-- Last Login Timestamp (if available from API) -->
+            <div class="hero-meta-bar" *ngIf="lastLogin">
+              <div class="meta-item">
                 <span class="material-symbols-outlined meta-icon">schedule</span>
-                <span class="meta-text">Active {{ lastLogin | date:'d MMM, HH:mm' }}</span>
+                <span class="meta-text">Last Login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 2. Executive 3-Column Telemetry Metrics Grid -->
-        <div class="telemetry-grid">
-          <!-- Compliance Status -->
-          <div class="telemetry-card" (click)="scrollToCompliance()">
-            <div class="telemetry-icon-wrapper" [ngClass]="getComplianceStatusClass()">
-              <span class="material-symbols-outlined">{{ getComplianceIcon() }}</span>
-            </div>
-            <div class="telemetry-info">
-              <span class="telemetry-label">Compliance</span>
-              <span class="telemetry-value">{{ getVerifiedCount() }}/{{ documents.length }} Verified</span>
-              <div class="telemetry-progress-track">
-                <div 
-                  class="telemetry-progress-fill" 
-                  [ngClass]="getComplianceStatusClass()"
-                  [style.width.%]="getCompliancePercentage()"
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Assigned Vehicle -->
-          <div class="telemetry-card">
-            <div class="telemetry-icon-wrapper blue">
-              <span class="material-symbols-outlined">directions_car</span>
-            </div>
-            <div class="telemetry-info">
-              <span class="telemetry-label">Assigned Vehicle</span>
-              <span class="telemetry-value text-ellipsis">{{ vehicleModel === 'No Vehicle Registered' ? 'Unassigned' : vehicleModel }}</span>
-              <span class="telemetry-sub-badge" *ngIf="plateNumber && plateNumber !== 'No Plate'">{{ plateNumber }}</span>
-            </div>
-          </div>
-
-          <!-- Standing & Tier -->
-          <div class="telemetry-card">
-            <div class="telemetry-icon-wrapper amber">
-              <span class="material-symbols-outlined">military_tech</span>
-            </div>
-            <div class="telemetry-info">
-              <span class="telemetry-label">Driver Standing</span>
-              <span class="telemetry-value">Gold • Tier 1</span>
-              <span class="standing-status-pill">Active Good Standing</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Driver Contact & Account Profile Card -->
+        <!-- 2. Driver Contact & Account Information Card -->
         <div class="section-card">
           <div class="section-card-header">
             <div class="section-title-wrapper">
               <div class="section-icon-box red">
-                <span class="material-symbols-outlined">badge</span>
+                <span class="material-symbols-outlined">person</span>
               </div>
-              <div class="section-title-col">
-                <h2 class="section-title">Driver Profile & Credentials</h2>
-                <span class="section-subtitle">Account details registered with dispatch</span>
-              </div>
+              <h2 class="section-title">Driver Details</h2>
             </div>
           </div>
 
@@ -207,7 +129,7 @@ export interface DriverDoc {
               <!-- Full Name -->
               <div class="info-tile">
                 <div class="tile-icon-box">
-                  <span class="material-symbols-outlined">person</span>
+                  <span class="material-symbols-outlined">account_circle</span>
                 </div>
                 <div class="tile-text">
                   <span class="tile-label">Full Name</span>
@@ -216,18 +138,18 @@ export interface DriverDoc {
               </div>
 
               <!-- Driver ID -->
-              <div class="info-tile">
+              <div class="info-tile" *ngIf="driverId">
                 <div class="tile-icon-box">
-                  <span class="material-symbols-outlined">pin</span>
+                  <span class="material-symbols-outlined">badge</span>
                 </div>
                 <div class="tile-text">
-                  <span class="tile-label">Driver Reference</span>
-                  <span class="tile-value font-mono">{{ getFormattedDriverId() }}</span>
+                  <span class="tile-label">Driver ID</span>
+                  <span class="tile-value font-mono">#DRV-{{ driverId }}</span>
                 </div>
               </div>
 
-              <!-- Email Address (with copy) -->
-              <div class="info-tile clickable" (click)="copyToClipboard(driverEmail, 'Email copied')">
+              <!-- Email Address -->
+              <div class="info-tile clickable" (click)="copyToClipboard(driverEmail, 'Email copied to clipboard')">
                 <div class="tile-icon-box">
                   <span class="material-symbols-outlined">mail</span>
                 </div>
@@ -240,13 +162,13 @@ export interface DriverDoc {
                 </button>
               </div>
 
-              <!-- Phone Number (with copy & call) -->
-              <div class="info-tile clickable" (click)="copyToClipboard(driverPhone, 'Phone number copied')">
+              <!-- Phone Number -->
+              <div class="info-tile clickable" (click)="copyToClipboard(driverPhone, 'Phone number copied to clipboard')">
                 <div class="tile-icon-box">
                   <span class="material-symbols-outlined">call</span>
                 </div>
                 <div class="tile-text">
-                  <span class="tile-label">Contact Number</span>
+                  <span class="tile-label">Phone Number</span>
                   <span class="tile-value font-mono">{{ driverPhone }}</span>
                 </div>
                 <button class="tile-action-btn" title="Copy Phone">
@@ -257,213 +179,166 @@ export interface DriverDoc {
           </div>
         </div>
 
-        <!-- 4. Assigned Vehicle Specifications Card -->
+        <!-- 3. Vehicle Details Card -->
         <div class="section-card">
           <div class="section-card-header">
             <div class="section-title-wrapper">
-              <div class="section-icon-box purple">
+              <div class="section-icon-box blue">
                 <span class="material-symbols-outlined">local_taxi</span>
               </div>
-              <div class="section-title-col">
-                <h2 class="section-title">Vehicle Specifications</h2>
-                <span class="section-subtitle">Licensing and physical vehicle attributes</span>
-              </div>
+              <h2 class="section-title">Vehicle Details</h2>
             </div>
           </div>
 
           <div class="section-card-body">
-            <!-- Authentic UK License Plate Showcase -->
-            <div class="license-plate-showcase" *ngIf="plateNumber && plateNumber !== 'No Plate'; else noPlateBox">
-              <div class="uk-number-plate-large">
-                <div class="uk-plate-flag-strip">
-                  <span class="plate-uk-text">UK</span>
+            <!-- Authentic UK License Plate Showcase (if plate is assigned) -->
+            <div class="plate-container" *ngIf="plateNumber && plateNumber !== 'No Plate'; else noPlateBox">
+              <div class="uk-number-plate">
+                <div class="uk-plate-euro">
+                  <span class="plate-uk-txt">UK</span>
                 </div>
-                <span class="uk-plate-digits">{{ plateNumber }}</span>
-              </div>
-              <div class="plate-registered-label">
-                <span class="material-symbols-outlined">check_circle</span>
-                <span>Active Registered Vehicle</span>
+                <span class="uk-plate-num">{{ plateNumber }}</span>
               </div>
             </div>
             
             <ng-template #noPlateBox>
-              <div class="no-vehicle-banner">
-                <span class="material-symbols-outlined">no_crash</span>
-                <span>No vehicle registration plate linked to this account</span>
+              <div class="no-vehicle-notice">
+                <span class="material-symbols-outlined">info</span>
+                <span>No vehicle registration plate linked</span>
               </div>
             </ng-template>
 
             <!-- Vehicle Attribute Grid -->
-            <div class="info-tiles-grid" style="margin-top: 14px;">
+            <div class="info-tiles-grid" style="margin-top: 10px;">
               <!-- Make & Model -->
               <div class="info-tile">
                 <div class="tile-icon-box">
-                  <span class="material-symbols-outlined">commute</span>
+                  <span class="material-symbols-outlined">directions_car</span>
                 </div>
                 <div class="tile-text">
-                  <span class="tile-label">Make & Model</span>
+                  <span class="tile-label">Assigned Vehicle</span>
                   <span class="tile-value" [class.empty-text]="vehicleModel === 'No Vehicle Registered'">{{ vehicleModel }}</span>
                 </div>
               </div>
 
-              <!-- Body Color Swatch -->
+              <!-- System Theme / Color (if set) -->
               <div class="info-tile" *ngIf="colorCode">
                 <div class="tile-icon-box">
                   <span class="material-symbols-outlined">palette</span>
                 </div>
                 <div class="tile-text">
-                  <span class="tile-label">Theme / Color</span>
+                  <span class="tile-label">Theme Color</span>
                   <div class="color-swatch-row">
                     <span class="color-dot" [style.background-color]="colorCode.startsWith('#') ? colorCode : '#' + colorCode"></span>
                     <span class="tile-value font-mono">{{ colorCode }}</span>
                   </div>
                 </div>
               </div>
-
-              <!-- Vehicle Class -->
-              <div class="info-tile">
-                <div class="tile-icon-box">
-                  <span class="material-symbols-outlined">airline_seat_recline_extra</span>
-                </div>
-                <div class="tile-text">
-                  <span class="tile-label">Vehicle Class</span>
-                  <span class="tile-value">Standard PHV / Hackney</span>
-                </div>
-              </div>
-
-              <!-- Fleet Organization -->
-              <div class="info-tile">
-                <div class="tile-icon-box">
-                  <span class="material-symbols-outlined">business</span>
-                </div>
-                <div class="tile-text">
-                  <span class="tile-label">Fleet Operator</span>
-                  <span class="tile-value">Red Taxis Ltd</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        <!-- 5. Compliance Licences & Certifications Hub -->
-        <div class="section-card" id="compliance-section">
-          <div class="section-card-header compliance-header">
+        <!-- 4. High-Density Compact Compliance Documents Hub -->
+        <div class="section-card compliance-section">
+          <!-- Compact Header with Stats & Actions -->
+          <div class="section-card-header compact-head">
             <div class="section-title-wrapper">
               <div class="section-icon-box green">
                 <span class="material-symbols-outlined">verified_user</span>
               </div>
-              <div class="section-title-col">
-                <div class="title-with-badge">
-                  <h2 class="section-title">Compliance Documents</h2>
-                  <span class="compliance-score-chip" [ngClass]="getComplianceStatusClass()">
-                    {{ getCompliancePercentage() }}% Compliant
-                  </span>
-                </div>
-                <span class="section-subtitle">Required council, DVLA and insurance filings</span>
+              <div class="title-and-count">
+                <h2 class="section-title">Compliance Documents</h2>
+                <span class="compact-score-badge" [ngClass]="getComplianceStatusClass()">
+                  {{ getVerifiedCount() }}/{{ documents.length }} Verified
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Overall Compliance Health Bar -->
-          <div class="compliance-overview-bar">
-            <div class="compliance-stats-row">
-              <span class="stats-label">Verification Health</span>
-              <span class="stats-counter">{{ getVerifiedCount() }} of {{ documents.length }} Active</span>
-            </div>
-            <div class="compliance-meter-track">
-              <div 
-                class="compliance-meter-fill"
-                [ngClass]="getComplianceStatusClass()"
-                [style.width.%]="getCompliancePercentage()"
-              ></div>
-            </div>
+          <!-- Slim Progress Track -->
+          <div class="slim-progress-track">
+            <div 
+              class="slim-progress-fill"
+              [ngClass]="getComplianceStatusClass()"
+              [style.width.%]="getCompliancePercentage()"
+            ></div>
           </div>
 
-          <!-- Document Filter Pills -->
-          <div class="doc-filter-pills-row">
+          <!-- Compact Filter Chips -->
+          <div class="compact-filter-bar">
             <button 
-              class="doc-filter-pill"
+              class="compact-chip"
               [class.active]="selectedDocFilter === 'all'"
               (click)="selectedDocFilter = 'all'"
             >
-              <span>All Documents</span>
-              <span class="filter-count">{{ documents.length }}</span>
+              All ({{ documents.length }})
             </button>
             <button 
-              class="doc-filter-pill"
+              class="compact-chip"
               [class.active]="selectedDocFilter === 'action'"
               (click)="selectedDocFilter = 'action'"
             >
-              <span class="status-dot red"></span>
-              <span>Needs Action</span>
-              <span class="filter-count">{{ getActionNeededCount() }}</span>
+              Action Needed ({{ getActionNeededCount() }})
             </button>
             <button 
-              class="doc-filter-pill"
+              class="compact-chip"
               [class.active]="selectedDocFilter === 'verified'"
               (click)="selectedDocFilter = 'verified'"
             >
-              <span class="status-dot green"></span>
-              <span>Verified</span>
-              <span class="filter-count">{{ getVerifiedCount() }}</span>
+              Verified ({{ getVerifiedCount() }})
             </button>
           </div>
 
-          <div class="section-card-body doc-list-body">
-            <div class="documents-list">
-              <div 
-                *ngFor="let doc of getFilteredDocuments()" 
-                (click)="onDocClick(doc)" 
-                class="doc-item-row"
-                [ngClass]="getDocStatusClass(doc.status)"
-              >
-                <!-- Left Accent Border -->
-                <div class="doc-left-accent" [ngClass]="getDocStatusClass(doc.status)"></div>
+          <!-- Tightened High-Density Document Listing -->
+          <div class="compact-doc-list">
+            <div 
+              *ngFor="let doc of getFilteredDocuments()" 
+              (click)="onDocClick(doc)" 
+              class="compact-doc-row"
+              [ngClass]="getDocStatusClass(doc.status)"
+            >
+              <!-- Left Color Indicator Bar -->
+              <div class="doc-color-bar" [ngClass]="getDocStatusClass(doc.status)"></div>
 
-                <!-- Document Icon -->
-                <div class="doc-icon-wrapper" [ngClass]="getDocStatusClass(doc.status)">
-                  <span class="material-symbols-outlined">{{ getDocIcon(doc.status) }}</span>
-                </div>
-
-                <!-- Document Info -->
-                <div class="doc-main-info">
-                  <div class="doc-title-row">
-                    <span class="doc-name">{{ doc.name }}</span>
-                  </div>
-                  <div class="doc-expiry-row">
-                    <span class="material-symbols-outlined expiry-icon">event</span>
-                    <span class="doc-expiry-text">{{ getDocExpiryFormatted(doc) }}</span>
-                  </div>
-                </div>
-
-                <!-- Status Action Chip & Arrow -->
-                <div class="doc-action-col">
-                  <span class="doc-status-badge" [ngClass]="getDocStatusClass(doc.status)">
-                    {{ doc.status }}
-                  </span>
-                  <span class="material-symbols-outlined doc-chevron">chevron_right</span>
-                </div>
+              <!-- Document Icon -->
+              <div class="compact-doc-icon" [ngClass]="getDocStatusClass(doc.status)">
+                <span class="material-symbols-outlined">{{ getDocIcon(doc.status) }}</span>
               </div>
 
-              <!-- Empty Filter State -->
-              <div class="empty-docs-box" *ngIf="getFilteredDocuments().length === 0">
-                <span class="material-symbols-outlined empty-icon">task_alt</span>
-                <span class="empty-title">No documents in this view</span>
-                <span class="empty-sub">All requirements in this category are up to date.</span>
+              <!-- Title & Expiry -->
+              <div class="compact-doc-info">
+                <span class="compact-doc-name">{{ doc.name }}</span>
+                <span class="compact-doc-sub" [ngClass]="getDocStatusClass(doc.status)">
+                  {{ getDocExpiryFormatted(doc) }}
+                </span>
               </div>
+
+              <!-- Status Tag & Action -->
+              <div class="compact-doc-right">
+                <span class="compact-status-tag" [ngClass]="getDocStatusClass(doc.status)">
+                  {{ doc.status }}
+                </span>
+                <span class="material-symbols-outlined row-chevron">chevron_right</span>
+              </div>
+            </div>
+
+            <!-- Empty Filter Message -->
+            <div class="compact-empty-state" *ngIf="getFilteredDocuments().length === 0">
+              <span class="material-symbols-outlined">check_circle</span>
+              <span>No documents require attention in this view.</span>
             </div>
           </div>
         </div>
 
       </div>
 
-      <!-- 6. Document Preview & Inspection Modal -->
+      <!-- 5. Document Preview Modal -->
       <div class="preview-backdrop" *ngIf="isPreviewOpen && previewDoc" (click)="closePreview()">
         <div class="preview-modal-card" (click)="$event.stopPropagation()">
           <header class="preview-header">
             <div class="preview-header-titles">
               <h3 class="preview-title">{{ previewDoc.name }}</h3>
-              <span class="preview-subtitle">Compliance Certificate Inspection</span>
+              <span class="preview-subtitle">Document Inspection</span>
             </div>
             <button class="close-modal-btn" (click)="closePreview()">
               <span class="material-symbols-outlined">close</span>
@@ -473,16 +348,13 @@ export interface DriverDoc {
           <main class="preview-body">
             <!-- Status Badge Row -->
             <div class="preview-status-strip" [ngClass]="getDocStatusClass(previewDoc.status)">
-              <div class="status-strip-left">
-                <span class="material-symbols-outlined status-strip-icon">
-                  {{ getDocIcon(previewDoc.status) }}
-                </span>
-                <div class="status-strip-text">
-                  <span class="status-main-label">Status: {{ previewDoc.status }}</span>
-                  <span class="status-expiry-label">{{ getDocExpiryFormatted(previewDoc) }}</span>
-                </div>
+              <span class="material-symbols-outlined status-strip-icon">
+                {{ getDocIcon(previewDoc.status) }}
+              </span>
+              <div class="status-strip-text">
+                <span class="status-main-label">{{ previewDoc.status }}</span>
+                <span class="status-expiry-label">{{ getDocExpiryFormatted(previewDoc) }}</span>
               </div>
-              <span class="doc-type-tag">Type {{ previewDoc.type }}</span>
             </div>
 
             <!-- Image Viewport -->
@@ -500,18 +372,18 @@ export interface DriverDoc {
               <ng-template #noPreview>
                 <div class="no-preview-placeholder">
                   <span class="material-symbols-outlined placeholder-icon">description</span>
-                  <span class="placeholder-title">Document Pending Review</span>
-                  <span class="placeholder-text">Uploaded certificate is undergoing automated and manual dispatch verification.</span>
+                  <span class="placeholder-title">Document Under Review</span>
+                  <span class="placeholder-text">Uploaded certificate is pending dispatch verification.</span>
                 </div>
               </ng-template>
             </div>
           </main>
           
           <footer class="preview-footer">
-            <button class="btn-cancel" (click)="closePreview()">Dismiss</button>
+            <button class="btn-cancel" (click)="closePreview()">Close</button>
             <button class="btn-primary" (click)="reuploadFromPreview()">
               <span class="material-symbols-outlined">cloud_upload</span>
-              <span>Update / Replace</span>
+              <span>Update Document</span>
             </button>
           </footer>
         </div>
@@ -529,8 +401,8 @@ export interface DriverDoc {
     }
 
     .profile-container {
-      padding: 16px 14px 48px 14px;
-      max-width: 680px;
+      padding: 12px 12px 40px 12px;
+      max-width: 640px;
       margin: 0 auto;
       box-sizing: border-box;
       position: relative;
@@ -541,11 +413,11 @@ export interface DriverDoc {
       position: fixed;
       top: 0;
       left: 50%;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       background: #FFFFFF;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -555,7 +427,7 @@ export interface DriverDoc {
       color: #CD1A21;
     }
     .native-spin-icon {
-      font-size: 24px;
+      font-size: 22px;
       transition: transform 0.1s linear;
     }
     .native-spin-icon.spinning {
@@ -570,31 +442,31 @@ export interface DriverDoc {
     .error-banner {
       background-color: #FEE2E2;
       color: #991B1B;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      border-radius: 12px;
-      font-size: 13px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       border: 1px solid rgba(185, 28, 28, 0.2);
     }
 
     /* Skeleton Loading State */
     .skeleton-hero-card {
       background: #FFFFFF;
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       border: 1px solid #E0E0E0;
     }
     .skeleton-avatar {
-      width: 64px;
-      height: 64px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       background: linear-gradient(90deg, #F0F2F5 25%, #E4E6EB 50%, #F0F2F5 75%);
       background-size: 200% 100%;
@@ -604,44 +476,30 @@ export interface DriverDoc {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
     .skeleton-line {
       background: linear-gradient(90deg, #F0F2F5 25%, #E4E6EB 50%, #F0F2F5 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite linear;
-      border-radius: 6px;
+      border-radius: 4px;
     }
-    .skeleton-line.title { width: 60%; height: 18px; }
-    .skeleton-line.subtitle { width: 40%; height: 12px; }
-    .skeleton-line.pill { width: 30%; height: 20px; border-radius: 10px; }
-    .skeleton-metrics-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .skeleton-metric-card {
-      height: 80px;
-      border-radius: 14px;
-      background: linear-gradient(90deg, #F0F2F5 25%, #E4E6EB 50%, #F0F2F5 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite linear;
-    }
+    .skeleton-line.title { width: 55%; height: 16px; }
+    .skeleton-line.subtitle { width: 35%; height: 12px; }
     .skeleton-card {
       background: #FFFFFF;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
       border: 1px solid #E0E0E0;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
-    .skeleton-line.section-head { width: 35%; height: 16px; }
+    .skeleton-line.section-head { width: 30%; height: 14px; }
     .skeleton-row {
-      height: 48px;
-      border-radius: 10px;
+      height: 40px;
+      border-radius: 8px;
       background: linear-gradient(90deg, #F0F2F5 25%, #E4E6EB 50%, #F0F2F5 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite linear;
@@ -651,28 +509,16 @@ export interface DriverDoc {
       100% { background-position: -200% 0; }
     }
 
-    /* 1. Hero Driver Card */
+    /* 1. Real Driver Hero Card */
     .hero-profile-card {
       position: relative;
-      background: linear-gradient(135deg, #111827 0%, #1F2937 60%, #111827 100%);
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
       color: #FFFFFF;
-      border-radius: 22px;
-      padding: 22px 20px 18px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12);
-      overflow: hidden;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .hero-ambient-glow {
-      position: absolute;
-      top: -40px;
-      right: -40px;
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      filter: blur(50px);
-      opacity: 0.35;
-      pointer-events: none;
     }
     .hero-inner {
       position: relative;
@@ -681,90 +527,37 @@ export interface DriverDoc {
     .hero-top-row {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
+      gap: 14px;
     }
     .avatar-wrapper {
       position: relative;
       flex-shrink: 0;
     }
-    .avatar-ring {
-      width: 66px;
-      height: 66px;
-      border-radius: 50%;
-      border: 2px solid #CD1A21;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3px;
-      background: rgba(255, 255, 255, 0.05);
-      box-shadow: 0 0 16px rgba(205, 26, 33, 0.35);
-    }
     .avatar-circle {
-      width: 100%;
-      height: 100%;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
       color: #FFFFFF;
-      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
-    .online-status-badge {
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #10B981;
-      border: 2px solid #111827;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .pulse-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #FFFFFF;
-      animation: pulse 2s infinite ease-in-out;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.7; }
-    }
-
     .driver-identity-info {
       flex: 1;
       min-width: 0;
     }
-    .name-with-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
     .driver-name {
-      margin: 0;
-      font-size: 20px;
+      margin: 0 0 4px 0;
+      font-size: 18px;
       font-weight: 700;
-      letter-spacing: -0.3px;
       color: #FFFFFF;
+      letter-spacing: -0.2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-    .verified-icon-badge {
-      color: #38BDF8;
-      display: flex;
-      align-items: center;
-    }
-    .verified-icon-badge .material-symbols-outlined {
-      font-size: 20px;
-      font-variation-settings: 'FILL' 1;
     }
     .role-and-id-row {
       display: flex;
@@ -776,177 +569,53 @@ export interface DriverDoc {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px 6px;
+      border-radius: 5px;
       font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.2px;
-    }
-    .role-badge {
-      background: rgba(205, 26, 33, 0.25);
-      color: #FCA5A5;
-      border: 1px solid rgba(205, 26, 33, 0.4);
-    }
-    .role-badge .pill-icon {
-      font-size: 14px;
     }
     .id-badge {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       color: #E2E8F0;
-      border: 1px solid rgba(255, 255, 255, 0.12);
       font-family: monospace;
     }
-
-    /* Hero Meta Bar */
+    .active-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6EE7B7;
+    }
+    .pulse-dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+    }
     .hero-meta-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding-top: 14px;
+      margin-top: 10px;
+      padding-top: 10px;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 12px;
-      color: #9CA3AF;
-      flex-wrap: wrap;
+      font-size: 11px;
+      color: #94A3B8;
     }
     .meta-item {
       display: flex;
       align-items: center;
       gap: 5px;
     }
-    .meta-item.rating {
-      color: #FDE047;
-    }
-    .meta-item.rating .star-icon {
-      font-size: 16px;
-      font-variation-settings: 'FILL' 1;
-      color: #FACC15;
-    }
-    .meta-bold {
-      font-weight: 700;
-      color: #FFFFFF;
-    }
-    .meta-sub {
-      color: #9CA3AF;
-      font-size: 11px;
-    }
     .meta-icon {
-      font-size: 15px;
-      color: #9CA3AF;
-    }
-    .meta-divider {
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
+      font-size: 14px;
     }
 
-    /* 2. Telemetry Grid */
-    .telemetry-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .telemetry-card {
-      background: #FFFFFF;
-      border-radius: 16px;
-      padding: 12px 10px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .telemetry-card:active {
-      transform: scale(0.98);
-    }
-    .telemetry-icon-wrapper {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .telemetry-icon-wrapper .material-symbols-outlined {
-      font-size: 18px;
-    }
-    .telemetry-icon-wrapper.green { background: #DCFCE7; color: #16A34A; }
-    .telemetry-icon-wrapper.amber { background: #FEF3C7; color: #D97706; }
-    .telemetry-icon-wrapper.red { background: #FEE2E2; color: #DC2626; }
-    .telemetry-icon-wrapper.blue { background: #E0F2FE; color: #0284C7; }
-
-    .telemetry-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .telemetry-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      color: #64748B;
-    }
-    .telemetry-value {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1E293B;
-    }
-    .text-ellipsis {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .telemetry-progress-track {
-      width: 100%;
-      height: 4px;
-      border-radius: 2px;
-      background: #E2E8F0;
-      margin-top: 4px;
-      overflow: hidden;
-    }
-    .telemetry-progress-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.4s ease;
-    }
-    .telemetry-progress-fill.green { background: #10B981; }
-    .telemetry-progress-fill.amber { background: #F59E0B; }
-    .telemetry-progress-fill.red { background: #EF4444; }
-
-    .telemetry-sub-badge {
-      font-size: 10px;
-      font-weight: 700;
-      font-family: monospace;
-      color: #0F172A;
-      background: #FEF08A;
-      padding: 1px 4px;
-      border-radius: 4px;
-      display: inline-block;
-      width: fit-content;
-      margin-top: 2px;
-    }
-    .standing-status-pill {
-      font-size: 9px;
-      font-weight: 600;
-      color: #16A34A;
-      margin-top: 2px;
-    }
-
-    /* 3. Section Cards */
+    /* 2 & 3. Section Cards */
     .section-card {
       background: #FFFFFF;
-      border-radius: 18px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
-      margin-bottom: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      margin-bottom: 12px;
       overflow: hidden;
     }
     .section-card-header {
-      padding: 16px 18px 12px 18px;
+      padding: 10px 14px;
       border-bottom: 1px solid #F1F5F9;
       display: flex;
       align-items: center;
@@ -955,50 +624,41 @@ export interface DriverDoc {
     .section-title-wrapper {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
     .section-icon-box {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .section-icon-box .material-symbols-outlined {
-      font-size: 20px;
+      font-size: 16px;
     }
     .section-icon-box.red { background: #FEE2E2; color: #DC2626; }
-    .section-icon-box.purple { background: #F3E8FF; color: #9333EA; }
+    .section-icon-box.blue { background: #E0F2FE; color: #0284C7; }
     .section-icon-box.green { background: #DCFCE7; color: #16A34A; }
 
-    .section-title-col {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
     .section-title {
       margin: 0;
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
       color: #0F172A;
-      letter-spacing: -0.2px;
-    }
-    .section-subtitle {
-      font-size: 11px;
-      color: #64748B;
+      letter-spacing: -0.1px;
     }
     .section-card-body {
-      padding: 14px 16px 16px 16px;
+      padding: 10px 12px 12px 12px;
     }
 
     /* Info Tiles Grid */
     .info-tiles-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      gap: 8px;
     }
-    @media (max-width: 480px) {
+    @media (max-width: 440px) {
       .info-tiles-grid {
         grid-template-columns: 1fr;
       }
@@ -1006,13 +666,12 @@ export interface DriverDoc {
     .info-tile {
       background: #F8FAFC;
       border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      padding: 10px 12px;
+      border-radius: 10px;
+      padding: 8px 10px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       position: relative;
-      transition: background 0.15s ease;
     }
     .info-tile.clickable {
       cursor: pointer;
@@ -1026,7 +685,7 @@ export interface DriverDoc {
       align-items: center;
     }
     .tile-icon-box .material-symbols-outlined {
-      font-size: 20px;
+      font-size: 17px;
     }
     .tile-text {
       flex: 1;
@@ -1035,17 +694,16 @@ export interface DriverDoc {
       min-width: 0;
     }
     .tile-label {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 600;
       color: #64748B;
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
     .tile-value {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: #1E293B;
-      margin-top: 1px;
     }
     .tile-value.empty-text {
       color: #94A3B8;
@@ -1054,365 +712,283 @@ export interface DriverDoc {
     .font-mono {
       font-family: monospace;
     }
+    .text-ellipsis {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .tile-action-btn {
       background: transparent;
       border: none;
       color: #94A3B8;
-      padding: 4px;
-      border-radius: 6px;
+      padding: 2px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .tile-action-btn .material-symbols-outlined {
-      font-size: 16px;
-    }
-    .tile-action-btn:hover {
-      color: #0F172A;
-      background: rgba(0,0,0,0.05);
+      font-size: 15px;
     }
 
-    /* Color Swatch in Tile */
     .color-swatch-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       margin-top: 1px;
     }
     .color-dot {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       border: 1px solid rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
 
-    /* UK License Plate Display */
-    .license-plate-showcase {
+    /* UK License Plate */
+    .plate-container {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 10px;
-      background: #F8FAFC;
-      border-radius: 14px;
-      border: 1px dashed #CBD5E1;
+      justify-content: center;
+      padding: 6px 0;
     }
-    .uk-number-plate-large {
+    .uk-number-plate {
       display: inline-flex;
       align-items: center;
       background: #FFD500;
       color: #000000;
-      border: 2.5px solid #000000;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      border: 2px solid #000000;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       overflow: hidden;
-      font-family: 'Charles Wright', 'Impact', 'Arial Black', sans-serif;
+      font-family: 'Impact', 'Arial Black', sans-serif;
       font-weight: 900;
-      letter-spacing: 3px;
+      letter-spacing: 2px;
     }
-    .uk-plate-flag-strip {
+    .uk-plate-euro {
       background: #003399;
-      color: #FFD500;
-      padding: 8px 10px;
+      color: #FFFFFF;
+      padding: 5px 7px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
-    .plate-uk-text {
-      font-size: 11px;
+    .plate-uk-txt {
+      font-size: 9px;
       font-weight: 900;
-      color: #FFFFFF;
-      letter-spacing: 0.5px;
     }
-    .uk-plate-digits {
-      font-size: 22px;
-      padding: 6px 18px;
+    .uk-plate-num {
+      font-size: 16px;
+      padding: 4px 12px;
       text-transform: uppercase;
     }
-    .plate-registered-label {
+    .no-vehicle-notice {
       display: flex;
       align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #16A34A;
-    }
-    .plate-registered-label .material-symbols-outlined {
-      font-size: 15px;
-    }
-    .no-vehicle-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      border-radius: 10px;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 8px;
       background: #F1F5F9;
       color: #64748B;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 11px;
+    }
+    .no-vehicle-notice .material-symbols-outlined {
+      font-size: 16px;
     }
 
-    /* 5. Compliance Section & Health Bar */
-    .title-with-badge {
+    /* 4. Tightened Compact Compliance Hub */
+    .compact-head {
+      padding: 10px 14px;
+    }
+    .title-and-count {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .compliance-score-chip {
-      padding: 2px 8px;
-      border-radius: 12px;
+    .compact-score-badge {
+      padding: 2px 6px;
+      border-radius: 8px;
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.2px;
     }
-    .compliance-score-chip.green { background: #DCFCE7; color: #15803D; }
-    .compliance-score-chip.amber { background: #FEF3C7; color: #B45309; }
-    .compliance-score-chip.red { background: #FEE2E2; color: #B91C1C; }
+    .compact-score-badge.green { background: #DCFCE7; color: #15803D; }
+    .compact-score-badge.amber { background: #FEF3C7; color: #B45309; }
+    .compact-score-badge.red { background: #FEE2E2; color: #B91C1C; }
 
-    .compliance-overview-bar {
-      padding: 12px 18px;
-      background: #F8FAFC;
+    .slim-progress-track {
+      width: 100%;
+      height: 3px;
+      background: #E2E8F0;
+    }
+    .slim-progress-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .slim-progress-fill.green { background: #10B981; }
+    .slim-progress-fill.amber { background: #F59E0B; }
+    .slim-progress-fill.red { background: #EF4444; }
+
+    .compact-filter-bar {
+      display: flex;
+      gap: 4px;
+      padding: 8px 12px 4px 12px;
+      background: #FAFAFA;
       border-bottom: 1px solid #F1F5F9;
     }
-    .compliance-stats-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      font-size: 12px;
-    }
-    .stats-label {
-      font-weight: 600;
-      color: #475569;
-    }
-    .stats-counter {
-      font-weight: 700;
-      color: #0F172A;
-    }
-    .compliance-meter-track {
-      width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: #E2E8F0;
-      overflow: hidden;
-    }
-    .compliance-meter-fill {
-      height: 100%;
-      border-radius: 3px;
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .compliance-meter-fill.green { background: linear-gradient(90deg, #10B981, #059669); }
-    .compliance-meter-fill.amber { background: linear-gradient(90deg, #F59E0B, #D97706); }
-    .compliance-meter-fill.red { background: linear-gradient(90deg, #EF4444, #DC2626); }
-
-    /* Filter Pills */
-    .doc-filter-pills-row {
-      display: flex;
-      gap: 6px;
-      padding: 12px 18px 6px 18px;
-      overflow-x: auto;
-    }
-    .doc-filter-pill {
+    .compact-chip {
       background: #F1F5F9;
       border: 1px solid #E2E8F0;
-      padding: 5px 10px;
-      border-radius: 20px;
-      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 14px;
+      font-size: 10px;
       font-weight: 600;
-      color: #475569;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      color: #64748B;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s ease;
     }
-    .doc-filter-pill.active {
+    .compact-chip.active {
       background: #0F172A;
       color: #FFFFFF;
       border-color: #0F172A;
     }
-    .filter-count {
-      background: rgba(0, 0, 0, 0.08);
-      padding: 1px 5px;
-      border-radius: 10px;
-      font-size: 10px;
-    }
-    .doc-filter-pill.active .filter-count {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-    .status-dot.green { background: #10B981; }
-    .status-dot.red { background: #EF4444; }
 
-    /* Document Item Row */
-    .documents-list {
+    .compact-doc-list {
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
-    .doc-item-row {
+    .compact-doc-row {
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      border-radius: 14px;
-      padding: 12px 14px;
+      border-radius: 10px;
+      padding: 8px 10px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       position: relative;
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+      transition: background 0.12s ease;
     }
-    .doc-item-row:active {
-      transform: scale(0.985);
+    .compact-doc-row:active {
       background: #F8FAFC;
     }
-    .doc-left-accent {
+    .doc-color-bar {
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 4px;
+      width: 3px;
     }
-    .doc-left-accent.valid { background: #10B981; }
-    .doc-left-accent.expiring-soon { background: #F59E0B; }
-    .doc-left-accent.expired { background: #EF4444; }
-    .doc-left-accent.pending-verification { background: #6366F1; }
-    .doc-left-accent.missing { background: #94A3B8; }
+    .doc-color-bar.valid { background: #10B981; }
+    .doc-color-bar.expiring-soon { background: #F59E0B; }
+    .doc-color-bar.expired { background: #EF4444; }
+    .doc-color-bar.pending-verification { background: #6366F1; }
+    .doc-color-bar.missing { background: #94A3B8; }
 
-    .doc-icon-wrapper {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+    .compact-doc-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
-    .doc-icon-wrapper .material-symbols-outlined {
-      font-size: 20px;
+    .compact-doc-icon .material-symbols-outlined {
+      font-size: 16px;
     }
-    .doc-icon-wrapper.valid { background: #DCFCE7; color: #15803D; }
-    .doc-icon-wrapper.expiring-soon { background: #FEF3C7; color: #B45309; }
-    .doc-icon-wrapper.expired { background: #FEE2E2; color: #B91C1C; }
-    .doc-icon-wrapper.pending-verification { background: #EEF2FF; color: #4F46E5; }
-    .doc-icon-wrapper.missing { background: #F1F5F9; color: #64748B; }
+    .compact-doc-icon.valid { background: #DCFCE7; color: #15803D; }
+    .compact-doc-icon.expiring-soon { background: #FEF3C7; color: #B45309; }
+    .compact-doc-icon.expired { background: #FEE2E2; color: #B91C1C; }
+    .compact-doc-icon.pending-verification { background: #EEF2FF; color: #4F46E5; }
+    .compact-doc-icon.missing { background: #F1F5F9; color: #64748B; }
 
-    .doc-main-info {
+    .compact-doc-info {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
     }
-    .doc-name {
-      font-size: 13px;
+    .compact-doc-name {
+      font-size: 12px;
       font-weight: 600;
       color: #0F172A;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .doc-expiry-row {
+    .compact-doc-sub {
+      font-size: 10px;
+      color: #64748B;
+    }
+    .compact-doc-sub.missing { color: #DC2626; font-weight: 500; }
+    .compact-doc-sub.expiring-soon { color: #D97706; font-weight: 500; }
+    .compact-doc-sub.expired { color: #DC2626; font-weight: 500; }
+
+    .compact-doc-right {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 11px;
-      color: #64748B;
-    }
-    .expiry-icon {
-      font-size: 13px;
-      color: #94A3B8;
-    }
-    .doc-action-col {
-      display: flex;
-      align-items: center;
-      gap: 6px;
       flex-shrink: 0;
     }
-    .doc-status-badge {
-      font-size: 10px;
+    .compact-status-tag {
+      font-size: 9px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 8px;
-      letter-spacing: 0.3px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
       text-transform: uppercase;
     }
-    .doc-status-badge.valid { background: #DCFCE7; color: #166534; }
-    .doc-status-badge.expiring-soon { background: #FEF3C7; color: #92400E; }
-    .doc-status-badge.expired { background: #FEE2E2; color: #991B1B; }
-    .doc-status-badge.pending-verification { background: #EEF2FF; color: #3730A3; }
-    .doc-status-badge.missing { background: #E2E8F0; color: #334155; }
+    .compact-status-tag.valid { background: #DCFCE7; color: #166534; }
+    .compact-status-tag.expiring-soon { background: #FEF3C7; color: #92400E; }
+    .compact-status-tag.expired { background: #FEE2E2; color: #991B1B; }
+    .compact-status-tag.pending-verification { background: #EEF2FF; color: #3730A3; }
+    .compact-status-tag.missing { background: #E2E8F0; color: #334155; }
 
-    .doc-chevron {
-      font-size: 18px;
+    .row-chevron {
+      font-size: 16px;
       color: #94A3B8;
     }
-
-    .empty-docs-box {
+    .compact-empty-state {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      text-align: center;
-      padding: 28px 16px;
       gap: 6px;
-    }
-    .empty-docs-box .empty-icon {
-      font-size: 36px;
-      color: #10B981;
-    }
-    .empty-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #0F172A;
-    }
-    .empty-sub {
+      padding: 16px 10px;
+      color: #16A34A;
       font-size: 11px;
-      color: #64748B;
+      font-weight: 500;
+      justify-content: center;
+    }
+    .compact-empty-state .material-symbols-outlined {
+      font-size: 16px;
     }
 
-    /* 6. Document Preview Modal */
+    /* 5. Document Preview Modal */
     .preview-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(6px);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
-      padding: 16px;
-      animation: fadeIn 0.2s ease-out;
+      padding: 14px;
     }
     .preview-modal-card {
       background: #FFFFFF;
-      border-radius: 20px;
-      max-width: 520px;
+      border-radius: 16px;
+      max-width: 480px;
       width: 100%;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes scaleUp {
-      from { opacity: 0; transform: scale(0.92); }
-      to { opacity: 1; transform: scale(1); }
     }
     .preview-header {
-      padding: 16px 20px;
+      padding: 12px 16px;
       border-bottom: 1px solid #E2E8F0;
       display: flex;
       align-items: center;
@@ -1420,19 +996,19 @@ export interface DriverDoc {
     }
     .preview-title {
       margin: 0;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: #0F172A;
     }
     .preview-subtitle {
-      font-size: 11px;
+      font-size: 10px;
       color: #64748B;
     }
     .close-modal-btn {
       background: #F1F5F9;
       border: none;
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -1440,22 +1016,18 @@ export interface DriverDoc {
       cursor: pointer;
       color: #64748B;
     }
-    .close-modal-btn:hover {
-      background: #E2E8F0;
-      color: #0F172A;
-    }
     .preview-body {
-      padding: 16px 20px;
+      padding: 12px 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
     }
     .preview-status-strip {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-radius: 12px;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
     }
     .preview-status-strip.valid { background: #DCFCE7; color: #166534; }
     .preview-status-strip.expiring-soon { background: #FEF3C7; color: #92400E; }
@@ -1463,41 +1035,29 @@ export interface DriverDoc {
     .preview-status-strip.pending-verification { background: #EEF2FF; color: #3730A3; }
     .preview-status-strip.missing { background: #F1F5F9; color: #475569; }
 
-    .status-strip-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
     .status-strip-icon {
-      font-size: 20px;
+      font-size: 18px;
     }
     .status-strip-text {
       display: flex;
       flex-direction: column;
     }
     .status-main-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
     }
     .status-expiry-label {
-      font-size: 11px;
-      opacity: 0.85;
-    }
-    .doc-type-tag {
       font-size: 10px;
-      font-weight: 700;
-      background: rgba(0, 0, 0, 0.08);
-      padding: 2px 6px;
-      border-radius: 6px;
+      opacity: 0.85;
     }
 
     .preview-image-container {
       position: relative;
-      min-height: 220px;
-      max-height: 360px;
+      min-height: 200px;
+      max-height: 320px;
       background: #F8FAFC;
       border: 1px solid #E2E8F0;
-      border-radius: 12px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1505,7 +1065,7 @@ export interface DriverDoc {
     }
     .preview-image {
       max-width: 100%;
-      max-height: 360px;
+      max-height: 320px;
       object-fit: contain;
     }
     .preview-shimmer {
@@ -1520,63 +1080,66 @@ export interface DriverDoc {
       flex-direction: column;
       align-items: center;
       text-align: center;
-      padding: 24px 16px;
-      gap: 6px;
+      padding: 20px 12px;
+      gap: 4px;
     }
     .placeholder-icon {
-      font-size: 40px;
+      font-size: 36px;
       color: #94A3B8;
     }
     .placeholder-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: #0F172A;
     }
     .placeholder-text {
-      font-size: 11px;
+      font-size: 10px;
       color: #64748B;
-      line-height: 1.4;
-      max-width: 280px;
+      line-height: 1.3;
+      max-width: 240px;
     }
 
     .preview-footer {
-      padding: 14px 20px;
+      padding: 10px 16px;
       border-top: 1px solid #E2E8F0;
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
+      gap: 8px;
     }
     .btn-cancel {
       background: #F1F5F9;
       border: 1px solid #CBD5E1;
-      padding: 9px 16px;
-      border-radius: 10px;
-      font-size: 13px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 600;
       color: #475569;
       cursor: pointer;
     }
     .btn-primary {
-      background: linear-gradient(135deg, #CD1A21 0%, #B71C1C 100%);
+      background: #CD1A21;
       color: #FFFFFF;
       border: none;
-      padding: 9px 18px;
-      border-radius: 10px;
-      font-size: 13px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.28);
     }
     .btn-primary .material-symbols-outlined {
-      font-size: 18px;
+      font-size: 16px;
     }
 
     /* Animations */
     .animated-fade-in {
-      animation: fadeIn 0.3s ease-in-out;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     /* ================= DARK THEME OVERRIDES ================= */
@@ -1588,33 +1151,15 @@ export interface DriverDoc {
       background: #1E1E24;
       color: #F87171;
     }
-    :host-context(.dark-theme) .telemetry-card {
-      background: #1E1E24;
-      border-color: #2D2D35;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-    }
-    :host-context(.dark-theme) .telemetry-label {
-      color: #94A3B8;
-    }
-    :host-context(.dark-theme) .telemetry-value {
-      color: #ECEFF1;
-    }
-    :host-context(.dark-theme) .telemetry-progress-track {
-      background: #2D2D35;
-    }
     :host-context(.dark-theme) .section-card {
       background: #1E1E24;
       border-color: #2D2D35;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     }
     :host-context(.dark-theme) .section-card-header {
       border-bottom-color: #2D2D35;
     }
     :host-context(.dark-theme) .section-title {
       color: #ECEFF1;
-    }
-    :host-context(.dark-theme) .section-subtitle {
-      color: #94A3B8;
     }
     :host-context(.dark-theme) .info-tile {
       background: #16161A;
@@ -1623,42 +1168,26 @@ export interface DriverDoc {
     :host-context(.dark-theme) .tile-value {
       color: #ECEFF1;
     }
-    :host-context(.dark-theme) .license-plate-showcase {
-      background: #16161A;
-      border-color: #2D2D35;
-    }
-    :host-context(.dark-theme) .compliance-overview-bar {
+    :host-context(.dark-theme) .compact-filter-bar {
       background: #16161A;
       border-bottom-color: #2D2D35;
     }
-    :host-context(.dark-theme) .stats-label {
-      color: #94A3B8;
-    }
-    :host-context(.dark-theme) .stats-counter {
-      color: #ECEFF1;
-    }
-    :host-context(.dark-theme) .compliance-meter-track {
-      background: #2D2D35;
-    }
-    :host-context(.dark-theme) .doc-filter-pill {
-      background: #16161A;
+    :host-context(.dark-theme) .compact-chip {
+      background: #1E1E24;
       border-color: #2D2D35;
       color: #94A3B8;
     }
-    :host-context(.dark-theme) .doc-filter-pill.active {
+    :host-context(.dark-theme) .compact-chip.active {
       background: #ECEFF1;
       color: #121214;
       border-color: #ECEFF1;
     }
-    :host-context(.dark-theme) .doc-item-row {
+    :host-context(.dark-theme) .compact-doc-row {
       background: #16161A;
       border-color: #2D2D35;
     }
-    :host-context(.dark-theme) .doc-name {
+    :host-context(.dark-theme) .compact-doc-name {
       color: #ECEFF1;
-    }
-    :host-context(.dark-theme) .doc-expiry-row {
-      color: #94A3B8;
     }
     :host-context(.dark-theme) .preview-modal-card {
       background: #1E1E24;
@@ -1670,10 +1199,6 @@ export interface DriverDoc {
     }
     :host-context(.dark-theme) .preview-title {
       color: #ECEFF1;
-    }
-    :host-context(.dark-theme) .close-modal-btn {
-      background: #2D2D35;
-      color: #94A3B8;
     }
     :host-context(.dark-theme) .preview-image-container {
       background: #16161A;
@@ -1692,18 +1217,18 @@ export interface DriverDoc {
 export class ProfileComponent implements OnInit {
   isLoading = true;
   apiError = '';
-  driverName = 'Peter Parker';
-  driverEmail = 'peter.parker@redtaxis.com';
-  driverPhone = '+44 7911 123456';
-  vehicleModel = 'Toyota Prius (Hybrid)';
-  plateNumber = 'LK17 WXY';
+  driverName = '';
+  driverEmail = '';
+  driverPhone = '';
+  vehicleModel = '';
+  plateNumber = '';
   colorCode = '';
   lastLogin: string | null = null;
   driverId: number | null = null;
 
   selectedDocFilter: 'all' | 'action' | 'verified' = 'all';
 
-  // Pull to refresh variables
+  // Pull to refresh
   touchStartY = 0;
   pullDistance = 0;
   isRefreshing = false;
@@ -1754,7 +1279,7 @@ export class ProfileComponent implements OnInit {
       if (profileResponse) {
         const profile = profileResponse.value || profileResponse;
         
-        this.driverName = profile.fullname || profile.fullName || profile.name || 'Not Registered';
+        this.driverName = profile.fullname || profile.fullName || profile.name || 'Driver';
         this.driverEmail = profile.email || 'Not Registered';
         this.driverPhone = profile.telephone || profile.phone || profile.phoneNumber || 'Not Registered';
         this.colorCode = profile.colorCode || '';
@@ -1828,19 +1353,13 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  // --- Calculations & Formatting Helpers ---
   getInitials(): string {
-    if (!this.driverName || this.driverName === 'Not Registered') return 'DR';
+    if (!this.driverName || this.driverName === 'Driver') return 'DR';
     const parts = this.driverName.trim().split(/\s+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return this.driverName.substring(0, 2).toUpperCase();
-  }
-
-  getFormattedDriverId(): string {
-    if (this.driverId) return `#DRV-${this.driverId}`;
-    return '#DRV-8492';
   }
 
   getVerifiedCount(): number {
@@ -1863,13 +1382,6 @@ export class ProfileComponent implements OnInit {
     return 'red';
   }
 
-  getComplianceIcon(): string {
-    const p = this.getCompliancePercentage();
-    if (p >= 80) return 'verified_user';
-    if (p >= 40) return 'warning';
-    return 'gpp_bad';
-  }
-
   getDocStatusClass(status: string): string {
     return status.toLowerCase().replace(/\s+/g, '-');
   }
@@ -1885,7 +1397,7 @@ export class ProfileComponent implements OnInit {
   }
 
   getDocExpiryFormatted(doc: DriverDoc): string {
-    if (doc.status === 'Missing' || doc.expiry === 'Not Uploaded') return 'Not uploaded yet • Tap to submit';
+    if (doc.status === 'Missing' || doc.expiry === 'Not Uploaded') return 'Upload required';
     if (doc.status === 'Pending Verification' || doc.expiry === 'Under Review') return 'Under review by dispatch';
     return `Expires: ${doc.expiry}`;
   }
@@ -1953,20 +1465,11 @@ export class ProfileComponent implements OnInit {
     return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
   }
 
-  getAccentColor(): string {
-    return this.colorCode ? (this.colorCode.startsWith('#') ? this.colorCode : '#' + this.colorCode) : '#CD1A21';
-  }
-
-  getAmbientGlowStyle(): string {
-    const color = this.getAccentColor();
-    return `radial-gradient(circle, ${color} 0%, transparent 70%)`;
-  }
-
   copyToClipboard(text: string, message: string): void {
     if (!text || text === 'Not Registered') return;
     navigator.clipboard.writeText(text).then(() => {
       this.snackBar.open(message, 'OK', {
-        duration: 2200,
+        duration: 2000,
         horizontalPosition: 'center',
         verticalPosition: 'bottom'
       });
@@ -1975,14 +1478,7 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  scrollToCompliance(): void {
-    const el = document.getElementById('compliance-section');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  }
-
-  // --- Touch Gestures (Pull-to-Refresh) ---
+  // Touch Gestures
   onTouchStart(event: TouchEvent): void {
     if (window.scrollY === 0) {
       this.touchStartY = event.touches[0].clientY;
@@ -1994,7 +1490,7 @@ export class ProfileComponent implements OnInit {
       const currentY = event.touches[0].clientY;
       const distance = currentY - this.touchStartY;
       if (distance > 0) {
-        this.pullDistance = Math.min(distance * 0.45, 80);
+        this.pullDistance = Math.min(distance * 0.45, 70);
       }
     }
   }
@@ -2008,7 +1504,6 @@ export class ProfileComponent implements OnInit {
     this.pullDistance = 0;
   }
 
-  // --- Navigation & Document Modal ---
   navigateToUpload(type: number, name: string): void {
     this.router.navigate(['/upload'], { queryParams: { type, name } });
   }
