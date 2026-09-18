@@ -99,17 +99,28 @@ class _MainShellState extends ConsumerState<MainShell> {
 
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
+        onPopInvokedWithResult: (didPop, result) async {
           if (!didPop) {
+            final customCtrl = WebviewRegistry.customController;
+            if (customCtrl != null && await customCtrl.canGoBack()) {
+              await customCtrl.goBack();
+              return;
+            }
             ref.read(navigationProvider.notifier).closeCustomWebView();
           }
         },
         child: DriverWebviewScreen(
+          isCustomRoute: true,
           url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#$prefix',
           title: navState.customTitle ?? 'Details',
           showBackButton: true,
-          onBack: () {
-            ref.read(navigationProvider.notifier).closeCustomWebView();
+          onBack: () async {
+            final customCtrl = WebviewRegistry.customController;
+            if (customCtrl != null && await customCtrl.canGoBack()) {
+              await customCtrl.goBack();
+            } else {
+              ref.read(navigationProvider.notifier).closeCustomWebView();
+            }
           },
         ),
       );
@@ -117,39 +128,55 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
         // 1. If Drawer is open, close it
         if (MainShell.scaffoldKey.currentState?.isDrawerOpen ?? false) {
-          Navigator.of(context).pop();
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
           return;
         }
 
         // 2. If Custom WebView route is open, close it
         if (navState.hasCustomRoute) {
+          final customCtrl = WebviewRegistry.customController;
+          if (customCtrl != null && await customCtrl.canGoBack()) {
+            await customCtrl.goBack();
+            return;
+          }
           ref.read(navigationProvider.notifier).closeCustomWebView();
           return;
         }
 
-        // 3. If on a sub-tab (Bookings, Profile, Availability, Expenses), go back to Dashboard
+        // 3. Check if active tab's WebView has history to go back
+        final activeController = WebviewRegistry.tabControllers[navState.selectedIndex];
+        if (activeController != null && await activeController.canGoBack()) {
+          await activeController.goBack();
+          return;
+        }
+
+        // 4. If on a sub-tab (Bookings, Profile, Availability, Expenses, etc.), go back to Dashboard
         if (navState.selectedIndex != 0) {
           ref.read(navigationProvider.notifier).setTabIndex(0);
           return;
         }
 
-        // 4. On Dashboard, double-tap back within 2 seconds to exit app
+        // 5. On Dashboard with no webview history, require double-back-to-exit within 2 seconds
         final now = DateTime.now();
         final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
         if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
           _lastBackPressTime = now;
-          ScaffoldMessenger.of(context).removeCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Press back again to exit ${branding.name}'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Press back again to exit ${branding.name}'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         } else {
           SystemNavigator.pop();
         }
@@ -161,12 +188,12 @@ class _MainShellState extends ConsumerState<MainShell> {
           index: navState.selectedIndex,
           children: [
             const DriverDashboardView(),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/bookings', title: 'My Bookings'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/profile', title: 'My Profile'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/availability', title: 'Weekly Availability'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/expenses', title: 'Expenses Log'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/create-booking', title: 'Rank Pickup'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/reports', title: 'Reports & Statements'),
+            DriverWebviewScreen(tabIndex: 1, url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/bookings', title: 'My Bookings'),
+            DriverWebviewScreen(tabIndex: 2, url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/profile', title: 'My Profile'),
+            DriverWebviewScreen(tabIndex: 3, url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/availability', title: 'Weekly Availability'),
+            DriverWebviewScreen(tabIndex: 4, url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/expenses', title: 'Expenses Log'),
+            DriverWebviewScreen(tabIndex: 5, url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/create-booking', title: 'Rank Pickup'),
+            DriverWebviewScreen(tabIndex: 6, url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/reports', title: 'Reports & Statements'),
             const SettingsView(),
           ],
         ),

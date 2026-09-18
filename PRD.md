@@ -451,11 +451,20 @@ The Angular router guards and services parse the `token` parameter directly from
   - Restyled the top Fleet Summary overview card (`.overview-hero-card`) in light mode from a dark slate container to a crisp, executive white card (`background: #FFFFFF; border: 1px solid #E2E8F0;`).
   - Polished metric label typography (`color: #64748B`), bold numeric values (`color: #0F172A`), high-contrast colored fare metrics (`#16A34A` green, `#2563EB` blue), and light dividers (`background: #E2E8F0`).
   - Preserved seamless dark mode overrides (`#1E1E24` container, `#2D2D35` borders and dividers).
-  - Verified with 100% passing Vitest (`npx vitest run`) and Angular production build (`npx ng build`).
+- [x] **Intelligent Hardware & Gesture Back Navigation with Native WebView History Resolution (`main_shell.dart`, `webview_screen.dart`, `dashboard_view.dart`, `navigation_notifier.dart`)**:
+  - Eliminated conflicting nested `PopScope` handlers inside `IndexedStack` children that previously caused race conditions, skipped `canGoBack()` checks, and abruptly terminated the mobile application on back button press.
+  - Implemented a centralized `WebviewRegistry` tracking active `WebViewController` instances across all dashboard and navigation tabs.
+  - Integrated asynchronous multi-tier back navigation in `MainShell`:
+    1. **Active WebView History**: First checks if the active tab's WebView has browser history (`await activeCtrl.canGoBack()`), smoothly navigating backwards through sub-pages (e.g., `Document Upload` $\rightarrow$ `My Profile`).
+    2. **Custom Overlay Dismissal**: If on a custom webview route, pops sub-routes or dismisses the overlay back to the shell.
+    3. **Sub-Tab to Dashboard Fallback**: If on any sub-tab (Profile, Bookings, Availability, Expenses, Reports, Create Booking) with no web history, transitions back to the primary Dashboard (Tab 0).
+    4. **Double-Back-to-Exit Safety**: On the root Dashboard with no history, requires a double-tap within 2 seconds with an informative SnackBar prompt before exiting the app.
+  - Verified with 100% passing Flutter test suite (12/12 tests passing) and Vitest suite.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 

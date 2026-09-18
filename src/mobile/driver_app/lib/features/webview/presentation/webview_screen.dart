@@ -22,6 +22,8 @@ class DriverWebviewScreen extends ConsumerStatefulWidget {
   final bool showBackButton;
   final bool hideAppBar;
   final VoidCallback? onBack;
+  final int? tabIndex;
+  final bool isCustomRoute;
 
   const DriverWebviewScreen({
     super.key,
@@ -30,6 +32,8 @@ class DriverWebviewScreen extends ConsumerStatefulWidget {
     this.showBackButton = false,
     this.hideAppBar = false,
     this.onBack,
+    this.tabIndex,
+    this.isCustomRoute = false,
   });
 
   @override
@@ -37,7 +41,6 @@ class DriverWebviewScreen extends ConsumerStatefulWidget {
 }
 
 class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
-  static DateTime? _lastGlobalBackPressTime;
   WebViewController? _controller;
   bool _isLoading = true;
   bool _hasError = false;
@@ -50,6 +53,17 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
       });
       _controller!.loadRequest(Uri.parse(widget.url));
     }
+  }
+
+  @override
+  void dispose() {
+    if (widget.tabIndex != null) {
+      WebviewRegistry.unregisterTab(widget.tabIndex!);
+    }
+    if (widget.isCustomRoute) {
+      WebviewRegistry.registerCustom(null);
+    }
+    super.dispose();
   }
 
   @override
@@ -98,51 +112,10 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               ref.read(tripProvider.notifier).startTrip();
             } else if (message.message == 'complete_trip') {
               ref.read(tripProvider.notifier).completeTrip();
-            } else if (message.message == 'return_to_dashboard') {
-              final currentTrip = ref.read(tripProvider).currentTrip;
-              if (currentTrip != null) {
-                ref.read(earningsProvider.notifier).addRecord(
-                  EarningRecord(
-                    id: currentTrip.id,
-                    date: DateTime.now(),
-                    amount: currentTrip.fare,
-                    tripDescription: 'Pickup: ${currentTrip.pickupAddress}, Dropoff: ${currentTrip.dropoffAddress}',
-                  ),
-                );
-              }
-              ref.read(tripProvider.notifier).finishShiftItem();
-            } else if (message.message == 'call_customer') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Dialing passenger... (Mock)')),
-              );
-            } else if (message.message == 'navigate') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Launching navigation map routing... (Mock)')),
-              );
             } else if (message.message == 'go_online') {
               ref.read(shiftProvider.notifier).goOnline();
             } else if (message.message == 'go_offline') {
               ref.read(shiftProvider.notifier).goOffline();
-            } else if (message.message == 'simulate_cash_booking') {
-              ref.read(tripProvider.notifier).offerJob(
-                const TripDetails(
-                  id: 'sim-cash-booking',
-                  pickupAddress: 'Heathrow Airport Terminal 5',
-                  dropoffAddress: 'Red Taxis Office, London Central',
-                  fare: 45.00,
-                  paymentType: 'Cash',
-                ),
-              );
-            } else if (message.message == 'simulate_card_booking') {
-              ref.read(tripProvider.notifier).offerJob(
-                const TripDetails(
-                  id: 'sim-card-booking',
-                  pickupAddress: 'Wembley Stadium Gate A',
-                  dropoffAddress: 'Hilton London Metropole',
-                  fare: 28.50,
-                  paymentType: 'Card',
-                ),
-              );
             } else if (message.message == 'pull_refresh') {
               _controller?.reload();
             } else if (message.message.startsWith('open_complete_job:')) {
@@ -181,8 +154,8 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                 setState(() {
                   _isLoading = false;
                 });
-                final currentFontScale = ref.read(fontSizeScaleProvider).scale;
-                _applyFontScale(currentFontScale);
+                final currentScale = ref.read(fontSizeScaleProvider).scale;
+                _applyFontScale(currentScale);
                 final isDarkCurrent = ref.read(themeModeProvider) == ThemeMode.dark;
                 final themeStr = isDarkCurrent ? 'dark' : 'light';
                 _controller?.runJavaScript("""
@@ -198,7 +171,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               }
             },
             onWebResourceError: (WebResourceError error) {
-              debugPrint("WebView Resource Error (${error.errorCode}): ${error.description}, isForMainFrame: ${error.isForMainFrame}");
+              debugPrint("WebView Error (${error.errorCode}): ${error.description}, isForMainFrame: ${error.isForMainFrame}");
               if (error.isForMainFrame ?? true) {
                 if (mounted) {
                   setState(() {
@@ -234,14 +207,16 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                     final intentUri = Uri.parse(parsedUrl);
                     if (await canLaunchUrl(intentUri)) {
                       await launchUrl(intentUri, mode: LaunchMode.externalApplication);
+                      return NavigationDecision.prevent;
                     }
                   } else {
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      return NavigationDecision.prevent;
                     }
                   }
                 } catch (e) {
-                  debugPrint("Error launching external url $url: $e");
+                  debugPrint("Could not launch external URL: $url, error: $e");
                 }
                 return NavigationDecision.prevent;
               }
@@ -278,6 +253,12 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
 
       controller.loadRequest(Uri.parse(widget.url));
       _controller = controller;
+      if (widget.tabIndex != null) {
+        WebviewRegistry.registerTab(widget.tabIndex!, controller);
+      }
+      if (widget.isCustomRoute) {
+        WebviewRegistry.registerCustom(controller);
+      }
     } else {
       _isLoading = false;
     }
@@ -363,8 +344,10 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               leading: widget.showBackButton
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () {
-                        if (widget.onBack != null) {
+                      onPressed: () async {
+                        if (_controller != null && await _controller!.canGoBack()) {
+                          await _controller!.goBack();
+                        } else if (widget.onBack != null) {
                           widget.onBack!();
                         } else {
                           Navigator.of(context).maybePop();
@@ -388,66 +371,13 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                   ),
               ],
             ),
-      body: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          if (didPop) return;
-          if (_controller != null && await _controller!.canGoBack()) {
-            await _controller!.goBack();
-            return;
-          }
-          final currentContext = context;
-          if (widget.onBack != null) {
-            widget.onBack!();
-            return;
-          }
-
-          // 1. If Drawer is open, close it
-          if (MainShell.scaffoldKey.currentState?.isDrawerOpen ?? false) {
-            if (currentContext.mounted) {
-              Navigator.of(currentContext).pop();
-            }
-            return;
-          }
-
-          // 2. If Custom WebView route is open, close it
-          final navState = ref.read(navigationProvider);
-          if (navState.hasCustomRoute) {
-            ref.read(navigationProvider.notifier).closeCustomWebView();
-            return;
-          }
-
-          // 3. If on a sub-tab (Bookings, Profile, Availability, Expenses, etc.), go back to Dashboard
-          if (navState.selectedIndex != 0) {
-            ref.read(navigationProvider.notifier).setTabIndex(0);
-            return;
-          }
-
-          // 4. On Dashboard / Root, require double-tap back within 2 seconds to exit app
-          final now = DateTime.now();
-          if (_DriverWebviewScreenState._lastGlobalBackPressTime == null ||
-              now.difference(_DriverWebviewScreenState._lastGlobalBackPressTime!) > const Duration(seconds: 2)) {
-            _DriverWebviewScreenState._lastGlobalBackPressTime = now;
-            if (currentContext.mounted) {
-              ScaffoldMessenger.of(currentContext).removeCurrentSnackBar();
-              ScaffoldMessenger.of(currentContext).showSnackBar(
-                const SnackBar(
-                  content: Text('Press back again to exit Red Taxis'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          } else {
-            SystemNavigator.pop();
-          }
+      body: RefreshIndicator(
+        color: AppTheme.primaryRed,
+        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+        onRefresh: () async {
+          _reloadWebView();
         },
-        child: RefreshIndicator(
-          color: AppTheme.primaryRed,
-          backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
-          onRefresh: () async {
-            _reloadWebView();
-          },
-          child: kIsWeb
+        child: kIsWeb
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
@@ -501,7 +431,6 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                       ),
                   ],
                 ),
-        ),
       ),
     );
   }

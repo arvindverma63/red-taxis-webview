@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class NavigationState {
   final int selectedIndex;
@@ -62,3 +63,28 @@ final navigationProvider =
     StateNotifierProvider<NavigationNotifier, NavigationState>((ref) {
   return NavigationNotifier();
 });
+
+/// Central registry for tab WebViewController instances to enable intelligent back navigation
+class WebviewRegistry {
+  static final Map<int, WebViewController> tabControllers = {};
+  static WebViewController? customController;
+
+  static void registerTab(int index, WebViewController controller) {
+    tabControllers[index] = controller;
+  }
+
+  static void unregisterTab(int index) {
+    tabControllers.remove(index);
+  }
+
+  static void registerCustom(WebViewController? controller) {
+    customController = controller;
+  }
+
+  static void clear() {
+    tabControllers.clear();
+    customController = null;
+  }
+}
+
+

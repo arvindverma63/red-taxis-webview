@@ -36,6 +36,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   @override
   void dispose() {
     _locationTimer?.cancel();
+    WebviewRegistry.unregisterTab(0);
     super.dispose();
   }
 
@@ -185,6 +186,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
     controller.loadRequest(Uri.parse(url));
     _controller = controller;
+    WebviewRegistry.registerTab(0, controller);
   }
 
   @override
