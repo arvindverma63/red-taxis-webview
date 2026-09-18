@@ -269,15 +269,16 @@ class AppTheme {
         secondary: primaryDark,
         surface: lightSurface,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: lightSurface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: textLightPrimary, size: 22),
-        actionsIconTheme: IconThemeData(color: textLightSecondary, size: 22),
-        titleTextStyle: TextStyle(
-          color: textLightPrimary,
+        iconTheme: const IconThemeData(color: Colors.white, size: 22),
+        actionsIconTheme: const IconThemeData(color: Colors.white, size: 22),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.15,
@@ -314,15 +315,16 @@ class AppTheme {
         secondary: primaryDark,
         surface: darkSurface,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: darkSurface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: textDarkPrimary, size: 22),
-        actionsIconTheme: IconThemeData(color: textDarkSecondary, size: 22),
-        titleTextStyle: TextStyle(
-          color: textDarkPrimary,
+        iconTheme: const IconThemeData(color: Colors.white, size: 22),
+        actionsIconTheme: const IconThemeData(color: Colors.white, size: 22),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.15,
@@ -413,3 +415,62 @@ class TenantBrandingNotifier extends StateNotifier<TenantBranding> {
     } catch (_) {}
   }
 }
+
+enum FontSizeOption {
+  standard(1.0, 'Standard', 'Default (100%)', 'A'),
+  large(1.15, 'Large', 'Comfortable (115%)', 'A+'),
+  extraLarge(1.30, 'Extra Large', 'Senior Friendly (130%)', 'A++');
+
+  final double scale;
+  final String label;
+  final String description;
+  final String badge;
+
+  const FontSizeOption(this.scale, this.label, this.description, this.badge);
+
+  static FontSizeOption fromScale(double scale) {
+    if (scale >= 1.25) return FontSizeOption.extraLarge;
+    if (scale >= 1.10) return FontSizeOption.large;
+    return FontSizeOption.standard;
+  }
+}
+
+final fontSizeScaleProvider = StateNotifierProvider<FontSizeScaleNotifier, FontSizeOption>((ref) {
+  return FontSizeScaleNotifier();
+});
+
+class FontSizeScaleNotifier extends StateNotifier<FontSizeOption> {
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  FontSizeScaleNotifier() : super(FontSizeOption.standard) {
+    _loadFontSize();
+  }
+
+  Future<void> _loadFontSize() async {
+    try {
+      final saved = await _storage.read(key: 'font_scale_option');
+      if (saved != null) {
+        final scale = double.tryParse(saved);
+        if (scale != null) {
+          state = FontSizeOption.fromScale(scale);
+        } else if (saved == 'extraLarge') {
+          state = FontSizeOption.extraLarge;
+        } else if (saved == 'large') {
+          state = FontSizeOption.large;
+        } else {
+          state = FontSizeOption.standard;
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> setFontSize(FontSizeOption option) async {
+    state = option;
+    try {
+      await _storage.write(key: 'font_scale_option', value: option.scale.toString());
+    } catch (_) {}
+  }
+}
+

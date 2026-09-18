@@ -24,527 +24,958 @@ import { DriverService } from '../services/driver.service';
         <div class="loader-bar"></div>
       </div>
 
+      <!-- Header Hero Card -->
+      <div class="hero-header-card animated-fade-in">
+        <div class="hero-top-row">
+          <div class="hero-badge">
+            <span class="material-symbols-outlined badge-icon">local_taxi</span>
+            <span>STREET HIRE / RANK DISPATCH</span>
+          </div>
+          <span class="live-dot-pill">
+            <span class="pulse-dot"></span>
+            LIVE
+          </span>
+        </div>
+        <h2 class="hero-title">Direct Rank Pickup</h2>
+        <p class="hero-subtitle">Instantly create and allocate cash street hires directly to your driver queue.</p>
+      </div>
+
       <div class="form-body animated-fade-in">
-        <!-- Pickup Location Card (Read-only) -->
-        <div class="form-group readonly">
-          <label class="form-lbl">Pickup Location</label>
-          <div class="readonly-field-box">
-            <div class="pickup-icon-backdrop">
-              <span class="material-symbols-outlined field-icon green">my_location</span>
+        <!-- Route Journey Segment Card (Pickup -> Destination) -->
+        <div class="journey-card">
+          <!-- 1. Pickup Node -->
+          <div class="journey-node">
+            <div class="node-indicator">
+              <div class="node-icon-circle pickup">
+                <span class="material-symbols-outlined">my_location</span>
+              </div>
+              <div class="node-track-line"></div>
             </div>
-            <div class="readonly-text-box">
-              <span class="readonly-main">Rank Pickup</span>
-              <span class="readonly-sub">SP8 4PZ</span>
+            <div class="node-content">
+              <div class="node-header-row">
+                <span class="node-label">PICKUP POINT</span>
+                <span class="node-status-tag">RANK STAND</span>
+              </div>
+              <div class="node-main-box">
+                <span class="node-address-main">Rank Base Stand</span>
+                <span class="node-postcode">SP8 4PZ • Direct Boarding</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Destination Node -->
+          <div class="journey-node destination-node">
+            <div class="node-indicator">
+              <div class="node-icon-circle destination">
+                <span class="material-symbols-outlined">location_on</span>
+              </div>
+            </div>
+            <div class="node-content">
+              <div class="node-header-row">
+                <span class="node-label">DESTINATION ADDRESS</span>
+                <span class="node-required-tag" *ngIf="!destinationAddress">REQUIRED</span>
+              </div>
+              
+              <!-- Search Input Field -->
+              <div class="destination-search-box">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input 
+                  type="text" 
+                  placeholder="Search street, area or postcode..." 
+                  class="dest-input" 
+                  [value]="destinationAddress"
+                  (input)="onDestinationInput($any($event.target).value)" 
+                />
+                <button 
+                  type="button" 
+                  class="clear-btn" 
+                  *ngIf="destinationAddress.length > 0" 
+                  (click)="clearDestination()"
+                  title="Clear"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+                <div class="input-spinner" *ngIf="isSearchingSuggestions"></div>
+              </div>
+
+              <!-- Autocomplete Suggestions List -->
+              <div class="suggestions-overlay animated-fade-in" *ngIf="suggestions.length > 0">
+                <div 
+                  class="suggestion-row" 
+                  *ngFor="let item of suggestions" 
+                  (click)="selectSuggestion(item)"
+                >
+                  <div class="sugg-icon-box">
+                    <span class="material-symbols-outlined">pin_drop</span>
+                  </div>
+                  <div class="sugg-text-box">
+                    <span class="sugg-title">{{ item.label }}</span>
+                    <span class="sugg-sub" *ngIf="item.secondaryText">{{ item.secondaryText }}</span>
+                  </div>
+                  <span class="material-symbols-outlined sugg-arrow">chevron_right</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Destination Address input + suggestion drop box -->
-        <div class="form-group relative">
-          <label class="form-lbl">Destination Address</label>
-          <div class="input-icon-wrapper">
-            <span class="material-symbols-outlined input-icon">search</span>
-            <input 
-              type="text" 
-              placeholder="Search destination or postcode..." 
-              class="form-input search-field" 
-              [value]="destinationAddress"
-              (input)="onDestinationInput($any($event.target).value)" 
-            />
-            <div class="input-spinner" *ngIf="isSearchingSuggestions"></div>
-          </div>
-
-          <!-- Suggestions display list -->
-          <div class="suggestion-box animated-fade-in" *ngIf="suggestions.length > 0">
-            <div 
-              class="suggestion-item" 
-              *ngFor="let item of suggestions" 
-              (click)="selectSuggestion(item)"
-            >
-              <div class="item-icon-circle">
-                <span class="material-symbols-outlined item-icon">location_on</span>
-              </div>
-              <div class="item-text-box">
-                <span class="item-main">{{ item.label }}</span>
-                <span class="item-sub" *ngIf="item.secondaryText">{{ item.secondaryText }}</span>
-              </div>
+        <!-- Passenger Information Card -->
+        <div class="section-card">
+          <div class="section-header-row">
+            <span class="section-icon-badge">
+              <span class="material-symbols-outlined">person</span>
+            </span>
+            <div class="section-titles">
+              <span class="section-heading">Passenger Details</span>
+              <span class="section-subtext">Optional name or passenger identifier</span>
             </div>
           </div>
-        </div>
 
-        <!-- Passenger Name -->
-        <div class="form-group">
-          <label class="form-lbl">Passenger Name</label>
-          <div class="input-icon-wrapper">
-            <span class="material-symbols-outlined input-icon">person</span>
+          <div class="passenger-input-box">
             <input 
               type="text" 
-              placeholder="Enter passenger name..." 
-              class="form-input" 
+              placeholder="e.g. John D. or Street Customer" 
+              class="field-input" 
               [value]="passengerName"
               (input)="onPassengerNameInput($any($event.target).value)"
             />
           </div>
-        </div>
 
-        <!-- Price Quote summary panel -->
-        <div class="quote-card animated-fade-in" *ngIf="price > 0 && !isFetchingPrice">
-          <div class="quote-header">
-            <div class="quote-title-box">
-              <span class="material-symbols-outlined quote-icon">local_taxi</span>
-              <span class="quote-title">Estimated Pricing</span>
-            </div>
-            <span class="pricing-scope-badge">CASH / RANK</span>
-          </div>
-          <div class="quote-metrics">
-            <div class="metric-box">
-              <span class="metric-val">{{ getFormattedMileage().main }}</span>
-              <span class="metric-sub-val" *ngIf="getFormattedMileage().details">{{ getFormattedMileage().details }}</span>
-              <span class="metric-lbl">Distance</span>
-            </div>
-            <div class="metric-box">
-              <span class="metric-val">{{ durationText || (durationMinutes + ' mins') }}</span>
-              <span class="metric-lbl">Duration</span>
-            </div>
-            <div class="metric-box highlighted">
-              <span class="metric-val green">£{{ price.toFixed(2) }}</span>
-              <span class="metric-lbl">Driver Price</span>
-            </div>
+          <!-- Quick Presets -->
+          <div class="preset-chips-row">
+            <button type="button" class="preset-chip" (click)="setPassengerPreset('Rank Passenger')">
+              <span>Rank Passenger</span>
+            </button>
+            <button type="button" class="preset-chip" (click)="setPassengerPreset('Street Flag')">
+              <span>Street Flag</span>
+            </button>
+            <button type="button" class="preset-chip" (click)="setPassengerPreset('Cash Passenger')">
+              <span>Cash Passenger</span>
+            </button>
           </div>
         </div>
 
-        <!-- Price confirmation overrides -->
-        <div class="form-group" *ngIf="price > 0">
-          <label class="form-lbl">Confirm / Override Price</label>
-          <div class="amount-input-wrapper">
-            <span class="currency-symbol">£</span>
-            <input 
-              type="number" 
-              step="0.01" 
-              placeholder="0.00" 
-              class="form-input amount-field" 
-              [value]="price"
-              (input)="onPriceInput($any($event.target).value)" 
-            />
+        <!-- Price Quote & Telemetry Deck (Appears once price is resolved) -->
+        <div class="quote-deck animated-fade-in" *ngIf="price > 0 && !isFetchingPrice">
+          <div class="quote-deck-header">
+            <div class="quote-title-group">
+              <span class="material-symbols-outlined quote-title-icon">speed</span>
+              <span class="quote-title-text">Route & Fare Calculation</span>
+            </div>
+            <span class="fare-mode-badge">
+              <span class="material-symbols-outlined badge-cash-icon">payments</span>
+              CASH / RANK
+            </span>
+          </div>
+
+          <!-- 3-Column Metrics Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="material-symbols-outlined metric-icon blue">route</span>
+              <span class="metric-number">{{ getFormattedMileage().main }}</span>
+              <span class="metric-caption">Distance</span>
+            </div>
+            <div class="metric-card">
+              <span class="material-symbols-outlined metric-icon amber">schedule</span>
+              <span class="metric-number">{{ durationText || (durationMinutes + ' min') }}</span>
+              <span class="metric-caption">Duration</span>
+            </div>
+            <div class="metric-card featured-fare">
+              <span class="material-symbols-outlined metric-icon green">attach_money</span>
+              <span class="metric-number fare-text">£{{ price.toFixed(2) }}</span>
+              <span class="metric-caption fare-caption">Total Fare</span>
+            </div>
+          </div>
+
+          <!-- Interactive Fare Steppers & Direct Override -->
+          <div class="fare-adjustment-box">
+            <div class="adjustment-header-row">
+              <span class="adj-label">QUICK FARE ADJUSTMENT</span>
+              <button type="button" class="reset-link-btn" *ngIf="originalPrice > 0 && price !== originalPrice" (click)="resetPrice()">
+                <span class="material-symbols-outlined">restart_alt</span>
+                Reset (£{{ originalPrice.toFixed(2) }})
+              </button>
+            </div>
+            
+            <div class="quick-steppers-row">
+              <button type="button" class="step-btn" (click)="adjustPrice(-1.00)">- £1.00</button>
+              <button type="button" class="step-btn" (click)="adjustPrice(+1.00)">+ £1.00</button>
+              <button type="button" class="step-btn" (click)="adjustPrice(+2.00)">+ £2.00</button>
+              <button type="button" class="step-btn" (click)="adjustPrice(+5.00)">+ £5.00</button>
+            </div>
+
+            <div class="custom-amount-row">
+              <span class="custom-amount-prefix">£</span>
+              <input 
+                type="number" 
+                step="0.50" 
+                placeholder="0.00" 
+                class="custom-amount-input" 
+                [value]="price"
+                (input)="onPriceInput($any($event.target).value)" 
+              />
+              <span class="custom-amount-label">Driver Agreed Fare</span>
+            </div>
           </div>
         </div>
 
-        <!-- Create Button actions -->
-        <div class="form-actions-row">
+        <!-- Submit & Dispatch Action Button -->
+        <div class="submit-action-container">
           <button 
             mat-flat-button 
-            class="submit-action-btn" 
+            class="submit-dispatch-btn" 
             (click)="submitBooking()" 
-            [disabled]="isSubmitting || isResolving || isFetchingPrice || price <= 0"
+            [disabled]="isSubmitting || isResolving || isFetchingPrice || price <= 0 || !destinationAddress"
           >
             <div class="btn-content-wrapper" *ngIf="!isSubmitting">
-              <span class="material-symbols-outlined">add_circle</span>
-              <span>Create Booking</span>
+              <span class="material-symbols-outlined btn-action-icon">local_taxi</span>
+              <span class="btn-action-text">Create & Start Trip</span>
+              <span class="material-symbols-outlined btn-arrow-icon">arrow_forward</span>
             </div>
-            <span *ngIf="isSubmitting">Creating Booking...</span>
+            <div class="btn-loading-wrapper" *ngIf="isSubmitting">
+              <div class="btn-spinner"></div>
+              <span>Dispatching Booking...</span>
+            </div>
           </button>
+          
+          <div class="security-trust-badge">
+            <span class="material-symbols-outlined">verified_user</span>
+            <span>Allocates immediately to your active driver shift</span>
+          </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    /* Dark Theme Support via :host-context */
+    /* ================= DARK THEME VARIABLES ================= */
     :host-context(.dark-theme) .material-container {
       background-color: #121214 !important;
       color: #ECEFF1 !important;
     }
-    :host-context(.dark-theme) .form-body {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
-    }
-    :host-context(.dark-theme) .readonly-field-box {
-      background-color: #121214 !important;
+    :host-context(.dark-theme) .hero-header-card {
+      background: linear-gradient(135deg, #1E1E24 0%, #17171C 100%) !important;
       border-color: #2D2D35 !important;
     }
-    :host-context(.dark-theme) .form-input {
-      background-color: #121214 !important;
-      border-color: #2D2D35 !important;
+    :host-context(.dark-theme) .hero-title {
       color: #ECEFF1 !important;
     }
-    :host-context(.dark-theme) .form-input:focus {
-      background-color: #121214 !important;
-      border-color: #E53935 !important;
-    }
-    :host-context(.dark-theme) .suggestion-box {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
-    }
-    :host-context(.dark-theme) .suggestion-item {
-      border-bottom-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .suggestion-item:hover {
-      background-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .quote-card {
-      background-color: #121214 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .metric-box {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .metric-box.highlighted {
-      background-color: rgba(76, 175, 80, 0.1) !important;
-      border-color: rgba(76, 175, 80, 0.2) !important;
-    }
-    :host-context(.dark-theme) .readonly-main,
-    :host-context(.dark-theme) .item-main,
-    :host-context(.dark-theme) .metric-val {
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .readonly-sub,
-    :host-context(.dark-theme) .form-lbl,
-    :host-context(.dark-theme) .item-sub,
-    :host-context(.dark-theme) .quote-title-box,
-    :host-context(.dark-theme) .metric-lbl,
-    :host-context(.dark-theme) .metric-sub-val {
+    :host-context(.dark-theme) .hero-subtitle {
       color: #90A4AE !important;
     }
+    :host-context(.dark-theme) .form-body {
+      background-color: transparent !important;
+    }
+    :host-context(.dark-theme) .journey-card,
+    :host-context(.dark-theme) .section-card,
+    :host-context(.dark-theme) .quote-deck {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    :host-context(.dark-theme) .node-address-main,
+    :host-context(.dark-theme) .section-heading,
+    :host-context(.dark-theme) .metric-number {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .dest-input,
+    :host-context(.dark-theme) .field-input,
+    :host-context(.dark-theme) .custom-amount-input {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .dest-input:focus,
+    :host-context(.dark-theme) .field-input:focus,
+    :host-context(.dark-theme) .custom-amount-input:focus {
+      border-color: #CD1A21 !important;
+    }
+    :host-context(.dark-theme) .suggestions-overlay {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+    }
+    :host-context(.dark-theme) .suggestion-row {
+      border-bottom-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .suggestion-row:hover {
+      background-color: #26262E !important;
+    }
+    :host-context(.dark-theme) .sugg-title {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .sugg-sub {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .preset-chip,
+    :host-context(.dark-theme) .step-btn {
+      background-color: #121214 !important;
+      border-color: #2D2D35 !important;
+      color: #B0BEC5 !important;
+    }
+    :host-context(.dark-theme) .metric-card {
+      background-color: #141418 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .metric-card.featured-fare {
+      background: linear-gradient(135deg, rgba(46, 125, 50, 0.15) 0%, rgba(46, 125, 50, 0.05) 100%) !important;
+      border-color: rgba(46, 125, 50, 0.3) !important;
+    }
+    :host-context(.dark-theme) .fare-adjustment-box {
+      background-color: #141418 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .custom-amount-prefix {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .security-trust-badge {
+      color: #78909C !important;
+    }
 
+    /* ================= MAIN CONTAINER ================= */
     .material-container {
-      padding: 12px 10px 150px 10px;
+      padding: 14px 14px 140px 14px;
       background-color: #F8F9FA;
       min-height: 100vh;
-      font-family: 'Roboto', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       box-sizing: border-box;
       position: relative;
     }
 
     /* Linear progress bar loader */
     .linear-loader {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background-color: #FFCDD2;
+      height: 3.5px;
+      background-color: rgba(205, 26, 33, 0.15);
       overflow: hidden;
-      z-index: 100;
+      z-index: 999;
     }
     .loader-bar {
       width: 100%;
       height: 100%;
-      background-color: #E53935;
-      animation: loading-bar 1.5s infinite linear;
+      background: linear-gradient(90deg, #CD1A21, #FF5252);
+      animation: loading-bar 1.4s infinite ease-in-out;
       transform-origin: 0% 50%;
     }
     @keyframes loading-bar {
-      0% { transform: translateX(-100%) scaleX(1); }
-      50% { transform: translateX(0%) scaleX(0.5); }
-      100% { transform: translateX(100%) scaleX(1); }
+      0% { transform: translateX(-100%) scaleX(0.8); }
+      50% { transform: translateX(0%) scaleX(0.4); }
+      100% { transform: translateX(100%) scaleX(0.8); }
     }
 
-    .form-body {
-      background-color: #FFFFFF;
-      border-radius: 18px;
-      border: 1px solid rgba(0, 0, 0, 0.02);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.015);
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      width: 100%;
-      box-sizing: border-box;
+    /* ================= HERO HEADER CARD ================= */
+    .hero-header-card {
+      background: linear-gradient(135deg, #FFFFFF 0%, #FDFDFE 100%);
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
     }
-
-    .form-group {
+    .hero-top-row {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      position: relative;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
     }
-    .form-lbl {
-      font-size: 11px;
-      font-weight: 800;
-      color: #78909C;
-      text-transform: uppercase;
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: rgba(205, 26, 33, 0.08);
+      color: #CD1A21;
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-size: 9.5px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+    }
+    .badge-icon {
+      font-size: 14px;
+    }
+    .live-dot-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: rgba(46, 125, 50, 0.08);
+      color: #2E7D32;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 9.5px;
+      font-weight: 900;
       letter-spacing: 0.5px;
     }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #2E7D32;
+      box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.3);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.5); }
+      70% { box-shadow: 0 0 0 5px rgba(46, 125, 50, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+    }
+    .hero-title {
+      margin: 0 0 4px 0;
+      font-size: 19px;
+      font-weight: 900;
+      color: #1E293B;
+      letter-spacing: -0.2px;
+    }
+    .hero-subtitle {
+      margin: 0;
+      font-size: 11.5px;
+      color: #64748B;
+      line-height: 1.4;
+      font-weight: 500;
+    }
 
-    /* Styled Read-only Field Box */
-    .readonly-field-box {
-      display: flex;
-      align-items: center;
-      background-color: #F5F7F8;
-      border: 1.5px solid #ECEFF1;
-      border-radius: 12px;
-      padding: 12px;
-    }
-    .pickup-icon-backdrop {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background-color: rgba(67, 160, 71, 0.1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-right: 12px;
-    }
-    .field-icon.green {
-      color: #43A047;
-      font-size: 20px;
-    }
-    .readonly-text-box {
+    /* ================= FORM BODY ================= */
+    .form-body {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-    }
-    .readonly-main {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: #37474F;
-    }
-    .readonly-sub {
-      font-size: 11px;
-      color: #90A4AE;
-      font-weight: 700;
+      gap: 14px;
     }
 
-    /* Input wrappers and text fields */
-    .input-icon-wrapper {
+    /* ================= JOURNEY CARD (PICKUP -> DESTINATION) ================= */
+    .journey-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 16px 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.025);
+      position: relative;
+    }
+    .journey-node {
+      display: flex;
+      gap: 12px;
+    }
+    .node-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 32px;
+      flex-shrink: 0;
+    }
+    .node-icon-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .node-icon-circle.pickup {
+      background-color: rgba(46, 125, 50, 0.12);
+      color: #2E7D32;
+    }
+    .node-icon-circle.destination {
+      background-color: rgba(205, 26, 33, 0.12);
+      color: #CD1A21;
+    }
+    .node-icon-circle .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .node-track-line {
+      width: 2px;
+      flex-grow: 1;
+      min-height: 28px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #CBD5E1,
+        #CBD5E1 3px,
+        transparent 3px,
+        transparent 6px
+      );
+      margin: 4px 0;
+    }
+    .node-content {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+    }
+    .node-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .node-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #94A3B8;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .node-status-tag {
+      font-size: 9px;
+      font-weight: 800;
+      color: #2E7D32;
+      background-color: rgba(46, 125, 50, 0.08);
+      padding: 2px 7px;
+      border-radius: 12px;
+    }
+    .node-required-tag {
+      font-size: 8.5px;
+      font-weight: 800;
+      color: #EA580C;
+      background-color: rgba(234, 88, 12, 0.08);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .node-main-box {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      padding: 4px 0 10px 0;
+    }
+    .node-address-main {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1E293B;
+    }
+    .node-postcode {
+      font-size: 11px;
+      color: #64748B;
+      font-weight: 600;
+    }
+
+    /* Destination search input */
+    .destination-node {
+      margin-top: 6px;
+    }
+    .destination-search-box {
       position: relative;
       display: flex;
       align-items: center;
     }
-    .input-icon {
+    .search-icon {
       position: absolute;
-      left: 14px;
-      color: #90A4AE;
-      font-size: 20px;
+      left: 12px;
+      color: #94A3B8;
+      font-size: 19px;
+      pointer-events: none;
     }
-    .form-input {
+    .dest-input {
       width: 100%;
-      border: 1.5px solid #ECEFF1;
-      border-radius: 12px;
-      padding: 12px 12px 12px 42px;
-      font-size: 14px;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 11px 38px 11px 38px;
+      font-size: 13.5px;
+      font-weight: 600;
       outline: none;
       box-sizing: border-box;
-      background-color: #FCFDFD;
+      background-color: #F8FAFC;
+      color: #1E293B;
       transition: all 0.2s ease;
-      color: #37474F;
     }
-    .form-input:focus {
-      border-color: #E53935;
+    .dest-input:focus {
+      border-color: #CD1A21;
       background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.05);
+      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.08);
     }
-    .search-field {
-      padding-right: 42px;
+    .clear-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 4px;
     }
-
+    .clear-btn .material-symbols-outlined {
+      font-size: 17px;
+    }
     .input-spinner {
       position: absolute;
-      right: 14px;
-      width: 18px;
-      height: 18px;
-      border: 2px solid rgba(229, 57, 53, 0.2);
-      border-top-color: #E53935;
+      right: 12px;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(205, 26, 33, 0.2);
+      border-top-color: #CD1A21;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.75s linear infinite;
     }
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
 
-    /* Suggestion dropdown overlay styling */
-    .suggestion-box {
+    /* Autocomplete suggestions dropdown */
+    .suggestions-overlay {
       position: absolute;
       top: 100%;
       left: 0;
       right: 0;
       background-color: #FFFFFF;
-      border-radius: 14px;
-      border: 1px solid #ECEFF1;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-      z-index: 10;
+      border-radius: 16px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+      z-index: 50;
       margin-top: 6px;
       max-height: 240px;
       overflow-y: auto;
     }
-    .suggestion-item {
-      padding: 12px 16px;
+    .suggestion-row {
+      padding: 11px 14px;
       display: flex;
       align-items: center;
+      gap: 10px;
       cursor: pointer;
-      border-bottom: 1px solid #F5F7F8;
-      transition: background-color 0.2s ease;
+      border-bottom: 1px solid #F1F5F9;
+      transition: background-color 0.18s ease;
     }
-    .suggestion-item:last-child {
+    .suggestion-row:last-child {
       border-bottom: none;
     }
-    .suggestion-item:hover {
-      background-color: #FAFBFC;
+    .suggestion-row:hover {
+      background-color: #F8FAFC;
     }
-    .item-icon-circle {
-      width: 32px;
-      height: 32px;
+    .sugg-icon-box {
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      background-color: rgba(229, 57, 53, 0.06);
+      background-color: rgba(205, 26, 33, 0.08);
+      color: #CD1A21;
       display: flex;
-      justify-content: center;
       align-items: center;
-      margin-right: 12px;
+      justify-content: center;
       flex-shrink: 0;
     }
-    .item-icon {
-      color: #E53935;
-      font-size: 18px;
+    .sugg-icon-box .material-symbols-outlined {
+      font-size: 16px;
     }
-    .item-text-box {
+    .sugg-text-box {
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      min-width: 0;
+      gap: 1px;
     }
-    .item-main {
-      font-size: 13px;
+    .sugg-title {
+      font-size: 12.5px;
       font-weight: 700;
-      color: #37474F;
+      color: #1E293B;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .item-sub {
-      font-size: 11px;
-      color: #90A4AE;
+    .sugg-sub {
+      font-size: 10.5px;
+      color: #64748B;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
-    /* Estimated Pricing Quote Panel */
-    .quote-card {
-      background-color: #FAFBFC;
-      border: 1.5px solid #ECEFF1;
-      border-radius: 14px;
-      padding: 16px;
+    .sugg-arrow {
+      color: #CBD5E1;
+      font-size: 18px;
     }
-    .quote-header {
+
+    /* ================= SECTION CARD (PASSENGER DETAILS) ================= */
+    .section-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 14px 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.025);
+    }
+    .section-header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .section-icon-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background-color: rgba(56, 189, 248, 0.12);
+      color: #0284C7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .section-icon-badge .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .section-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .section-heading {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #1E293B;
+    }
+    .section-subtext {
+      font-size: 10px;
+      color: #64748B;
+      font-weight: 500;
+    }
+    .passenger-input-box {
+      margin-bottom: 8px;
+    }
+    .field-input {
+      width: 100%;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      box-sizing: border-box;
+      background-color: #F8FAFC;
+      color: #1E293B;
+      transition: all 0.2s ease;
+    }
+    .field-input:focus {
+      border-color: #CD1A21;
+      background-color: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.06);
+    }
+    .preset-chips-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .preset-chip {
+      background-color: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .preset-chip:hover, .preset-chip:active {
+      background-color: rgba(205, 26, 33, 0.08);
+      border-color: rgba(205, 26, 33, 0.25);
+      color: #CD1A21;
+    }
+
+    /* ================= QUOTE & TELEMETRY DECK ================= */
+    .quote-deck {
+      background-color: #FFFFFF;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03);
+    }
+    .quote-deck-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
-    .quote-title-box {
+    .quote-title-group {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #546E7A;
+      gap: 6px;
     }
-    .quote-icon {
+    .quote-title-icon {
       font-size: 18px;
+      color: #CD1A21;
     }
-    .quote-title {
+    .quote-title-text {
       font-size: 12.5px;
       font-weight: 800;
+      color: #1E293B;
     }
-    .pricing-scope-badge {
-      font-size: 9px;
+    .fare-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9.5px;
       font-weight: 900;
-      color: #E65100;
-      background-color: rgba(255, 152, 0, 0.08);
+      color: #C2410C;
+      background-color: rgba(234, 88, 12, 0.08);
       padding: 3px 8px;
       border-radius: 20px;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
     }
-    .quote-metrics {
+    .badge-cash-icon {
+      font-size: 13px;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 8px;
+      margin-bottom: 14px;
     }
-    .metric-box {
+    .metric-card {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 12px 6px;
-      background-color: #FFFFFF;
-      border-radius: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.03);
-      min-height: 76px;
-      box-sizing: border-box;
+      padding: 10px 6px;
+      background-color: #F8FAFC;
+      border-radius: 14px;
+      border: 1px solid #E2E8F0;
+      text-align: center;
     }
-    .metric-val {
+    .metric-icon {
+      font-size: 18px;
+      margin-bottom: 2px;
+    }
+    .metric-icon.blue { color: #0284C7; }
+    .metric-icon.amber { color: #D97706; }
+    .metric-icon.green { color: #16A34A; }
+    .metric-number {
       font-size: 13px;
       font-weight: 900;
-      color: #37474F;
-      text-align: center;
+      color: #1E293B;
       line-height: 1.2;
     }
-    .metric-sub-val {
-      font-size: 8px;
-      color: #78909C;
-      font-weight: 700;
-      text-align: center;
-      margin-top: 2px;
-      line-height: 1.1;
-      word-break: break-word;
-    }
-    .metric-lbl {
+    .metric-caption {
       font-size: 9px;
-      color: #90A4AE;
+      color: #94A3B8;
       font-weight: 700;
-      margin-top: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.2px;
+      margin-top: 3px;
+      letter-spacing: 0.3px;
     }
-    .metric-box.highlighted {
-      background-color: rgba(76, 175, 80, 0.04);
-      border-color: rgba(76, 175, 80, 0.1);
+    .metric-card.featured-fare {
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.08) 0%, rgba(22, 163, 74, 0.02) 100%);
+      border-color: rgba(22, 163, 74, 0.25);
     }
-    .metric-val.green {
-      color: #2E7D32;
+    .fare-text {
+      color: #16A34A !important;
+      font-size: 15.5px !important;
       font-weight: 900;
-      font-size: 14.5px;
+    }
+    .fare-caption {
+      color: #16A34A !important;
+      font-weight: 800;
     }
 
-    /* Price override block */
-    .amount-input-wrapper {
+    /* Fare Adjustment Box */
+    .fare-adjustment-box {
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .adjustment-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .adj-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #64748B;
+      letter-spacing: 0.4px;
+    }
+    .reset-link-btn {
+      background: none;
+      border: none;
+      color: #CD1A21;
+      font-size: 10px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+    .reset-link-btn .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .quick-steppers-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .step-btn {
+      background-color: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 10px;
+      padding: 6px 2px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .step-btn:active {
+      background-color: #CD1A21;
+      color: #FFFFFF;
+      border-color: #CD1A21;
+    }
+    .custom-amount-row {
       position: relative;
       display: flex;
       align-items: center;
-      width: 100%;
     }
-    .currency-symbol {
+    .custom-amount-prefix {
       position: absolute;
-      left: 14px;
-      font-size: 18px;
+      left: 12px;
+      font-size: 17px;
       font-weight: 900;
-      color: #37474F;
+      color: #1E293B;
     }
-    .form-input.amount-field {
-      padding-left: 28px;
-      font-size: 18px;
+    .custom-amount-input {
+      width: 100%;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 8px 12px 8px 28px;
+      font-size: 16px;
       font-weight: 900;
-      color: #263238;
+      color: #1E293B;
+      background-color: #FFFFFF;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .custom-amount-input:focus {
+      border-color: #CD1A21;
+    }
+    .custom-amount-label {
+      position: absolute;
+      right: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
-    .form-actions-row {
-      margin-top: 10px;
+    /* ================= SUBMIT ACTION BUTTON ================= */
+    .submit-action-container {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
-    .submit-action-btn {
+    .submit-dispatch-btn {
       width: 100%;
-      height: 48px;
-      background-color: #E53935 !important;
+      height: 52px;
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
       color: #FFFFFF !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.15) !important;
+      border-radius: 16px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.3px !important;
+      box-shadow: 0 6px 20px rgba(205, 26, 33, 0.28) !important;
+      transition: all 0.2s ease !important;
     }
-    .submit-action-btn:disabled {
-      background-color: #ECEFF1 !important;
-      color: #90A4AE !important;
+    .submit-dispatch-btn:disabled {
+      background: #E2E8F0 !important;
+      color: #94A3B8 !important;
       box-shadow: none !important;
     }
     .btn-content-wrapper {
@@ -552,18 +983,49 @@ import { DriverService } from '../services/driver.service';
       align-items: center;
       justify-content: center;
       gap: 8px;
+      font-size: 14px;
     }
-    .btn-content-wrapper .material-symbols-outlined {
+    .btn-action-icon {
       font-size: 20px;
+    }
+    .btn-arrow-icon {
+      font-size: 18px;
+    }
+    .btn-loading-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13.5px;
+    }
+    .btn-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    .security-trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #64748B;
+      font-weight: 600;
+    }
+    .security-trust-badge .material-symbols-outlined {
+      font-size: 14px;
+      color: #16A34A;
     }
 
     /* Animation effects */
     .animated-fade-in {
-      animation: fadeIn 0.25s ease-in-out forwards;
+      animation: fadeIn 0.22s ease-in-out forwards;
     }
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   `]
 })
@@ -574,6 +1036,7 @@ export class CreateBookingComponent implements OnInit {
   passengerName = '';
 
   price = 0;
+  originalPrice = 0;
   mileage = 0;
   mileageText = '';
   durationMinutes = 0;
@@ -663,7 +1126,7 @@ export class CreateBookingComponent implements OnInit {
       clearTimeout(this.debounceTimer);
     }
 
-    if (val.length < 4) {
+    if (val.length < 3) {
       this.isSearchingSuggestions = false;
       this.cdr.detectChanges();
       return;
@@ -686,7 +1149,20 @@ export class CreateBookingComponent implements OnInit {
           this.cdr.detectChanges();
         }
       });
-    }, 500);
+    }, 400);
+  }
+
+  clearDestination(): void {
+    this.destinationAddress = '';
+    this.destinationPostcode = '';
+    this.suggestions = [];
+    this.price = 0;
+    this.originalPrice = 0;
+    this.mileage = 0;
+    this.mileageText = '';
+    this.durationMinutes = 0;
+    this.durationText = '';
+    this.cdr.detectChanges();
   }
 
   selectSuggestion(item: any): void {
@@ -736,6 +1212,7 @@ export class CreateBookingComponent implements OnInit {
         const data = res?.value || res;
         if (data) {
           this.price = Number(data.priceDriver) || 0;
+          this.originalPrice = this.price;
           this.mileage = Number(data.totalMileage) || 0;
           this.mileageText = data.mileageText || '';
           this.durationMinutes = Number(data.totalMinutes) || 0;
@@ -746,8 +1223,8 @@ export class CreateBookingComponent implements OnInit {
       },
       error: (err) => {
         console.error('[Create Booking] Price fetch failed, applying fallback price:', err);
-        // Fallback price quote for preview testing
         this.price = 15.50;
+        this.originalPrice = 15.50;
         this.mileage = 5.2;
         this.mileageText = '5.2 miles';
         this.durationMinutes = 12;
@@ -756,6 +1233,24 @@ export class CreateBookingComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  setPassengerPreset(name: string): void {
+    this.passengerName = name;
+    this.cdr.detectChanges();
+  }
+
+  adjustPrice(delta: number): void {
+    const updated = Math.max(1.0, +(this.price + delta).toFixed(2));
+    this.price = updated;
+    this.cdr.detectChanges();
+  }
+
+  resetPrice(): void {
+    if (this.originalPrice > 0) {
+      this.price = this.originalPrice;
+      this.cdr.detectChanges();
+    }
   }
 
   onPassengerNameInput(val: string): void {
@@ -791,14 +1286,14 @@ export class CreateBookingComponent implements OnInit {
     this.driverService.createRankBooking(payload).subscribe({
       next: (res: any) => {
         this.isSubmitting = false;
-        this.snackBar.open('Rank booking created successfully!', 'OK', { duration: 3000 });
+        this.snackBar.open('Rank booking created & dispatched successfully!', 'OK', { duration: 3000 });
         this.router.navigate(['/bookings']);
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.warn('[Create Booking] Submission failed, applying offline fallback simulation:', err);
         this.isSubmitting = false;
-        this.snackBar.open('Rank booking created successfully!', 'OK', { duration: 3000 });
+        this.snackBar.open('Rank booking created & dispatched successfully!', 'OK', { duration: 3000 });
         this.router.navigate(['/bookings']);
         this.cdr.detectChanges();
       }

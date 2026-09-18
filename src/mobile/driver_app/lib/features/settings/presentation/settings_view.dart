@@ -136,10 +136,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: const Text('Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        title: const Text('Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
         centerTitle: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
@@ -211,7 +209,13 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
           const SizedBox(height: 14),
 
-          // 4. Compact Device & Tracking Group
+          // 4. Compact Accessibility & Text Size Group
+          _buildSectionHeader('ACCESSIBILITY & TEXT SIZE', isDark),
+          _buildFontSizeCard(branding, isDark),
+
+          const SizedBox(height: 14),
+
+          // 5. Compact Device & Tracking Group
           _buildSectionHeader('DEVICE & TRACKING', isDark),
           _buildGroupCard(
             isDark: isDark,
@@ -569,4 +573,180 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey.withValues(alpha: 0.08),
     );
   }
+
+  Widget _buildFontSizeCard(TenantBranding branding, bool isDark) {
+    final currentOption = ref.watch(fontSizeScaleProvider);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.format_size_rounded, color: Color(0xFFF59E0B), size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Font Size Scaling',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          color: isDark ? AppTheme.textDarkPrimary : AppTheme.textLightPrimary,
+                        ),
+                      ),
+                      Text(
+                        currentOption.description,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildDivider(isDark),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: FontSizeOption.values.map((option) {
+                    final isSelected = currentOption == option;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          ref.read(fontSizeScaleProvider.notifier).setFontSize(option);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          padding: const EdgeInsets.symmetric(vertical: 7),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? LinearGradient(
+                                    colors: [
+                                      branding.primaryColor,
+                                      branding.primaryDarkColor,
+                                    ],
+                                  )
+                                : null,
+                            color: isSelected
+                                ? null
+                                : (isDark ? const Color(0xFF26262E) : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? branding.primaryColor
+                                  : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFE2E8F0)),
+                              width: 1.2,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: branding.primaryColor.withValues(alpha: 0.25),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                option.badge,
+                                style: TextStyle(
+                                  fontSize: option == FontSizeOption.standard ? 13 : (option == FontSizeOption.large ? 15 : 17),
+                                  fontWeight: FontWeight.w900,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark ? Colors.grey[300] : const Color(0xFF1E293B)),
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                option.label,
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected
+                                      ? Colors.white.withValues(alpha: 0.95)
+                                      : (isDark ? Colors.grey[400] : const Color(0xFF64748B)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+                // Live preview simulation card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF141418) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.visibility_outlined,
+                        size: 14,
+                        color: branding.primaryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Live: 42 High St • Saloon • £14.50',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFFECEFF1) : const Color(0xFF334155),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

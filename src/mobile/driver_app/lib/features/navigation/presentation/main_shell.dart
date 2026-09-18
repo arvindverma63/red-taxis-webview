@@ -44,6 +44,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     final tripState = ref.watch(tripProvider);
     final authState = ref.watch(authProvider);
     final navState = ref.watch(navigationProvider);
+    final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
+    final primaryColor = branding.primaryColor;
     final token = authState.token ?? '';
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     final themeStr = isDark ? 'dark' : 'light';
@@ -169,35 +171,43 @@ class _MainShellState extends ConsumerState<MainShell> {
         ),
         bottomNavigationBar: Container(
           color: Colors.transparent,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: SafeArea(
             child: Container(
-              height: 66,
+              height: 68,
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                color: isDark ? const Color(0xFF1E1E24) : Colors.white,
+                borderRadius: BorderRadius.circular(26),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.07),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: branding.primaryColor.withValues(alpha: isDark ? 0.10 : 0.05),
                     blurRadius: 16,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
+                    spreadRadius: -2,
+                    offset: const Offset(0, 2),
                   ),
                 ],
                 border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
-                  width: 1,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : const Color(0xFFE2E8F0),
+                  width: 1.2,
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 6.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', navState.selectedIndex),
-                    _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month, 'Bookings', navState.selectedIndex),
-                    _buildNavItem(2, Icons.person_outline, Icons.person, 'Profile', navState.selectedIndex),
-                    _buildNavItem(3, Icons.event_available_outlined, Icons.event_available, 'Availability', navState.selectedIndex),
+                    _buildNavItem(0, Icons.grid_view_outlined, Icons.grid_view_rounded, 'Dashboard', navState.selectedIndex, branding.primaryColor),
+                    _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Bookings', navState.selectedIndex, branding.primaryColor),
+                    _buildNavItem(2, Icons.person_outline_rounded, Icons.person_rounded, 'Profile', navState.selectedIndex, branding.primaryColor),
+                    _buildNavItem(3, Icons.schedule_outlined, Icons.schedule_rounded, 'Availability', navState.selectedIndex, branding.primaryColor),
                   ],
                 ),
               ),
@@ -208,42 +218,92 @@ class _MainShellState extends ConsumerState<MainShell> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData inactiveIcon, IconData activeIcon, String label, int activeIndex) {
+  Widget _buildNavItem(
+    int index,
+    IconData inactiveIcon,
+    IconData activeIcon,
+    String label,
+    int activeIndex,
+    Color primaryColor,
+  ) {
     final isActive = activeIndex == index;
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
-    return GestureDetector(
-      onTap: () {
-        ref.read(navigationProvider.notifier).setTabIndex(index);
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryRed.withValues(alpha: isDark ? 0.15 : 0.08) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : inactiveIcon,
-              color: isActive ? AppTheme.primaryRed : (isDark ? AppTheme.textDarkSecondary : Colors.grey[600]),
-              size: 22,
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppTheme.primaryRed,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          ref.read(navigationProvider.notifier).setTabIndex(index);
+        },
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: isActive ? 6 : 2,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            gradient: isActive
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      primaryColor.withValues(alpha: isDark ? 0.22 : 0.12),
+                      primaryColor.withValues(alpha: isDark ? 0.10 : 0.05),
+                    ],
+                  )
+                : null,
+            color: isActive ? null : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: isActive
+                ? Border.all(
+                    color: primaryColor.withValues(alpha: isDark ? 0.40 : 0.22),
+                    width: 1.2,
+                  )
+                : null,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: primaryColor.withValues(alpha: isDark ? 0.18 : 0.08),
+                      blurRadius: 8,
+                      spreadRadius: -1,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                scale: isActive ? 1.06 : 1.0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutBack,
+                child: Icon(
+                  isActive ? activeIcon : inactiveIcon,
+                  color: isActive
+                      ? primaryColor
+                      : (isDark ? const Color(0xFF90A4AE) : const Color(0xFF64748B)),
+                  size: 20,
                 ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive
+                      ? (isDark ? Colors.white : primaryColor)
+                      : (isDark ? const Color(0xFF78909C) : const Color(0xFF64748B)),
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: 0.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
-          ],
+          ),
         ),
       ),
     );

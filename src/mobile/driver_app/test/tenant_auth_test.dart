@@ -104,5 +104,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(BrandedLogo), findsOneWidget);
     });
+
+    test('FontSizeOption scale parsing and descriptions', () {
+      expect(FontSizeOption.fromScale(1.0), FontSizeOption.standard);
+      expect(FontSizeOption.fromScale(1.15), FontSizeOption.large);
+      expect(FontSizeOption.fromScale(1.30), FontSizeOption.extraLarge);
+      expect(FontSizeOption.standard.scale, 1.0);
+      expect(FontSizeOption.large.scale, 1.15);
+      expect(FontSizeOption.extraLarge.scale, 1.30);
+    });
   });
 }

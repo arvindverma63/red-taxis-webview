@@ -227,6 +227,8 @@ class DriverApp extends ConsumerWidget {
       ),
     );
 
+    final fontOption = ref.watch(fontSizeScaleProvider);
+
     return MaterialApp.router(
       title: appTitle,
       theme: AppTheme.getDynamicLightTheme(branding),
@@ -234,6 +236,15 @@ class DriverApp extends ConsumerWidget {
       themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(fontOption.scale),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

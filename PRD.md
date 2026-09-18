@@ -320,6 +320,36 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Static Tenant ID & Public Key Configuration**: Configured static default tenant ID (`org_ace_taxis`) and public tenant key (`rtk_pub_47b2f6dc71b5dd024f7f6d23bdeb9fe2782c3ed4a46d15b7`) in `AppConfig` and `DioClient` with automatic `X-Tenant-Key` and `X-Tenant-Id` header propagation on registration and all customer API requests.
   - **Android Build & Desugaring Compatibility**: Enabled `isCoreLibraryDesugaringEnabled = true` and configured `desugar_jdk_libs:2.1.4` in `android/app/build.gradle.kts` for `flutter_local_notifications`, and resolved multi-drive Kotlin incremental compilation paths on Windows.
   - **Build & Test Health**: 100% clean analyzer report (`flutter analyze` with 0 warnings), all test suites passing (`flutter test`), and verified successful debug APK compilation (`flutter build apk --debug`).
+- [x] **Driver App Red Header Styling & Theme Unification**:
+  - Configured `AppTheme` (`theme.dart`) light and dark dynamic theme generators so that `appBarTheme` consistently applies the primary brand red background (`primaryColor`, e.g., `#CD1A21` / `#D32F2F`) across the driver mobile application.
+  - Set high-contrast white header foreground typography, action icons, and status bar iconography (`foregroundColor: Colors.white`, `iconTheme: Colors.white`, `titleTextStyle: TextStyle(color: Colors.white)`).
+  - Updated all driver app headers (Dashboard, Webview sub-tabs, Settings, and Active Trips) to seamlessly inherit the unified red brand styling.
+  - Verified test suite passes 100% (`flutter test`).
+- [x] **Fast Professional Vector Animated Splash Screen (`splash_screen.dart`)**:
+  - Replaced slow artificial delays (previously 2.8s+ progress controller) with an ultra-snappy 750ms entrance and instant session check transition.
+  - Implemented high-performance custom vector graphics via `CustomPainter`:
+    - `_VectorRadarRingPainter`: Concentric geometric telemetry orbits with rotating radar sweeps, 4-point cardinal tick notches, and leading neon beacon indicators.
+    - `_VectorBackgroundPainter`: Dynamic radial aura glow with pulsing ambient illumination matching the tenant's brand color.
+  - Designed spring pop-in physics (`Curves.easeOutBack`) for the central branded emblem with subtle multi-layer drop shadows.
+  - Added a glowing vector energy beacon progress track and "PROFESSIONAL DRIVER DISPATCH" status indicator.
+  - Tested and verified 100% passing test suite (`flutter test`).
+- [x] **Professional Floating Island Bottom Navigation Dock (`main_shell.dart`)**:
+  - Redesigned bottom navigation into a modern, tactile floating capsule dock with rounded corners (`borderRadius: 26`), double ambient/brand drop-shadows, and fine-line borders.
+  - Built active item capsule highlights featuring subtle dynamic brand gradients, micro-scaled icons (`1.06x` `Curves.easeOutBack`), and high-contrast typography.
+  - Integrated standardized vector icons for all 4 primary navigation tabs (`Dashboard`, `Bookings`, `Profile`, `Availability`).
+  - Optimized responsive vertical padding and flex distribution for zero pixel overflow across all screen sizes and verified with `flutter test` (11/11 passing).
+- [x] **Senior-Friendly Accessibility & Dynamic Font Size Scaling**:
+  - Implemented `FontSizeOption` enum (`Standard 100%`, `Large 115%`, `Extra Large 130%`) and `fontSizeScaleProvider` in `theme.dart` with persistence in `FlutterSecureStorage`.
+  - Injected dynamic text scaling into the root `MaterialApp` builder via `MediaQuery.copyWith(textScaler: TextScaler.linear(scale))`.
+  - Added dedicated **"ACCESSIBILITY & TEXT SIZE"** section in `settings_view.dart` featuring a 3-pill tactile selector and an instant live trip card preview box (`Preview: 42 High St • Saloon • £14.50`).
+  - Added test suite coverage in `tenant_auth_test.dart` (12/12 passing).
+- [x] **Rank Pickup (Street Hire) UI Overhaul (`create-booking.ts`)**:
+  - Redesigned Rank Pickup interface with a modern hero header, live status indicator, and journey connection card linking Pickup (Rank Base) to Destination via a vertical dashed route line.
+  - Added clean destination typeahead search with clear button (`✕`), debouncing, animated spinner, and rounded suggestion dropdowns with postcode badges.
+  - Built quick passenger preset chips (`Rank Passenger`, `Street Flag`, `Cash Passenger`).
+  - Integrated 3-column telemetry metrics grid (Distance, Duration, Total Fare) with dynamic cash / rank badge.
+  - Implemented 1-tap quick fare stepper controls (`-£1.00`, `+£1.00`, `+£2.00`, `+£5.00`, `Reset`) and direct currency input override.
+  - Added high-contrast gradient action button (`Create & Start Trip`) with animated spinner and verified with Vitest (2/2 passing) and `ng build`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
