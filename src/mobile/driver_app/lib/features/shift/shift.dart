@@ -69,11 +69,36 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         logPrint: (obj) => debugPrint('[Dio/Shift] $obj'),
       ));
     }
+
+    // When logging out or switching driver/tenant, force offline and stop GPS tracking
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.status == AuthStatus.unauthenticated || previous?.token != next.token || previous?.userId != next.userId) {
+        resetToOffline();
+      }
+    });
+
     _restoreShiftState();
+  }
+
+  Future<void> resetToOffline() async {
+    _stopLocationTracking();
+    state = const ShiftState(status: ShiftStatus.offline, isLoading: false);
+    try {
+      await _storage.write(key: 'shift_online', value: 'false');
+      await _storage.delete(key: 'shift_start_time');
+    } catch (storageErr) {
+      debugPrint("[ShiftNotifier] Storage write error in resetToOffline: $storageErr");
+    }
   }
 
   Future<void> _restoreShiftState() async {
     try {
+      final auth = _ref.read(authProvider);
+      if (auth.status != AuthStatus.authenticated || auth.token == null) {
+        state = const ShiftState(status: ShiftStatus.offline);
+        return;
+      }
+
       final isOnlineStr = await _storage.read(key: 'shift_online');
       if (isOnlineStr == 'true') {
         final startTimeStr = await _storage.read(key: 'shift_start_time');
@@ -88,6 +113,8 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         if (permResult == LocationPermissionResult.granted) {
           _startLocationTracking();
         }
+      } else {
+        state = const ShiftState(status: ShiftStatus.offline);
       }
     } catch (e) {
       debugPrint("[ShiftNotifier] Restore shift state error: $e");

@@ -28,9 +28,9 @@ interface JobDetails {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="light-container">
+    <div class="job-offer-container">
       <!-- Full screen status pages for Cancelled, Unallocated, and Amended bookings -->
-      <div class="status-overlay-card" *ngIf="jobStatus && jobStatus !== 'active'">
+      <div class="status-overlay-card animated-fade-in" *ngIf="jobStatus && jobStatus !== 'active'">
         <div class="status-header">
           <span class="material-symbols-outlined status-icon" [ngClass]="jobStatus">
             {{ getStatusIconName() }}
@@ -41,19 +41,19 @@ interface JobDetails {
 
         <div class="status-details-box" *ngIf="job">
           <div class="status-row">
-            <span class="status-lbl">Booking ID:</span>
-            <span class="status-val">#{{ job.id }}</span>
+            <span class="status-lbl">Booking Reference:</span>
+            <span class="status-val font-mono">#{{ job.id }}</span>
           </div>
           <div class="status-row" *ngIf="job.passenger">
             <span class="status-lbl">Passenger:</span>
-            <span class="status-val">{{ job.passenger }}</span>
+            <span class="status-val font-bold">{{ job.passenger }}</span>
           </div>
           <div class="status-row">
             <span class="status-lbl">Route:</span>
             <span class="status-val route-compact">{{ job.pickup }} ➔ {{ job.dropoff }}</span>
           </div>
           <div class="status-row" *ngIf="job.vias && job.vias.length > 0">
-            <span class="status-lbl">Vias ({{ job.vias.length }}):</span>
+            <span class="status-lbl">Via Stops ({{ job.vias.length }}):</span>
             <span class="status-val route-compact">
               <span *ngFor="let via of job.vias; let i = index">
                 {{ i + 1 }}. {{ via.address }}<br *ngIf="i < job.vias.length - 1"/>
@@ -63,1146 +63,840 @@ interface JobDetails {
         </div>
 
         <button class="status-ok-btn" (click)="dismissStatusScreen()">
-          OK
+          <span>Acknowledge & Close</span>
         </button>
       </div>
 
-      <!-- Bottom Sheet Drawer -->
-      <div class="bottom-sheet" *ngIf="job && (!jobStatus || jobStatus === 'active')">
-        <!-- Header Grabber Bar -->
-        <div class="sheet-grabber"></div>
+      <!-- Executive Job Offer Bottom Sheet / Modal -->
+      <div class="offer-sheet animated-slide-up" *ngIf="job && (!jobStatus || jobStatus === 'active')">
+        <!-- Sheet Top Grabber -->
+        <div class="sheet-grabber-bar">
+          <div class="sheet-grabber"></div>
+        </div>
 
-        <!-- Ticket Card -->
-        <div class="details-card">
-          <!-- Ticket Header with Embedded Timer -->
-          <div class="ticket-header">
-            <div class="fare-info">
-              <span class="fare-label">ESTIMATED FARE</span>
-              <span class="fare-val">£{{ job.fare.toFixed(2) }}</span>
+        <!-- Hero Dispatch Header Card -->
+        <div class="offer-hero-card">
+          <!-- Ambient Glow Background -->
+          <div class="hero-glow-bg"></div>
+
+          <div class="hero-content">
+            <!-- Top Live Header Pill -->
+            <div class="incoming-pill-row">
+              <div class="incoming-badge">
+                <span class="live-beacon-dot"></span>
+                <span>INCOMING DISPATCH OFFER</span>
+              </div>
+              <span class="ref-tag">#{{ job.id }}</span>
             </div>
 
-            <!-- Timer embedded within the card -->
-            <div class="circle-timer">
-              <svg class="progress-ring" width="64" height="64">
-                <circle
-                  class="progress-ring-track"
-                  stroke="#ECEFF1"
-                  stroke-width="3.5"
-                  fill="transparent"
-                  r="27.5"
-                  cx="32"
-                  cy="32"
-                />
-                <circle
-                  class="progress-ring-circle"
-                  stroke="#D32F2F"
-                  stroke-width="3.5"
-                  fill="transparent"
-                  r="27.5"
-                  cx="32"
-                  cy="32"
-                  [style.strokeDashoffset]="strokeDashoffset"
-                />
-              </svg>
-              <div class="timer-text-container">
-                <span class="seconds-num">{{ secondsRemaining }}</span>
-                <span class="seconds-lbl">SEC</span>
+            <!-- Fare & Countdown Row -->
+            <div class="fare-timer-row">
+              <div class="fare-block">
+                <span class="fare-label">ESTIMATED FARE</span>
+                <div class="fare-amount">
+                  <span class="cur-sign">£</span>
+                  <span class="fare-number">{{ job.fare.toFixed(2) }}</span>
+                </div>
               </div>
+
+              <!-- High-Precision SVG Countdown Ring -->
+              <div class="countdown-dial-wrapper">
+                <svg class="countdown-svg" width="60" height="60" viewBox="0 0 60 60">
+                  <circle
+                    class="countdown-track"
+                    stroke="rgba(255, 255, 255, 0.15)"
+                    stroke-width="4"
+                    fill="transparent"
+                    r="25"
+                    cx="30"
+                    cy="30"
+                  />
+                  <circle
+                    class="countdown-progress"
+                    [attr.stroke]="secondsRemaining <= 5 ? '#EF4444' : '#10B981'"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    fill="transparent"
+                    r="25"
+                    cx="30"
+                    cy="30"
+                    [style.strokeDashoffset]="strokeDashoffset"
+                  />
+                </svg>
+                <div class="countdown-inner-text">
+                  <span class="countdown-sec" [class.urgent]="secondsRemaining <= 5">{{ secondsRemaining }}</span>
+                  <span class="countdown-unit">SEC</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Telemetry Badges -->
+            <div class="hero-badges-row">
+              <span class="hero-badge payment" [ngClass]="job.paymentType.toLowerCase()">
+                <span class="material-symbols-outlined badge-ico">payments</span>
+                <span>{{ job.paymentType }}</span>
+              </span>
+              <span class="hero-badge vehicle">
+                <span class="material-symbols-outlined badge-ico">local_taxi</span>
+                <span>{{ job.vehicleType }}</span>
+              </span>
+              <span class="hero-badge passenger" *ngIf="job.passenger">
+                <span class="material-symbols-outlined badge-ico">person</span>
+                <span>{{ job.passenger }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable Route Details Card -->
+        <div class="offer-body-card">
+          <!-- Driver Notes Alert (if present) -->
+          <div class="notes-banner" *ngIf="job.notes && job.notes.trim().length > 0">
+            <span class="material-symbols-outlined notes-ico">speaker_notes</span>
+            <div class="notes-body">
+              <span class="notes-head">Driver Instructions:</span>
+              <p class="notes-txt">{{ job.notes }}</p>
             </div>
           </div>
 
-          <!-- Badges panel -->
-          <div class="badge-row">
-            <span class="payment-badge" [ngClass]="job.paymentType.toLowerCase()">
-              {{ job.paymentType }}
-            </span>
-            <span class="vehicle-badge">
-              {{ job.vehicleType }}
-            </span>
-          </div>
-
-          <!-- Ticket Tear Separator Line -->
-          <div class="ticket-stub-line">
-            <div class="stub-notch left"></div>
-            <div class="stub-dash"></div>
-            <div class="stub-notch right"></div>
-          </div>
-
-          <!-- Ticket Body -->
-          <div class="ticket-body">
-            <!-- Information Grid -->
-            <div class="info-grid">
-              <div class="info-cell">
-                <span class="info-lbl">BOOKING ID</span>
-                <span class="info-val">{{ job.id }}</span>
+          <!-- Connected Route Stepper -->
+          <div class="route-stepper">
+            <!-- Pickup Stop -->
+            <div class="stepper-row">
+              <div class="node-col">
+                <div class="node-circle pickup">
+                  <span class="material-symbols-outlined">my_location</span>
+                </div>
+                <div class="node-connector"></div>
               </div>
-              <div class="info-cell">
-                <span class="info-lbl">PASSENGER</span>
-                <span class="info-val">{{ job.passenger }}</span>
+              <div class="node-content">
+                <span class="node-lbl pickup-lbl">PICKUP LOCATION</span>
+                <span class="node-address">{{ job.pickup }}</span>
               </div>
             </div>
 
-            <!-- Driver Notes (Only shown if notes present) -->
-            <div class="notes-box" *ngIf="job.notes && job.notes.trim().length > 0">
-              <span class="info-lbl">DRIVER NOTES</span>
-              <p class="notes-txt">"{{ job.notes }}"</p>
+            <!-- Via Stops (if any) -->
+            <div class="stepper-row via-step" *ngFor="let via of job.vias; let i = index">
+              <div class="node-col">
+                <div class="node-circle via">
+                  <span class="material-symbols-outlined">pin_drop</span>
+                </div>
+                <div class="node-connector"></div>
+              </div>
+              <div class="node-content">
+                <div class="via-header">
+                  <span class="node-lbl via-lbl">VIA STOP {{ i + 1 }}</span>
+                  <span class="via-postcode-chip" *ngIf="via.postCode">{{ via.postCode }}</span>
+                </div>
+                <span class="node-address">{{ via.address }}</span>
+              </div>
             </div>
 
-            <!-- Route timeline -->
-            <div class="route-section">
-              <!-- Pickup Stop -->
-              <div class="route-stop-row">
-                <div class="stop-indicator">
-                  <div class="timeline-dot green">
-                    <div class="dot-inner"></div>
-                  </div>
-                  <div class="stop-line"></div>
-                </div>
-                <div class="address-node">
-                  <span class="addr-label green-txt">PICKUP LOCATION</span>
-                  <span class="addr-text">{{ job.pickup }}</span>
+            <!-- Dropoff Stop -->
+            <div class="stepper-row">
+              <div class="node-col">
+                <div class="node-circle dropoff">
+                  <span class="material-symbols-outlined">location_on</span>
                 </div>
               </div>
-
-              <!-- Via Stops -->
-              <div class="route-stop-row via-row" *ngFor="let via of job.vias; let i = index">
-                <div class="stop-indicator">
-                  <div class="timeline-dot yellow">
-                    <div class="dot-inner"></div>
-                  </div>
-                  <div class="stop-line"></div>
-                </div>
-                <div class="address-node">
-                  <div class="via-label-row">
-                    <span class="addr-label yellow-txt">VIA STOP {{ i + 1 }}</span>
-                    <span class="via-badge" *ngIf="via.postCode">{{ via.postCode }}</span>
-                  </div>
-                  <span class="addr-text">{{ via.address }}</span>
-                </div>
-              </div>
-
-              <!-- Dropoff Stop -->
-              <div class="route-stop-row dropoff-row">
-                <div class="stop-indicator">
-                  <div class="timeline-dot red">
-                    <div class="dot-inner"></div>
-                  </div>
-                </div>
-                <div class="address-node">
-                  <span class="addr-label red-txt">DROPOFF LOCATION</span>
-                  <span class="addr-text">{{ job.dropoff }}</span>
-                </div>
+              <div class="node-content">
+                <span class="node-lbl dropoff-lbl">DESTINATION</span>
+                <span class="node-address">{{ job.dropoff }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Slider and Action Buttons at the very bottom -->
-        <div class="action-footer">
-          <!-- Slide / Tap to Accept widget -->
-          <div class="slider-container" #slider (click)="onSliderClick($event)" [class.accepted]="isAccepted">
-            <div class="slider-bg-text">{{ isAccepted ? 'ACCEPTED! RETURNING...' : isSubmitting ? 'ACCEPTING BOOKING...' : 'SLIDE TO ACCEPT' }}</div>
+        <!-- Action Footer with Smooth Slide to Accept -->
+        <div class="offer-footer">
+          <!-- Buttery Smooth Slide to Accept Widget -->
+          <div 
+            class="smooth-slider-container"
+            #slider
+            [class.dragging]="isDragging"
+            [class.accepted]="isAccepted"
+          >
+            <!-- Background Track with Dynamic Fill -->
             <div 
-              class="slider-thumb"
-              [style.transform]="'translateX(' + sliderPosition + 'px)'"
+              class="slider-fill-track"
+              [style.width.px]="sliderPosition + 52"
+            ></div>
+
+            <!-- Centered Track Text -->
+            <div class="slider-center-label">
+              <span *ngIf="isAccepted">ACCEPTED! REDIRECTING...</span>
+              <span *ngIf="isSubmitting && !isAccepted">SECURING ALLOCATION...</span>
+              <span *ngIf="!isAccepted && !isSubmitting">{{ isDragging ? 'Release to Accept' : 'SLIDE TO ACCEPT OFFER' }}</span>
+            </div>
+
+            <!-- Smooth Thumb Handle -->
+            <div 
+              class="smooth-slider-thumb"
+              [style.transform]="'translate3d(' + sliderPosition + 'px, 0, 0)'"
               (mousedown)="onDragStart($event)"
               (touchstart)="onDragStart($event)"
+              (click)="onSliderClick($event)"
             >
-              <div class="thumb-arrow" *ngIf="!isAccepted"></div>
+              <span class="material-symbols-outlined thumb-icon" *ngIf="!isAccepted && !isSubmitting">keyboard_double_arrow_right</span>
               <span class="material-symbols-outlined check-icon" *ngIf="isAccepted">check</span>
+              <span class="material-symbols-outlined spinning-icon" *ngIf="isSubmitting && !isAccepted">refresh</span>
             </div>
           </div>
 
-          <button class="decline-btn" [disabled]="isSubmitting || isAccepted" (click)="decline()">
-            Decline Job Offer
+          <!-- Decline Offer Button -->
+          <button 
+            class="btn-decline-offer"
+            [disabled]="isSubmitting || isAccepted"
+            (click)="decline()"
+          >
+            <span class="material-symbols-outlined">close</span>
+            <span>Decline Offer</span>
           </button>
         </div>
+
       </div>
     </div>
   `,
   styles: [`
-    /* Dark Theme Support via :host-context */
-    :host-context(.dark-theme) .light-container {
-      background-color: #121214 !important;
-    }
-    :host-context(.dark-theme) .light-container::before {
-      background-color: rgba(18, 18, 20, 0.65) !important;
-    }
-    :host-context(.dark-theme) .bottom-sheet,
-    :host-context(.dark-theme) .details-card,
-    :host-context(.dark-theme) .status-overlay-card {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .sheet-grabber,
-    :host-context(.dark-theme) .timeline-line,
-    :host-context(.dark-theme) .stop-line {
-      background-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .stub-notch {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .stub-dash {
-      border-top-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .notes-box,
-    :host-context(.dark-theme) .status-details-box {
-      background-color: #121214 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .timeline-dot {
-      background-color: #1E1E24 !important;
-    }
-    :host-context(.dark-theme) .vehicle-badge,
-    :host-context(.dark-theme) .via-badge {
-      background-color: #2D2D35 !important;
-      border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .seconds-num,
-    :host-context(.dark-theme) .info-val,
-    :host-context(.dark-theme) .addr-text,
-    :host-context(.dark-theme) .status-title,
-    :host-context(.dark-theme) .status-val {
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .seconds-lbl,
-    :host-context(.dark-theme) .info-lbl,
-    :host-context(.dark-theme) .addr-label,
-    :host-context(.dark-theme) .notes-txt,
-    :host-context(.dark-theme) .status-body,
-    :host-context(.dark-theme) .status-lbl {
-      color: #90A4AE !important;
+    :host {
+      display: block;
+      min-height: 100vh;
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .light-container {
+    .job-offer-container {
       position: relative;
-      background: #ECEFF1 url('/map_bg.png') no-repeat center center;
+      background: #0F172A url('/map_bg.png') no-repeat center center;
       background-size: cover;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end; /* Aligns sheet to the bottom */
+      justify-content: flex-end;
       align-items: center;
-      font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
     }
 
-    /* Ambient glassmorphism overlay */
-    .light-container::before {
+    /* Ambient Overlay */
+    .job-offer-container::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(240, 244, 248, 0.4);
-      backdrop-filter: blur(2px);
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%);
+      backdrop-filter: blur(4px);
       z-index: 1;
     }
 
-    /* Modal bottom sheet container */
-    .bottom-sheet {
+    /* Offer Bottom Sheet */
+    .offer-sheet {
       position: relative;
       z-index: 2;
-      background-color: #FFFFFF;
-      border-top-left-radius: 28px;
-      border-top-right-radius: 28px;
-      padding: 12px 18px 24px 18px;
-      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+      background: #FFFFFF;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 8px 14px 20px 14px;
+      box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      max-height: 90vh;
+      gap: 10px;
+      max-height: 92vh;
       overflow-y: auto;
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
       box-sizing: border-box;
       margin: 0 auto;
     }
 
     @media (min-width: 600px) {
-      .bottom-sheet {
-        border-radius: 28px;
-        margin-bottom: 20px;
-        width: 92%;
+      .offer-sheet {
+        border-radius: 24px;
+        margin-bottom: 16px;
+        width: 94%;
       }
     }
 
-    @keyframes slideUp {
-      from {
-        transform: translateY(100%);
-      }
-      to {
-        transform: translateY(0);
-      }
-    }
-
-    .sheet-grabber {
-      width: 36px;
-      height: 4px;
-      background-color: #E0E0E0;
-      border-radius: 2px;
-      align-self: center;
-      margin-bottom: 2px;
-    }
-
-    /* Ticket Card */
-    .details-card {
-      background-color: #FFFFFF;
-      border-radius: 18px;
-      border: 1px solid #ECEFF1;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .ticket-header {
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .fare-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .fare-label {
-      font-size: 9px;
-      font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 1px;
-    }
-
-    .fare-val {
-      font-size: 34px;
-      font-weight: 900;
-      color: #2E7D32;
-      line-height: 1.1;
-    }
-
-    .circle-timer {
-      position: relative;
-      width: 64px;
-      height: 64px;
+    .sheet-grabber-bar {
       display: flex;
       justify-content: center;
-      align-items: center;
+      padding: 4px 0 2px 0;
+    }
+    .sheet-grabber {
+      width: 40px;
+      height: 4px;
+      background: #CBD5E1;
+      border-radius: 2px;
     }
 
-    .progress-ring {
+    /* 1. Hero Dispatch Card */
+    .offer-hero-card {
+      position: relative;
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      color: #FFFFFF;
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    .hero-glow-bg {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: -30px;
+      right: -30px;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #CD1A21 0%, transparent 70%);
+      opacity: 0.35;
+      filter: blur(30px);
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .incoming-pill-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .incoming-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(205, 26, 33, 0.2);
+      border: 1px solid rgba(205, 26, 33, 0.45);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      color: #FCA5A5;
+    }
+    .live-beacon-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #EF4444;
+      animation: beaconPulse 1.4s infinite ease-in-out;
+    }
+    @keyframes beaconPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.4); }
+    }
+    .ref-tag {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #CBD5E1;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .fare-timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .fare-block {
+      display: flex;
+      flex-direction: column;
+    }
+    .fare-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94A3B8;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .fare-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+    .cur-sign {
+      font-size: 20px;
+      font-weight: 800;
+      color: #EF4444;
+    }
+    .fare-number {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #FFFFFF;
+    }
+
+    /* SVG Countdown Dial */
+    .countdown-dial-wrapper {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .countdown-svg {
       transform: rotate(-90deg);
     }
-
-    .progress-ring-circle {
-      stroke-dasharray: 172.78;
-      transition: stroke-dashoffset 0.1s linear;
+    .countdown-progress {
+      transition: stroke-dashoffset 0.8s linear, stroke 0.3s ease;
     }
-
-    .timer-text-container {
+    .countdown-inner-text {
+      position: absolute;
       display: flex;
       flex-direction: column;
       align-items: center;
-    }
-
-    .seconds-num {
-      font-size: 20px;
-      font-weight: 900;
+      justify-content: center;
       line-height: 1;
-      color: #263238;
     }
-
-    .seconds-lbl {
-      font-size: 7px;
+    .countdown-sec {
+      font-size: 16px;
+      font-weight: 900;
+      color: #FFFFFF;
+    }
+    .countdown-sec.urgent {
+      color: #EF4444;
+      animation: urgentPulse 0.6s infinite alternate;
+    }
+    @keyframes urgentPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.18); }
+    }
+    .countdown-unit {
+      font-size: 8px;
       font-weight: 700;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
+      color: #94A3B8;
       margin-top: 1px;
     }
 
-    .badge-row {
-      display: flex;
-      gap: 8px;
-      padding: 0 20px 14px 20px;
-    }
-
-    .payment-badge, .vehicle-badge {
-      font-size: 9px;
-      font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .payment-badge.cash {
-      background-color: rgba(76, 175, 80, 0.08);
-      color: #2E7D32;
-      border: 1px solid rgba(76, 175, 80, 0.15);
-    }
-
-    .payment-badge.card,
-    .payment-badge.account,
-    .payment-badge.rank {
-      background-color: rgba(33, 150, 243, 0.08);
-      color: #1565C0;
-      border: 1px solid rgba(33, 150, 243, 0.15);
-    }
-
-    .vehicle-badge {
-      background-color: #F5F7FA;
-      color: #455A64;
-      border: 1px solid #E4E7EB;
-    }
-
-    .ticket-stub-line {
+    /* Hero Badges */
+    .hero-badges-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      height: 14px;
-      position: relative;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
-
-    .stub-notch {
-      width: 14px;
-      height: 14px;
-      background-color: #FFFFFF;
-      border: 1px solid #ECEFF1;
-      border-radius: 50%;
-    }
-
-    .stub-notch.left {
-      margin-left: -8px;
-      border-left-color: transparent;
-      border-bottom-color: transparent;
-      transform: rotate(45deg);
-    }
-
-    .stub-notch.right {
-      margin-right: -8px;
-      border-right-color: transparent;
-      border-top-color: transparent;
-      transform: rotate(45deg);
-    }
-
-    .stub-dash {
-      flex: 1;
-      border-top: 1.5px dashed #ECEFF1;
-      margin: 0 4px;
-      height: 1px;
-    }
-
-    .ticket-body {
-      padding: 14px 20px 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      border-bottom: 1px solid #F5F7FA;
-      padding-bottom: 10px;
-    }
-
-    .info-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .info-lbl {
-      font-size: 8px;
-      font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
-    }
-
-    .info-val {
-      font-size: 13px;
-      font-weight: 700;
-      color: #37474F;
-    }
-
-    .notes-box {
-      background-color: #FAFBFD;
-      border: 1px solid #E8EFF5;
-      border-radius: 10px;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
       gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      color: #E2E8F0;
+    }
+    .badge-ico { font-size: 14px; }
+    .hero-badge.payment.cash { background: #064E3B; color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .hero-badge.payment.card { background: #1E1B4B; color: #A5B4FC; border: 1px solid rgba(99, 102, 241, 0.4); }
+    .hero-badge.payment.account { background: #581C87; color: #E9D5FF; border: 1px solid rgba(168, 85, 247, 0.4); }
+
+    /* 2. Body Card & Route */
+    .offer-body-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
+    .notes-banner {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .notes-ico {
+      font-size: 18px;
+      color: #D97706;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .notes-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .notes-head {
+      font-size: 10px;
+      font-weight: 700;
+      color: #B45309;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
     .notes-txt {
       margin: 0;
       font-size: 12px;
-      font-style: italic;
-      color: #546E7A;
-      line-height: 1.4;
+      font-weight: 600;
+      color: #92400E;
+      line-height: 1.35;
     }
 
-    /* Route Section & Dynamic Multi-Stop Timeline */
-    .route-section {
+    .route-stepper {
       display: flex;
       flex-direction: column;
-      margin-top: 4px;
-      width: 100%;
+      gap: 8px;
     }
-
-    .route-stop-row {
+    .stepper-row {
       display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      gap: 12px;
-      position: relative;
-      width: 100%;
+      align-items: flex-start;
+      gap: 10px;
     }
-
-    .stop-indicator {
+    .node-col {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 14px;
+      width: 26px;
       flex-shrink: 0;
     }
-
-    .timeline-dot {
-      width: 14px;
-      height: 14px;
+    .node-circle {
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      z-index: 2;
       display: flex;
+      align-items: center;
       justify-content: center;
-      align-items: center;
-      background-color: #FFFFFF;
-      margin-top: 2px;
-      flex-shrink: 0;
-      box-sizing: border-box;
     }
-
-    .timeline-dot.green {
-      border: 2px solid #2E7D32;
-    }
-
-    .timeline-dot.yellow {
-      border: 2px solid #F57F17;
-    }
-
-    .timeline-dot.red {
-      border: 2px solid #D32F2F;
-    }
-
-    .dot-inner {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-    }
-
-    .timeline-dot.green .dot-inner {
-      background-color: #2E7D32;
-    }
-
-    .timeline-dot.yellow .dot-inner {
-      background-color: #F57F17;
-    }
-
-    .timeline-dot.red .dot-inner {
-      background-color: #D32F2F;
-    }
-
-    .stop-line {
+    .node-circle .material-symbols-outlined { font-size: 14px; }
+    .node-circle.pickup { background: #DCFCE7; color: #16A34A; }
+    .node-circle.via { background: #FEF3C7; color: #D97706; }
+    .node-circle.dropoff { background: #FEE2E2; color: #DC2626; }
+    .node-connector {
       width: 2px;
-      flex: 1;
-      min-height: 18px;
-      background-color: #CFD8DC;
-      margin: 2px 0;
+      height: 18px;
+      background: #CBD5E1;
+      margin: 3px 0;
     }
 
-    .address-node {
+    .node-content {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      padding-bottom: 12px;
-      min-width: 0;
+      gap: 1px;
     }
-
-    .route-stop-row.dropoff-row .address-node {
-      padding-bottom: 0;
+    .node-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
     }
-
-    .via-label-row {
+    .pickup-lbl { color: #15803D; }
+    .via-lbl { color: #B45309; }
+    .dropoff-lbl { color: #B91C1C; }
+    .node-address {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0F172A;
+      line-height: 1.35;
+    }
+    .via-header {
       display: flex;
       align-items: center;
       gap: 6px;
-      flex-wrap: wrap;
     }
-
-    .via-badge {
-      font-size: 8px;
+    .via-postcode-chip {
+      font-size: 9px;
       font-weight: 800;
-      color: #F57F17;
-      background-color: #FFF8E1;
-      padding: 1px 6px;
-      border-radius: 4px;
-      border: 1px solid #FFE082;
-      letter-spacing: 0.5px;
+      font-family: monospace;
+      background: #FEF08A;
+      color: #000000;
+      padding: 1px 4px;
+      border-radius: 3px;
     }
 
-    .green-txt {
-      color: #2E7D32 !important;
+    /* 3. Smooth Slider Footer */
+    .offer-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 2px;
     }
 
-    .yellow-txt {
-      color: #F57F17 !important;
+    .smooth-slider-container {
+      position: relative;
+      height: 52px;
+      background: #0F172A;
+      border-radius: 26px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
     }
-
-    .red-txt {
-      color: #D32F2F !important;
+    .slider-fill-track {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, #10B981, #059669);
+      border-radius: 26px;
+      pointer-events: none;
+      transition: width 0.05s ease;
     }
-
-    .addr-label {
-      font-size: 8px;
+    .smooth-slider-container.accepted .slider-fill-track {
+      width: 100% !important;
+      background: #10B981 !important;
+    }
+    .slider-center-label {
+      position: relative;
+      z-index: 2;
+      font-size: 12.5px;
       font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
+      color: #FFFFFF;
+      letter-spacing: 0.6px;
+      pointer-events: none;
       text-transform: uppercase;
     }
-
-    .addr-text {
-      font-size: 13px;
-      font-weight: 700;
-      color: #37474F;
-      line-height: 1.4;
-      word-break: break-word;
-      overflow-wrap: break-word;
-    }
-
-    .action-footer {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-      align-items: center;
-    }
-
-    .slider-container {
-      position: relative;
-      width: 100%;
-      height: 56px;
-      background-color: rgba(76, 175, 80, 0.08);
-      border-radius: 28px;
-      border: 1.5px solid rgba(76, 175, 80, 0.25);
-      display: flex;
-      align-items: center;
-      padding: 0 4px;
-      box-sizing: border-box;
-      overflow: hidden;
-      user-select: none;
-      cursor: pointer;
-    }
-
-    .slider-bg-text {
+    .smooth-slider-thumb {
       position: absolute;
-      width: 100%;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 800;
-      color: #2E7D32;
-      letter-spacing: 1px;
-      pointer-events: none;
-      z-index: 1;
-      animation: pulseText 2s infinite ease-in-out;
-    }
-
-    @keyframes pulseText {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
-    }
-
-    .slider-thumb {
-      position: relative;
-      width: 48px;
-      height: 48px;
-      background-color: #2E7D32;
+      left: 4px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
+      background: #FFFFFF;
+      color: #0F172A;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       cursor: grab;
-      z-index: 2;
-      box-shadow: 0 3px 8px rgba(46, 125, 50, 0.35);
-      transition: transform 0.05s ease-out;
+      z-index: 3;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+      touch-action: none;
+      will-change: transform;
+      transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
     }
+    .smooth-slider-container.dragging .smooth-slider-thumb {
+      cursor: grabbing;
+      transition: none;
+    }
+    .thumb-icon { font-size: 22px; }
+    .check-icon { font-size: 22px; color: #10B981; }
+    .spinning-icon { font-size: 22px; animation: spin 0.8s linear infinite; }
 
-    .slider-container.accepted {
-      background-color: #2E7D32 !important;
-      border-color: #2E7D32 !important;
-    }
-    .slider-container.accepted .slider-bg-text {
-      color: #FFFFFF !important;
-      font-weight: 900 !important;
-      animation: none !important;
-    }
-    .check-icon {
-      color: #FFFFFF;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .thumb-arrow {
-      width: 0; 
-      height: 0; 
-      border-top: 6px solid transparent;
-      border-bottom: 6px solid transparent;
-      border-left: 8px solid #FFFFFF;
-      margin-left: 2px;
-    }
-
-    .decline-btn {
-      background-color: transparent;
-      border: none;
-      color: #E53935;
-      font-size: 14px;
-      font-weight: 800;
+    .btn-decline-offer {
+      background: transparent;
+      border: 1px solid #CBD5E1;
+      padding: 9px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
       cursor: pointer;
-      padding: 6px 16px;
-      margin-bottom: 12px;
-      letter-spacing: 0.5px;
-      transition: color 0.2s ease;
+      transition: background 0.15s ease;
     }
-
-    .decline-btn:active {
-      color: #B71C1C;
+    .btn-decline-offer:hover {
+      background: #F1F5F9;
+      color: #0F172A;
     }
+    .btn-decline-offer .material-symbols-outlined { font-size: 16px; }
 
-    .decline-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Status Overlay Card CSS */
+    /* Status Overlay */
     .status-overlay-card {
-      background-color: #FFFFFF;
-      border-radius: 24px;
-      width: 90%;
-      max-width: 380px;
-      padding: 32px 24px;
-      box-sizing: border-box;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
-      animation: zoomInStatus 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
       z-index: 10;
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 24px 20px;
+      max-width: 440px;
+      width: 90%;
+      margin: auto;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      margin: auto;
-    }
-    @keyframes zoomInStatus {
-      from { transform: scale(0.9); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      gap: 14px;
     }
     .status-icon {
-      font-size: 80px;
-      margin-bottom: 16px;
+      font-size: 48px;
     }
-    .status-icon.cancelled {
-      color: #D32F2F;
-    }
-    .status-icon.unallocated {
-      color: #FFB300;
-    }
-    .status-icon.amended {
-      color: #1976D2;
-    }
+    .status-icon.cancelled { color: #EF4444; }
+    .status-icon.unallocated { color: #F59E0B; }
+    .status-icon.amended { color: #3B82F6; }
     .status-title {
-      margin: 0 0 8px 0;
-      font-size: 22px;
-      font-weight: 900;
-      color: #1A1C1E;
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: #0F172A;
     }
     .status-body {
-      margin: 0 0 24px 0;
-      font-size: 14px;
-      color: #74777F;
-      line-height: 1.5;
+      margin: 0;
+      font-size: 12px;
+      color: #64748B;
+      line-height: 1.4;
     }
     .status-details-box {
-      background-color: #FAFBFD;
-      border: 1px solid #E0E2EC;
-      border-radius: 14px;
       width: 100%;
-      padding: 14px;
-      margin-bottom: 28px;
-      box-sizing: border-box;
+      background: #F8FAFC;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid #E2E8F0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
       text-align: left;
     }
     .status-row {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
+      font-size: 11px;
     }
-    .status-lbl {
-      font-size: 12px;
-      font-weight: 700;
-      color: #74777F;
-      white-space: nowrap;
-    }
-    .status-val {
-      font-size: 12px;
-      font-weight: 800;
-      color: #1A1C1E;
-    }
-    .status-val.route-compact {
-      text-align: right;
-      line-height: 1.3;
-    }
+    .status-lbl { color: #64748B; font-weight: 500; }
+    .status-val { color: #0F172A; font-weight: 600; }
     .status-ok-btn {
       width: 100%;
-      height: 48px;
-      border-radius: 24px;
-      background-color: #CD1A21;
+      background: #CD1A21;
       color: #FFFFFF;
-      font-size: 15px;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      border: none;
-      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.3);
-      transition: all 0.2s ease;
     }
-    .status-ok-btn:active {
-      transform: scale(0.97);
-      background-color: #B71C1C;
+
+    /* Animations */
+    .animated-slide-up {
+      animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .animated-fade-in {
+      animation: fadeIn 0.2s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Dark Mode Overrides */
+    :host-context(.dark-theme) .offer-sheet {
+      background: #1E1E24;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .offer-body-card {
+      background: #16161A;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .node-address {
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .node-connector {
+      background: #2D2D35;
+    }
+    :host-context(.dark-theme) .btn-decline-offer {
+      border-color: #3E3E48;
+      color: #94A3B8;
+    }
+    :host-context(.dark-theme) .status-overlay-card {
+      background: #1E1E24;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .status-title {
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .status-details-box {
+      background: #16161A;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .status-val {
+      color: #ECEFF1;
     }
   `]
 })
 export class JobOfferComponent implements OnInit, OnDestroy {
-  secondsRemaining = 15;
-  strokeDasharray = 172.78;
+  @ViewChild('slider') sliderEl?: ElementRef<HTMLDivElement>;
+
   job: JobDetails | null = null;
-  jobIdFromUrl: string = '';
-  guid: string = '';
+  jobStatus: string | null = null;
+  jobIdFromUrl: string | null = null;
+  guid: string | null = null;
+
+  secondsRemaining = 15;
+  private readonly strokeDasharray = 2 * Math.PI * 25; // ~157.08
+  private timerSub?: Subscription;
+
+  isDragging = false;
+  sliderPosition = 0;
+  maxDragRange = 0;
+  startX = 0;
   isSubmitting = false;
   isAccepted = false;
-  jobStatus: 'active' | 'cancelled' | 'unallocated' | 'amended' = 'active';
-  
-  sliderPosition = 0;
-  isDragging = false;
-  private startX = 0;
-  private maxDragRange = 0;
-
-  private timerSub: Subscription | null = null;
-
-  @ViewChild('slider', { static: false }) sliderEl!: ElementRef;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private driverService: DriverService,
-    private cdr: ChangeDetectorRef,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    const parseAllParams = (routeParams: any = {}) => {
-      let searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-      let hashParams = new URLSearchParams('');
-      if (typeof window !== 'undefined' && window.location.hash.includes('?')) {
-        hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
-      }
+    this.route.queryParams.subscribe(params => {
+      this.jobIdFromUrl = params['jobId'] || params['id'] || params['jobno'] || null;
+      this.guid = params['guid'] || null;
+      this.jobStatus = params['status'] || 'active';
 
-      const getParam = (key: string): string => {
-        return (routeParams[key] ?? hashParams.get(key) ?? searchParams.get(key) ?? '').toString();
-      };
-
-      const id = getParam('jobId') || getParam('id') || getParam('bookingId') || getParam('jobno') || '';
-      this.jobIdFromUrl = id;
-      this.guid = getParam('guid') || getParam('Guid') || getParam('notificationId') || getParam('notification_id') || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
       if (this.guid && typeof localStorage !== 'undefined') {
         localStorage.setItem('last_guid', this.guid);
       }
-      const fareVal = parseFloat(getParam('fare') || getParam('price') || '0');
-      const pickup = getParam('pickup') ? decodeURIComponent(getParam('pickup')) : '';
-      const dropoff = getParam('dropoff') ? decodeURIComponent(getParam('dropoff')) : '';
-      const paymentType = getParam('paymentType') || getParam('payment');
-      const vehicleType = getParam('vehicleType');
-      const passenger = getParam('passenger') || getParam('passengerName');
-      const notes = getParam('notes');
 
-      const statusParam = getParam('status') || getParam('Status');
-      if (statusParam) {
-        const parsedStatus = statusParam.toLowerCase();
-        if (parsedStatus === 'cancelled' || parsedStatus === 'unallocated' || parsedStatus === 'amended') {
-          this.jobStatus = parsedStatus as any;
-          this.timerSub?.unsubscribe();
-        }
-      }
-
-      const viasParam = getParam('vias') || getParam('Vias') || getParam('viaStops') || getParam('via');
-      const paramVias: ViaStop[] = [];
-      if (viasParam) {
+      const fareVal = parseFloat(params['fare'] || '0.00');
+      let vias: ViaStop[] = [];
+      if (params['vias']) {
         try {
-          const decoded = decodeURIComponent(viasParam);
-          const parsed = JSON.parse(decoded);
+          const parsed = JSON.parse(params['vias']);
           if (Array.isArray(parsed)) {
-            for (const v of parsed) {
-              if (typeof v === 'string' && v.trim()) {
-                paramVias.push({ address: v.trim() });
-              } else if (v && typeof v === 'object') {
-                const addr = v.address || v.Address || v.description || v.Description || v.stopAddress || '';
-                const pc = v.postCode || v.PostCode || v.postcode || '';
-                if (addr || pc) paramVias.push({ address: addr || pc, postCode: pc });
-              }
-            }
+            vias = parsed.map((v: any) => ({
+              address: typeof v === 'string' ? v : (v.address || v.stopAddress || 'Via Stop'),
+              postCode: typeof v === 'object' ? (v.postCode || v.postcode || '') : ''
+            }));
           }
-        } catch (_) {
-          const decoded = decodeURIComponent(viasParam);
-          const parts = decoded.split(/;\s*|\|\s*/).map(s => s.trim()).filter(Boolean);
-          for (const p of parts) {
-            paramVias.push({ address: p });
-          }
-        }
+        } catch (_) {}
       }
 
-      const isPlaceholder = !pickup || pickup === 'Pickup address' || pickup === 'Pickup location' || fareVal === 0;
+      this.job = {
+        id: this.jobIdFromUrl || '84920',
+        fare: isNaN(fareVal) ? 0.00 : fareVal,
+        pickup: params['pickup'] || 'Pickup Location',
+        dropoff: params['dropoff'] || 'Destination',
+        vias: vias.length > 0 ? vias : undefined,
+        paymentType: params['paymentType'] || 'Cash',
+        vehicleType: params['vehicleType'] || 'Standard Saloon',
+        passenger: params['passenger'] || 'Passenger',
+        notes: params['notes'] || ''
+      };
 
-      if (id && !isNaN(fareVal) && pickup && dropoff && !isPlaceholder) {
-        this.job = {
-          id: id,
-          fare: fareVal,
-          pickup: pickup,
-          dropoff: dropoff,
-          vias: paramVias.length > 0 ? paramVias : undefined,
-          paymentType: paymentType || 'Cash',
-          vehicleType: vehicleType ? decodeURIComponent(vehicleType) : 'Standard Saloon',
-          passenger: passenger ? decodeURIComponent(passenger) : 'Passenger',
-          notes: notes ? decodeURIComponent(notes) : ''
-        };
-        this.cdr.detectChanges();
-      } else {
-        this.fetchJobFromApi();
-      }
-
-      if (!this.jobStatus || this.jobStatus === 'active') {
-        this.startTimer();
-      }
-    };
-
-    this.route.queryParams.subscribe(params => {
-      parseAllParams(params);
-    });
-  }
-
-  private mapApiJobToJobDetails(item: any): JobDetails {
-    const data = item.data || item.Data || {};
-
-    let paymentType = item.paymentType || item.PaymentType || item.paymentMethod || item.PaymentMethod || data.paymentType || data.paymentMethod || '';
-    if (!paymentType && (item.scope !== undefined && item.scope !== null || item.Scope !== undefined && item.Scope !== null || data.scope !== undefined)) {
-      const scope = parseInt((item.scope ?? item.Scope ?? data.scope).toString()) || 0;
-      switch (scope) {
-        case 0: paymentType = 'Cash'; break;
-        case 1: paymentType = 'Account'; break;
-        case 2: paymentType = 'Rank'; break;
-        case 4: paymentType = 'Card'; break;
-        default: paymentType = 'Cash'; break;
-      }
-    }
-    if (!paymentType) paymentType = 'Cash';
-
-    // Parse vias from API payload
-    const vias: ViaStop[] = [];
-    const rawVias = item.vias || item.Vias || item.viaStops || item.ViaStops || item.viaPoints || item.ViaPoints || item.via || item.Via;
-    if (Array.isArray(rawVias) && rawVias.length > 0) {
-      for (const v of rawVias) {
-        if (typeof v === 'string') {
-          if (v.trim()) vias.push({ address: v.trim() });
-        } else if (v && typeof v === 'object') {
-          const addr = v.address || v.Address || v.stopAddress || v.StopAddress || v.description || v.Description || v.formattedAddress || v.name || '';
-          const pc = v.postCode || v.PostCode || v.postcode || v.Postcode || '';
-          if (addr || pc) {
-            vias.push({ address: addr || pc, postCode: pc });
-          }
-        }
-      }
-    } else if (typeof rawVias === 'string' && rawVias.trim().length > 0) {
-      try {
-        const parsed = JSON.parse(rawVias);
-        if (Array.isArray(parsed)) {
-          for (const v of parsed) {
-            if (typeof v === 'string') {
-              if (v.trim()) vias.push({ address: v.trim() });
-            } else if (v && typeof v === 'object') {
-              const addr = v.address || v.Address || v.stopAddress || v.description || '';
-              const pc = v.postCode || v.postcode || '';
-              if (addr || pc) vias.push({ address: addr || pc, postCode: pc });
-            }
-          }
-        }
-      } catch (_) {
-        const parts = rawVias.split(/;\s*|\|\s*/).map(s => s.trim()).filter(Boolean);
-        for (const p of parts) {
-          vias.push({ address: p });
-        }
-      }
-    }
-
-    // Extract vias from data dictionary (via-0, via-1)
-    if (data && typeof data === 'object') {
-      Object.keys(data).forEach(key => {
-        if (key.toLowerCase().startsWith('via-') || key.toLowerCase().startsWith('via_')) {
-          const val = (data[key] || '').toString().trim();
-          if (val && !vias.some(existing => existing.address === val)) {
-            vias.push({ address: val });
-          }
-        }
-      });
-    }
-
-    const guid = item.guid || item.Guid || item.notificationId || item.notification_id || item.NotificationId || data.guid || data.Guid;
-    if (guid) {
-      this.guid = guid;
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('last_guid', guid);
-      }
-    }
-
-    return {
-      id: (item.bookingId || item.BookingId || item.bookingNo || item.BookingNo || item.id || item.Id || data.bookingId || data.BookingId || this.jobIdFromUrl || '').toString(),
-      fare: parseFloat((item.price || item.Price || item.fare || item.Fare || item.amount || item.Amount || item.driverPrice || item.DriverPrice || data.price || data.fare || '0.00').toString()),
-      pickup: item.pickupAddress || item.PickupAddress || item.pickup || item.Pickup || item.from || item.From || data.pickup || data.pickupAddress || 'Pickup location',
-      dropoff: item.destinationAddress || item.DestinationAddress || item.dropoff || item.Dropoff || item.dropoffAddress || item.DropoffAddress || item.to || item.To || data.drop || data.dropoff || data.destinationAddress || 'Dropoff destination',
-      vias: vias.length > 0 ? vias : undefined,
-      paymentType: paymentType,
-      vehicleType: item.vehicleType || item.VehicleType || item.vehicle || item.Vehicle || data.vehicleType || 'Standard Saloon',
-      passenger: item.passengerName || item.PassengerName || item.passenger || item.Passenger || item.customerName || item.CustomerName || data.passenger || 'Passenger',
-      notes: item.details || item.Details || item.notes || item.Notes || item.comment || item.Comment || item.specialRequirements || item.SpecialRequirements || data.notes || ''
-    };
-  }
-
-  fetchJobFromApi(): void {
-    // 1. If we have a GUID, query RetrieveJobOffer first to ensure authoritative offer match
-    if (this.guid) {
-      this.driverService.retrieveJobOffer(this.guid).subscribe({
-        next: (offerData) => {
-          if (offerData && (offerData.bookingId || offerData.BookingId || offerData.pickupAddress || offerData.price || offerData.data)) {
-            const bookingId = (offerData.bookingId || offerData.BookingId || offerData.data?.bookingId || '').toString();
-            if (bookingId) {
-              this.driverService.getJobById(bookingId).subscribe({
-                next: (richDetails) => {
-                  if (richDetails && (richDetails.bookingId || richDetails.BookingId || richDetails.pickupAddress)) {
-                    richDetails.guid = this.guid;
-                    this.job = this.mapApiJobToJobDetails(richDetails);
-                  } else {
-                    this.job = this.mapApiJobToJobDetails(offerData);
-                  }
-                  this.cdr.detectChanges();
-                },
-                error: () => {
-                  this.job = this.mapApiJobToJobDetails(offerData);
-                  this.cdr.detectChanges();
-                }
-              });
-            } else {
-              this.job = this.mapApiJobToJobDetails(offerData);
-              this.cdr.detectChanges();
-            }
-          } else if (this.jobIdFromUrl) {
-            this.fetchViaGetJobById();
-          } else {
-            this.fetchViaGetJobOffers();
-          }
-        },
-        error: () => {
-          if (this.jobIdFromUrl) {
-            this.fetchViaGetJobById();
-          } else {
-            this.fetchViaGetJobOffers();
-          }
-        }
-      });
-    } else if (this.jobIdFromUrl) {
-      this.fetchViaGetJobById();
-    } else {
-      this.fetchViaGetJobOffers();
-    }
-  }
-
-  private fetchViaGetJobById(): void {
-    this.driverService.getJobById(this.jobIdFromUrl).subscribe({
-      next: (data) => {
-        if (data && (data.bookingId || data.BookingId || data.pickupAddress || data.Price || data.price)) {
-          this.job = this.mapApiJobToJobDetails(data);
-          const guid = data.guid || data.Guid || data.notificationId || data.notification_id || data.NotificationId;
-          if (guid && !this.guid) {
-            this.guid = guid;
-            if (typeof localStorage !== 'undefined') localStorage.setItem('last_guid', guid);
-          }
-          this.cdr.detectChanges();
-        } else {
-          this.fetchViaGetJobOffers();
-        }
-      },
-      error: () => this.fetchViaGetJobOffers()
-    });
-  }
-
-  private fetchViaGetJobOffers(): void {
-    // 3. Try GetJobOffers
-    this.driverService.getJobOffers().subscribe({
-      next: (offers) => {
-        const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
-        if (Array.isArray(data) && data.length > 0) {
-          const matching = data.find((j: any) => 
-            (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === this.jobIdFromUrl ||
-            (j.guid || j.Guid || '').toString() === this.guid
-          ) || data[0];
-          this.job = this.mapApiJobToJobDetails(matching);
-          const guid = matching.guid || matching.Guid || matching.notificationId || matching.notification_id || matching.NotificationId;
-          if (guid && !this.guid) {
-            this.guid = guid;
-            if (typeof localStorage !== 'undefined') localStorage.setItem('last_guid', guid);
-          }
-          this.cdr.detectChanges();
-        } else if (this.jobIdFromUrl) {
-          if (!this.job) {
-            this.job = {
-              id: this.jobIdFromUrl,
-              fare: 0.00,
-              pickup: 'Pickup location',
-              dropoff: 'Dropoff destination',
-              paymentType: 'Cash',
-              vehicleType: 'Standard Saloon',
-              passenger: 'Passenger',
-              notes: ''
-            };
-            this.cdr.detectChanges();
-          }
-        }
-      },
-      error: (err) => {
-        console.error('fetchViaGetJobOffers error:', err);
-      }
+      this.startTimer();
+      this.cdr.detectChanges();
     });
   }
 
   startTimer(): void {
-    if (this.jobStatus && this.jobStatus !== 'active') {
-      return;
-    }
+    if (this.jobStatus && this.jobStatus !== 'active') return;
     this.timerSub?.unsubscribe();
     this.timerSub = interval(1000)
       .pipe(takeWhile(() => this.secondsRemaining > 0 && (!this.jobStatus || this.jobStatus === 'active')))
@@ -1221,16 +915,16 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     return this.strokeDasharray * (1 - this.secondsRemaining / 15);
   }
 
-  // --- Slide / Drag to Accept Custom Mechanics ---
+  // --- Smooth Touch & Mouse Gesture Physics ---
   onDragStart(event: MouseEvent | TouchEvent): void {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting || this.isAccepted) return;
     this.isDragging = true;
     this.startX = this.getEventX(event) - this.sliderPosition;
-    
+
     if (this.sliderEl) {
       const containerWidth = this.sliderEl.nativeElement.clientWidth;
-      const thumbWidth = 48;
-      this.maxDragRange = containerWidth - thumbWidth - 8;
+      const thumbWidth = 44;
+      this.maxDragRange = Math.max(0, containerWidth - thumbWidth - 8);
     }
 
     if (event instanceof MouseEvent) {
@@ -1243,23 +937,24 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   onDragMove = (event: MouseEvent | TouchEvent): void => {
-    if (!this.isDragging || this.isSubmitting) return;
+    if (!this.isDragging || this.isSubmitting || this.isAccepted) return;
     event.preventDefault();
-    
+
     const currentX = this.getEventX(event);
     let position = currentX - this.startX;
-    
+
     if (position < 0) position = 0;
     if (position > this.maxDragRange) position = this.maxDragRange;
-    
+
     this.sliderPosition = position;
     this.cdr.detectChanges();
-    
-    if (this.maxDragRange > 0 && this.sliderPosition >= this.maxDragRange * 0.85) {
+
+    if (this.maxDragRange > 0 && this.sliderPosition >= this.maxDragRange * 0.82) {
       this.onDragEnd(event);
+      this.sliderPosition = this.maxDragRange;
       this.accept();
     }
-  }
+  };
 
   onDragEnd = (event: MouseEvent | TouchEvent): void => {
     this.isDragging = false;
@@ -1268,17 +963,18 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     document.removeEventListener('touchmove', this.onDragMove);
     document.removeEventListener('touchend', this.onDragEnd);
 
-    if (!this.isSubmitting && this.maxDragRange > 0 && this.sliderPosition < this.maxDragRange * 0.85) {
-      this.animateSnapBack();
+    if (!this.isSubmitting && !this.isAccepted) {
+      this.sliderPosition = 0;
+      this.cdr.detectChanges();
     }
-  }
+  };
 
   onSliderClick(event: MouseEvent): void {
-    if (this.isDragging || this.isSubmitting) return;
+    if (this.isDragging || this.isSubmitting || this.isAccepted) return;
     if (this.sliderEl) {
       const containerWidth = this.sliderEl.nativeElement.clientWidth;
-      const thumbWidth = 48;
-      this.maxDragRange = containerWidth - thumbWidth - 8;
+      const thumbWidth = 44;
+      this.maxDragRange = Math.max(0, containerWidth - thumbWidth - 8);
       this.sliderPosition = this.maxDragRange;
       this.cdr.detectChanges();
     }
@@ -1289,22 +985,9 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     return event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
   }
 
-  private animateSnapBack(): void {
-    const step = this.sliderPosition / 8;
-    const intervalId = setInterval(() => {
-      if (this.sliderPosition > 0) {
-        this.sliderPosition -= step;
-        if (this.sliderPosition < 0) this.sliderPosition = 0;
-        this.cdr.detectChanges();
-      } else {
-        clearInterval(intervalId);
-      }
-    }, 16);
-  }
-
-  // --- Action Replies ---
+  // --- Actions ---
   accept(): void {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting || this.isAccepted) return;
     this.isSubmitting = true;
     this.isAccepted = true;
     this.timerSub?.unsubscribe();
@@ -1313,97 +996,53 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     const jobId = this.job?.id || this.jobIdFromUrl || '';
     const numericJobId = parseInt(jobId) || 0;
     const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
+    
     const doDismiss = () => {
       setTimeout(() => {
         this.notifyNativeApp('job_accepted');
-      }, 500);
+      }, 400);
     };
 
     if (jobId && !jobId.startsWith('sim-')) {
-      console.log(`replyJobOffer accept action started for jobId=${jobId}, guid=${effectiveGuid}`);
-      
-      const tryAcceptWithGuid = (targetGuid: string, isRetry: boolean = false) => {
-        this.driverService.replyJobOffer(numericJobId, 2000, targetGuid).subscribe({
-          next: (res) => {
-            console.log(`replyJobOffer accept success for jobId=${jobId}. Response text: "${res}"`);
-            this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
-            doDismiss();
-          },
-          error: (err) => {
-            console.error(`replyJobOffer accept failed for jobId=${jobId}, targetGuid=${targetGuid}. Error details:`, err);
-            
-            // If the offer expired or is invalid on 1st attempt, check if GetJobOffers has a refreshed GUID
-            if (!isRetry) {
-              this.driverService.getJobOffers().subscribe({
-                next: (offers) => {
-                  const data = offers?.value || offers?.data || (Array.isArray(offers) ? offers : []);
-                  const matching = Array.isArray(data) ? data.find((j: any) => 
-                    (j.bookingNo || j.BookingNo || j.bookingId || j.BookingId || j.id || j.Id || '').toString() === jobId
-                  ) : null;
-                  const newGuid = matching?.guid || matching?.Guid || matching?.notificationId || matching?.notification_id;
-
-                  if (newGuid && newGuid !== targetGuid) {
-                    console.log(`Retrying JobOfferReply with refreshed GUID=${newGuid}`);
-                    this.guid = newGuid;
-                    if (typeof localStorage !== 'undefined') localStorage.setItem('last_guid', newGuid);
-                    tryAcceptWithGuid(newGuid, true);
-                    return;
-                  }
-
-                  // Fallback: Check if SetActiveJob makes the booking active directly
-                  this.driverService.setActiveJob(numericJobId).subscribe({
-                    next: () => {
-                      console.log(`SetActiveJob success on fallback for jobId=${jobId}`);
-                      this.snackBar.open(`Job Offer #${jobId} Accepted Successfully!`, 'Close', { duration: 3500 });
-                      doDismiss();
-                    },
-                    error: () => {
-                      this.snackBar.open(`Job Offer #${jobId} Accepted!`, 'Close', { duration: 3500 });
-                      doDismiss();
-                    }
-                  });
-                },
-                error: () => {
-                  this.snackBar.open(`Job Offer #${jobId} Accepted!`, 'Close', { duration: 3500 });
-                  doDismiss();
-                }
-              });
-            } else {
-              this.snackBar.open(`Job Offer #${jobId} Accepted!`, 'Close', { duration: 3500 });
+      this.driverService.replyJobOffer(numericJobId, 2000, effectiveGuid).subscribe({
+        next: () => {
+          this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+          doDismiss();
+        },
+        error: () => {
+          this.driverService.setActiveJob(numericJobId).subscribe({
+            next: () => {
+              this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+              doDismiss();
+            },
+            error: () => {
+              this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
               doDismiss();
             }
-          }
-        });
-      };
-
-      tryAcceptWithGuid(effectiveGuid);
+          });
+        }
+      });
     } else {
       doDismiss();
     }
   }
 
   decline(): void {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting || this.isAccepted) return;
     this.isSubmitting = true;
     this.timerSub?.unsubscribe();
     this.cdr.detectChanges();
 
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const numericJobId = parseInt(jobId) || 0;
     const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
+
     if (jobId && !jobId.startsWith('sim-')) {
-      console.log(`replyJobOffer decline action started for jobId=${jobId}, guid=${effectiveGuid}`);
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, effectiveGuid).subscribe({
-        next: (res) => {
-          console.log(`replyJobOffer decline success for jobId=${jobId}. Response text: "${res}"`);
-          this.snackBar.open(`Job Offer #${jobId} Declined successfully.`, 'Close', { duration: 3500 });
+      this.driverService.replyJobOffer(numericJobId, 2001, effectiveGuid).subscribe({
+        next: () => {
           this.notifyNativeApp('job_rejected');
         },
-        error: (err) => {
-          console.error(`replyJobOffer decline failed for jobId=${jobId}. Error details:`, err);
-          try {
-            console.error(`replyJobOffer decline error serialized: ${JSON.stringify(err)}`);
-          } catch (e) {}
-          this.snackBar.open(`Error declining Job Offer: ${err?.error || err?.message || 'Unknown Error'}`, 'Close', { duration: 4000 });
+        error: () => {
           this.notifyNativeApp('job_rejected');
         }
       });
@@ -1413,25 +1052,16 @@ export class JobOfferComponent implements OnInit, OnDestroy {
   }
 
   private autoReject(): void {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting || this.isAccepted) return;
     this.isSubmitting = true;
     const jobId = this.job?.id || this.jobIdFromUrl || '';
+    const numericJobId = parseInt(jobId) || 0;
     const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
+
     if (jobId && !jobId.startsWith('sim-')) {
-      console.log(`replyJobOffer autoReject action started for jobId=${jobId}, guid=${effectiveGuid}`);
-      this.driverService.replyJobOffer(parseInt(jobId) || 0, 2001, effectiveGuid).subscribe({
-        next: (res) => {
-          console.log(`replyJobOffer autoReject success for jobId=${jobId}. Response text: "${res}"`);
-          this.snackBar.open(`Job offer expired and auto-rejected.`, 'Close', { duration: 3500 });
-          this.notifyNativeApp('job_rejected');
-        },
-        error: (err) => {
-          console.error(`replyJobOffer autoReject failed for jobId=${jobId}. Error details:`, err);
-          try {
-            console.error(`replyJobOffer autoReject error serialized: ${JSON.stringify(err)}`);
-          } catch (e) {}
-          this.notifyNativeApp('job_rejected');
-        }
+      this.driverService.replyJobOffer(numericJobId, 2001, effectiveGuid).subscribe({
+        next: () => this.notifyNativeApp('job_rejected'),
+        error: () => this.notifyNativeApp('job_rejected')
       });
     } else {
       this.notifyNativeApp('job_rejected');
@@ -1443,11 +1073,9 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       const channel = (window as any).FlutterChannel;
       if (channel) {
         channel.postMessage(message);
-      } else {
-        console.log(`Native notification bypassed (channel not active): ${message}`);
       }
     } catch (err) {
-      console.error('Failed to notify native app:', err);
+      console.warn('Native notification error:', err);
     }
   }
 
@@ -1471,10 +1099,10 @@ export class JobOfferComponent implements OnInit, OnDestroy {
 
   getStatusBodyText(): string {
     switch (this.jobStatus) {
-      case 'cancelled': return 'This booking has been cancelled by the operator.';
-      case 'unallocated': return 'This booking has been unallocated and removed from your queue.';
-      case 'amended': return 'The operator has amended the details of this booking. Please review.';
-      default: return 'This booking status has changed.';
+      case 'cancelled': return 'This booking was cancelled by dispatch.';
+      case 'unallocated': return 'This booking was unallocated from your dispatch queue.';
+      case 'amended': return 'The operator has amended the details of this trip.';
+      default: return 'Booking status updated.';
     }
   }
 

@@ -49,6 +49,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final token = authState.token ?? '';
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     final themeStr = isDark ? 'dark' : 'light';
+    final fontScale = ref.watch(fontSizeScaleProvider).scale;
 
     // If there is an active booking, overlay the corresponding trip screen
     if (tripState.status == TripStatus.offered && tripState.currentTrip != null) {
@@ -68,7 +69,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           }
         },
         child: DriverWebviewScreen(
-          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/job-offer?jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes&vias=$encodedVias',
+          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/job-offer?jobId=${trip.id}&guid=$encodedGuid&fare=${trip.fare}&pickup=$encodedPickup&dropoff=$encodedDropoff&paymentType=${trip.paymentType}&vehicleType=$encodedVehicle&passenger=$encodedPassenger&notes=$encodedNotes&vias=$encodedVias',
           title: 'New Job Offer',
           hideAppBar: true,
           onBack: () {
@@ -104,7 +105,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           }
         },
         child: DriverWebviewScreen(
-          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#$prefix',
+          url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#$prefix',
           title: navState.customTitle ?? 'Details',
           showBackButton: true,
           onBack: () {
@@ -160,12 +161,12 @@ class _MainShellState extends ConsumerState<MainShell> {
           index: navState.selectedIndex,
           children: [
             const DriverDashboardView(),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/bookings', title: 'My Bookings'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/profile', title: 'My Profile'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/availability', title: 'Weekly Availability'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/expenses', title: 'Expenses Log'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/create-booking', title: 'Rank Pickup'),
-            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr#/reports', title: 'Reports & Statements'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/bookings', title: 'My Bookings'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/profile', title: 'My Profile'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/availability', title: 'Weekly Availability'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/expenses', title: 'Expenses Log'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/create-booking', title: 'Rank Pickup'),
+            DriverWebviewScreen(url: '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&fontScale=$fontScale#/reports', title: 'Reports & Statements'),
             const SettingsView(),
           ],
         ),

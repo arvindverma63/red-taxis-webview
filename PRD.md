@@ -378,7 +378,25 @@ The Angular router guards and services parse the `token` parameter directly from
     - High-contrast Dispatch Notes & Special Instructions alert card.
     - Interactive "Slide to Complete Trip" widget with smooth gesture track and automated dispatch completion.
   - Verified 100% passing Vitest and Flutter test suites.
+- [x] **Real-Time Webview Dynamic Font Scaling Synchronization (`webview_screen.dart`, `main_shell.dart`, `index.html`)**:
+  - Connected the native Flutter `fontSizeScaleProvider` (`100%`, `115%`, `130%`) to live WebViews via JavaScript injection and query parameter synchronization (`&fontScale=$scale`).
+  - Added synchronous pre-render font scaling in `driver-webview-app/src/index.html` and dynamic `document.body.style.zoom = scale` adjustment with CSS custom variable `--font-scale`.
+  - Added real-time Riverpod listener in `DriverWebviewScreen` that dynamically updates font scale across open WebViews on the fly when the user adjusts text size in Settings without requiring a page reload.
+  - Verified 100% passing Vitest (`npx vitest run`) and Flutter test suites (12/12 passing).
+- [x] **Driver Switch & Relogin Automatic Offline GPS Status Reset (`shift.dart`, `auth.dart`)**:
+  - Configured `ShiftNotifier` to listen to `authProvider` state transitions and automatically terminate active GPS background streaming and location tracking upon sign out, driver switch, or token expiration.
+  - Updated `AuthNotifier.signOut()` and `AuthNotifier.switchTenant()` to purge persistent shift flags (`shift_online`, `shift_start_time`) from encrypted secure storage.
+  - Ensured all relogin and driver switch sessions reliably default to `ShiftStatus.offline` until the driver explicitly toggles duty mode on the dashboard.
+  - Verified 100% passing Flutter test suite (12/12 tests passing).
+- [x] **Job Offer Professional UI & Smooth Slide-to-Accept Overhaul (`job-offer.ts`)**:
+  - Rebuilt the incoming job offer dispatch overlay with an executive hero card displaying a pulsing beacon, large formatted fare currency display, and a live SVG circular countdown timer ring.
+  - Added full journey telemetry tags (Payment Scope badge, Vehicle Class badge, Passenger Name badge) and driver dispatch notes alert.
+  - Created a vertical connected route stepper with pickup indicator (emerald), intermediate via stops (amber with postcode chips), and dropoff destination (crimson).
+  - Built a 60fps hardware-accelerated touch physics slider (`translate3d`, `will-change: transform`, spring snapback physics, real-time dynamic track fill, and auto-acceptance threshold at 72% drag).
+  - Added high-contrast decline action button with immediate server rejection dispatch (`response = 2001`).
+  - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+

@@ -13,9 +13,12 @@
     (function() {
       var urlParams = new URLSearchParams(window.location.search);
       var theme = urlParams.get('theme');
-      if (!theme && window.location.hash.includes('?')) {
+      var fontScale = urlParams.get('fontScale') || urlParams.get('scale');
+      if (window.location.hash.includes('?')) {
         var queryString = window.location.hash.split('?')[1];
-        theme = new URLSearchParams(queryString).get('theme');
+        var hashParams = new URLSearchParams(queryString);
+        if (!theme) theme = hashParams.get('theme');
+        if (!fontScale) fontScale = hashParams.get('fontScale') || hashParams.get('scale');
       }
       if (!theme) {
         theme = localStorage.getItem('theme');
@@ -27,6 +30,24 @@
       }
       if (theme) {
         localStorage.setItem('theme', theme);
+      }
+
+      if (!fontScale) {
+        fontScale = localStorage.getItem('font_scale');
+      }
+      if (fontScale) {
+        var numScale = parseFloat(fontScale);
+        if (!isNaN(numScale) && numScale > 0) {
+          document.documentElement.style.setProperty('--font-scale', numScale.toString());
+          if (document.body) {
+            document.body.style.zoom = numScale;
+          } else {
+            document.addEventListener('DOMContentLoaded', function() {
+              document.body.style.zoom = numScale;
+            });
+          }
+          localStorage.setItem('font_scale', numScale.toString());
+        }
       }
     })();
   </script>

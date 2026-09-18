@@ -181,6 +181,20 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                 setState(() {
                   _isLoading = false;
                 });
+                final currentFontScale = ref.read(fontSizeScaleProvider).scale;
+                _applyFontScale(currentFontScale);
+                final isDarkCurrent = ref.read(themeModeProvider) == ThemeMode.dark;
+                final themeStr = isDarkCurrent ? 'dark' : 'light';
+                _controller?.runJavaScript("""
+                  (function() {
+                    const theme = '$themeStr';
+                    if (theme === 'dark') {
+                      document.documentElement.classList.add('dark-theme');
+                    } else {
+                      document.documentElement.classList.remove('dark-theme');
+                    }
+                  })();
+                """);
               }
             },
             onWebResourceError: (WebResourceError error) {
@@ -269,6 +283,29 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
     }
   }
 
+  void _applyFontScale(double scale) {
+    try {
+      final jsInject = """
+        (function() {
+          const scale = $scale;
+          document.documentElement.style.setProperty('--font-scale', scale.toString());
+          if (document.body) {
+            document.body.style.zoom = scale;
+          }
+          localStorage.setItem('font_scale', scale.toString());
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('fontScale', scale.toString());
+            window.history.replaceState({}, '', url.toString());
+          } catch (e) {}
+        })();
+      """;
+      _controller?.runJavaScript(jsInject);
+    } catch (e) {
+      debugPrint("[WebviewScreen] Font scale injection error: $e");
+    }
+  }
+
   @override
   void didUpdateWidget(covariant DriverWebviewScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -280,6 +317,13 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+
+    // Listen for font scale changes to dynamically update the webview text sizing instantly
+    ref.listen(fontSizeScaleProvider, (previous, next) {
+      if (previous != next) {
+        _applyFontScale(next.scale);
+      }
+    });
 
     // Listen for theme changes to dynamically inject JavaScript and update the theme state instantly without reloading
     ref.listen(themeModeProvider, (previous, next) {

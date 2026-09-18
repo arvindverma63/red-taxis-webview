@@ -389,6 +389,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _storage.delete(key: AppConfig.keyAuthToken);
     await _storage.delete(key: AppConfig.keyAuthEmail);
     await _storage.delete(key: AppConfig.keyAuthUserId);
+    await _storage.delete(key: 'shift_online');
+    await _storage.delete(key: 'shift_start_time');
     // Retain tenant_id, tenant_key and branding for clean 2-field login
     state = state.copyWith(
       status: AuthStatus.unauthenticated,
@@ -406,6 +408,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _storage.delete(key: AppConfig.keyAuthToken);
     await _storage.delete(key: AppConfig.keyAuthEmail);
     await _storage.delete(key: AppConfig.keyAuthUserId);
+    await _storage.delete(key: 'shift_online');
+    await _storage.delete(key: 'shift_start_time');
     state = const AuthState(
       status: AuthStatus.unauthenticated,
       isTenantConfigured: false,
