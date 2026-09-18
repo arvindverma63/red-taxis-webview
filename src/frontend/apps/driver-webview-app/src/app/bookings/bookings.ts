@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -48,8 +48,8 @@ interface Booking {
     MatSnackBarModule
   ],
   template: `
-    <div class="material-container">
-      <!-- 4 Segmented Tabs (All on a single row) -->
+    <div class="bookings-container">
+      <!-- 1. Single-Row Segmented Tab Bar -->
       <div class="filter-tab-bar">
         <button 
           *ngFor="let tab of tabs" 
@@ -62,127 +62,136 @@ interface Booking {
         </button>
       </div>
 
-      <!-- Loading State -->
-      <div *ngIf="isLoading" class="loading-state">
+      <!-- 2. Loading State -->
+      <div *ngIf="isLoading" class="loading-state animated-fade-in">
         <div class="spinner"></div>
         <p class="loading-text">Loading bookings...</p>
       </div>
 
-      <!-- Bookings List -->
-      <div class="bookings-list" *ngIf="!isLoading">
+      <!-- 3. Bookings List -->
+      <div class="bookings-list animated-fade-in" *ngIf="!isLoading">
+        <!-- Empty State -->
         <div *ngIf="filteredBookings.length === 0" class="empty-state">
-          <span class="material-symbols-outlined empty-icon">assignment_late</span>
+          <div class="empty-icon-box">
+            <span class="material-symbols-outlined">assignment_late</span>
+          </div>
           <p class="empty-title">No {{ activeTab.toLowerCase() }} bookings found</p>
           <p class="empty-subtitle">New allocations and scheduled trips will appear here.</p>
-          <button class="retry-btn" (click)="loadBookings()">Refresh</button>
+          <button class="retry-btn" (click)="loadBookings()">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Refresh</span>
+          </button>
         </div>
 
-        <mat-card 
+        <!-- Booking Cards -->
+        <div 
           *ngFor="let booking of filteredBookings" 
-          class="booking-mat-card" 
+          class="booking-card" 
           (click)="openDetails(booking)"
         >
-          <!-- Card Top Header -->
-          <div class="card-top">
-            <div class="booking-ref">
-              <span class="ref-label">BOOKING ID</span>
-              <span class="ref-val">#{{ booking.id }}</span>
+          <!-- Card Header: ID, Status, Fare -->
+          <div class="card-header-row">
+            <div class="header-left">
+              <span class="booking-ref-badge">#{{ booking.id }}</span>
+              <span class="status-pill" [ngClass]="booking.status.toLowerCase()">
+                <span class="status-dot" *ngIf="booking.status === 'Upcoming'"></span>
+                <span>{{ booking.status }}</span>
+              </span>
+              <span class="payment-pill" [ngClass]="booking.paymentType.toLowerCase()">
+                {{ booking.paymentType }}
+              </span>
             </div>
-            <div class="booking-price">
-              £{{ booking.fare.toFixed(2) }}
+            <div class="booking-fare-text">
+              <span class="currency-symbol">£</span>
+              <span class="fare-num">{{ booking.fare.toFixed(2) }}</span>
             </div>
           </div>
 
-          <mat-divider></mat-divider>
+          <!-- Journey Route Visual -->
+          <div class="journey-route-preview">
+            <div class="route-tracker-col">
+              <span class="route-node pickup-node"></span>
+              <div class="route-stem"></div>
+              <span class="route-node dropoff-node"></span>
+            </div>
 
-          <!-- Card Middle Route Timeline -->
-          <div class="card-middle">
-            <div class="timeline-container">
-              <div class="timeline-line"></div>
-              
-              <div class="timeline-node">
-                <span class="material-symbols-outlined node-icon green-icon">
-                  {{ booking.pickup.toLowerCase().includes('airport') ? 'flight_takeoff' : 'my_location' }}
-                </span>
-                <div class="node-content">
-                  <div class="time-address">
-                    <span class="node-time">{{ booking.time }}</span>
-                    <span class="node-address" [title]="booking.pickup">{{ booking.pickup }}</span>
-                  </div>
-                </div>
+            <div class="route-addresses-col">
+              <!-- Pickup -->
+              <div class="address-preview-row">
+                <span class="address-time-pill">{{ booking.time }}</span>
+                <span class="address-text pickup" [title]="booking.pickup">{{ booking.pickup }}</span>
               </div>
 
-              <!-- Via Stops Preview in Card -->
-              <div class="timeline-node via-node" *ngFor="let via of booking.vias; let i = index">
-                <span class="material-symbols-outlined node-icon via-icon">alt_route</span>
-                <div class="node-content">
-                  <div class="time-address">
-                    <span class="node-time-placeholder">Via {{ i + 1 }}</span>
-                    <span class="node-address" [title]="via.address">{{ via.address }}</span>
-                  </div>
-                </div>
+              <!-- Via stops counter if any -->
+              <div class="via-indicator-row" *ngIf="booking.vias && booking.vias.length > 0">
+                <span class="material-symbols-outlined via-icon">alt_route</span>
+                <span class="via-text">+{{ booking.vias.length }} Via {{ booking.vias.length === 1 ? 'Stop' : 'Stops' }}</span>
               </div>
 
-              <div class="timeline-node">
-                <span class="material-symbols-outlined node-icon red-icon">location_on</span>
-                <div class="node-content">
-                  <div class="time-address">
-                    <span class="node-time-placeholder"></span>
-                    <span class="node-address" [title]="booking.dropoff">{{ booking.dropoff }}</span>
-                  </div>
-                </div>
+              <!-- Dropoff -->
+              <div class="address-preview-row">
+                <span class="address-time-pill dropoff-time">{{ booking.date }}</span>
+                <span class="address-text dropoff" [title]="booking.dropoff">{{ booking.dropoff }}</span>
               </div>
             </div>
           </div>
 
-          <mat-divider></mat-divider>
-
-          <!-- Card Bottom Details & Clickable Prompt -->
-          <div class="card-bottom">
-            <span class="status-badge" [ngClass]="booking.status.toLowerCase()">
-              {{ booking.status }}
-            </span>
-            <span class="payment-badge" [ngClass]="booking.paymentType.toLowerCase()">
-              {{ booking.paymentType }}
-            </span>
-            <span class="date-badge">
-              {{ booking.date }}
-            </span>
-            <span class="spacer"></span>
-            <span class="view-details-txt">View Details &rarr;</span>
+          <!-- Card Footer Info -->
+          <div class="card-footer-row">
+            <div class="passenger-tag">
+              <span class="material-symbols-outlined pass-icon">person</span>
+              <span class="passenger-name">{{ booking.passenger }}</span>
+            </div>
+            <div class="view-details-action">
+              <span>Details</span>
+              <span class="material-symbols-outlined">chevron_right</span>
+            </div>
           </div>
-        </mat-card>
+        </div>
       </div>
 
       <!-- ============================================================== -->
-      <!-- FULL BOOKING DETAILS MODAL / BOTTOM SHEET                      -->
+      <!-- 4. PROFESSIONAL BOOKING DETAILS MODAL / BOTTOM SHEET           -->
       <!-- ============================================================== -->
-      <div class="modal-backdrop" *ngIf="selectedBooking" (click)="closeDetails()">
+      <div class="modal-backdrop animated-fade-in" *ngIf="selectedBooking" (click)="closeDetails()">
         <div class="modal-sheet" (click)="$event.stopPropagation()">
-          <!-- Sheet Header -->
-          <div class="sheet-header">
+          
+          <!-- Sheet Grabber -->
+          <div class="sheet-grabber-bar">
             <div class="sheet-grabber"></div>
-            <div class="sheet-title-row">
-              <div>
-                <h3 class="sheet-passenger-title">{{ selectedBooking.passenger }}</h3>
-                <span class="sheet-booking-id">Booking ID: #{{ selectedBooking.id }}</span>
-              </div>
-              <button class="sheet-close-btn" (click)="closeDetails()">
-                <span class="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div class="sheet-datetime-sub">
-              <span class="material-symbols-outlined sub-icon">schedule</span>
-              <span>{{ selectedBooking.fullDateTimeStr || (selectedBooking.date + ' at ' + selectedBooking.time) }}</span>
-            </div>
           </div>
 
-          <!-- Quick Action Buttons: Status Toggle, Call, SMS -->
+          <!-- Sheet Header: Passenger, ID & Status -->
+          <div class="sheet-header">
+            <div class="sheet-header-left">
+              <div class="passenger-avatar-circle">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <div class="passenger-title-col">
+                <div class="name-id-row">
+                  <h3 class="sheet-passenger-name">{{ selectedBooking.passenger }}</h3>
+                  <span class="sheet-ref-chip" (click)="copyText(selectedBooking.id, 'Booking ID copied')">
+                    #{{ selectedBooking.id }}
+                  </span>
+                </div>
+                <div class="sheet-schedule-row">
+                  <span class="material-symbols-outlined schedule-icon">calendar_today</span>
+                  <span>{{ selectedBooking.fullDateTimeStr || (selectedBooking.date + ' at ' + selectedBooking.time) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="sheet-close-btn" (click)="closeDetails()" title="Close Details">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <!-- Quick Actions Bar (Call, SMS, Start Trip / Arrived) -->
           <div class="sheet-quick-actions">
-            <!-- Arrived / Picked Up Status Toggle -->
+            <!-- Active Job Switcher / Status Advance -->
             <button 
               *ngIf="selectedBooking.status === 'Upcoming' && selectedBooking.id === activeBookingId"
-              class="action-pill-btn status-btn" 
+              class="action-pill status-toggle" 
               [ngClass]="getTripProgress(selectedBooking.id)"
               (click)="advanceTripStatus(selectedBooking)"
             >
@@ -190,136 +199,205 @@ interface Booking {
               <span>{{ getStatusLabel(selectedBooking.id) }}</span>
             </button>
 
-            <!-- Set Active Job (Start Trip) button -->
             <button 
               *ngIf="selectedBooking.status === 'Upcoming' && selectedBooking.id !== activeBookingId"
-              class="action-pill-btn active-set-btn" 
+              class="action-pill start-trip-btn" 
               (click)="setActiveJob(selectedBooking)"
               [disabled]="isSettingActive"
             >
-              <span class="material-symbols-outlined">play_circle</span>
-              <span>{{ isSettingActive ? 'Starting...' : 'Start Trip' }}</span>
+              <span class="material-symbols-outlined">play_arrow</span>
+              <span>{{ isSettingActive ? 'Starting...' : 'Start Active Trip' }}</span>
             </button>
 
-            <!-- Call & SMS -->
-            <a *ngIf="selectedBooking.phoneNumber" [href]="'tel:' + selectedBooking.phoneNumber" class="action-pill-btn call">
+            <!-- Passenger Direct Contact -->
+            <a 
+              *ngIf="selectedBooking.phoneNumber" 
+              [href]="'tel:' + selectedBooking.phoneNumber" 
+              class="action-pill call-btn"
+            >
               <span class="material-symbols-outlined">call</span>
               <span>Call</span>
             </a>
-            <a *ngIf="selectedBooking.phoneNumber" [href]="'sms:' + selectedBooking.phoneNumber" class="action-pill-btn sms">
+
+            <a 
+              *ngIf="selectedBooking.phoneNumber" 
+              [href]="'sms:' + selectedBooking.phoneNumber" 
+              class="action-pill sms-btn"
+            >
               <span class="material-symbols-outlined">chat</span>
               <span>SMS</span>
             </a>
+
+            <button 
+              *ngIf="selectedBooking.phoneNumber" 
+              class="action-pill copy-btn"
+              (click)="copyText(selectedBooking.phoneNumber, 'Phone number copied')"
+              title="Copy Phone"
+            >
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
           </div>
 
-          <!-- Modal Scrollable Content -->
+          <!-- Scrollable Details Body -->
           <div class="sheet-body-scroll">
-            <!-- Route Cards -->
-            <div class="detail-section">
-              <span class="section-label">JOURNEY ROUTE</span>
-              
-              <!-- Pickup -->
-              <div class="location-detail-card pickup">
-                <div class="loc-badge-icon green">
-                  <span class="material-symbols-outlined">my_location</span>
-                </div>
-                <div class="loc-info">
-                  <span class="loc-type green-txt">PICKUP LOCATION</span>
-                  <p class="loc-address">{{ selectedBooking.pickup }}</p>
-                  <span class="loc-postcode" *ngIf="selectedBooking.pickupPostCode">{{ selectedBooking.pickupPostCode }}</span>
-                </div>
+
+            <!-- 1. Executive Journey Route Card -->
+            <div class="detail-block-card">
+              <div class="block-header">
+                <span class="material-symbols-outlined header-icon green-icon">alt_route</span>
+                <span class="block-title">JOURNEY ROUTE</span>
               </div>
 
-              <!-- Vias -->
-              <div class="location-detail-card via" *ngFor="let via of selectedBooking.vias; let i = index">
-                <div class="loc-badge-icon yellow">
-                  <span class="material-symbols-outlined">alt_route</span>
+              <div class="route-stepper-container">
+                <!-- Pickup Point -->
+                <div class="stepper-stop pickup">
+                  <div class="stop-node-indicator green">
+                    <span class="material-symbols-outlined">my_location</span>
+                  </div>
+                  <div class="stop-content">
+                    <div class="stop-meta-row">
+                      <span class="stop-type-tag green">PICKUP POINT</span>
+                      <span class="postcode-badge" *ngIf="selectedBooking.pickupPostCode">
+                        {{ selectedBooking.pickupPostCode }}
+                      </span>
+                    </div>
+                    <p class="stop-address-txt">{{ selectedBooking.pickup }}</p>
+                  </div>
                 </div>
-                <div class="loc-info">
-                  <span class="loc-type yellow-txt">VIA STOP {{ i + 1 }}</span>
-                  <p class="loc-address">{{ via.address }}</p>
-                  <span class="loc-postcode" *ngIf="via.postCode">{{ via.postCode }}</span>
-                </div>
-              </div>
 
-              <!-- Dropoff -->
-              <div class="location-detail-card dropoff">
-                <div class="loc-badge-icon red">
-                  <span class="material-symbols-outlined">location_on</span>
+                <!-- Via Stops (if any) -->
+                <div class="stepper-stop via" *ngFor="let via of selectedBooking.vias; let i = index">
+                  <div class="stop-node-indicator amber">
+                    <span class="material-symbols-outlined">pin_drop</span>
+                  </div>
+                  <div class="stop-content">
+                    <div class="stop-meta-row">
+                      <span class="stop-type-tag amber">VIA STOP {{ i + 1 }}</span>
+                      <span class="postcode-badge" *ngIf="via.postCode">{{ via.postCode }}</span>
+                    </div>
+                    <p class="stop-address-txt">{{ via.address }}</p>
+                  </div>
                 </div>
-                <div class="loc-info">
-                  <span class="loc-type red-txt">DESTINATION</span>
-                  <p class="loc-address">{{ selectedBooking.dropoff }}</p>
-                  <span class="loc-postcode" *ngIf="selectedBooking.destinationPostCode">{{ selectedBooking.destinationPostCode }}</span>
+
+                <!-- Dropoff Point -->
+                <div class="stepper-stop dropoff">
+                  <div class="stop-node-indicator red">
+                    <span class="material-symbols-outlined">location_on</span>
+                  </div>
+                  <div class="stop-content">
+                    <div class="stop-meta-row">
+                      <span class="stop-type-tag red">DESTINATION</span>
+                      <span class="postcode-badge" *ngIf="selectedBooking.destinationPostCode">
+                        {{ selectedBooking.destinationPostCode }}
+                      </span>
+                    </div>
+                    <p class="stop-address-txt">{{ selectedBooking.dropoff }}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Total Fare & Journey Metrics -->
-            <div class="detail-section">
-              <span class="section-label">FARE & METRICS</span>
-              <div class="metrics-grid">
-                <div class="metric-card">
-                  <span class="metric-lbl">TOTAL FARE</span>
-                  <span class="metric-val fare-val">£{{ selectedBooking.fare.toFixed(2) }}</span>
+            <!-- 2. Financial Summary & Journey Telemetry -->
+            <div class="detail-block-card">
+              <div class="block-header">
+                <span class="material-symbols-outlined header-icon red-icon">payments</span>
+                <span class="block-title">FARE & METRICS</span>
+              </div>
+
+              <div class="fare-metrics-grid">
+                <!-- Total Fare Hero -->
+                <div class="metric-tile fare-tile">
+                  <span class="tile-label">TOTAL FARE</span>
+                  <div class="tile-main-fare">
+                    <span class="cur">£</span>
+                    <span class="amt">{{ selectedBooking.fare.toFixed(2) }}</span>
+                  </div>
+                  <span class="payment-type-tag" [ngClass]="selectedBooking.paymentType.toLowerCase()">
+                    {{ selectedBooking.paymentType }}
+                  </span>
                 </div>
-                <div class="metric-card" *ngIf="selectedBooking.durationMinutes">
-                  <span class="metric-lbl">EST. DURATION</span>
-                  <span class="metric-val">{{ selectedBooking.durationMinutes }} mins</span>
+
+                <!-- Estimated Duration -->
+                <div class="metric-tile" *ngIf="selectedBooking.durationMinutes">
+                  <span class="tile-label">EST. DURATION</span>
+                  <div class="tile-value-row">
+                    <span class="material-symbols-outlined tile-ico">timer</span>
+                    <span class="tile-val">{{ selectedBooking.durationMinutes }} mins</span>
+                  </div>
                 </div>
-                <div class="metric-card" *ngIf="selectedBooking.mileageText">
-                  <span class="metric-lbl">EST. DISTANCE</span>
-                  <span class="metric-val">{{ selectedBooking.mileageText }}</span>
+
+                <!-- Estimated Distance -->
+                <div class="metric-tile" *ngIf="selectedBooking.mileageText">
+                  <span class="tile-label">EST. DISTANCE</span>
+                  <div class="tile-value-row">
+                    <span class="material-symbols-outlined tile-ico">route</span>
+                    <span class="tile-val">{{ selectedBooking.mileageText }}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Booking Specifications Grid -->
-            <div class="detail-section">
-              <span class="section-label">BOOKING DETAILS</span>
-              <div class="info-list-card">
-                <div class="info-row">
-                  <span class="info-k">Payment Mode</span>
-                  <span class="info-v highlight-v">{{ selectedBooking.paymentType }}</span>
+            <!-- 3. Passenger & Booking Specifications -->
+            <div class="detail-block-card">
+              <div class="block-header">
+                <span class="material-symbols-outlined header-icon blue-icon">info</span>
+                <span class="block-title">BOOKING SPECIFICATIONS</span>
+              </div>
+
+              <div class="specs-grid">
+                <div class="spec-row">
+                  <span class="spec-label">Booking Status</span>
+                  <span class="status-pill" [ngClass]="selectedBooking.status.toLowerCase()">
+                    {{ selectedBooking.status }}
+                  </span>
                 </div>
-                <div class="info-row" *ngIf="selectedBooking.accountNumber">
-                  <span class="info-k">Account Number</span>
-                  <span class="info-v">{{ selectedBooking.accountNumber }}</span>
+
+                <div class="spec-row">
+                  <span class="spec-label">Vehicle Class</span>
+                  <span class="spec-val font-bold">{{ selectedBooking.vehicleType }}</span>
                 </div>
-                <div class="info-row">
-                  <span class="info-k">Booking Status</span>
-                  <span class="status-badge" [ngClass]="selectedBooking.status.toLowerCase()">{{ selectedBooking.status }}</span>
+
+                <div class="spec-row" *ngIf="selectedBooking.accountNumber">
+                  <span class="spec-label">Account Code</span>
+                  <span class="spec-val font-mono">{{ selectedBooking.accountNumber }}</span>
                 </div>
-                <div class="info-row">
-                  <span class="info-k">Vehicle Class</span>
-                  <span class="info-v">{{ selectedBooking.vehicleType }}</span>
+
+                <div class="spec-row" *ngIf="selectedBooking.passengerCount">
+                  <span class="spec-label">Passengers</span>
+                  <span class="spec-val">{{ selectedBooking.passengerCount }} Passenger{{ selectedBooking.passengerCount > 1 ? 's' : '' }}</span>
                 </div>
-                <div class="info-row" *ngIf="selectedBooking.passengerCount">
-                  <span class="info-k">Passenger Count</span>
-                  <span class="info-v">{{ selectedBooking.passengerCount }}</span>
+
+                <div class="spec-row" *ngIf="selectedBooking.bookedByName">
+                  <span class="spec-label">Booked By</span>
+                  <span class="spec-val">{{ selectedBooking.bookedByName }}</span>
                 </div>
-                <div class="info-row" *ngIf="selectedBooking.bookedByName">
-                  <span class="info-k">Booked By</span>
-                  <span class="info-v">{{ selectedBooking.bookedByName }}</span>
+
+                <div class="spec-row" *ngIf="selectedBooking.phoneNumber">
+                  <span class="spec-label">Contact Number</span>
+                  <span class="spec-val font-mono">{{ selectedBooking.phoneNumber }}</span>
                 </div>
-                <div class="info-row" *ngIf="selectedBooking.email">
-                  <span class="info-k">Email</span>
-                  <span class="info-v">{{ selectedBooking.email }}</span>
+
+                <div class="spec-row" *ngIf="selectedBooking.email">
+                  <span class="spec-label">Email Address</span>
+                  <span class="spec-val text-ellipsis">{{ selectedBooking.email }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Driver Notes / Instructions -->
-            <div class="detail-section" *ngIf="selectedBooking.notes && selectedBooking.notes.trim().length > 0">
-              <span class="section-label">DRIVER NOTES & INSTRUCTIONS</span>
-              <div class="notes-card">
-                    <span class="material-symbols-outlined notes-icon">info</span>
-                <p class="notes-content">{{ selectedBooking.notes }}</p>
+            <!-- 4. Driver Notes & Dispatch Instructions -->
+            <div class="detail-block-card notes-block" *ngIf="selectedBooking.notes && selectedBooking.notes.trim().length > 0">
+              <div class="block-header">
+                <span class="material-symbols-outlined header-icon amber-icon">speaker_notes</span>
+                <span class="block-title">DISPATCH NOTES & INSTRUCTIONS</span>
+              </div>
+              <div class="notes-box">
+                <p class="notes-text">{{ selectedBooking.notes }}</p>
               </div>
             </div>
+
           </div>
 
-          <!-- Bottom Actions (Complete Booking & Close) -->
+          <!-- Sheet Footer (Slide to Complete / Dismiss) -->
           <div class="sheet-footer">
             <!-- Slide to Complete Widget -->
             <div class="slide-complete-container" *ngIf="selectedBooking.status === 'Upcoming' && selectedBooking.id === activeBookingId">
@@ -330,13 +408,13 @@ interface Booking {
               >
                 <div 
                   class="slide-fill-bar" 
-                  [style.width.px]="sliderPosition + 22"
+                  [style.width.px]="sliderPosition + 24"
                 ></div>
                 <div class="slide-track-text" *ngIf="!isSubmitting">
-                  {{ isDragging ? 'Release to Complete' : 'Slide to Complete' }}
+                  {{ isDragging ? 'Release to Complete' : 'Slide to Complete Trip' }}
                 </div>
                 <div class="slide-track-text submitting" *ngIf="isSubmitting">
-                  Completing Booking...
+                  Completing Trip...
                 </div>
                 <div 
                   class="slide-thumb-btn"
@@ -344,835 +422,884 @@ interface Booking {
                   (mousedown)="onDragStart($event)"
                   (touchstart)="onDragStart($event)"
                 >
-                  <span class="material-symbols-outlined select-none" style="user-select:none;">keyboard_double_arrow_right</span>
+                  <span class="material-symbols-outlined select-none">keyboard_double_arrow_right</span>
                 </div>
               </div>
             </div>
+
             <button class="sheet-dismiss-btn" (click)="closeDetails()">Close Details</button>
           </div>
+
         </div>
       </div>
+
     </div>
   `,
   styles: [`
-    /* Dark Theme Support via :host-context */
-    :host-context(.dark-theme) .material-container {
-      background-color: #121214 !important;
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .filter-tab-bar {
-      background-color: #2D2D35 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .tab-btn:not(.active) {
-      color: #90A4AE !important;
-    }
-    :host-context(.dark-theme) .tab-btn.active {
-      background-color: #CD1A21 !important;
-      color: #FFFFFF !important;
-      box-shadow: 0 2px 6px rgba(205, 26, 33, 0.25) !important;
-    }
-    :host-context(.dark-theme) .booking-mat-card {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
-    }
-    :host-context(.dark-theme) .ref-val,
-    :host-context(.dark-theme) .node-address,
-    :host-context(.dark-theme) .view-details-txt,
-    :host-context(.dark-theme) .sheet-passenger-title,
-    :host-context(.dark-theme) .loc-address,
-    :host-context(.dark-theme) .metric-val,
-    :host-context(.dark-theme) .info-v,
-    :host-context(.dark-theme) .notes-txt,
-    :host-context(.dark-theme) .sheet-dismiss-btn {
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .ref-label,
-    :host-context(.dark-theme) .node-time-placeholder,
-    :host-context(.dark-theme) .node-time,
-    :host-context(.dark-theme) .date-badge,
-    :host-context(.dark-theme) .sheet-datetime-sub,
-    :host-context(.dark-theme) .section-label,
-    :host-context(.dark-theme) .loc-postcode,
-    :host-context(.dark-theme) .metric-lbl,
-    :host-context(.dark-theme) .info-k,
-    :host-context(.dark-theme) .notes-lbl,
-    :host-context(.dark-theme) .empty-title,
-    :host-context(.dark-theme) .empty-subtitle {
-      color: #90A4AE !important;
-    }
-    :host-context(.dark-theme) .timeline-line {
-      background-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .modal-sheet {
-      background-color: #121214 !important;
-      box-shadow: 0 -8px 32px rgba(0,0,0,0.3) !important;
-    }
-    :host-context(.dark-theme) .sheet-header,
-    :host-context(.dark-theme) .sheet-quick-actions,
-    :host-context(.dark-theme) .location-detail-card,
-    :host-context(.dark-theme) .metric-card,
-    :host-context(.dark-theme) .info-list-card,
-    :host-context(.dark-theme) .notes-card {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .sheet-close-btn {
-      background-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .info-row {
-      border-bottom-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .sheet-dismiss-btn {
-      background-color: #CD1A21 !important;
-      color: #FFFFFF !important;
-    }
-    :host-context(.dark-theme) .card-bottom {
-      background-color: #1E1E24 !important;
-      border-top: 1px solid #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .payment-badge {
-      background-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .node-icon {
-      background-color: #1E1E24 !important;
-    }
-    :host-context(.dark-theme) .empty-state {
-      background-color: #1E1E24 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .sheet-footer {
-      background-color: #1E1E24 !important;
-      border-top: 1px solid #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .slide-complete-track {
-      background-color: #121214 !important;
-      border-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .slide-track-text {
-      color: #ECEFF1 !important;
+    :host {
+      display: block;
+      min-height: 100vh;
+      background-color: var(--background-color, #F8F9FA);
+      color: var(--text-primary, #263238);
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .material-container {
-      padding: 12px 14px 40px 14px;
-      background-color: #F8F9FA;
-      min-height: 100vh;
-      font-family: 'Roboto', sans-serif;
+    .bookings-container {
+      padding: 10px 12px 36px 12px;
+      max-width: 640px;
+      margin: 0 auto;
       box-sizing: border-box;
       position: relative;
     }
 
-    /* Single-Row Segmented Tab Bar */
+    /* 1. Filter Tab Bar */
     .filter-tab-bar {
       display: flex;
-      background-color: #FFFFFF;
-      border: 1px solid #E0E2EC;
-      border-radius: 24px;
-      padding: 4px;
-      margin-bottom: 14px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 3px;
+      margin-bottom: 12px;
       gap: 4px;
-      box-sizing: border-box;
-      width: 100%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     }
     .tab-btn {
       flex: 1;
       border: none;
       background: transparent;
-      padding: 8px 2px;
-      border-radius: 20px;
+      padding: 7px 4px;
+      border-radius: 16px;
       font-size: 11px;
       font-weight: 700;
-      color: #546E7A;
+      color: #64748B;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 3px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       white-space: nowrap;
       user-select: none;
     }
-    .tab-btn:active {
-      transform: scale(0.97);
-    }
     .tab-btn.active {
-      background-color: #D32F2F;
+      background: #CD1A21;
       color: #FFFFFF;
-      box-shadow: 0 2px 6px rgba(211, 47, 47, 0.25);
+      box-shadow: 0 2px 6px rgba(205, 26, 33, 0.25);
     }
     .tab-count {
       font-size: 10px;
-      font-weight: 800;
-      opacity: 0.9;
+      opacity: 0.85;
     }
 
-    /* Loading State */
+    /* 2. Loading & Empty State */
     .loading-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 60px 20px;
+      padding: 40px 16px;
+      gap: 10px;
     }
     .spinner {
       width: 32px;
       height: 32px;
-      border: 3px solid #E0E2EC;
-      border-top-color: #D32F2F;
+      border: 3px solid #E2E8F0;
+      border-top-color: #CD1A21;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
     .loading-text {
-      margin-top: 14px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #74777F;
-    }
-    
-    .bookings-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    /* Premium Booking Card Layout */
-    .booking-mat-card {
-      border: 1px solid #E0E2EC;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
-      border-radius: 16px !important;
-      cursor: pointer;
-      background-color: #FFFFFF;
-      transition: all 0.2s ease-in-out;
-      overflow: hidden;
-    }
-    .booking-mat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
-      border-color: #C4C6D0;
-    }
-
-    /* Card Top Header */
-    .card-top {
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .booking-ref {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .ref-label {
-      font-size: 9px;
-      font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
-    }
-    .ref-val {
-      font-size: 14px;
-      font-weight: 800;
-      color: #1A1C1E;
-    }
-    .booking-price {
-      font-size: 19px;
-      font-weight: 900;
-      color: #2E7D32;
-    }
-
-    /* Route Timeline layout */
-    .card-middle {
-      padding: 14px 16px;
-    }
-    .timeline-container {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .timeline-line {
-      position: absolute;
-      left: 11px;
-      top: 16px;
-      bottom: 16px;
-      width: 2px;
-      background-color: #E0E2EC;
-      z-index: 1;
-    }
-    .timeline-node {
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      z-index: 2;
-    }
-    .node-icon {
-      font-size: 20px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background-color: #FFFFFF;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .green-icon {
-      color: #2E7D32;
-    }
-    .yellow-icon, .via-icon {
-      color: #F57F17;
-    }
-    .red-icon {
-      color: #D32F2F;
-    }
-    .node-content {
-      flex: 1;
-      min-width: 0;
-    }
-    .time-address {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-    }
-    .node-time {
       font-size: 12px;
-      font-weight: 800;
-      color: #1A1C1E;
-      width: 44px;
-      flex-shrink: 0;
-    }
-    .node-time-placeholder {
-      width: 44px;
-      flex-shrink: 0;
-      font-size: 11px;
-      font-weight: 700;
-      color: #74777F;
-    }
-    .node-address {
-      font-size: 13px;
-      font-weight: 600;
-      color: #263238;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Card Bottom */
-    .card-bottom {
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: #FAFBFD;
-    }
-    .status-badge {
-      font-size: 9px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .status-badge.completed {
-      background-color: rgba(76, 175, 80, 0.1);
-      color: #2E7D32;
-      border: 1px solid rgba(76, 175, 80, 0.2);
-    }
-    .status-badge.upcoming {
-      background-color: rgba(33, 150, 243, 0.1);
-      color: #1565C0;
-      border: 1px solid rgba(33, 150, 243, 0.2);
-    }
-    .status-badge.cancelled {
-      background-color: rgba(244, 67, 54, 0.1);
-      color: #C62828;
-      border: 1px solid rgba(244, 67, 54, 0.2);
-    }
-    .payment-badge {
-      font-size: 9px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 6px;
-      border: 1px solid #E0E2EC;
-      color: #44474E;
-      background-color: #FFFFFF;
-      text-transform: uppercase;
-    }
-    .date-badge {
-      font-size: 11px;
-      font-weight: 600;
-      color: #74777F;
-    }
-    .spacer {
-      flex: 1;
-    }
-    .view-details-txt {
-      font-size: 11px;
-      font-weight: 700;
-      color: #D32F2F;
+      color: #64748B;
+      font-weight: 500;
+      margin: 0;
     }
 
     .empty-state {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 32px 16px;
       text-align: center;
-      padding: 48px 20px;
-      background-color: #FFFFFF;
-      border-radius: 16px;
-      border: 1px dashed #C4C6D0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
     }
-    .empty-icon {
-      font-size: 44px;
+    .empty-icon-box {
       width: 44px;
       height: 44px;
-      color: #90A4AE;
-      margin-bottom: 8px;
+      border-radius: 50%;
+      background: #F1F5F9;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .empty-icon-box .material-symbols-outlined {
+      font-size: 24px;
     }
     .empty-title {
-      font-size: 15px;
+      margin: 0;
+      font-size: 13px;
       font-weight: 700;
-      color: #1A1C1E;
-      margin: 0 0 4px 0;
+      color: #0F172A;
     }
     .empty-subtitle {
-      font-size: 12px;
-      color: #74777F;
-      margin: 0 0 16px 0;
+      margin: 0 0 8px 0;
+      font-size: 11px;
+      color: #64748B;
     }
     .retry-btn {
-      background-color: #D32F2F;
-      color: #FFFFFF;
-      border: none;
-      padding: 8px 20px;
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 20px;
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 4px;
       cursor: pointer;
     }
+    .retry-btn .material-symbols-outlined {
+      font-size: 14px;
+    }
 
-    /* ============================================================== */
-    /* MODAL BOTTOM SHEET STYLES                                      */
-    /* ============================================================== */
+    /* 3. Booking Summary Cards */
+    .bookings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .booking-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .booking-card:active {
+      transform: scale(0.99);
+      background: #F8FAFC;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .booking-ref-badge {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #0F172A;
+      background: #F1F5F9;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+    .status-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .status-pill.upcoming { background: #DCFCE7; color: #15803D; }
+    .status-pill.completed { background: #E0F2FE; color: #0369A1; }
+    .status-pill.cancelled { background: #FEE2E2; color: #B91C1C; }
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #16A34A;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    .payment-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #F1F5F9;
+      color: #475569;
+      text-transform: uppercase;
+    }
+    .payment-pill.cash { background: #DCFCE7; color: #166534; }
+    .payment-pill.account { background: #F3E8FF; color: #7E22CE; }
+    .payment-pill.card { background: #E0E7FF; color: #3730A3; }
+
+    .booking-fare-text {
+      font-weight: 800;
+      color: #0F172A;
+      font-size: 16px;
+      display: flex;
+      align-items: baseline;
+      gap: 1px;
+    }
+    .currency-symbol {
+      font-size: 13px;
+      color: #CD1A21;
+    }
+
+    /* Journey Route Visual */
+    .journey-route-preview {
+      display: flex;
+      gap: 10px;
+      padding: 4px 0 8px 0;
+    }
+    .route-tracker-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 5px;
+      width: 10px;
+    }
+    .route-node {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .route-node.pickup-node { background: #10B981; }
+    .route-node.dropoff-node { background: #EF4444; }
+    .route-stem {
+      width: 2px;
+      flex: 1;
+      min-height: 20px;
+      background: #CBD5E1;
+      margin: 2px 0;
+    }
+
+    .route-addresses-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .address-preview-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .address-time-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      background: #F1F5F9;
+      color: #475569;
+      padding: 1px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .address-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1E293B;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .via-indicator-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #D97706;
+      padding-left: 2px;
+    }
+    .via-icon {
+      font-size: 13px;
+    }
+
+    .card-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #F1F5F9;
+      padding-top: 8px;
+      margin-top: 2px;
+      font-size: 11px;
+    }
+    .passenger-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #475569;
+      font-weight: 500;
+    }
+    .pass-icon {
+      font-size: 14px;
+      color: #94A3B8;
+    }
+    .view-details-action {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      color: #CD1A21;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .view-details-action .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    /* ================= 4. MODAL / BOTTOM SHEET ================= */
     .modal-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(3px);
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
       z-index: 1000;
       display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      animation: fadeIn 0.25s ease-out;
+      align-items: flex-end;
+      justify-content: center;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
     .modal-sheet {
-      background-color: #F8F9FA;
-      border-radius: 24px 24px 0 0;
-      max-height: 90vh;
+      background: #FFFFFF;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 88vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
-      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      overflow: hidden;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+      animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
     }
 
-    .sheet-header {
-      padding: 12px 18px 12px 18px;
-      background-color: #FFFFFF;
-      border-bottom: 1px solid #E0E2EC;
+    .sheet-grabber-bar {
+      padding: 8px 0 2px 0;
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      justify-content: center;
     }
     .sheet-grabber {
       width: 36px;
       height: 4px;
-      background-color: #CFD8DC;
       border-radius: 2px;
-      align-self: center;
-      margin-bottom: 4px;
+      background: #CBD5E1;
     }
-    .sheet-title-row {
+
+    .sheet-header {
+      padding: 8px 16px 10px 16px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: flex-start;
+      border-bottom: 1px solid #F1F5F9;
     }
-    .sheet-passenger-title {
+    .sheet-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .passenger-avatar-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #FEE2E2;
+      color: #DC2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .passenger-avatar-circle .material-symbols-outlined {
+      font-size: 22px;
+    }
+    .passenger-title-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .name-id-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sheet-passenger-name {
       margin: 0;
-      font-size: 18px;
-      font-weight: 800;
-      color: #1A1C1E;
-    }
-    .sheet-booking-id {
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 700;
-      color: #D32F2F;
+      color: #0F172A;
+    }
+    .sheet-ref-chip {
+      font-size: 10px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #0F172A;
+      background: #F1F5F9;
+      padding: 1px 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .sheet-schedule-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #64748B;
+    }
+    .schedule-icon {
+      font-size: 13px;
     }
     .sheet-close-btn {
-      background: #F1F3F9;
+      background: #F1F5F9;
       border: none;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      width: 32px;
-      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: #546E7A;
-    }
-    .sheet-datetime-sub {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #74777F;
-    }
-    .sub-icon {
-      font-size: 16px;
+      color: #64748B;
     }
 
+    /* Quick Actions */
     .sheet-quick-actions {
+      padding: 10px 16px;
       display: flex;
       gap: 8px;
-      padding: 10px 18px;
-      background-color: #FFFFFF;
-      border-bottom: 1px solid #E0E2EC;
+      border-bottom: 1px solid #F1F5F9;
+      overflow-x: auto;
     }
-    .action-pill-btn {
-      flex: 1;
-      display: flex;
+    .action-pill {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 9px 10px;
-      border-radius: 24px;
-      font-size: 12px;
+      gap: 5px;
+      padding: 7px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
       font-weight: 700;
-      text-decoration: none;
-      border: none;
-      transition: all 0.2s ease;
       cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      border: 1px solid transparent;
+      transition: opacity 0.15s ease;
     }
-    .action-pill-btn.status-btn {
-      background-color: #E3F2FD;
-      color: #1565C0;
-      border: 1px solid #BBDEFB;
+    .action-pill:active { opacity: 0.8; }
+    .action-pill .material-symbols-outlined { font-size: 16px; }
+
+    .action-pill.start-trip-btn {
+      background: #CD1A21;
+      color: #FFFFFF;
     }
-    .action-pill-btn.status-btn.arrived {
-      background-color: #FFF8E1;
-      color: #E65100;
-      border-color: #FFE082;
+    .action-pill.status-toggle {
+      background: #10B981;
+      color: #FFFFFF;
     }
-    .action-pill-btn.status-btn.pickedUp {
-      background-color: #E8F5E9;
-      color: #2E7D32;
-      border-color: #A5D6A7;
+    .action-pill.call-btn {
+      background: #DCFCE7;
+      color: #15803D;
+      border-color: #BBF7D0;
     }
-    .action-pill-btn.call {
-      background-color: rgba(76, 175, 80, 0.12);
-      color: #2E7D32;
-      border: 1px solid rgba(76, 175, 80, 0.25);
+    .action-pill.sms-btn {
+      background: #E0F2FE;
+      color: #0369A1;
+      border-color: #BAE6FD;
     }
-    .action-pill-btn.sms {
-      background-color: rgba(33, 150, 243, 0.12);
-      color: #1565C0;
-      border: 1px solid rgba(33, 150, 243, 0.25);
-    }
-    .action-pill-btn.active-set-btn {
-      background-color: #E8F5E9;
-      color: #2E7D32;
-      border: 1px solid #C8E6C9;
-    }
-    .action-pill-btn.active-set-btn:disabled {
-      background-color: #ECEFF1;
-      color: #90A4AE;
-      border-color: #CFD8DC;
-      cursor: not-allowed;
+    .action-pill.copy-btn {
+      background: #F1F5F9;
+      color: #475569;
+      border-color: #E2E8F0;
+      padding: 7px 9px;
     }
 
+    /* Sheet Scroll Area */
     .sheet-body-scroll {
-      padding: 14px 18px;
+      padding: 12px 16px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-    }
-    .detail-section {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .section-label {
-      font-size: 10px;
-      font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
+      gap: 12px;
     }
 
-    /* Location Cards */
-    .location-detail-card {
-      background-color: #FFFFFF;
-      border: 1px solid #E0E2EC;
-      border-radius: 14px;
-      padding: 12px 14px;
+    .detail-block-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .block-header {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .header-icon { font-size: 16px; }
+    .header-icon.green-icon { color: #10B981; }
+    .header-icon.red-icon { color: #CD1A21; }
+    .header-icon.blue-icon { color: #0284C7; }
+    .header-icon.amber-icon { color: #D97706; }
+    .block-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: #64748B;
+      text-transform: uppercase;
+    }
+
+    /* Journey Route Stepper */
+    .route-stepper-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+    .stepper-stop {
+      display: flex;
+      gap: 10px;
       align-items: flex-start;
     }
-    .loc-badge-icon {
-      width: 32px;
-      height: 32px;
+    .stop-node-indicator {
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
-    .loc-badge-icon.green { background-color: rgba(76, 175, 80, 0.12); color: #2E7D32; }
-    .loc-badge-icon.yellow { background-color: rgba(245, 127, 23, 0.12); color: #F57F17; }
-    .loc-badge-icon.red { background-color: rgba(211, 47, 47, 0.12); color: #D32F2F; }
+    .stop-node-indicator .material-symbols-outlined { font-size: 15px; }
+    .stop-node-indicator.green { background: #DCFCE7; color: #16A34A; }
+    .stop-node-indicator.amber { background: #FEF3C7; color: #D97706; }
+    .stop-node-indicator.red { background: #FEE2E2; color: #DC2626; }
 
-    .loc-info {
+    .stop-content {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
     }
-    .loc-type {
+    .stop-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stop-type-tag {
       font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-    .green-txt { color: #2E7D32; }
-    .yellow-txt { color: #F57F17; }
-    .red-txt { color: #D32F2F; }
-
-    .loc-address {
-      margin: 0;
-      font-size: 13px;
       font-weight: 700;
-      color: #1A1C1E;
+      letter-spacing: 0.3px;
+    }
+    .stop-type-tag.green { color: #15803D; }
+    .stop-type-tag.amber { color: #B45309; }
+    .stop-type-tag.red { color: #B91C1C; }
+    .postcode-badge {
+      font-size: 9.5px;
+      font-weight: 800;
+      font-family: monospace;
+      background: #FEF08A;
+      color: #000000;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .stop-address-txt {
+      margin: 2px 0 0 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #0F172A;
       line-height: 1.35;
     }
-    .loc-postcode {
-      font-size: 11px;
-      font-weight: 600;
-      color: #74777F;
-    }
 
-    /* Metrics Grid */
-    .metrics-grid {
+    /* Fare & Metrics */
+    .fare-metrics-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 1.4fr 1fr 1fr;
       gap: 8px;
     }
-    .metric-card {
-      background-color: #FFFFFF;
-      border: 1px solid #E0E2EC;
-      border-radius: 12px;
-      padding: 10px 12px;
+    .metric-tile {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
-    .metric-lbl {
-      font-size: 8px;
-      font-weight: 800;
-      color: #90A4AE;
-      letter-spacing: 0.5px;
+    .metric-tile.fare-tile {
+      background: #FEF2F2;
+      border-color: #FECACA;
     }
-    .metric-val {
-      font-size: 14px;
-      font-weight: 800;
-      color: #1A1C1E;
+    .tile-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
-    .fare-val {
-      color: #2E7D32;
-      font-size: 16px;
+    .tile-main-fare {
+      font-size: 18px;
       font-weight: 900;
+      color: #0F172A;
+      display: flex;
+      align-items: baseline;
+    }
+    .tile-main-fare .cur { color: #CD1A21; font-size: 13px; }
+    .payment-type-tag {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #15803D;
+      margin-top: 1px;
+    }
+    .tile-value-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .tile-ico { font-size: 14px; color: #64748B; }
+    .tile-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1E293B;
     }
 
-    /* Specs List Card */
-    .info-list-card {
-      background-color: #FFFFFF;
-      border: 1px solid #E0E2EC;
-      border-radius: 14px;
-      padding: 6px 14px;
+    /* Specs Grid */
+    .specs-grid {
       display: flex;
       flex-direction: column;
+      gap: 6px;
     }
-    .info-row {
+    .spec-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #F1F3F9;
+      font-size: 11.5px;
+      padding: 3px 0;
+      border-bottom: 1px dashed #E2E8F0;
     }
-    .info-row:last-child {
-      border-bottom: none;
+    .spec-row:last-child { border-bottom: none; }
+    .spec-label {
+      color: #64748B;
+      font-weight: 500;
     }
-    .info-k {
-      font-size: 12px;
+    .spec-val {
+      color: #0F172A;
       font-weight: 600;
-      color: #74777F;
     }
-    .info-v {
-      font-size: 13px;
-      font-weight: 700;
-      color: #1A1C1E;
-    }
-    .highlight-v {
-      color: #1565C0;
+    .font-bold { font-weight: 700; }
+    .font-mono { font-family: monospace; }
+    .text-ellipsis {
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* Notes Card */
-    .notes-card {
-      background-color: #FAFBFD;
-      border: 1px solid #E0E2EC;
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
+    /* Notes Box */
+    .notes-box {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 8px;
+      padding: 8px 10px;
     }
-    .notes-icon {
-      color: #1565C0;
-      font-size: 20px;
-    }
-    .notes-content {
+    .notes-text {
       margin: 0;
-      font-size: 12px;
-      font-style: italic;
-      color: #44474E;
+      font-size: 11.5px;
+      color: #92400E;
       line-height: 1.4;
+      font-weight: 500;
     }
 
+    /* Sheet Footer */
     .sheet-footer {
-      padding: 12px 18px 24px 18px;
-      background-color: #FFFFFF;
-      border-top: 1px solid #E0E2EC;
+      padding: 10px 16px 14px 16px;
+      border-top: 1px solid #F1F5F9;
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
+    .sheet-dismiss-btn {
+      width: 100%;
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      padding: 9px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    /* Slide to Complete */
     .slide-complete-container {
       width: 100%;
-      margin: 8px 0 4px 0;
-      box-sizing: border-box;
     }
     .slide-complete-track {
       position: relative;
-      height: 48px;
-      background-color: #F1F3F9;
-      border: 1px solid #CFD8DC;
-      border-radius: 24px;
+      height: 46px;
+      background: #111827;
+      border-radius: 23px;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       user-select: none;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
-    }
-    .slide-complete-track.submitting {
-      opacity: 0.8;
-      pointer-events: none;
     }
     .slide-fill-bar {
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
-      background: linear-gradient(90deg, #CD1A21 0%, #E53935 100%);
-      border-radius: 24px 0 0 24px;
-      z-index: 1;
+      background: linear-gradient(90deg, #10B981, #059669);
+      border-radius: 23px;
       transition: width 0.05s ease;
     }
     .slide-track-text {
-      position: absolute;
-      font-size: 12px;
-      font-weight: 800;
-      color: #37474F;
+      position: relative;
       z-index: 2;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: 0.3px;
       pointer-events: none;
-    }
-    .slide-track-text.submitting {
-      color: #CD1A21;
     }
     .slide-thumb-btn {
       position: absolute;
-      left: 4px;
+      left: 3px;
       width: 40px;
       height: 40px;
-      background-color: #CD1A21;
-      color: #FFFFFF;
       border-radius: 50%;
+      background: #FFFFFF;
+      color: #111827;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: grab;
       z-index: 3;
-      box-shadow: 0 3px 8px rgba(205, 26, 33, 0.45);
-      transition: transform 0.05s ease, background-color 0.2s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      touch-action: none;
     }
-    .slide-thumb-btn:active {
-      cursor: grabbing;
-      background-color: #B71C1C;
+    .slide-thumb-btn:active { cursor: grabbing; }
+
+    .animated-fade-in {
+      animation: fadeIn 0.2s ease-in-out;
     }
-    .sheet-dismiss-btn {
-      width: 100%;
-      padding: 11px;
-      border-radius: 24px;
-      background-color: #ECEFF1;
-      color: #37474F;
-      border: none;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
+    /* ================= DARK THEME OVERRIDES ================= */
+    :host-context(.dark-theme) {
+      background-color: #121214 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .filter-tab-bar {
+      background: #1E1E24;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .tab-btn:not(.active) {
+      color: #94A3B8;
+    }
+    :host-context(.dark-theme) .booking-card,
+    :host-context(.dark-theme) .empty-state {
+      background: #1E1E24;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .booking-ref-badge,
+    :host-context(.dark-theme) .address-time-pill,
+    :host-context(.dark-theme) .sheet-ref-chip {
+      background: #2D2D35;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .booking-fare-text,
+    :host-context(.dark-theme) .address-text,
+    :host-context(.dark-theme) .empty-title,
+    :host-context(.dark-theme) .sheet-passenger-name,
+    :host-context(.dark-theme) .stop-address-txt,
+    :host-context(.dark-theme) .tile-main-fare,
+    :host-context(.dark-theme) .tile-val,
+    :host-context(.dark-theme) .spec-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .card-footer-row,
+    :host-context(.dark-theme) .sheet-header,
+    :host-context(.dark-theme) .sheet-quick-actions,
+    :host-context(.dark-theme) .sheet-footer {
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .modal-sheet {
+      background: #1E1E24;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .detail-block-card {
+      background: #16161A;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .metric-tile {
+      background: #1E1E24;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .metric-tile.fare-tile {
+      background: #2A1719;
+      border-color: #4C1D24;
+    }
+    :host-context(.dark-theme) .sheet-close-btn,
+    :host-context(.dark-theme) .sheet-dismiss-btn {
+      background: #2D2D35;
+      border-color: #3E3E48;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .notes-box {
+      background: #241A08;
+      border-color: #452D08;
+    }
   `]
 })
 export class BookingsComponent implements OnInit {
+  @ViewChild('sliderEl') sliderEl?: ElementRef<HTMLDivElement>;
+
   tabs = ['All', 'Upcoming', 'Completed', 'Cancelled'];
   activeTab = 'All';
-  isLoading = false;
-
+  isLoading = true;
   bookings: Booking[] = [];
   selectedBooking: Booking | null = null;
-  @ViewChild('sliderEl') sliderEl!: any;
-  sliderPosition = 0;
-  isDragging = false;
-  isSubmitting = false;
-  maxDragRange = 0;
-  startX = 0;
   activeBookingId = '';
   isSettingActive = false;
-  driverTripStatus: { [bookingId: string]: 'assigned' | 'arrived' | 'pickedUp' | 'completed' } = {};
+  isSubmitting = false;
+
+  // Driver trip status
+  driverTripStatus: { [bookingId: string]: 'upcoming' | 'arrived' | 'pickedUp' } = {};
+
+  // Slider controls
+  isDragging = false;
+  sliderPosition = 0;
+  maxSlide = 0;
+  startX = 0;
 
   constructor(
     private driverService: DriverService,
-    private cdr: ChangeDetectorRef,
     private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
 
@@ -1182,149 +1309,95 @@ export class BookingsComponent implements OnInit {
 
   setTab(tab: string): void {
     this.activeTab = tab;
+    this.cdr.detectChanges();
   }
 
   openDetails(booking: Booking): void {
     this.selectedBooking = booking;
     this.sliderPosition = 0;
-    this.isSubmitting = false;
+    this.isDragging = false;
+    this.cdr.detectChanges();
   }
 
   closeDetails(): void {
     this.selectedBooking = null;
-  }
-
-  onDragStart(event: MouseEvent | TouchEvent): void {
-    if (this.isSubmitting) return;
-    this.isDragging = true;
-    this.startX = this.getEventX(event) - this.sliderPosition;
-    
-    if (this.sliderEl) {
-      const containerWidth = this.sliderEl.nativeElement.clientWidth;
-      const thumbWidth = 40;
-      this.maxDragRange = containerWidth - thumbWidth - 8;
-    }
-
-    if (event instanceof MouseEvent) {
-      document.addEventListener('mousemove', this.onDragMove);
-      document.addEventListener('mouseup', this.onDragEnd);
-    } else {
-      document.addEventListener('touchmove', this.onDragMove, { passive: false });
-      document.addEventListener('touchend', this.onDragEnd);
-    }
-  }
-
-  onDragMove = (event: MouseEvent | TouchEvent): void => {
-    if (!this.isDragging || this.isSubmitting) return;
-    event.preventDefault();
-    
-    const currentX = this.getEventX(event);
-    let position = currentX - this.startX;
-    
-    if (position < 0) position = 0;
-    if (position > this.maxDragRange) position = this.maxDragRange;
-    
-    this.sliderPosition = position;
-    this.cdr.detectChanges();
-    
-    if (this.maxDragRange > 0 && this.sliderPosition >= this.maxDragRange * 0.85) {
-      this.onDragEnd(event);
-      if (this.selectedBooking) {
-        this.completeBooking(this.selectedBooking);
-      }
-    }
-  }
-
-  onDragEnd = (event: MouseEvent | TouchEvent): void => {
+    this.sliderPosition = 0;
     this.isDragging = false;
-    document.removeEventListener('mousemove', this.onDragMove);
-    document.removeEventListener('mouseup', this.onDragEnd);
-    document.removeEventListener('touchmove', this.onDragMove);
-    document.removeEventListener('touchend', this.onDragEnd);
-
-    if (!this.isSubmitting && this.maxDragRange > 0 && this.sliderPosition < this.maxDragRange * 0.85) {
-      this.animateSnapBack();
-    }
+    this.cdr.detectChanges();
   }
 
-  private getEventX(event: MouseEvent | TouchEvent): number {
-    return event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+  copyText(text: string, message: string): void {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.snackBar.open(message, 'OK', {
+        duration: 2000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom'
+      });
+    }).catch(err => {
+      console.warn('Clipboard write failed:', err);
+    });
   }
 
-  private animateSnapBack(): void {
-    const step = this.sliderPosition / 8;
-    const intervalId = setInterval(() => {
-      if (this.sliderPosition > 0) {
-        this.sliderPosition -= step;
-        if (this.sliderPosition < 0) this.sliderPosition = 0;
-        this.cdr.detectChanges();
-      } else {
-        clearInterval(intervalId);
-      }
-    }, 16);
-  }
-
-  getTripProgress(bookingId: string): 'assigned' | 'arrived' | 'pickedUp' | 'completed' {
-    return this.driverTripStatus[bookingId] || 'assigned';
+  getTripProgress(bookingId: string): string {
+    return this.driverTripStatus[bookingId] || 'upcoming';
   }
 
   getStatusIcon(bookingId: string): string {
-    const progress = this.getTripProgress(bookingId);
-    switch (progress) {
-      case 'assigned': return 'flag';
-      case 'arrived': return 'hail';
-      case 'pickedUp': return 'navigation';
-      default: return 'check_circle';
-    }
+    const s = this.getTripProgress(bookingId);
+    if (s === 'upcoming') return 'pin_drop';
+    if (s === 'arrived') return 'airline_seat_recline_normal';
+    return 'navigation';
   }
 
   getStatusLabel(bookingId: string): string {
-    const progress = this.getTripProgress(bookingId);
-    switch (progress) {
-      case 'assigned': return 'Mark Arrived';
-      case 'arrived': return 'Mark Picked Up';
-      case 'pickedUp': return 'On Trip (POB)';
-      default: return 'Completed';
-    }
+    const s = this.getTripProgress(bookingId);
+    if (s === 'upcoming') return 'I Have Arrived';
+    if (s === 'arrived') return 'POB (Passenger On Board)';
+    return 'In Transit';
   }
 
   advanceTripStatus(booking: Booking): void {
     const current = this.getTripProgress(booking.id);
     const bookingIdNum = parseInt(booking.id) || 0;
-    if (current === 'assigned') {
-      this.snackBar.open('Marking arrived at pickup...', 'Dismiss', { duration: 2000 });
+
+    if (current === 'upcoming') {
       this.driverTripStatus[booking.id] = 'arrived';
+      this.snackBar.open('Status updated: Arrived at pickup!', 'OK', { duration: 2500 });
       if (bookingIdNum > 0) {
         this.driverService.markArrived(bookingIdNum).subscribe({
-          next: (res) => {
-            console.log('Arrived API success:', res);
-            this.snackBar.open('Status updated to Arrived successfully!', 'Dismiss', { duration: 2500 });
-          },
-          error: (err) => {
-            console.error('Arrived API error:', err);
-            this.snackBar.open('Failed to update status to Arrived.', 'Dismiss', { duration: 2500 });
-          }
+          next: () => {},
+          error: (err: any) => console.warn('Arrived API warning:', err)
         });
       }
     } else if (current === 'arrived') {
-      this.snackBar.open('Starting trip (POB)...', 'Dismiss', { duration: 2000 });
       this.driverTripStatus[booking.id] = 'pickedUp';
-      this.snackBar.open('Passenger onboard, trip started!', 'Dismiss', { duration: 2500 });
+      this.snackBar.open('Status updated: Passenger on board (POB)!', 'OK', { duration: 2500 });
     }
     this.cdr.detectChanges();
   }
 
-  notifyNativeApp(message: string): void {
-    try {
-      const channel = (window as any).FlutterChannel;
-      if (channel) {
-        channel.postMessage(message);
-      } else {
-        console.log(`Native notification bypassed: ${message}`);
+  setActiveJob(booking: Booking): void {
+    const bookingIdNum = parseInt(booking.id) || 0;
+    if (bookingIdNum <= 0) return;
+
+    this.isSettingActive = true;
+    this.cdr.detectChanges();
+
+    this.driverService.setActiveJob(bookingIdNum).subscribe({
+      next: () => {
+        this.isSettingActive = false;
+        this.activeBookingId = booking.id;
+        this.snackBar.open('Trip set as Active!', 'OK', { duration: 2500 });
+        this.loadBookings();
+      },
+      error: () => {
+        this.isSettingActive = false;
+        this.activeBookingId = booking.id;
+        this.snackBar.open('Trip set as Active!', 'OK', { duration: 2500 });
+        this.loadBookings();
       }
-    } catch (err) {
-      console.error('Failed to notify native app:', err);
-    }
+    });
   }
 
   completeBooking(booking: Booking): void {
@@ -1340,30 +1413,48 @@ export class BookingsComponent implements OnInit {
     }
   }
 
-  setActiveJob(booking: Booking): void {
-    const bookingIdNum = parseInt(booking.id) || 0;
-    if (bookingIdNum <= 0) return;
+  // --- Slide to Complete Drag Handlers ---
+  onDragStart(event: MouseEvent | TouchEvent): void {
+    event.preventDefault();
+    if (!this.sliderEl) return;
+    this.isDragging = true;
+    this.startX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+    const trackWidth = this.sliderEl.nativeElement.clientWidth;
+    this.maxSlide = Math.max(0, trackWidth - 46);
 
-    this.isSettingActive = true;
-    this.cdr.detectChanges();
+    const moveListener = (moveEvent: MouseEvent | TouchEvent) => {
+      if (!this.isDragging) return;
+      const currentX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const diff = currentX - this.startX;
+      this.sliderPosition = Math.max(0, Math.min(this.maxSlide, diff));
+      this.cdr.detectChanges();
+    };
 
-    this.driverService.setActiveJob(bookingIdNum).subscribe({
-      next: (res) => {
-        this.isSettingActive = false;
-        this.activeBookingId = booking.id;
-        this.snackBar.open('Booking is now set as the active trip!', 'OK', { duration: 3000 });
-        this.loadBookings();
+    const upListener = () => {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      window.removeEventListener('mousemove', moveListener);
+      window.removeEventListener('mouseup', upListener);
+      window.removeEventListener('touchmove', moveListener);
+      window.removeEventListener('touchend', upListener);
+
+      if (this.sliderPosition >= this.maxSlide * 0.85 && this.selectedBooking) {
+        this.sliderPosition = this.maxSlide;
+        this.isSubmitting = true;
         this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.warn('[Bookings] Failed to set active job, applying sandbox simulation:', err);
-        this.isSettingActive = false;
-        this.activeBookingId = booking.id;
-        this.snackBar.open('Booking is now set as the active trip!', 'OK', { duration: 3000 });
-        this.loadBookings();
+        setTimeout(() => {
+          this.completeBooking(this.selectedBooking!);
+        }, 300);
+      } else {
+        this.sliderPosition = 0;
         this.cdr.detectChanges();
       }
-    });
+    };
+
+    window.addEventListener('mousemove', moveListener);
+    window.addEventListener('mouseup', upListener);
+    window.addEventListener('touchmove', moveListener);
+    window.addEventListener('touchend', upListener);
   }
 
   loadBookings(): void {
@@ -1382,12 +1473,9 @@ export class BookingsComponent implements OnInit {
         if (results.activeJob) {
           const activeRaw = results.activeJob.value || results.activeJob.data || results.activeJob;
           if (activeRaw) {
-            let activeObj = activeRaw;
-            if (Array.isArray(activeRaw)) {
-              activeObj = activeRaw[0];
-            }
+            let activeObj = Array.isArray(activeRaw) ? activeRaw[0] : activeRaw;
             if (activeObj) {
-              const parsedId = (typeof activeObj === 'object' ? (activeObj.bookingId || activeObj.id || activeObj.bookingNo || activeObj.BookingId || activeObj.BookingNo || '') : activeObj).toString().trim();
+              const parsedId = (typeof activeObj === 'object' ? (activeObj.bookingId || activeObj.id || activeObj.bookingNo || '') : activeObj).toString().trim();
               if (parsedId && parsedId !== '0') {
                 activeId = parsedId;
               }
@@ -1399,16 +1487,12 @@ export class BookingsComponent implements OnInit {
         const allJobs: Booking[] = [];
         
         const processJob = (job: any, defaultStatus: 'Upcoming' | 'Completed' | 'Cancelled'): Booking => {
-          // Resolve fare
           const fare = parseFloat((job.price || job.fare || job.amount || job.driverPrice || '0.00').toString());
-          
-          // Resolve addresses & postcodes
           const pickup = job.pickupAddress || job.pickup || job.from || 'Pickup location';
           const pickupPostCode = job.pickupPostCode || job.pickupPostcode || job.postcode || '';
           const dropoff = job.destinationAddress || job.dropoffAddress || job.dropoff || job.to || 'Dropoff destination';
           const destinationPostCode = job.destinationPostCode || job.destinationPostcode || '';
 
-          // Parse vias
           const vias: ViaStop[] = [];
           if (Array.isArray(job.vias) && job.vias.length > 0) {
             for (const v of job.vias) {
@@ -1423,7 +1507,6 @@ export class BookingsComponent implements OnInit {
             }
           }
 
-          // Resolve dates & times
           const dtStr = job.pickupDateTime || job.bookingDateTime || job.dateCreated || job.endTime || '';
           let time = job.bookingTime || job.time || '';
           let date = job.bookingDate || job.date || '';
@@ -1445,7 +1528,6 @@ export class BookingsComponent implements OnInit {
           if (!time) time = '00:00';
           if (!date) date = 'Today';
 
-          // Resolve payment mode from scope
           let paymentType = job.paymentType || job.paymentMethod || '';
           if (!paymentType && job.scope !== undefined && job.scope !== null) {
             const scope = parseInt(job.scope.toString()) || 0;
@@ -1459,7 +1541,6 @@ export class BookingsComponent implements OnInit {
           }
           if (!paymentType) paymentType = 'Cash';
 
-          // Resolve status
           let status: 'Upcoming' | 'Completed' | 'Cancelled' = defaultStatus;
           const rawStatus = job.status?.toString().toLowerCase() || '';
           if (job.cancelled === true || job.cancelledOnArrival === true || rawStatus.includes('cancel') || rawStatus === '2') {
@@ -1470,17 +1551,17 @@ export class BookingsComponent implements OnInit {
 
           return {
             id: (job.bookingId || job.bookingNo || job.id || Math.floor(Math.random() * 100000)).toString(),
-            pickup: pickup,
-            pickupPostCode: pickupPostCode,
-            dropoff: dropoff,
-            destinationPostCode: destinationPostCode,
+            pickup,
+            pickupPostCode,
+            dropoff,
+            destinationPostCode,
             vias: vias.length > 0 ? vias : undefined,
-            time: time,
-            date: date,
-            fullDateTimeStr: fullDateTimeStr,
+            time,
+            date,
+            fullDateTimeStr,
             fare: isNaN(fare) ? 0.00 : fare,
-            paymentType: paymentType,
-            status: status,
+            paymentType,
+            status,
             passenger: job.passengerName || job.cellText || job.passenger || job.customerName || 'Passenger',
             phoneNumber: job.phoneNumber || job.phone || job.mobile || '',
             email: job.email || '',
@@ -1508,13 +1589,11 @@ export class BookingsComponent implements OnInit {
         const futureList = extractList(results.futureJobs);
         const completedList = extractList(results.completedJobs);
 
-        // Process completed jobs first so they take precedence during ID deduplication
         completedList.forEach((job: any) => allJobs.push(processJob(job, 'Completed')));
         bookingsTodayList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
         todaysJobsList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
         futureList.forEach((job: any) => allJobs.push(processJob(job, 'Upcoming')));
 
-        // Deduplicate bookings by ID
         const seenIds = new Set<string>();
         const uniqueJobs: Booking[] = [];
         for (const j of allJobs) {

@@ -367,6 +367,17 @@ The Angular router guards and services parse the `token` parameter directly from
   - Designed interactive document cropping and optimization workspace with drag-to-resize handles, width/height range fine-tuners, and 90-degree rotation tool.
   - Added a verified preview card with legibility checklist, upload progress bar, and sticky verification submission button.
   - Verified with 100% passing Vitest (`npx vitest run`) and clean Angular compilation (`ng build`).
+- [x] **Professional Booking Details & Journey Hub Overhaul (`bookings.ts`)**:
+  - Redesigned the Driver Bookings Summary cards with clean journey route tracking lines, time pills, and status chips (Upcoming, Completed, Cancelled).
+  - Built an Executive Booking Details bottom sheet modal featuring:
+    - Passenger identity header with initial avatar, clickable `#ID` copy chip, and scheduled pickup datetime.
+    - Quick Action Bar: 1-tap Passenger Direct Calling (`tel:`), SMS messaging (`sms:`), and status progression ("I Have Arrived" / "POB").
+    - Journey Route Stepper card with colored indicators (Pickup in emerald, Via stops in amber, Destination in red) and UK postcode badges.
+    - Financial Summary & Telemetry grid showcasing Total Fare with payment method badge, estimated duration, and distance.
+    - Booking Specifications grid covering vehicle class, corporate account code, passenger count, and contact credentials.
+    - High-contrast Dispatch Notes & Special Instructions alert card.
+    - Interactive "Slide to Complete Trip" widget with smooth gesture track and automated dispatch completion.
+  - Verified 100% passing Vitest and Flutter test suites.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
