@@ -417,9 +417,17 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added comprehensive dark mode overrides for quick actions and the light slider.
   - Verified with 100% passing Vitest unit tests (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
 
+- [x] **Dashboard Active Allocation Via Stops Support (`dashboard.ts`)**:
+  - Added intermediate via stops support to the **Active Allocation** card on the Driver Dashboard with color-coded amber pin icons, indexed via headers (`VIA STOP 1`, `VIA STOP 2`), UK postcode badges, stop addresses, and direct Google Maps navigation triggers (`https://www.google.com/maps/search/?api=1&query=...`).
+  - Implemented defensive multi-format via extraction (`extractVias`) supporting JSON string arrays, object lists, delimited strings, and nested dictionary keys (`via-0`, `via-1`, `via1`, `Via1`).
+  - Connected live booking resolution via `GET /api/Bookings/FindById` to automatically enrich active trip routes with via stops, postcodes, and driver instructions.
+  - Added full dark mode support for via nodes, amber badges, and postcode chips.
+  - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 

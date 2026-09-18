@@ -21,6 +21,7 @@ interface ActiveJob {
   dropoff: string;
   pickupPostCode?: string;
   destinationPostCode?: string;
+  vias?: { address: string; postCode?: string }[];
   time: string;
   date: string;
   status: string;
@@ -85,33 +86,61 @@ interface DashTotals {
 
         <!-- Route timeline -->
         <div class="active-route">
+          <!-- Pickup Location -->
           <div class="route-node">
             <span class="material-symbols-outlined node-icon green">my_location</span>
             <div class="node-text">
-              <span class="node-lbl green">PICKUP</span>
+              <div class="node-meta-line">
+                <span class="node-lbl green">PICKUP</span>
+                <span class="node-postcode" *ngIf="activeBooking.pickupPostCode">{{ activeBooking.pickupPostCode }}</span>
+              </div>
               <p class="node-addr">{{ activeBooking.pickup }}</p>
             </div>
             <a 
               [href]="getMapUrl(activeBooking.pickupPostCode || activeBooking.pickup)" 
               target="_blank" 
               class="map-btn" 
-              title="Navigate with Google Maps"
+              title="Navigate to Pickup with Google Maps"
             >
               <span class="material-symbols-outlined">navigation</span>
             </a>
           </div>
 
+          <!-- Via Stops (if any) -->
+          <div class="route-node via-node" *ngFor="let via of activeBooking.vias; let i = index">
+            <span class="material-symbols-outlined node-icon amber">pin_drop</span>
+            <div class="node-text">
+              <div class="node-meta-line">
+                <span class="node-lbl amber">VIA STOP {{ i + 1 }}</span>
+                <span class="node-postcode via-chip" *ngIf="via.postCode">{{ via.postCode }}</span>
+              </div>
+              <p class="node-addr">{{ via.address }}</p>
+            </div>
+            <a 
+              [href]="getMapUrl(via.postCode || via.address)" 
+              target="_blank" 
+              class="map-btn" 
+              [title]="'Navigate to Via Stop ' + (i + 1) + ' with Google Maps'"
+            >
+              <span class="material-symbols-outlined">navigation</span>
+            </a>
+          </div>
+
+          <!-- Dropoff Destination -->
           <div class="route-node">
             <span class="material-symbols-outlined node-icon red">location_on</span>
             <div class="node-text">
-              <span class="node-lbl red">DROPOFF</span>
+              <div class="node-meta-line">
+                <span class="node-lbl red">DROPOFF</span>
+                <span class="node-postcode" *ngIf="activeBooking.destinationPostCode">{{ activeBooking.destinationPostCode }}</span>
+              </div>
               <p class="node-addr">{{ activeBooking.dropoff }}</p>
             </div>
             <a 
               [href]="getMapUrl(activeBooking.destinationPostCode || activeBooking.dropoff)" 
               target="_blank" 
               class="map-btn" 
-              title="Navigate with Google Maps"
+              title="Navigate to Dropoff with Google Maps"
             >
               <span class="material-symbols-outlined">navigation</span>
             </a>
@@ -311,10 +340,20 @@ interface DashTotals {
     :host-context(.dark-theme) .node-addr {
       color: #ECEFF1 !important;
     }
+    :host-context(.dark-theme) .node-icon.amber { color: #F59E0B !important; }
+    :host-context(.dark-theme) .node-lbl.amber { color: #F59E0B !important; }
+    :host-context(.dark-theme) .node-postcode {
+      background: #2D2D35 !important;
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .node-postcode.via-chip {
+      background: #452D08 !important;
+      color: #FCD34D !important;
+    }
     :host-context(.dark-theme) .map-btn {
       background-color: #1E1E24 !important;
       border-color: #2D2D35 !important;
-      color: #1565C0 !important;
+      color: #64B5F6 !important;
     }
 
     .dashboard-container {
@@ -471,13 +510,34 @@ interface DashTotals {
       flex: 1;
       min-width: 0;
     }
+    .node-meta-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
     .node-lbl {
       font-size: 9px;
       font-weight: 800;
       letter-spacing: 0.5px;
     }
     .node-lbl.green { color: #2E7D32; }
+    .node-lbl.amber { color: #D97706; }
     .node-lbl.red { color: #CD1A21; }
+    .node-icon.amber { color: #D97706; }
+    .node-postcode {
+      background: #F1F5F9;
+      color: #475569;
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+    .node-postcode.via-chip {
+      background: #FEF3C7;
+      color: #92400E;
+    }
     .node-addr {
       margin: 0;
       font-size: 12px;
@@ -916,6 +976,62 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOrPostcode || '')}`;
   }
 
+  private extractVias(raw: any): { address: string; postCode?: string }[] {
+    if (!raw) return [];
+    const vias: { address: string; postCode?: string }[] = [];
+
+    // 1. Array format: raw.vias, raw.viaStops, raw.ViaStops, raw.stops
+    const list = raw.vias || raw.viaStops || raw.ViaStops || raw.stops;
+    if (Array.isArray(list) && list.length > 0) {
+      for (const v of list) {
+        if (typeof v === 'string' && v.trim().length > 0) {
+          vias.push({ address: v.trim() });
+        } else if (v && typeof v === 'object') {
+          const addr = v.address || v.stopAddress || v.addr || v.name || '';
+          if (addr) {
+            vias.push({
+              address: addr,
+              postCode: v.postCode || v.postcode || v.post_code || ''
+            });
+          }
+        }
+      }
+    } else if (typeof list === 'string' && list.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(list);
+        if (Array.isArray(parsed)) {
+          return this.extractVias({ vias: parsed });
+        }
+      } catch (e) {
+        const parts = list.split(/[;|]/).map(s => s.trim()).filter(s => s.length > 0);
+        for (const p of parts) {
+          vias.push({ address: p });
+        }
+      }
+    }
+
+    // 2. Keyed / Dictionary format (e.g. data: { "via-0": "...", "via-1": "..." } or raw["via-0"], raw["via1"], etc.)
+    const sourceObj = raw.data || raw.Data || raw;
+    if (sourceObj && typeof sourceObj === 'object' && vias.length === 0) {
+      for (let i = 0; i < 10; i++) {
+        const viaVal = sourceObj[`via-${i}`] || sourceObj[`via_${i}`] || sourceObj[`via${i}`] || sourceObj[`Via${i}`] || sourceObj[`ViaStop${i}`];
+        if (viaVal) {
+          if (typeof viaVal === 'string' && viaVal.trim().length > 0) {
+            const pc = sourceObj[`via-${i}-postcode`] || sourceObj[`via${i}PostCode`] || sourceObj[`via${i}Postcode`] || '';
+            vias.push({ address: viaVal.trim(), postCode: pc });
+          } else if (typeof viaVal === 'object') {
+            vias.push({
+              address: viaVal.address || viaVal.stopAddress || viaVal.addr || 'Via Stop',
+              postCode: viaVal.postCode || viaVal.postcode || ''
+            });
+          }
+        }
+      }
+    }
+
+    return vias;
+  }
+
   getActiveStatusIcon(): string {
     switch (this.activeTripProgress) {
       case 'assigned': return 'flag';
@@ -1048,7 +1164,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
         }
 
-        let activeRaw = null;
+        let activeRaw: any = null;
         if (activeJobIdStr) {
           // Attempt to find this booking details in our loaded lists
           activeRaw = todayList.find((j: any) => (j.bookingId || j.bookingNo || j.id || '').toString() === activeJobIdStr);
@@ -1067,13 +1183,60 @@ export class DashboardComponent implements OnInit, OnDestroy {
             dropoff: activeRaw.destinationAddress || activeRaw.dropoffAddress || activeRaw.dropoff || 'Dropoff destination',
             pickupPostCode: activeRaw.pickupPostCode || activeRaw.pickupPostcode || '',
             destinationPostCode: activeRaw.destinationPostCode || activeRaw.destinationPostcode || '',
+            vias: this.extractVias(activeRaw),
             time: activeRaw.bookingTime || activeRaw.time || 'Today',
             date: activeRaw.bookingDate || activeRaw.date || 'Today',
             status: activeRaw.status?.toString() || 'Upcoming',
             paymentType: activeRaw.paymentType || 'Cash'
           };
+        } else if (activeJobIdStr) {
+          this.activeBooking = {
+            id: activeJobIdStr,
+            passenger: 'Passenger',
+            fare: 0.00,
+            pickup: 'Pickup location',
+            dropoff: 'Destination',
+            vias: [],
+            time: 'Today',
+            date: 'Today',
+            status: 'Upcoming',
+            paymentType: 'Cash'
+          };
         } else {
           this.activeBooking = null;
+        }
+
+        // Fetch complete live booking record to guarantee all via stops & details are fully populated
+        if (activeJobIdStr) {
+          this.driverService.getJobById(activeJobIdStr).pipe(catchError(() => of(null))).subscribe(detailedJob => {
+            if (detailedJob && this.activeBooking && this.activeBooking.id === activeJobIdStr) {
+              const d = detailedJob.value || detailedJob.data || detailedJob;
+              const extractedVias = this.extractVias(d);
+              if (extractedVias.length > 0) {
+                this.activeBooking.vias = extractedVias;
+              }
+              if (d.pickupPostCode || d.pickupPostcode) {
+                this.activeBooking.pickupPostCode = d.pickupPostCode || d.pickupPostcode;
+              }
+              if (d.destinationPostCode || d.destinationPostcode) {
+                this.activeBooking.destinationPostCode = d.destinationPostCode || d.destinationPostcode;
+              }
+              if (d.pickupAddress || d.pickup) {
+                this.activeBooking.pickup = d.pickupAddress || d.pickup;
+              }
+              if (d.destinationAddress || d.dropoffAddress || d.dropoff) {
+                this.activeBooking.dropoff = d.destinationAddress || d.dropoffAddress || d.dropoff;
+              }
+              if (d.passengerName || d.passenger || d.cellText) {
+                this.activeBooking.passenger = d.passengerName || d.passenger || d.cellText;
+              }
+              const fetchedFare = parseFloat((d.price || d.fare || d.amount || d.driverPrice || '0').toString());
+              if (!isNaN(fetchedFare) && fetchedFare > 0) {
+                this.activeBooking.fare = fetchedFare;
+              }
+              this.cdr.detectChanges();
+            }
+          });
         }
 
         // 3. Completed trips list
