@@ -395,9 +395,15 @@ The Angular router guards and services parse the `token` parameter directly from
   - Built a 60fps hardware-accelerated touch physics slider with a clean **light-themed track** (`#F1F5F9`), dynamic green fill, high-contrast dark label (`#1E293B`), and white circular thumb.
   - Optimized viewport layout hierarchy (`flex: 1 1 auto; max-height: 35vh; overflow-y: auto;`) and bottom safe-area insets (`max(18px, env(safe-area-inset-bottom, 18px))`) to guarantee the **Decline Offer button** is 100% visible and unclipped across all mobile devices and Android system navigation bars.
   - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
+- [x] **My Bookings Executive Listing & Search Hub Overhaul (`bookings.ts`)**:
+  - Built an executive Fleet Summary overview card displaying total trip count, upcoming pipeline fare sum, and completed fare totals with status color indicators.
+  - Integrated real-time query search bar filtering bookings by booking ID (`#ID`), passenger name, pickup/destination addresses, and UK postcodes.
+  - Redesigned booking cards with active trip pulse beacon ribbons, payment badges (`Cash`, `Card`, `Account`, `Rank`), UK postcode chips, vehicle class indicators, and animated loading skeleton shimmer bars.
+  - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 

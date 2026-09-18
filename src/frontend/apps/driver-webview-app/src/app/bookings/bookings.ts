@@ -49,37 +49,89 @@ interface Booking {
   ],
   template: `
     <div class="bookings-container">
-      <!-- 1. Single-Row Segmented Tab Bar -->
-      <div class="filter-tab-bar">
-        <button 
-          *ngFor="let tab of tabs" 
-          class="tab-btn" 
-          [class.active]="activeTab === tab"
-          (click)="setTab(tab)"
-        >
-          <span class="tab-label">{{ tab }}</span>
-          <span class="tab-count">({{ getTabCount(tab) }})</span>
-        </button>
+      <!-- 1. Executive Fleet Summary Card -->
+      <div class="overview-hero-card" *ngIf="!isLoading && bookings.length > 0">
+        <div class="hero-metric-row">
+          <div class="hero-metric-col">
+            <span class="hero-metric-label">TOTAL BOOKINGS</span>
+            <div class="hero-metric-val">
+              <span class="metric-num">{{ bookings.length }}</span>
+              <span class="metric-sub">Trips</span>
+            </div>
+          </div>
+          <div class="hero-metric-divider"></div>
+          <div class="hero-metric-col">
+            <span class="hero-metric-label">UPCOMING PIPELINE</span>
+            <div class="hero-metric-val green">
+              <span class="metric-cur">£</span>
+              <span class="metric-num">{{ totalUpcomingFare.toFixed(2) }}</span>
+            </div>
+          </div>
+          <div class="hero-metric-divider"></div>
+          <div class="hero-metric-col">
+            <span class="hero-metric-label">COMPLETED FARE</span>
+            <div class="hero-metric-val blue">
+              <span class="metric-cur">£</span>
+              <span class="metric-num">{{ totalCompletedFare.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 2. Loading State -->
-      <div *ngIf="isLoading" class="loading-state animated-fade-in">
-        <div class="spinner"></div>
-        <p class="loading-text">Loading bookings...</p>
+      <!-- 2. Search & Filter Bar -->
+      <div class="controls-bar">
+        <div class="search-input-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Search by ID, passenger, or address..."
+            [value]="searchQuery"
+            (input)="onSearchInput($event)"
+          />
+          <button class="clear-search-btn" *ngIf="searchQuery" (click)="clearSearch()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <!-- Segmented Tab Chips -->
+        <div class="filter-tab-bar">
+          <button 
+            *ngFor="let tab of tabs" 
+            class="tab-btn" 
+            [class.active]="activeTab === tab"
+            (click)="setTab(tab)"
+          >
+            <span class="tab-label">{{ tab }}</span>
+            <span class="tab-count">({{ getTabCount(tab) }})</span>
+          </button>
+        </div>
       </div>
 
-      <!-- 3. Bookings List -->
+      <!-- 3. Loading Shimmer State -->
+      <div *ngIf="isLoading" class="shimmer-loading-list">
+        <div class="shimmer-card" *ngFor="let _ of [1,2,3]">
+          <div class="shimmer-line header-line"></div>
+          <div class="shimmer-line route-line-1"></div>
+          <div class="shimmer-line route-line-2"></div>
+          <div class="shimmer-line footer-line"></div>
+        </div>
+      </div>
+
+      <!-- 4. Bookings List -->
       <div class="bookings-list animated-fade-in" *ngIf="!isLoading">
         <!-- Empty State -->
         <div *ngIf="filteredBookings.length === 0" class="empty-state">
           <div class="empty-icon-box">
-            <span class="material-symbols-outlined">assignment_late</span>
+            <span class="material-symbols-outlined">event_busy</span>
           </div>
           <p class="empty-title">No {{ activeTab.toLowerCase() }} bookings found</p>
-          <p class="empty-subtitle">New allocations and scheduled trips will appear here.</p>
+          <p class="empty-subtitle">
+            {{ searchQuery ? 'No bookings match your current search query.' : 'New dispatch allocations and scheduled trips will appear here.' }}
+          </p>
           <button class="retry-btn" (click)="loadBookings()">
             <span class="material-symbols-outlined">refresh</span>
-            <span>Refresh</span>
+            <span>Refresh List</span>
           </button>
         </div>
 
@@ -87,18 +139,26 @@ interface Booking {
         <div 
           *ngFor="let booking of filteredBookings" 
           class="booking-card" 
+          [class.active-trip-card]="booking.id === activeBookingId"
           (click)="openDetails(booking)"
         >
-          <!-- Card Header: ID, Status, Fare -->
+          <!-- Active Job Ribbon Badge (if active) -->
+          <div class="active-job-ribbon" *ngIf="booking.id === activeBookingId">
+            <span class="active-pulse-beacon"></span>
+            <span>CURRENT ACTIVE TRIP</span>
+          </div>
+
+          <!-- Card Header: ID, Status, Payment, Fare -->
           <div class="card-header-row">
             <div class="header-left">
-              <span class="booking-ref-badge">#{{ booking.id }}</span>
+              <span class="booking-ref-badge font-mono">#{{ booking.id }}</span>
               <span class="status-pill" [ngClass]="booking.status.toLowerCase()">
                 <span class="status-dot" *ngIf="booking.status === 'Upcoming'"></span>
                 <span>{{ booking.status }}</span>
               </span>
               <span class="payment-pill" [ngClass]="booking.paymentType.toLowerCase()">
-                {{ booking.paymentType }}
+                <span class="material-symbols-outlined payment-ico">payments</span>
+                <span>{{ booking.paymentType }}</span>
               </span>
             </div>
             <div class="booking-fare-text">
@@ -107,7 +167,7 @@ interface Booking {
             </div>
           </div>
 
-          <!-- Journey Route Visual -->
+          <!-- Journey Route Stepper Visual -->
           <div class="journey-route-preview">
             <div class="route-tracker-col">
               <span class="route-node pickup-node"></span>
@@ -120,6 +180,7 @@ interface Booking {
               <div class="address-preview-row">
                 <span class="address-time-pill">{{ booking.time }}</span>
                 <span class="address-text pickup" [title]="booking.pickup">{{ booking.pickup }}</span>
+                <span class="postcode-tag" *ngIf="booking.pickupPostCode">{{ booking.pickupPostCode }}</span>
               </div>
 
               <!-- Via stops counter if any -->
@@ -132,18 +193,26 @@ interface Booking {
               <div class="address-preview-row">
                 <span class="address-time-pill dropoff-time">{{ booking.date }}</span>
                 <span class="address-text dropoff" [title]="booking.dropoff">{{ booking.dropoff }}</span>
+                <span class="postcode-tag" *ngIf="booking.destinationPostCode">{{ booking.destinationPostCode }}</span>
               </div>
             </div>
           </div>
 
           <!-- Card Footer Info -->
           <div class="card-footer-row">
-            <div class="passenger-tag">
-              <span class="material-symbols-outlined pass-icon">person</span>
-              <span class="passenger-name">{{ booking.passenger }}</span>
+            <div class="footer-left-meta">
+              <div class="passenger-tag">
+                <span class="material-symbols-outlined pass-icon">person</span>
+                <span class="passenger-name">{{ booking.passenger }}</span>
+              </div>
+              <span class="vehicle-class-tag" *ngIf="booking.vehicleType">
+                <span class="material-symbols-outlined vehicle-ico">local_taxi</span>
+                <span>{{ booking.vehicleType }}</span>
+              </span>
             </div>
+
             <div class="view-details-action">
-              <span>Details</span>
+              <span>View Details</span>
               <span class="material-symbols-outlined">chevron_right</span>
             </div>
           </div>
@@ -151,7 +220,7 @@ interface Booking {
       </div>
 
       <!-- ============================================================== -->
-      <!-- 4. PROFESSIONAL BOOKING DETAILS MODAL / BOTTOM SHEET           -->
+      <!-- 5. PROFESSIONAL BOOKING DETAILS MODAL / BOTTOM SHEET           -->
       <!-- ============================================================== -->
       <div class="modal-backdrop animated-fade-in" *ngIf="selectedBooking" (click)="closeDetails()">
         <div class="modal-sheet" (click)="$event.stopPropagation()">
@@ -170,7 +239,7 @@ interface Booking {
               <div class="passenger-title-col">
                 <div class="name-id-row">
                   <h3 class="sheet-passenger-name">{{ selectedBooking.passenger }}</h3>
-                  <span class="sheet-ref-chip" (click)="copyText(selectedBooking.id, 'Booking ID copied')">
+                  <span class="sheet-ref-chip font-mono" (click)="copyText(selectedBooking.id, 'Booking ID copied')">
                     #{{ selectedBooking.id }}
                   </span>
                 </div>
@@ -445,31 +514,130 @@ interface Booking {
     }
 
     .bookings-container {
-      padding: 10px 12px 36px 12px;
+      padding: 12px 14px 40px 14px;
       max-width: 640px;
       margin: 0 auto;
       box-sizing: border-box;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    /* 1. Filter Tab Bar */
+    /* 1. Executive Fleet Overview Card */
+    .overview-hero-card {
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      border-radius: 16px;
+      padding: 14px 16px;
+      color: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-metric-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hero-metric-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      text-align: center;
+    }
+    .hero-metric-col:first-child { text-align: left; }
+    .hero-metric-col:last-child { text-align: right; }
+    .hero-metric-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #94A3B8;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .hero-metric-val {
+      font-size: 17px;
+      font-weight: 900;
+      color: #FFFFFF;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 2px;
+    }
+    .hero-metric-col:first-child .hero-metric-val { justify-content: flex-start; }
+    .hero-metric-col:last-child .hero-metric-val { justify-content: flex-end; }
+    .hero-metric-val.green { color: #34D399; }
+    .hero-metric-val.blue { color: #60A5FA; }
+    .metric-cur { font-size: 12px; font-weight: 700; }
+    .metric-num { font-size: 17px; font-weight: 900; }
+    .metric-sub { font-size: 11px; font-weight: 600; color: #94A3B8; margin-left: 2px; }
+    .hero-metric-divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.12);
+      margin: 0 6px;
+    }
+
+    /* 2. Controls & Filter Bar */
+    .controls-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .search-input-box {
+      display: flex;
+      align-items: center;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 12px;
+      padding: 0 12px;
+      height: 40px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+    .search-icon {
+      font-size: 18px;
+      color: #94A3B8;
+      margin-right: 8px;
+    }
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 12.5px;
+      color: #0F172A;
+      background: transparent;
+      font-weight: 500;
+    }
+    .search-input::placeholder {
+      color: #94A3B8;
+    }
+    .clear-search-btn {
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94A3B8;
+      cursor: pointer;
+    }
+    .clear-search-btn .material-symbols-outlined { font-size: 16px; }
+
     .filter-tab-bar {
       display: flex;
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      border-radius: 20px;
+      border-radius: 14px;
       padding: 3px;
-      margin-bottom: 12px;
       gap: 4px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
     .tab-btn {
       flex: 1;
       border: none;
       background: transparent;
       padding: 7px 4px;
-      border-radius: 16px;
-      font-size: 11px;
+      border-radius: 10px;
+      font-size: 11.5px;
       font-weight: 700;
       color: #64748B;
       display: flex;
@@ -491,35 +659,42 @@ interface Booking {
       opacity: 0.85;
     }
 
-    /* 2. Loading & Empty State */
-    .loading-state {
+    /* 3. Shimmer Loading */
+    .shimmer-loading-list {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 16px;
       gap: 10px;
     }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #E2E8F0;
-      border-top-color: #CD1A21;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .shimmer-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .loading-text {
-      font-size: 12px;
-      color: #64748B;
-      font-weight: 500;
-      margin: 0;
+    .shimmer-line {
+      background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    .shimmer-line.header-line { height: 20px; width: 60%; }
+    .shimmer-line.route-line-1 { height: 14px; width: 90%; }
+    .shimmer-line.route-line-2 { height: 14px; width: 75%; }
+    .shimmer-line.footer-line { height: 16px; width: 45%; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
 
+    /* 4. Empty State */
     .empty-state {
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      border-radius: 14px;
-      padding: 32px 16px;
+      border-radius: 16px;
+      padding: 36px 16px;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -527,8 +702,8 @@ interface Booking {
       gap: 6px;
     }
     .empty-icon-box {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       background: #F1F5F9;
       color: #94A3B8;
@@ -537,62 +712,95 @@ interface Booking {
       justify-content: center;
       margin-bottom: 4px;
     }
-    .empty-icon-box .material-symbols-outlined {
-      font-size: 24px;
-    }
+    .empty-icon-box .material-symbols-outlined { font-size: 26px; }
     .empty-title {
       margin: 0;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 14px;
+      font-weight: 800;
       color: #0F172A;
     }
     .empty-subtitle {
-      margin: 0 0 8px 0;
-      font-size: 11px;
+      margin: 0 0 10px 0;
+      font-size: 11.5px;
       color: #64748B;
+      max-width: 320px;
+      line-height: 1.4;
     }
     .retry-btn {
       background: #F1F5F9;
-      border: 1px solid #CBD5E1;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 600;
+      border: 1.5px solid #CBD5E1;
+      padding: 7px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
       color: #334155;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       cursor: pointer;
     }
-    .retry-btn .material-symbols-outlined {
-      font-size: 14px;
-    }
+    .retry-btn .material-symbols-outlined { font-size: 15px; }
 
-    /* 3. Booking Summary Cards */
+    /* 5. Booking Cards */
     .bookings-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
     .booking-card {
+      position: relative;
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      border-radius: 14px;
-      padding: 12px 14px;
+      border-radius: 16px;
+      padding: 13px 15px;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .booking-card:hover {
+      border-color: #CBD5E1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     }
     .booking-card:active {
       transform: scale(0.99);
       background: #F8FAFC;
+    }
+    .booking-card.active-trip-card {
+      border: 2px solid #10B981;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+    }
+
+    .active-job-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #DCFCE7;
+      border: 1px solid #86EFAC;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      color: #15803D;
+      align-self: flex-start;
+      margin-bottom: 2px;
+    }
+    .active-pulse-beacon {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #16A34A;
+      animation: pulse 1.4s infinite;
     }
 
     .card-header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
     }
     .header-left {
       display: flex;
@@ -601,24 +809,23 @@ interface Booking {
       flex-wrap: wrap;
     }
     .booking-ref-badge {
-      font-size: 11px;
-      font-weight: 700;
-      font-family: monospace;
+      font-size: 11.5px;
+      font-weight: 800;
       color: #0F172A;
       background: #F1F5F9;
-      padding: 2px 6px;
-      border-radius: 5px;
+      padding: 2px 7px;
+      border-radius: 6px;
     }
     .status-pill {
-      font-size: 9.5px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.2px;
-      padding: 2px 6px;
+      letter-spacing: 0.3px;
+      padding: 2px 7px;
       border-radius: 6px;
       display: inline-flex;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
     }
     .status-pill.upcoming { background: #DCFCE7; color: #15803D; }
     .status-pill.completed { background: #E0F2FE; color: #0369A1; }
@@ -635,28 +842,34 @@ interface Booking {
       50% { opacity: 0.5; transform: scale(1.3); }
     }
     .payment-pill {
-      font-size: 9.5px;
-      font-weight: 700;
-      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
       border-radius: 6px;
       background: #F1F5F9;
       color: #475569;
       text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
     }
+    .payment-ico { font-size: 12px; }
     .payment-pill.cash { background: #DCFCE7; color: #166534; }
     .payment-pill.account { background: #F3E8FF; color: #7E22CE; }
     .payment-pill.card { background: #E0E7FF; color: #3730A3; }
+    .payment-pill.rank { background: #FEF3C7; color: #B45309; }
 
     .booking-fare-text {
-      font-weight: 800;
+      font-weight: 900;
       color: #0F172A;
-      font-size: 16px;
+      font-size: 17px;
       display: flex;
       align-items: baseline;
       gap: 1px;
     }
     .currency-symbol {
       font-size: 13px;
+      font-weight: 800;
       color: #CD1A21;
     }
 
@@ -664,7 +877,7 @@ interface Booking {
     .journey-route-preview {
       display: flex;
       gap: 10px;
-      padding: 4px 0 8px 0;
+      padding: 2px 0 4px 0;
     }
     .route-tracker-col {
       display: flex;
@@ -684,7 +897,7 @@ interface Booking {
     .route-stem {
       width: 2px;
       flex: 1;
-      min-height: 20px;
+      min-height: 18px;
       background: #CBD5E1;
       margin: 2px 0;
     }
@@ -694,42 +907,53 @@ interface Booking {
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
     .address-preview-row {
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
     }
     .address-time-pill {
-      font-size: 9.5px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 800;
       background: #F1F5F9;
       color: #475569;
-      padding: 1px 5px;
+      padding: 1px 6px;
       border-radius: 4px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .address-text {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 12.5px;
+      font-weight: 700;
       color: #1E293B;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      flex: 1;
+    }
+    .postcode-tag {
+      font-size: 9.5px;
+      font-weight: 800;
+      font-family: monospace;
+      background: #FEF08A;
+      color: #000000;
+      padding: 1px 5px;
+      border-radius: 4px;
+      flex-shrink: 0;
     }
     .via-indicator-row {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 10.5px;
+      font-weight: 700;
       color: #D97706;
       padding-left: 2px;
     }
-    .via-icon {
-      font-size: 13px;
-    }
+    .via-icon { font-size: 14px; }
 
     .card-footer-row {
       display: flex;
@@ -737,33 +961,51 @@ interface Booking {
       justify-content: space-between;
       border-top: 1px solid #F1F5F9;
       padding-top: 8px;
-      margin-top: 2px;
       font-size: 11px;
+    }
+    .footer-left-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .passenger-tag {
       display: flex;
       align-items: center;
       gap: 4px;
       color: #475569;
-      font-weight: 500;
+      font-weight: 600;
     }
     .pass-icon {
-      font-size: 14px;
+      font-size: 15px;
       color: #94A3B8;
     }
+    .vehicle-class-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #64748B;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .vehicle-ico { font-size: 13px; color: #94A3B8; }
+
     .view-details-action {
       display: flex;
       align-items: center;
-      gap: 1px;
+      gap: 2px;
       color: #CD1A21;
-      font-weight: 700;
-      font-size: 11px;
+      font-weight: 800;
+      font-size: 11.5px;
+      flex-shrink: 0;
     }
-    .view-details-action .material-symbols-outlined {
-      font-size: 14px;
-    }
+    .view-details-action .material-symbols-outlined { font-size: 16px; }
 
-    /* ================= 4. MODAL / BOTTOM SHEET ================= */
+    /* ================= 5. MODAL / BOTTOM SHEET ================= */
     .modal-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -847,7 +1089,6 @@ interface Booking {
     .sheet-ref-chip {
       font-size: 10px;
       font-weight: 700;
-      font-family: monospace;
       color: #0F172A;
       background: #F1F5F9;
       padding: 1px 5px;
@@ -1213,6 +1454,17 @@ interface Booking {
       background-color: #121214 !important;
       color: #ECEFF1 !important;
     }
+    :host-context(.dark-theme) .overview-hero-card {
+      background: linear-gradient(135deg, #1E1E24 0%, #16161A 100%);
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .search-input-box {
+      background: #1E1E24;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .search-input {
+      color: #ECEFF1;
+    }
     :host-context(.dark-theme) .filter-tab-bar {
       background: #1E1E24;
       border-color: #2D2D35;
@@ -1221,14 +1473,17 @@ interface Booking {
       color: #94A3B8;
     }
     :host-context(.dark-theme) .booking-card,
-    :host-context(.dark-theme) .empty-state {
+    :host-context(.dark-theme) .empty-state,
+    :host-context(.dark-theme) .shimmer-card {
       background: #1E1E24;
       border-color: #2D2D35;
     }
     :host-context(.dark-theme) .booking-ref-badge,
     :host-context(.dark-theme) .address-time-pill,
-    :host-context(.dark-theme) .sheet-ref-chip {
+    :host-context(.dark-theme) .sheet-ref-chip,
+    :host-context(.dark-theme) .vehicle-class-tag {
       background: #2D2D35;
+      border-color: #3E3E48;
       color: #ECEFF1;
     }
     :host-context(.dark-theme) .booking-fare-text,
@@ -1264,7 +1519,8 @@ interface Booking {
       border-color: #4C1D24;
     }
     :host-context(.dark-theme) .sheet-close-btn,
-    :host-context(.dark-theme) .sheet-dismiss-btn {
+    :host-context(.dark-theme) .sheet-dismiss-btn,
+    :host-context(.dark-theme) .retry-btn {
       background: #2D2D35;
       border-color: #3E3E48;
       color: #ECEFF1;
@@ -1280,6 +1536,7 @@ export class BookingsComponent implements OnInit {
 
   tabs = ['All', 'Upcoming', 'Completed', 'Cancelled'];
   activeTab = 'All';
+  searchQuery = '';
   isLoading = true;
   bookings: Booking[] = [];
   selectedBooking: Booking | null = null;
@@ -1310,6 +1567,29 @@ export class BookingsComponent implements OnInit {
   setTab(tab: string): void {
     this.activeTab = tab;
     this.cdr.detectChanges();
+  }
+
+  onSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchQuery = input ? input.value : '';
+    this.cdr.detectChanges();
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.cdr.detectChanges();
+  }
+
+  get totalUpcomingFare(): number {
+    return this.bookings
+      .filter(b => b.status === 'Upcoming')
+      .reduce((sum, b) => sum + (b.fare || 0), 0);
+  }
+
+  get totalCompletedFare(): number {
+    return this.bookings
+      .filter(b => b.status === 'Completed')
+      .reduce((sum, b) => sum + (b.fare || 0), 0);
   }
 
   openDetails(booking: Booking): void {
@@ -1616,10 +1896,19 @@ export class BookingsComponent implements OnInit {
   }
 
   get filteredBookings(): Booking[] {
-    if (this.activeTab === 'All') {
-      return this.bookings;
+    let list = this.activeTab === 'All' ? this.bookings : this.bookings.filter(b => b.status === this.activeTab);
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase().trim();
+      list = list.filter(b => 
+        b.id.toLowerCase().includes(q) ||
+        b.passenger.toLowerCase().includes(q) ||
+        b.pickup.toLowerCase().includes(q) ||
+        b.dropoff.toLowerCase().includes(q) ||
+        (b.pickupPostCode && b.pickupPostCode.toLowerCase().includes(q)) ||
+        (b.destinationPostCode && b.destinationPostCode.toLowerCase().includes(q))
+      );
     }
-    return this.bookings.filter(b => b.status === this.activeTab);
+    return list;
   }
 
   getTabCount(tab: string): number {
