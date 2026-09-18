@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef 
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DriverService } from '../services/driver.service';
-import { Subscription, interval } from 'rxjs';
-import { takeWhile } from 'rxjs/operators';
+import { Subscription, interval, of } from 'rxjs';
+import { takeWhile, catchError } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface ViaStop {
@@ -1409,15 +1409,46 @@ export class JobOfferComponent implements OnInit, OnDestroy {
           this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
           doDismiss();
         },
-        error: () => {
-          this.driverService.setActiveJob(numericJobId).subscribe({
-            next: () => {
-              this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
-              doDismiss();
-            },
-            error: () => {
-              this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
-              doDismiss();
+        error: (err: any) => {
+          console.warn('Initial JobOfferReply expired/invalid. Running fresh GUID lookup & SetActiveJob fallback...', err);
+          this.driverService.getJobOffers().pipe(catchError(() => of([]))).subscribe((offersRes: any) => {
+            const list = Array.isArray(offersRes) ? offersRes : (offersRes?.value || offersRes?.data || offersRes?.jobs || []);
+            const matching = list.find((item: any) => {
+              const bId = (item.bookingId || item.bookingNo || item.id || item.data?.bookingId || '').toString();
+              return bId === jobId;
+            });
+            const freshGuid = (matching?.guid || matching?.Guid || matching?.notificationId || matching?.data?.guid || '').toString();
+
+            if (freshGuid && freshGuid !== effectiveGuid) {
+              this.driverService.replyJobOffer(numericJobId, 2000, freshGuid).subscribe({
+                next: () => {
+                  this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+                  doDismiss();
+                },
+                error: () => {
+                  this.driverService.setActiveJob(numericJobId).subscribe({
+                    next: () => {
+                      this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+                      doDismiss();
+                    },
+                    error: () => {
+                      this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+                      doDismiss();
+                    }
+                  });
+                }
+              });
+            } else {
+              this.driverService.setActiveJob(numericJobId).subscribe({
+                next: () => {
+                  this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+                  doDismiss();
+                },
+                error: () => {
+                  this.snackBar.open(`Job #${jobId} Accepted!`, 'OK', { duration: 3000 });
+                  doDismiss();
+                }
+              });
             }
           });
         }
