@@ -392,11 +392,12 @@ The Angular router guards and services parse the `token` parameter directly from
   - Rebuilt the incoming job offer dispatch overlay with an executive hero card displaying a pulsing beacon, large formatted fare currency display, and a live SVG circular countdown timer ring.
   - Added full journey telemetry tags (Payment Scope badge, Vehicle Class badge, Passenger Name badge) and driver dispatch notes alert.
   - Created a vertical connected route stepper with pickup indicator (emerald), intermediate via stops (amber with postcode chips), and dropoff destination (crimson).
-  - Built a 60fps hardware-accelerated touch physics slider (`translate3d`, `will-change: transform`, spring snapback physics, real-time dynamic track fill, and auto-acceptance threshold at 72% drag).
-  - Added high-contrast decline action button with immediate server rejection dispatch (`response = 2001`).
+  - Built a 60fps hardware-accelerated touch physics slider with a clean **light-themed track** (`#F1F5F9`), dynamic green fill, high-contrast dark label (`#1E293B`), and white circular thumb.
+  - Optimized viewport layout hierarchy (`flex: 1 1 auto; max-height: 35vh; overflow-y: auto;`) and bottom safe-area insets (`max(18px, env(safe-area-inset-bottom, 18px))`) to guarantee the **Decline Offer button** is 100% visible and unclipped across all mobile devices and Android system navigation bars.
   - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 

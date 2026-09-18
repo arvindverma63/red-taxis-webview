@@ -268,13 +268,16 @@ interface JobDetails {
       position: relative;
       background: #0F172A url('/map_bg.png') no-repeat center center;
       background-size: cover;
+      height: 100vh;
       min-height: 100vh;
+      max-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       align-items: center;
       box-sizing: border-box;
       overflow: hidden;
+      padding: 0;
     }
 
     /* Ambient Overlay */
@@ -294,17 +297,17 @@ interface JobDetails {
       background: #FFFFFF;
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
-      padding: 8px 14px 20px 14px;
+      padding: 6px 14px 0 14px;
       box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 92vh;
-      overflow-y: auto;
+      gap: 8px;
+      max-height: 100vh;
       width: 100%;
       max-width: 520px;
       box-sizing: border-box;
       margin: 0 auto;
+      overflow: hidden;
     }
 
     @media (min-width: 600px) {
@@ -312,6 +315,7 @@ interface JobDetails {
         border-radius: 24px;
         margin-bottom: 16px;
         width: 94%;
+        padding-bottom: 16px;
       }
     }
 
@@ -319,6 +323,7 @@ interface JobDetails {
       display: flex;
       justify-content: center;
       padding: 4px 0 2px 0;
+      flex-shrink: 0;
     }
     .sheet-grabber {
       width: 40px;
@@ -333,10 +338,11 @@ interface JobDetails {
       background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
       color: #FFFFFF;
       border-radius: 18px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.1);
       overflow: hidden;
+      flex-shrink: 0;
     }
     .hero-glow-bg {
       position: absolute;
@@ -355,7 +361,7 @@ interface JobDetails {
       z-index: 2;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .incoming-pill-row {
@@ -424,7 +430,7 @@ interface JobDetails {
       color: #EF4444;
     }
     .fare-number {
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 900;
       letter-spacing: -0.5px;
       color: #FFFFFF;
@@ -433,8 +439,8 @@ interface JobDetails {
     /* SVG Countdown Dial */
     .countdown-dial-wrapper {
       position: relative;
-      width: 58px;
-      height: 58px;
+      width: 54px;
+      height: 54px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -454,7 +460,7 @@ interface JobDetails {
       line-height: 1;
     }
     .countdown-sec {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 900;
       color: #FFFFFF;
     }
@@ -494,29 +500,35 @@ interface JobDetails {
       color: #E2E8F0;
     }
     .badge-ico { font-size: 14px; }
-    .hero-badge.payment.cash { background: #064E3B; color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.4); }
-    .hero-badge.payment.card { background: #1E1B4B; color: #A5B4FC; border: 1px solid rgba(99, 102, 241, 0.4); }
-    .hero-badge.payment.account { background: #581C87; color: #E9D5FF; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .hero-badge.payment.cash { background: #064E3B; color: #6EE7B7; border: 1px solid rgba(160, 235, 200, 0.3); }
+    .hero-badge.payment.card { background: #1E1B4B; color: #A5B4FC; border: 1px solid rgba(165, 180, 252, 0.3); }
+    .hero-badge.payment.account { background: #581C87; color: #E9D5FF; border: 1px solid rgba(233, 213, 255, 0.3); }
 
     /* 2. Body Card & Route */
     .offer-body-card {
       background: #F8FAFC;
       border: 1px solid #E2E8F0;
       border-radius: 16px;
-      padding: 12px 14px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: 35vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .notes-banner {
       background: #FFFBEB;
       border: 1px solid #FDE68A;
       border-radius: 10px;
-      padding: 8px 10px;
+      padding: 6px 10px;
       display: flex;
       align-items: flex-start;
       gap: 8px;
+      flex-shrink: 0;
     }
     .notes-ico {
       font-size: 18px;
@@ -538,7 +550,7 @@ interface JobDetails {
     }
     .notes-txt {
       margin: 0;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       color: #92400E;
       line-height: 1.35;
@@ -547,7 +559,7 @@ interface JobDetails {
     .route-stepper {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
     .stepper-row {
       display: flex;
@@ -558,26 +570,26 @@ interface JobDetails {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 26px;
+      width: 24px;
       flex-shrink: 0;
     }
     .node-circle {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .node-circle .material-symbols-outlined { font-size: 14px; }
+    .node-circle .material-symbols-outlined { font-size: 13px; }
     .node-circle.pickup { background: #DCFCE7; color: #16A34A; }
     .node-circle.via { background: #FEF3C7; color: #D97706; }
     .node-circle.dropoff { background: #FEE2E2; color: #DC2626; }
     .node-connector {
       width: 2px;
-      height: 18px;
+      height: 14px;
       background: #CBD5E1;
-      margin: 3px 0;
+      margin: 2px 0;
     }
 
     .node-content {
@@ -596,7 +608,7 @@ interface JobDetails {
     .via-lbl { color: #B45309; }
     .dropoff-lbl { color: #B91C1C; }
     .node-address {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
       color: #0F172A;
       line-height: 1.35;
@@ -616,25 +628,29 @@ interface JobDetails {
       border-radius: 3px;
     }
 
-    /* 3. Smooth Slider Footer */
+    /* 3. Smooth Slider Footer (Light Track Theme & Guaranteed Visible Action) */
     .offer-footer {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 2px;
+      margin-top: auto;
+      flex-shrink: 0;
+      padding-top: 2px;
+      padding-bottom: max(18px, env(safe-area-inset-bottom, 18px));
     }
 
     .smooth-slider-container {
       position: relative;
-      height: 52px;
-      background: #0F172A;
-      border-radius: 26px;
+      height: 50px;
+      background: #F1F5F9;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 25px;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       user-select: none;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.04);
     }
     .slider-fill-track {
       position: absolute;
@@ -642,7 +658,7 @@ interface JobDetails {
       top: 0;
       bottom: 0;
       background: linear-gradient(90deg, #10B981, #059669);
-      border-radius: 26px;
+      border-radius: 25px;
       pointer-events: none;
       transition: width 0.05s ease;
     }
@@ -655,25 +671,28 @@ interface JobDetails {
       z-index: 2;
       font-size: 12.5px;
       font-weight: 800;
-      color: #FFFFFF;
-      letter-spacing: 0.6px;
+      color: #1E293B;
+      letter-spacing: 0.5px;
       pointer-events: none;
       text-transform: uppercase;
     }
+    .smooth-slider-container.accepted .slider-center-label {
+      color: #FFFFFF;
+    }
     .smooth-slider-thumb {
       position: absolute;
-      left: 4px;
-      width: 44px;
-      height: 44px;
+      left: 3px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: #FFFFFF;
-      color: #0F172A;
+      color: #059669;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: grab;
       z-index: 3;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
       touch-action: none;
       will-change: transform;
       transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
@@ -681,31 +700,34 @@ interface JobDetails {
     .smooth-slider-container.dragging .smooth-slider-thumb {
       cursor: grabbing;
       transition: none;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
     }
-    .thumb-icon { font-size: 22px; }
-    .check-icon { font-size: 22px; color: #10B981; }
-    .spinning-icon { font-size: 22px; animation: spin 0.8s linear infinite; }
+    .thumb-icon { font-size: 22px; color: #059669; font-weight: bold; }
+    .check-icon { font-size: 22px; color: #10B981; font-weight: bold; }
+    .spinning-icon { font-size: 22px; color: #059669; animation: spin 0.8s linear infinite; }
 
     .btn-decline-offer {
-      background: transparent;
-      border: 1px solid #CBD5E1;
-      padding: 9px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #64748B;
+      background: #FEF2F2;
+      border: 1.5px solid #FECACA;
+      padding: 8px 14px;
+      min-height: 38px;
+      border-radius: 19px;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #DC2626;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: all 0.15s ease;
+      box-sizing: border-box;
     }
-    .btn-decline-offer:hover {
-      background: #F1F5F9;
-      color: #0F172A;
+    .btn-decline-offer:active {
+      background: #FEE2E2;
+      transform: scale(0.98);
     }
-    .btn-decline-offer .material-symbols-outlined { font-size: 16px; }
+    .btn-decline-offer .material-symbols-outlined { font-size: 16px; color: #DC2626; }
 
     /* Status Overlay */
     .status-overlay-card {
@@ -807,9 +829,17 @@ interface JobDetails {
     :host-context(.dark-theme) .node-connector {
       background: #2D2D35;
     }
-    :host-context(.dark-theme) .btn-decline-offer {
+    :host-context(.dark-theme) .smooth-slider-container {
+      background: #272730;
       border-color: #3E3E48;
-      color: #94A3B8;
+    }
+    :host-context(.dark-theme) .slider-center-label {
+      color: #F1F5F9;
+    }
+    :host-context(.dark-theme) .btn-decline-offer {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #FCA5A5;
     }
     :host-context(.dark-theme) .status-overlay-card {
       background: #1E1E24;
