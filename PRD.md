@@ -441,11 +441,22 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added smart distance parsing (`getPrimaryDistance` and `getDistanceSubtext`) to format verbose mileage strings (e.g., `528.3 Miles - (Dead Miles: 229.1) + (Trip Miles: 299.1)` into a bold primary distance `528.3 Miles` with a clean subtext pill `Dead: 229.1 mi • Trip: 299.1 mi`).
   - Added formatted duration handling (`formatDuration`) converting raw minutes (e.g., `554 mins`) into readable hours and minutes (`9h 14m (554 mins)`).
   - Added comprehensive dark mode styling for all fare hero banners, telemetry tiles, and breakdown badges.
-  - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
+- [x] **My Bookings Card Full-Name Route & Spacious Typography Overhaul (`bookings.ts`)**:
+  - Restructured the route section in each booking listing card into dedicated stop entries (`stop-entry pickup` and `stop-entry dropoff`).
+  - Separated time pills and postcode tags into a distinct meta header row (`stop-meta-header`), giving the address 100% horizontal width to wrap naturally onto multiple lines without being cut off by ellipses.
+  - Increased address font size to `14px` (`font-weight: 700`, `line-height: 1.38`, `color: #0F172A`) for effortless legibility.
+  - Expanded vertical gap between pickup and destination stops to `12px` and styled the connected route stem (`width: 2px; min-height: 24px;`) with circular green & red beacons.
+  - Added comprehensive dark mode overrides for all updated route elements.
+- [x] **My Bookings Fleet Summary Header Light-Themed Overhaul (`bookings.ts`)**:
+  - Restyled the top Fleet Summary overview card (`.overview-hero-card`) in light mode from a dark slate container to a crisp, executive white card (`background: #FFFFFF; border: 1px solid #E2E8F0;`).
+  - Polished metric label typography (`color: #64748B`), bold numeric values (`color: #0F172A`), high-contrast colored fare metrics (`#16A34A` green, `#2563EB` blue), and light dividers (`background: #E2E8F0`).
+  - Preserved seamless dark mode overrides (`#1E1E24` container, `#2D2D35` borders and dividers).
+  - Verified with 100% passing Vitest (`npx vitest run`) and Angular production build (`npx ng build`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 

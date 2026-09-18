@@ -176,11 +176,13 @@ interface Booking {
             </div>
 
             <div class="route-addresses-col">
-              <!-- Pickup -->
-              <div class="address-preview-row">
-                <span class="address-time-pill">{{ booking.time }}</span>
-                <span class="address-text pickup" [title]="booking.pickup">{{ booking.pickup }}</span>
-                <span class="postcode-tag" *ngIf="booking.pickupPostCode">{{ booking.pickupPostCode }}</span>
+              <!-- Pickup Stop -->
+              <div class="stop-entry pickup">
+                <div class="stop-meta-header">
+                  <span class="address-time-pill">{{ booking.time }}</span>
+                  <span class="postcode-tag" *ngIf="booking.pickupPostCode">{{ booking.pickupPostCode }}</span>
+                </div>
+                <div class="address-text-full pickup" [title]="booking.pickup">{{ booking.pickup }}</div>
               </div>
 
               <!-- Via stops counter if any -->
@@ -189,11 +191,13 @@ interface Booking {
                 <span class="via-text">+{{ booking.vias.length }} Via {{ booking.vias.length === 1 ? 'Stop' : 'Stops' }}</span>
               </div>
 
-              <!-- Dropoff -->
-              <div class="address-preview-row">
-                <span class="address-time-pill dropoff-time">{{ booking.date }}</span>
-                <span class="address-text dropoff" [title]="booking.dropoff">{{ booking.dropoff }}</span>
-                <span class="postcode-tag" *ngIf="booking.destinationPostCode">{{ booking.destinationPostCode }}</span>
+              <!-- Dropoff Stop -->
+              <div class="stop-entry dropoff">
+                <div class="stop-meta-header">
+                  <span class="address-time-pill dropoff-time">{{ booking.date }}</span>
+                  <span class="postcode-tag" *ngIf="booking.destinationPostCode">{{ booking.destinationPostCode }}</span>
+                </div>
+                <div class="address-text-full dropoff" [title]="booking.dropoff">{{ booking.dropoff }}</div>
               </div>
             </div>
           </div>
@@ -542,12 +546,12 @@ interface Booking {
 
     /* 1. Executive Fleet Overview Card */
     .overview-hero-card {
-      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      background: #FFFFFF;
       border-radius: 16px;
       padding: 14px 16px;
-      color: #FFFFFF;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #0F172A;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      border: 1px solid #E2E8F0;
     }
     .hero-metric-row {
       display: flex;
@@ -564,16 +568,16 @@ interface Booking {
     .hero-metric-col:first-child { text-align: left; }
     .hero-metric-col:last-child { text-align: right; }
     .hero-metric-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: #94A3B8;
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #64748B;
       letter-spacing: 0.4px;
       text-transform: uppercase;
     }
     .hero-metric-val {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 900;
-      color: #FFFFFF;
+      color: #0F172A;
       display: flex;
       align-items: baseline;
       justify-content: center;
@@ -581,15 +585,15 @@ interface Booking {
     }
     .hero-metric-col:first-child .hero-metric-val { justify-content: flex-start; }
     .hero-metric-col:last-child .hero-metric-val { justify-content: flex-end; }
-    .hero-metric-val.green { color: #34D399; }
-    .hero-metric-val.blue { color: #60A5FA; }
-    .metric-cur { font-size: 12px; font-weight: 700; }
-    .metric-num { font-size: 17px; font-weight: 900; }
-    .metric-sub { font-size: 11px; font-weight: 600; color: #94A3B8; margin-left: 2px; }
+    .hero-metric-val.green { color: #16A34A; }
+    .hero-metric-val.blue { color: #2563EB; }
+    .metric-cur { font-size: 12.5px; font-weight: 800; }
+    .metric-num { font-size: 18px; font-weight: 900; }
+    .metric-sub { font-size: 11px; font-weight: 600; color: #64748B; margin-left: 2px; }
     .hero-metric-divider {
       width: 1px;
       height: 28px;
-      background: rgba(255, 255, 255, 0.12);
+      background: #E2E8F0;
       margin: 0 6px;
     }
 
@@ -892,30 +896,41 @@ interface Booking {
     /* Journey Route Visual */
     .journey-route-preview {
       display: flex;
-      gap: 10px;
-      padding: 2px 0 4px 0;
+      gap: 12px;
+      padding: 4px 0 6px 0;
+      align-items: stretch;
     }
     .route-tracker-col {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 5px;
-      width: 10px;
-    }
-    .route-node {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      width: 12px;
       flex-shrink: 0;
     }
-    .route-node.pickup-node { background: #10B981; }
-    .route-node.dropoff-node { background: #EF4444; }
+    .route-node {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+    }
+    .route-node.pickup-node { 
+      background: #10B981; 
+      border: 2px solid #059669;
+    }
+    .route-node.dropoff-node { 
+      background: #EF4444; 
+      border: 2px solid #DC2626;
+    }
     .route-stem {
       width: 2px;
       flex: 1;
-      min-height: 18px;
+      min-height: 24px;
       background: #CBD5E1;
-      margin: 2px 0;
+      margin: 4px 0;
+      border-radius: 1px;
     }
 
     .route-addresses-col {
@@ -923,51 +938,73 @@ interface Booking {
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 12px;
     }
-    .address-preview-row {
+    
+    .stop-entry {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .stop-meta-header {
       display: flex;
       align-items: center;
       gap: 6px;
-      min-width: 0;
+      flex-wrap: wrap;
     }
+
     .address-time-pill {
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 800;
       background: #F1F5F9;
-      color: #475569;
-      padding: 1px 6px;
-      border-radius: 4px;
+      color: #334155;
+      padding: 2px 7px;
+      border-radius: 5px;
       white-space: nowrap;
       flex-shrink: 0;
+      letter-spacing: 0.2px;
     }
-    .address-text {
-      font-size: 12.5px;
+    .address-time-pill.dropoff-time {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+    }
+
+    .address-text-full {
+      font-size: 14px;
       font-weight: 700;
-      color: #1E293B;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
+      color: #0F172A;
+      line-height: 1.38;
+      word-break: break-word;
+      letter-spacing: -0.1px;
     }
+
     .postcode-tag {
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: 800;
       font-family: monospace;
       background: #FEF08A;
       color: #000000;
-      padding: 1px 5px;
+      padding: 1.5px 6px;
       border-radius: 4px;
       flex-shrink: 0;
+      letter-spacing: 0.4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .via-indicator-row {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 4px;
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #D97706;
-      padding-left: 2px;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #B45309;
+      background: #FEF3C7;
+      border: 1px solid #FDE68A;
+      padding: 2px 8px;
+      border-radius: 6px;
+      align-self: flex-start;
+      margin: 1px 0 1px 0;
     }
     .via-icon { font-size: 14px; }
 
@@ -1612,8 +1649,11 @@ interface Booking {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .overview-hero-card {
-      background: linear-gradient(135deg, #1E1E24 0%, #16161A 100%);
+      background: #1E1E24;
       border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .hero-metric-divider {
+      background: #2D2D35;
     }
     :host-context(.dark-theme) .search-input-box {
       background: #1E1E24;
@@ -1644,6 +1684,7 @@ interface Booking {
       color: #ECEFF1;
     }
     :host-context(.dark-theme) .booking-fare-text,
+    :host-context(.dark-theme) .address-text-full,
     :host-context(.dark-theme) .address-text,
     :host-context(.dark-theme) .empty-title,
     :host-context(.dark-theme) .sheet-passenger-name,
@@ -1652,6 +1693,12 @@ interface Booking {
     :host-context(.dark-theme) .tile-val,
     :host-context(.dark-theme) .spec-val {
       color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .route-stem {
+      background: #3E3E48 !important;
+    }
+    :host-context(.dark-theme) .route-node {
+      box-shadow: 0 0 0 2px #1E1E24 !important;
     }
     :host-context(.dark-theme) .card-footer-row,
     :host-context(.dark-theme) .sheet-header,
