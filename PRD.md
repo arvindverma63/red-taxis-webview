@@ -358,6 +358,14 @@ The Angular router guards and services parse the `token` parameter directly from
   - Modernized the expense creation form with category icon selectors (Fuel, Maintenance, Tolls, Vehicle Wash, Parking, Insurance, Other), fast amount stepper chips (`+£10`, `+£20`, `+£50`, `Clear`), interactive date picker, camera receipt scan trigger, and real-time validation.
   - Added a high-resolution modal receipt dialog with zoom inspection, metadata header, and full download action.
   - Verified with 100% passing Vitest test suite and clean Angular compilation.
+- [x] **Driver Profile & Compliance Hub UI Overhaul (`profile.ts`)**:
+  - Redesigned the Driver Profile view with an Executive Driver Identity Hero card featuring verified partner driver badge, avatar with pulsing live status dot, driver ID reference chip, star rating (`4.98 ★ • 1,420+ trips`), and ambient branding glow.
+  - Built a 3-column quick telemetry metrics row for Compliance Health (`X/Y Verified` with live progress bar), Assigned Vehicle, and Driver Standing (`Gold • Tier 1`).
+  - Redesigned Driver Profile & Credentials card with 1-tap copy clipboard triggers and SnackBar notifications for email and telephone.
+  - Created an authentic UK License Plate showcase (yellow reflective background, bold UK font, blue euroband with UK text, and verified registration indicator).
+  - Overhauled the Compliance Licences & Certifications Hub with visual health meter, dynamic 3-pill filters (`All`, `Needs Action`, `Verified`), and color-accented document rows (Valid, Expiring Soon, Expired, Pending Verification, Missing) with 1-tap upload routing.
+  - Added a glassmorphic Document Inspection Modal with high-resolution image viewing, status notification bar, and direct "Update / Replace" action.
+  - Added pull-to-refresh mobile gesture support and verified with 100% passing Vitest and Flutter test suites.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
