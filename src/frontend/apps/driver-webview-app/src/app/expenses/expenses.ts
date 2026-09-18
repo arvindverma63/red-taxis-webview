@@ -56,51 +56,74 @@ interface CategoryOption {
         </span>
       </div>
 
-      <!-- Dashboard Overview Stats (only shown in list view) -->
-      <div class="stats-dashboard-card animated-fade-in" *ngIf="!isLoading && !isFormOpen && expenses.length > 0">
-        <div class="total-claimed-row">
-          <div class="total-claimed-lbl">Total Expenses Claimed</div>
-          <div class="total-claimed-val">£{{ totalClaimed.toFixed(2) }}</div>
+      <!-- Hero Financial Overview Card (List View Only) -->
+      <div class="hero-overview-card animated-fade-in" *ngIf="!isLoading && !isFormOpen">
+        <div class="hero-top-bar">
+          <div class="hero-badge">
+            <span class="material-symbols-outlined badge-icon">receipt_long</span>
+            <span>EXPENSE & TAX CLAIM HUB</span>
+          </div>
+          <button class="quick-log-btn" (click)="openAddForm()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Log Expense</span>
+          </button>
         </div>
-        
-        <div class="stats-grid">
-          <div class="stat-box approved">
-            <span class="stat-count">£{{ approvedTotal.toFixed(2) }}</span>
-            <span class="stat-lbl">Approved</span>
-          </div>
-          <div class="stat-box pending">
-            <span class="stat-count">£{{ pendingTotal.toFixed(2) }}</span>
-            <span class="stat-lbl">Pending</span>
-          </div>
-          <div class="stat-box rejected">
-            <span class="stat-count">£{{ rejectedTotal.toFixed(2) }}</span>
-            <span class="stat-lbl">Rejected</span>
+
+        <div class="total-claimed-block">
+          <span class="total-label">Total Expenses Claimed</span>
+          <div class="total-amount-row">
+            <span class="currency-sign">£</span>
+            <span class="total-number">{{ totalClaimed.toFixed(2) }}</span>
+            <span class="count-pill">{{ expenses.length }} {{ expenses.length === 1 ? 'item' : 'items' }}</span>
           </div>
         </div>
 
-        <div class="divider"></div>
+        <!-- 3-Pill Status Grid -->
+        <div class="status-summary-grid">
+          <div class="status-box approved">
+            <div class="status-box-header">
+              <span class="status-dot green"></span>
+              <span class="status-box-title">Approved</span>
+            </div>
+            <span class="status-box-val">£{{ approvedTotal.toFixed(2) }}</span>
+          </div>
+          <div class="status-box pending">
+            <div class="status-box-header">
+              <span class="status-dot amber"></span>
+              <span class="status-box-title">Pending</span>
+            </div>
+            <span class="status-box-val">£{{ pendingTotal.toFixed(2) }}</span>
+          </div>
+          <div class="status-box rejected">
+            <div class="status-box-header">
+              <span class="status-dot rose"></span>
+              <span class="status-box-title">Declined</span>
+            </div>
+            <span class="status-box-val">£{{ rejectedTotal.toFixed(2) }}</span>
+          </div>
+        </div>
 
         <!-- Collapsible Category Breakdown -->
-        <div class="breakdown-collapsible">
+        <div class="breakdown-wrapper" *ngIf="categoryBreakdown.length > 0">
           <button class="breakdown-toggle-btn" (click)="toggleBreakdown()">
-            <span class="btn-lbl-box">
-              <span class="material-symbols-outlined btn-lbl-icon">bar_chart</span>
-              <span>Category Breakdown</span>
-            </span>
+            <div class="breakdown-toggle-left">
+              <span class="material-symbols-outlined toggle-icon">pie_chart</span>
+              <span class="toggle-text">Category Spending Breakdown</span>
+            </div>
             <span class="material-symbols-outlined toggle-arrow">
               {{ isBreakdownOpen ? 'expand_less' : 'expand_more' }}
             </span>
           </button>
 
-          <div class="breakdown-content" [class.open]="isBreakdownOpen">
-            <div class="breakdown-item" *ngFor="let cat of categoryBreakdown">
-              <div class="breakdown-info">
-                <span class="breakdown-name">{{ cat.name }}</span>
-                <span class="breakdown-amount">£{{ cat.total.toFixed(2) }} ({{ cat.pct.toFixed(0) }}%)</span>
+          <div class="breakdown-drawer" [class.open]="isBreakdownOpen">
+            <div class="breakdown-row" *ngFor="let cat of categoryBreakdown">
+              <div class="breakdown-labels">
+                <span class="cat-name-tag">{{ cat.name }}</span>
+                <span class="cat-val-tag">£{{ cat.total.toFixed(2) }} • {{ cat.pct.toFixed(0) }}%</span>
               </div>
-              <div class="breakdown-progress-bar">
+              <div class="breakdown-bar-track">
                 <div 
-                  class="breakdown-progress-fill" 
+                  class="breakdown-bar-fill" 
                   [style.width]="cat.pct + '%'" 
                   [style.background-color]="cat.color"
                 ></div>
@@ -110,204 +133,231 @@ interface CategoryOption {
         </div>
       </div>
 
-      <!-- Action Button Nav (only shown in list view) -->
-      <div class="nav-header" *ngIf="!isFormOpen">
-        <button mat-flat-button class="new-expense-btn" (click)="openAddForm()">
-          <mat-icon>add</mat-icon> Log Expense
-        </button>
-      </div>
-
-      <!-- Date Filters Segment Bar (only shown in list view) -->
-      <div class="filters-row animated-fade-in" *ngIf="!isFormOpen">
-        <button 
-          class="filter-pill" 
-          [class.active]="activeFilterDays === 7" 
-          (click)="setFilter(7)"
-        >
-          Last 7 Days
-        </button>
-        <button 
-          class="filter-pill" 
-          [class.active]="activeFilterDays === 30" 
-          (click)="setFilter(30)"
-        >
-          Last 30 Days
-        </button>
-        <button 
-          class="filter-pill" 
-          [class.active]="activeFilterDays === 90" 
-          (click)="setFilter(90)"
-        >
-          Last 90 Days
-        </button>
-      </div>
-
-      <!-- Loading State -->
-      <div *ngIf="isLoading" class="skeleton-container animated-fade-in">
-        <div class="skeleton-card" *ngFor="let i of [1, 2, 3]">
-          <div class="skeleton-line" style="width: 50%; height: 16px; margin-bottom: 8px;"></div>
-          <div class="skeleton-line" style="width: 35%; height: 12px; margin-bottom: 12px;"></div>
-          <div class="skeleton-line" style="width: 25%; height: 20px;"></div>
+      <!-- Date Filters Segment Bar (List View Only) -->
+      <div class="filters-dock animated-fade-in" *ngIf="!isFormOpen && !isLoading">
+        <div class="filter-pills-group">
+          <button 
+            class="filter-pill-btn" 
+            [class.active]="activeFilterDays === 7" 
+            (click)="setFilter(7)"
+          >
+            Last 7 Days
+          </button>
+          <button 
+            class="filter-pill-btn" 
+            [class.active]="activeFilterDays === 30" 
+            (click)="setFilter(30)"
+          >
+            Last 30 Days
+          </button>
+          <button 
+            class="filter-pill-btn" 
+            [class.active]="activeFilterDays === 90" 
+            (click)="setFilter(90)"
+          >
+            Last 90 Days
+          </button>
         </div>
       </div>
 
-      <!-- Expenses List Card List -->
-      <div *ngIf="!isLoading && !isFormOpen" class="expenses-list-container animated-fade-in">
-        <div *ngIf="expenses.length === 0" class="empty-state">
-          <span class="material-symbols-outlined empty-icon">receipt_long</span>
-          <p class="empty-txt">No expenses logged in this period.</p>
-          <button mat-stroked-button class="empty-btn" (click)="openAddForm()">
-            Log your first expense
+      <!-- Loading Skeleton State -->
+      <div *ngIf="isLoading" class="skeleton-container animated-fade-in">
+        <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4]">
+          <div class="skeleton-shimmer"></div>
+        </div>
+      </div>
+
+      <!-- Expenses List View -->
+      <div *ngIf="!isLoading && !isFormOpen" class="expenses-list-view animated-fade-in">
+        <!-- Empty State -->
+        <div *ngIf="expenses.length === 0" class="empty-state-card">
+          <div class="empty-icon-circle">
+            <span class="material-symbols-outlined">receipt_long</span>
+          </div>
+          <h4 class="empty-title">No Expenses Logged</h4>
+          <p class="empty-desc">You have not logged any fuel, toll, or maintenance claims for this time range.</p>
+          <button mat-flat-button class="empty-cta-btn" (click)="openAddForm()">
+            <span class="material-symbols-outlined">add_circle</span>
+            <span>Log Your First Expense</span>
           </button>
         </div>
 
-        <div class="expense-items" *ngIf="expenses.length > 0">
+        <!-- Expense Rows List -->
+        <div class="expense-items-stack" *ngIf="expenses.length > 0">
           <div 
-            class="expense-row-card" 
+            class="expense-item-card" 
             *ngFor="let item of expenses" 
             (click)="viewReceipt(item)"
           >
-            <div class="card-indicator" [style.background-color]="getCategoryColor(item.category)"></div>
-            <div class="expense-row-content">
+            <!-- Left Category Indicator Line -->
+            <div class="item-accent-line" [style.background-color]="getCategoryColor(item.category)"></div>
+            
+            <div class="item-card-inner">
+              <!-- Category Icon Badge -->
               <div 
-                class="row-icon-box" 
+                class="item-icon-box" 
                 [style.background-color]="getCategoryColorLight(item.category)" 
                 [style.color]="getCategoryColor(item.category)"
               >
                 <span class="material-symbols-outlined">{{ getCategoryIcon(item.category) }}</span>
               </div>
-              <div class="expense-details-box">
-                <div class="category-name">{{ getCategoryName(item.category) }}</div>
-                <div class="expense-date-desc">
-                  <span>{{ item.date | date:'dd MMM yyyy' }}</span>
-                  <span class="desc-bullet" *ngIf="item.description">•</span>
-                  <span class="desc-txt" *ngIf="item.description">{{ item.description }}</span>
+
+              <!-- Item Details -->
+              <div class="item-meta-box">
+                <div class="item-category-title">{{ getCategoryName(item.category) }}</div>
+                <div class="item-sub-row">
+                  <span class="item-date">{{ item.date | date:'dd MMM yyyy' }}</span>
+                  <span class="meta-dot" *ngIf="item.description">•</span>
+                  <span class="item-desc" *ngIf="item.description">{{ item.description }}</span>
                 </div>
               </div>
-              <div class="expense-financials-box">
-                <span class="expense-amount">£{{ item.amount.toFixed(2) }}</span>
-                <span class="status-badge" [ngClass]="getStatusClass(item.status)">
+
+              <!-- Financials & Status Pill -->
+              <div class="item-finance-box">
+                <span class="item-amount">£{{ item.amount.toFixed(2) }}</span>
+                <span class="status-pill" [ngClass]="getStatusClass(item.status)">
                   {{ getStatusName(item.status) }}
                 </span>
               </div>
+
+              <span class="material-symbols-outlined item-chevron">chevron_right</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Add Expense Form Panel -->
-      <div *ngIf="isFormOpen" class="form-panel animated-fade-in">
-        <div class="form-card">
-          <div class="form-header-row">
-            <h3 class="form-heading">Log New Expense</h3>
-            <button class="close-form-btn" (click)="closeAddForm()">
+      <div *ngIf="isFormOpen" class="form-panel-view animated-fade-in">
+        <div class="form-sheet-card">
+          <div class="form-sheet-header">
+            <div class="form-header-text">
+              <span class="form-header-badge">NEW CLAIM</span>
+              <h3 class="form-sheet-title">Log Expense</h3>
+            </div>
+            <button class="close-sheet-btn" (click)="closeAddForm()">
               <span class="material-symbols-outlined">close</span>
             </button>
           </div>
           
           <!-- Category Grid Selector -->
-          <div class="form-group">
-            <label class="form-lbl">Select Category</label>
-            <div class="category-grid">
+          <div class="form-field-group">
+            <label class="field-label">SELECT EXPENSE CATEGORY</label>
+            <div class="category-cards-grid">
               <button 
                 type="button"
                 *ngFor="let cat of categoryOptions"
-                class="category-card"
+                class="cat-select-card"
                 [class.selected]="category === cat.value"
-                [style.border-color]="category === cat.value ? cat.color : '#ECEFF1'"
+                [style.border-color]="category === cat.value ? cat.color : ''"
                 (click)="selectCategory(cat.value)"
               >
                 <div 
-                  class="category-card-icon" 
-                  [style.background-color]="category === cat.value ? cat.lightColor : '#F5F7F8'"
-                  [style.color]="category === cat.value ? cat.color : '#546E7A'"
+                  class="cat-icon-disc" 
+                  [style.background-color]="category === cat.value ? cat.lightColor : ''"
+                  [style.color]="category === cat.value ? cat.color : ''"
                 >
                   <span class="material-symbols-outlined">{{ cat.icon }}</span>
                 </div>
-                <span class="category-card-lbl">{{ cat.label }}</span>
-                <div class="selected-badge" *ngIf="category === cat.value" [style.background-color]="cat.color">
+                <span class="cat-label-text">{{ cat.label }}</span>
+                <div class="cat-check-badge" *ngIf="category === cat.value" [style.background-color]="cat.color">
                   <span class="material-symbols-outlined">check</span>
                 </div>
               </button>
             </div>
           </div>
 
-          <!-- Amount Input Field with Prefix Symbol -->
-          <div class="form-group">
-            <label class="form-lbl">Amount</label>
-            <div class="amount-input-wrapper">
-              <span class="currency-symbol">£</span>
+          <!-- Amount Input Field & Stepper Shortcuts -->
+          <div class="form-field-group">
+            <div class="label-with-hint">
+              <label class="field-label">EXPENSE AMOUNT</label>
+              <span class="field-hint">GBP (£)</span>
+            </div>
+
+            <div class="amount-entry-box">
+              <span class="amount-currency-symbol">£</span>
               <input 
                 type="number" 
                 step="0.01" 
                 placeholder="0.00" 
-                class="form-input amount-field" 
+                class="amount-native-input" 
                 (input)="onAmountChange($any($event.target).value)" 
                 [value]="amount > 0 ? amount : ''" 
               />
             </div>
+
+            <!-- Quick Amount Stepper Chips -->
+            <div class="amount-presets-row">
+              <button type="button" class="amount-chip" (click)="addAmount(10)">+ £10</button>
+              <button type="button" class="amount-chip" (click)="addAmount(20)">+ £20</button>
+              <button type="button" class="amount-chip" (click)="addAmount(50)">+ £50</button>
+              <button type="button" class="amount-chip" (click)="addAmount(70)">+ £70 (Tank)</button>
+              <button type="button" class="amount-chip reset" *ngIf="amount > 0" (click)="resetAmount()">Clear</button>
+            </div>
           </div>
 
-          <!-- Description comments -->
-          <div class="form-group">
-            <label class="form-lbl">Description / Comments</label>
+          <!-- Description & Station Comments -->
+          <div class="form-field-group">
+            <label class="field-label">DESCRIPTION / STATION DETAILS</label>
             <textarea 
-              placeholder="Write brief details (e.g. location, station name, mileage)..." 
-              class="form-textarea" 
+              placeholder="e.g. Shell Station diesel fill-up, M6 toll gate, or car wash..." 
+              class="comments-textarea" 
               (input)="onDescChange($any($event.target).value)"
             ></textarea>
           </div>
 
           <!-- Receipt Photo Attachment Component -->
-          <div class="form-group">
-            <label class="form-lbl">Receipt Photo / Invoice</label>
+          <div class="form-field-group">
+            <label class="field-label">RECEIPT PHOTO / INVOICE SCAN</label>
 
-            <!-- Video element for live capture -->
-            <div class="camera-viewport-wrapper" *ngIf="isCameraActive">
-              <video #videoElement autoplay playsinline class="camera-video"></video>
-              <div class="camera-guidelines">
-                <div class="guideline-box"></div>
-                <p class="guideline-txt">Align receipt inside frame</p>
+            <!-- Video Viewfinder for Live Camera Capture -->
+            <div class="camera-frame-box" *ngIf="isCameraActive">
+              <video #videoElement autoplay playsinline class="camera-stream-video"></video>
+              <div class="camera-scan-frame">
+                <div class="scan-reticle"></div>
+                <span class="scan-instructions">Align receipt inside frame</span>
               </div>
               
-              <div class="camera-actions">
-                <button type="button" class="shutter-btn" (click)="capturePhoto()">
+              <div class="camera-control-bar">
+                <button type="button" class="camera-shutter-action" (click)="capturePhoto()">
                   <span class="material-symbols-outlined">photo_camera</span>
                 </button>
-                <button type="button" class="cancel-camera-btn" (click)="stopCamera()">
+                <button type="button" class="camera-dismiss-action" (click)="stopCamera()">
                   <span class="material-symbols-outlined">close</span>
                 </button>
               </div>
             </div>
 
-            <!-- Thumbnail preview of attached receipt -->
-            <div class="receipt-preview-thumbnail-card" *ngIf="!isCameraActive && capturedReceiptPhoto">
-              <img [src]="capturedReceiptPhoto" class="thumbnail-img" />
-              <div class="thumbnail-overlay">
-                <span class="attached-lbl">Receipt Photo Attached</span>
-                <button type="button" class="remove-receipt-btn" (click)="removeAttachedReceipt()">
+            <!-- Attached Receipt Thumbnail Preview -->
+            <div class="attached-receipt-card" *ngIf="!isCameraActive && capturedReceiptPhoto">
+              <img [src]="capturedReceiptPhoto" class="receipt-preview-img" />
+              <div class="receipt-card-overlay">
+                <div class="receipt-attached-info">
+                  <span class="material-symbols-outlined">image</span>
+                  <span>Receipt Photo Attached</span>
+                </div>
+                <button type="button" class="receipt-trash-btn" (click)="removeAttachedReceipt()">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
               </div>
             </div>
 
-            <!-- Camera Trigger Button -->
+            <!-- Camera Trigger Action Button -->
             <button 
               type="button" 
-              class="attach-photo-btn" 
+              class="camera-trigger-btn" 
               *ngIf="!isCameraActive && !capturedReceiptPhoto" 
               (click)="startCamera()"
             >
               <span class="material-symbols-outlined">photo_camera</span>
-              <span>Capture Receipt Image</span>
+              <span>Capture / Attach Receipt</span>
             </button>
           </div>
 
-          <!-- Form Action Buttons -->
-          <div class="form-actions-row">
+          <!-- Form Submit Action Controls -->
+          <div class="form-submit-actions">
             <button 
               mat-stroked-button 
-              class="cancel-btn" 
+              class="form-cancel-btn" 
               (click)="closeAddForm()" 
               [disabled]="isSubmitting"
             >
@@ -315,11 +365,12 @@ interface CategoryOption {
             </button>
             <button 
               mat-flat-button 
-              class="submit-action-btn" 
+              class="form-confirm-btn" 
               (click)="submitExpense()" 
               [disabled]="isSubmitting || amount <= 0"
             >
-              {{ isSubmitting ? 'Submitting...' : 'Submit Claim' }}
+              <span *ngIf="!isSubmitting">Submit Claim</span>
+              <span *ngIf="isSubmitting">Submitting Claim...</span>
             </button>
           </div>
         </div>
@@ -327,51 +378,55 @@ interface CategoryOption {
 
       <!-- Claim Preview Detail Modal Overlay -->
       <div 
-        class="modal-backdrop" 
+        class="modal-backdrop-scrim" 
         *ngIf="isPreviewOpen && activeItem" 
         (click)="closeReceiptPreview()"
       >
-        <div class="modal-card" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <div class="modal-header-left">
+        <div class="modal-dialog-card" (click)="$event.stopPropagation()">
+          <div class="modal-card-header">
+            <div class="modal-header-brand">
               <div 
-                class="modal-icon-box"
+                class="modal-cat-icon"
                 [style.background-color]="getCategoryColorLight(activeItem.category)"
                 [style.color]="getCategoryColor(activeItem.category)"
               >
                 <span class="material-symbols-outlined">{{ getCategoryIcon(activeItem.category) }}</span>
               </div>
-              <h4 class="modal-title">{{ getCategoryName(activeItem.category) }} Claim</h4>
+              <div>
+                <h4 class="modal-card-title">{{ getCategoryName(activeItem.category) }}</h4>
+                <span class="modal-card-sub">Expense Claim #{{ activeItem.id }}</span>
+              </div>
             </div>
-            <button class="modal-close-btn" (click)="closeReceiptPreview()">
+            <button class="modal-dismiss-btn" (click)="closeReceiptPreview()">
               <span class="material-symbols-outlined">close</span>
             </button>
           </div>
-          <div class="modal-body">
-            <div class="modal-details-row">
-              <span class="modal-lbl">Claim Date:</span>
-              <span class="modal-val">{{ activeItem.date | date:'dd MMM yyyy' }}</span>
+
+          <div class="modal-card-body">
+            <div class="detail-row">
+              <span class="detail-key">Claim Date:</span>
+              <span class="detail-val">{{ activeItem.date | date:'dd MMM yyyy, HH:mm' }}</span>
             </div>
-            <div class="modal-details-row">
-              <span class="modal-lbl">Amount Claimed:</span>
-              <span class="modal-val bold green">£{{ activeItem.amount.toFixed(2) }}</span>
+            <div class="detail-row">
+              <span class="detail-key">Amount Claimed:</span>
+              <span class="detail-val bold-amount">£{{ activeItem.amount.toFixed(2) }}</span>
             </div>
-            <div class="modal-details-row" *ngIf="activeItem.description">
-              <span class="modal-lbl">Description:</span>
-              <span class="modal-val desc-align">{{ activeItem.description }}</span>
+            <div class="detail-row" *ngIf="activeItem.description">
+              <span class="detail-key">Notes:</span>
+              <span class="detail-val desc-text">{{ activeItem.description }}</span>
             </div>
-            <div class="modal-details-row">
-              <span class="modal-lbl">Claim Status:</span>
-              <span class="status-badge" [ngClass]="getStatusClass(activeItem.status)">
+            <div class="detail-row">
+              <span class="detail-key">Approval Status:</span>
+              <span class="status-pill" [ngClass]="getStatusClass(activeItem.status)">
                 {{ getStatusName(activeItem.status) }}
               </span>
             </div>
 
             <!-- Receipt Photo Details display -->
-            <div class="modal-receipt-container" *ngIf="activeItemReceiptImg">
-              <p class="receipt-section-lbl">Receipt Document</p>
-              <div class="receipt-img-card">
-                <img [src]="activeItemReceiptImg" class="receipt-full-img" />
+            <div class="modal-receipt-box" *ngIf="activeItemReceiptImg">
+              <span class="receipt-box-label">ATTACHED RECEIPT DOCUMENT</span>
+              <div class="receipt-frame">
+                <img [src]="activeItemReceiptImg" class="receipt-display-image" />
               </div>
             </div>
           </div>
@@ -380,100 +435,76 @@ interface CategoryOption {
     </div>
   `,
   styles: [`
-    /* Dark Theme Support via :host-context */
+    /* ================= DARK THEME VARIABLES ================= */
     :host-context(.dark-theme) .expenses-container {
       background-color: #121214 !important;
       color: #ECEFF1 !important;
     }
-    :host-context(.dark-theme) .stats-dashboard-card,
-    :host-context(.dark-theme) .form-card,
-    :host-context(.dark-theme) .expense-row-card,
-    :host-context(.dark-theme) .modal-card,
-    :host-context(.dark-theme) .receipt-preview-thumbnail-card,
-    :host-context(.dark-theme) .receipt-img-card {
+    :host-context(.dark-theme) .hero-overview-card,
+    :host-context(.dark-theme) .form-sheet-card,
+    :host-context(.dark-theme) .expense-item-card,
+    :host-context(.dark-theme) .modal-dialog-card,
+    :host-context(.dark-theme) .empty-state-card {
       background-color: #1E1E24 !important;
       border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
     }
-    :host-context(.dark-theme) .stat-box,
-    :host-context(.dark-theme) .attach-photo-btn,
-    :host-context(.dark-theme) .category-card {
-      background-color: #121214 !important;
+    :host-context(.dark-theme) .status-box,
+    :host-context(.dark-theme) .cat-select-card,
+    :host-context(.dark-theme) .filter-pill-btn,
+    :host-context(.dark-theme) .amount-chip,
+    :host-context(.dark-theme) .camera-trigger-btn {
+      background-color: #141418 !important;
       border-color: #2D2D35 !important;
       color: #ECEFF1 !important;
     }
-    :host-context(.dark-theme) .category-card:hover {
-      background-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .category-card.selected {
-      background-color: #1E1E24 !important;
-      border-color: #E53935 !important;
-    }
-    :host-context(.dark-theme) .filter-pill {
-      background-color: #121214 !important;
-      border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .filter-pill.active {
-      background-color: #E53935 !important;
-      border-color: #E53935 !important;
+    :host-context(.dark-theme) .filter-pill-btn.active {
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
+      border-color: #CD1A21 !important;
       color: #FFFFFF !important;
     }
-    :host-context(.dark-theme) .form-input,
-    :host-context(.dark-theme) .form-textarea {
+    :host-context(.dark-theme) .amount-native-input,
+    :host-context(.dark-theme) .comments-textarea {
       background-color: #121214 !important;
       border-color: #2D2D35 !important;
       color: #ECEFF1 !important;
     }
-    :host-context(.dark-theme) .form-input:focus,
-    :host-context(.dark-theme) .form-textarea:focus {
-      background-color: #121214 !important;
-      border-color: #E53935 !important;
+    :host-context(.dark-theme) .amount-native-input:focus,
+    :host-context(.dark-theme) .comments-textarea:focus {
+      border-color: #CD1A21 !important;
     }
-    :host-context(.dark-theme) .modal-header,
-    :host-context(.dark-theme) .modal-details-row {
+    :host-context(.dark-theme) .amount-currency-symbol,
+    :host-context(.dark-theme) .total-number,
+    :host-context(.dark-theme) .item-category-title,
+    :host-context(.dark-theme) .item-amount,
+    :host-context(.dark-theme) .form-sheet-title,
+    :host-context(.dark-theme) .cat-label-text,
+    :host-context(.dark-theme) .modal-card-title,
+    :host-context(.dark-theme) .detail-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .total-label,
+    :host-context(.dark-theme) .status-box-title,
+    :host-context(.dark-theme) .toggle-text,
+    :host-context(.dark-theme) .field-label,
+    :host-context(.dark-theme) .detail-key,
+    :host-context(.dark-theme) .receipt-box-label {
+      color: #90A4AE !important;
+    }
+    :host-context(.dark-theme) .detail-row {
       border-bottom-color: #2D2D35 !important;
     }
-    :host-context(.dark-theme) .divider,
-    :host-context(.dark-theme) .breakdown-progress-bar {
-      background-color: #2D2D35 !important;
-    }
-    :host-context(.dark-theme) .cancel-btn {
+    :host-context(.dark-theme) .form-cancel-btn {
       border-color: #2D2D35 !important;
-      color: #90A4AE !important;
-    }
-    :host-context(.dark-theme) .close-form-btn,
-    :host-context(.dark-theme) .modal-close-btn {
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .total-claimed-val,
-    :host-context(.dark-theme) .category-name,
-    :host-context(.dark-theme) .expense-amount,
-    :host-context(.dark-theme) .form-heading,
-    :host-context(.dark-theme) .category-card-lbl,
-    :host-context(.dark-theme) .currency-symbol,
-    :host-context(.dark-theme) .modal-title,
-    :host-context(.dark-theme) .modal-val {
-      color: #ECEFF1 !important;
-    }
-    :host-context(.dark-theme) .total-claimed-lbl,
-    :host-context(.dark-theme) .stat-lbl,
-    :host-context(.dark-theme) .breakdown-info,
-    :host-context(.dark-theme) .breakdown-toggle-btn,
-    :host-context(.dark-theme) .toggle-arrow,
-    :host-context(.dark-theme) .desc-txt,
-    :host-context(.dark-theme) .form-lbl,
-    :host-context(.dark-theme) .modal-lbl,
-    :host-context(.dark-theme) .receipt-section-lbl {
-      color: #90A4AE !important;
+      color: #B0BEC5 !important;
     }
 
+    /* ================= MAIN CONTAINER ================= */
     .expenses-container {
-      padding: 16px 16px 96px 16px;
+      padding: 14px 14px 140px 14px;
       background-color: #F8F9FA;
       min-height: 100vh;
-      font-family: 'Roboto', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       box-sizing: border-box;
       position: relative;
     }
@@ -487,7 +518,7 @@ interface CategoryOption {
       height: 40px;
       background-color: #FFFFFF;
       border-radius: 50%;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -501,843 +532,958 @@ interface CategoryOption {
     }
     .native-spin-icon {
       font-size: 22px;
-      color: #E53935;
+      color: #CD1A21;
     }
-    .spinning {
+    .native-spin-icon.spinning {
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
 
-    /* Stats Dashboard Header styling */
-    .stats-dashboard-card {
-      background-color: #FFFFFF;
-      border-radius: 18px;
-      padding: 20px;
-      border: 1px solid rgba(0, 0, 0, 0.025);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015);
-      margin-bottom: 20px;
+    /* ================= HERO OVERVIEW CARD ================= */
+    .hero-overview-card {
+      background: linear-gradient(135deg, #FFFFFF 0%, #FDFDFE 100%);
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
     }
-    .total-claimed-row {
+    .hero-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: rgba(205, 26, 33, 0.08);
+      color: #CD1A21;
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-size: 9.5px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+    }
+    .badge-icon {
+      font-size: 14px;
+    }
+    .quick-log-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 14px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(205, 26, 33, 0.25);
+    }
+    .quick-log-btn .material-symbols-outlined {
+      font-size: 16px;
+    }
+
+    .total-claimed-block {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .total-claimed-lbl {
+    .total-label {
       font-size: 11px;
-      color: #90A4AE;
       font-weight: 800;
+      color: #64748B;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.5px;
     }
-    .total-claimed-val {
-      font-size: 32px;
+    .total-amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .currency-sign {
+      font-size: 20px;
       font-weight: 900;
-      color: #263238;
-      margin-top: 4px;
+      color: #CD1A21;
+    }
+    .total-number {
+      font-size: 28px;
+      font-weight: 900;
+      color: #1E293B;
       letter-spacing: -0.5px;
     }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
+    .count-pill {
+      margin-left: 8px;
+      background-color: #F1F5F9;
+      color: #475569;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
     }
-    .stat-box {
+
+    /* 3-Pill Status Grid */
+    .status-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .status-box {
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 10px 8px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 10px 4px;
-      border-radius: 12px;
-      background-color: #FAFBFC;
-      border: 1px solid rgba(0, 0, 0, 0.01);
+      gap: 4px;
     }
-    .stat-count {
+    .status-box-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .status-dot.green { background-color: #16A34A; }
+    .status-dot.amber { background-color: #D97706; }
+    .status-dot.rose { background-color: #E11D48; }
+    .status-box-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #64748B;
+      text-transform: uppercase;
+    }
+    .status-box-val {
       font-size: 13.5px;
       font-weight: 900;
-    }
-    .stat-lbl {
-      font-size: 10px;
-      color: #78909C;
-      font-weight: 700;
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: 0.2px;
-    }
-    .approved .stat-count { color: #2E7D32; }
-    .pending .stat-count { color: #E65100; }
-    .rejected .stat-count { color: #C62828; }
-
-    .divider {
-      height: 1px;
-      background-color: #ECEFF1;
-      margin: 16px 0 12px 0;
+      color: #1E293B;
     }
 
-    /* Collapsible category progress styling */
+    /* Collapsible Breakdown */
+    .breakdown-wrapper {
+      border-top: 1px solid #F1F5F9;
+      padding-top: 10px;
+    }
     .breakdown-toggle-btn {
       width: 100%;
       background: none;
       border: none;
-      padding: 4px 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 4px 0;
       cursor: pointer;
-      color: #546E7A;
-      font-weight: 700;
-      font-size: 12.5px;
     }
-    .btn-lbl-box {
+    .breakdown-toggle-left {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
-    .btn-lbl-icon {
-      font-size: 18px;
+    .toggle-icon {
+      font-size: 16px;
+      color: #CD1A21;
+    }
+    .toggle-text {
+      font-size: 11px;
+      font-weight: 800;
+      color: #475569;
     }
     .toggle-arrow {
       font-size: 18px;
-      color: #90A4AE;
+      color: #94A3B8;
     }
-    .breakdown-content {
+    .breakdown-drawer {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
+      transition: max-height 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .breakdown-content.open {
-      max-height: 1000px;
-      transition: max-height 0.3s cubic-bezier(1, 0, 1, 0);
-      margin-top: 12px;
+    .breakdown-drawer.open {
+      max-height: 400px;
+      margin-top: 10px;
     }
-    .breakdown-item {
-      margin-bottom: 12px;
+    .breakdown-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
-    .breakdown-item:last-child {
-      margin-bottom: 4px;
-    }
-    .breakdown-info {
+    .breakdown-labels {
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
-      color: #37474F;
-      font-weight: 700;
-      margin-bottom: 4px;
+      font-size: 10.5px;
     }
-    .breakdown-progress-bar {
-      height: 6px;
-      background-color: #ECEFF1;
+    .cat-name-tag {
+      font-weight: 700;
+      color: #475569;
+    }
+    .cat-val-tag {
+      font-weight: 800;
+      color: #1E293B;
+    }
+    .breakdown-bar-track {
+      width: 100%;
+      height: 5px;
+      background-color: #F1F5F9;
       border-radius: 4px;
       overflow: hidden;
     }
-    .breakdown-progress-fill {
+    .breakdown-bar-fill {
       height: 100%;
       border-radius: 4px;
       transition: width 0.4s ease;
     }
 
-    /* Nav Header actions */
-    .nav-header {
-      display: flex;
-      justify-content: flex-end;
+    /* ================= FILTERS DOCK ================= */
+    .filters-dock {
       margin-bottom: 12px;
     }
-    .new-expense-btn {
-      background-color: #E53935 !important;
-      color: #FFFFFF !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      height: 38px;
-      font-size: 12.5px !important;
-      box-shadow: 0 4px 10px rgba(229, 57, 53, 0.15);
-    }
-
-    /* Filter segment bar styling */
-    .filters-row {
+    .filter-pills-group {
       display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      overflow-x: auto;
-      padding-bottom: 4px;
+      gap: 6px;
     }
-    .filter-pill {
-      border: 1px solid #ECEFF1;
-      background-color: #FFFFFF;
-      color: #546E7A;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s ease;
-      outline: none;
-    }
-    .filter-pill:hover {
-      border-color: #CFD8DC;
-    }
-    .filter-pill.active {
-      background-color: #E53935 !important;
-      color: #FFFFFF !important;
-      border-color: #E53935 !important;
-      box-shadow: 0 4px 10px rgba(229, 57, 53, 0.12);
-    }
-
-    /* Skeleton structures */
-    .skeleton-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .skeleton-card {
-      background-color: #FFFFFF;
-      border-radius: 16px;
-      padding: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.025);
-    }
-    .skeleton-line {
-      background: linear-gradient(90deg, #ECEFF1 25%, #F4F6F7 37%, #ECEFF1 63%);
-      background-size: 400% 100%;
-      animation: skeleton-animation 1.4s ease infinite;
-      border-radius: 4px;
-    }
-    @keyframes skeleton-animation {
-      0% { background-position: 100% 50%; }
-      100% { background-position: 0 50%; }
-    }
-
-    /* Empty UI state */
-    .empty-state {
-      text-align: center;
-      padding: 64px 20px;
-    }
-    .empty-icon {
-      font-size: 56px;
-      color: #CFD8DC;
-      margin-bottom: 12px;
-    }
-    .empty-txt {
-      font-size: 14px;
-      color: #546E7A;
-      margin-bottom: 24px;
-    }
-    .empty-btn {
-      border-color: #ECEFF1 !important;
-      color: #37474F !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      height: 40px;
-    }
-
-    /* Card List Styles */
-    .expense-items {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .expense-row-card {
-      background-color: #FFFFFF;
-      border-radius: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.02);
-      box-shadow: 0 4px 18px rgba(0,0,0,0.01);
-      display: flex;
-      overflow: hidden;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      position: relative;
-    }
-    .expense-row-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.025);
-    }
-    .card-indicator {
-      width: 4px;
-      height: 100%;
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-    }
-    .expense-row-content {
-      padding: 16px 16px 16px 20px;
+    .filter-pill-btn {
       flex: 1;
-      display: flex;
-      align-items: center;
-    }
-    .row-icon-box {
-      width: 40px;
-      height: 40px;
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 12px;
+      padding: 7px 4px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+    .filter-pill-btn.active {
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%);
+      border-color: #CD1A21;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(205, 26, 33, 0.22);
+    }
+
+    /* ================= EXPENSE ROWS LIST ================= */
+    .expense-items-stack {
       display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-right: 16px;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .expense-item-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.02);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .expense-item-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+    }
+    .item-accent-line {
+      width: 4px;
       flex-shrink: 0;
     }
-    .row-icon-box .material-symbols-outlined {
+    .item-card-inner {
+      flex: 1;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .item-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .item-icon-box .material-symbols-outlined {
       font-size: 20px;
     }
-    .expense-details-box {
+    .item-meta-box {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 2px;
-      min-width: 0; /* truncate helper */
     }
-    .category-name {
+    .item-category-title {
       font-size: 13.5px;
       font-weight: 800;
-      color: #263238;
+      color: #1E293B;
     }
-    .expense-date-desc {
+    .item-sub-row {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 11.5px;
-      color: #90A4AE;
+      font-size: 10.5px;
+      color: #64748B;
       font-weight: 500;
-      min-width: 0;
     }
-    .desc-bullet {
-      color: #CFD8DC;
+    .item-date {
+      font-weight: 700;
+      color: #94A3B8;
+      flex-shrink: 0;
     }
-    .desc-txt {
+    .meta-dot {
+      color: #CBD5E1;
+    }
+    .item-desc {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #546E7A;
     }
-    .expense-financials-box {
+    .item-finance-box {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
-      margin-left: 12px;
+      gap: 4px;
       flex-shrink: 0;
     }
-    .expense-amount {
-      font-size: 15px;
+    .item-amount {
+      font-size: 14.5px;
       font-weight: 900;
-      color: #263238;
+      color: #1E293B;
     }
-    .status-badge {
+    .status-pill {
       font-size: 9px;
-      font-weight: 900;
-      padding: 3px 8px;
-      border-radius: 20px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 12px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
-    .status-badge.approved {
-      background-color: rgba(76, 175, 80, 0.08);
-      color: #2E7D32;
+    .status-pill.approved {
+      background-color: rgba(22, 163, 74, 0.1);
+      color: #16A34A;
     }
-    .status-badge.pending {
-      background-color: rgba(255, 152, 0, 0.08);
-      color: #E65100;
+    .status-pill.pending {
+      background-color: rgba(217, 119, 6, 0.1);
+      color: #D97706;
     }
-    .status-badge.rejected {
-      background-color: rgba(211, 47, 47, 0.08);
-      color: #C62828;
+    .status-pill.rejected {
+      background-color: rgba(225, 29, 72, 0.1);
+      color: #E11D48;
+    }
+    .item-chevron {
+      color: #CBD5E1;
+      font-size: 18px;
+      flex-shrink: 0;
     }
 
-    /* Form Card modifications */
-    .form-panel {
+    /* Empty state */
+    .empty-state-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 36px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    }
+    .empty-icon-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background-color: rgba(205, 26, 33, 0.08);
+      color: #CD1A21;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .empty-icon-circle .material-symbols-outlined {
+      font-size: 28px;
+    }
+    .empty-title {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1E293B;
+    }
+    .empty-desc {
+      margin: 0 0 20px 0;
+      font-size: 12px;
+      color: #64748B;
+      max-width: 280px;
+      line-height: 1.4;
+    }
+    .empty-cta-btn {
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
+      color: #FFFFFF !important;
+      border-radius: 14px !important;
+      padding: 10px 20px !important;
+      font-weight: 800 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      box-shadow: 0 4px 14px rgba(205, 26, 33, 0.25) !important;
+    }
+    .empty-cta-btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    /* Skeleton Shimmer */
+    .skeleton-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .skeleton-card {
+      height: 64px;
+      background-color: #E2E8F0;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .skeleton-shimmer {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ================= ADD EXPENSE FORM PANEL ================= */
+    .form-panel-view {
       width: 100%;
     }
-    .form-card {
+    .form-sheet-card {
       background-color: #FFFFFF;
-      border-radius: 18px;
-      padding: 24px;
-      border: 1px solid rgba(0,0,0,0.02);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.015);
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.03);
     }
-    .form-header-row {
+    .form-sheet-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
-    .form-heading {
-      margin: 0;
-      font-size: 16px;
+    .form-header-badge {
+      font-size: 9px;
       font-weight: 900;
-      color: #263238;
+      color: #CD1A21;
+      letter-spacing: 0.6px;
     }
-    .close-form-btn {
+    .form-sheet-title {
+      margin: 2px 0 0 0;
+      font-size: 18px;
+      font-weight: 900;
+      color: #1E293B;
+    }
+    .close-sheet-btn {
       background: none;
       border: none;
-      color: #90A4AE;
+      color: #94A3B8;
       cursor: pointer;
       display: flex;
       align-items: center;
       padding: 4px;
     }
-    .close-form-btn .material-symbols-outlined {
+    .close-sheet-btn .material-symbols-outlined {
       font-size: 20px;
     }
-    .form-group {
+
+    .form-field-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
-    .form-lbl {
-      font-size: 11px;
+    .field-label {
+      font-size: 10px;
       font-weight: 800;
-      color: #78909C;
-      text-transform: uppercase;
+      color: #64748B;
       letter-spacing: 0.5px;
     }
+    .label-with-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .field-hint {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94A3B8;
+    }
 
-    /* Visual Category selector grid */
-    .category-grid {
+    /* Category selection cards grid */
+    .category-cards-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 4px;
+      gap: 8px;
     }
     @media (max-width: 480px) {
-      .category-grid {
+      .category-cards-grid {
         grid-template-columns: repeat(3, 1fr);
       }
     }
-    .category-card {
-      background-color: #FFFFFF;
-      border: 1.5px solid #ECEFF1;
-      border-radius: 12px;
+    .cat-select-card {
+      background-color: #F8FAFC;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 14px;
       padding: 10px 4px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       position: relative;
       outline: none;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.18s ease;
     }
-    .category-card:hover {
-      background-color: #FAFBFC;
+    .cat-select-card:hover {
+      background-color: #F1F5F9;
     }
-    .category-card-icon {
-      width: 38px;
-      height: 38px;
+    .cat-select-card.selected {
+      background-color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+    .cat-icon-disc {
+      width: 34px;
+      height: 34px;
       border-radius: 10px;
+      background-color: #E2E8F0;
+      color: #64748B;
       display: flex;
-      justify-content: center;
       align-items: center;
-      transition: background-color 0.2s ease, color 0.2s ease;
+      justify-content: center;
     }
-    .category-card-icon .material-symbols-outlined {
+    .cat-icon-disc .material-symbols-outlined {
       font-size: 18px;
     }
-    .category-card-lbl {
-      font-size: 10.5px;
+    .cat-label-text {
+      font-size: 10px;
       font-weight: 800;
-      color: #37474F;
+      color: #334155;
       text-align: center;
     }
-    .selected-badge {
+    .cat-check-badge {
       position: absolute;
-      top: -6px;
-      right: -6px;
+      top: -4px;
+      right: -4px;
       width: 16px;
       height: 16px;
       border-radius: 50%;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       color: #FFFFFF;
-      border: 1.5px solid #FFFFFF;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    .selected-badge .material-symbols-outlined {
-      font-size: 10px;
-      font-weight: 900;
-    }
-    .category-card.selected {
-      transform: scale(1.02);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    .cat-check-badge .material-symbols-outlined {
+      font-size: 11px;
     }
 
-    /* Premium Amount text field */
-    .amount-input-wrapper {
+    /* Amount entry box */
+    .amount-entry-box {
       position: relative;
       display: flex;
       align-items: center;
-      width: 100%;
     }
-    .currency-symbol {
+    .amount-currency-symbol {
       position: absolute;
       left: 14px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
-      color: #37474F;
+      color: #1E293B;
     }
-    .form-input.amount-field {
-      padding-left: 28px;
-      font-size: 18px;
-      font-weight: 900;
-      color: #263238;
-    }
-    .form-input, .form-textarea {
+    .amount-native-input {
       width: 100%;
-      border: 1.5px solid #ECEFF1;
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 14px;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 11px 14px 11px 32px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #1E293B;
       outline: none;
       box-sizing: border-box;
-      background-color: #FCFDFD;
+      background-color: #F8FAFC;
       transition: all 0.2s ease;
-      color: #37474F;
     }
-    .form-input:focus, .form-textarea:focus {
-      border-color: #E53935;
+    .amount-native-input:focus {
+      border-color: #CD1A21;
       background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.05);
+      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.06);
     }
-    .form-textarea {
-      height: 90px;
-      resize: none;
-      line-height: 1.4;
+    .amount-presets-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .amount-chip {
+      background-color: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 5px 10px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .amount-chip:hover {
+      background-color: rgba(205, 26, 33, 0.08);
+      color: #CD1A21;
+      border-color: rgba(205, 26, 33, 0.2);
+    }
+    .amount-chip.reset {
+      background-color: rgba(225, 29, 72, 0.08);
+      color: #E11D48;
+      border-color: rgba(225, 29, 72, 0.2);
     }
 
-    /* Webcam Capture and Attach Receipt photo components */
-    .attach-photo-btn {
+    .comments-textarea {
       width: 100%;
-      height: 48px;
-      background-color: #F5F7F8;
-      border: 1.5px dashed #CFD8DC;
-      color: #546E7A;
-      border-radius: 12px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 800;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #1E293B;
+      outline: none;
+      box-sizing: border-box;
+      min-height: 64px;
+      resize: vertical;
+      background-color: #F8FAFC;
+      font-family: inherit;
       transition: all 0.2s ease;
     }
-    .attach-photo-btn:hover {
-      background-color: #ECEFF1;
-      border-color: #B0BEC5;
-      color: #37474F;
-    }
-    .attach-photo-btn .material-symbols-outlined {
-      font-size: 18px;
+    .comments-textarea:focus {
+      border-color: #CD1A21;
+      background-color: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.06);
     }
 
-    .camera-viewport-wrapper {
-      position: relative;
-      width: 100%;
-      height: 240px;
-      background-color: #000000;
-      border-radius: 14px;
+    /* Camera viewfinder & attachment */
+    .camera-frame-box {
+      border-radius: 16px;
       overflow: hidden;
+      position: relative;
+      background-color: #000000;
+      min-height: 220px;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
     }
-    .camera-video {
+    .camera-stream-video {
       width: 100%;
       height: 100%;
+      max-height: 240px;
       object-fit: cover;
     }
-    .camera-guidelines {
+    .camera-scan-frame {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      inset: 16px;
+      border: 2px dashed rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
       display: flex;
-      flex-direction: column;
+      align-items: flex-end;
       justify-content: center;
-      align-items: center;
+      padding-bottom: 10px;
       pointer-events: none;
-      box-sizing: border-box;
-      padding: 20px;
     }
-    .guideline-box {
-      width: 80%;
-      height: 70%;
-      border: 2px dashed rgba(255, 255, 255, 0.7);
-      border-radius: 10px;
-      box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.4);
-    }
-    .guideline-txt {
+    .scan-instructions {
+      background-color: rgba(0, 0, 0, 0.6);
       color: #FFFFFF;
-      font-size: 11px;
-      font-weight: 800;
-      margin-top: 8px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-      background-color: rgba(0,0,0,0.6);
+      font-size: 10px;
+      font-weight: 700;
       padding: 3px 8px;
-      border-radius: 4px;
+      border-radius: 10px;
     }
-    .camera-actions {
+    .camera-control-bar {
       position: absolute;
       bottom: 12px;
+      left: 0;
+      right: 0;
       display: flex;
-      align-items: center;
-      gap: 20px;
+      justify-content: center;
+      gap: 16px;
     }
-    .shutter-btn {
+    .camera-shutter-action {
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      border: 4px solid #FFFFFF;
-      background-color: #E53935;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%);
+      border: 3px solid #FFFFFF;
       color: #FFFFFF;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-    .shutter-btn .material-symbols-outlined {
-      font-size: 22px;
-    }
-    .cancel-camera-btn {
+    .camera-dismiss-action {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      border: none;
-      background-color: rgba(255,255,255,0.2);
-      backdrop-filter: blur(5px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.4);
       color: #FFFFFF;
-    }
-    .cancel-camera-btn .material-symbols-outlined {
-      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      align-self: center;
     }
 
-    .receipt-preview-thumbnail-card {
-      position: relative;
-      width: 100%;
-      height: 120px;
-      border-radius: 12px;
+    .attached-receipt-card {
+      border-radius: 16px;
       overflow: hidden;
-      border: 1.5px solid #ECEFF1;
+      border: 1px solid #E2E8F0;
+      position: relative;
+      max-height: 160px;
+      background-color: #F8FAFC;
     }
-    .thumbnail-img {
+    .receipt-preview-img {
       width: 100%;
-      height: 100%;
+      height: 160px;
       object-fit: cover;
     }
-    .thumbnail-overlay {
+    .receipt-card-overlay {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
       padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-    .attached-lbl {
       color: #FFFFFF;
-      font-size: 11px;
-      font-weight: 800;
     }
-    .remove-receipt-btn {
+    .receipt-attached-info {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .receipt-trash-btn {
+      background: rgba(225, 29, 72, 0.85);
+      border: none;
+      color: #FFFFFF;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .receipt-trash-btn .material-symbols-outlined {
+      font-size: 16px;
+    }
+
+    .camera-trigger-btn {
+      width: 100%;
+      background-color: #F8FAFC;
+      border: 1.5px dashed #CBD5E1;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .camera-trigger-btn:hover {
+      background-color: rgba(205, 26, 33, 0.04);
+      border-color: #CD1A21;
+      color: #CD1A21;
+    }
+
+    .form-submit-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .form-cancel-btn {
+      flex: 1;
+      height: 48px;
+      border-radius: 14px !important;
+      font-weight: 800 !important;
+      color: #64748B !important;
+      border-color: #CBD5E1 !important;
+    }
+    .form-confirm-btn {
+      flex: 2;
+      height: 48px;
+      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
+      color: #FFFFFF !important;
+      border-radius: 14px !important;
+      font-weight: 900 !important;
+      box-shadow: 0 4px 14px rgba(205, 26, 33, 0.25) !important;
+    }
+    .form-confirm-btn:disabled {
+      background: #E2E8F0 !important;
+      color: #94A3B8 !important;
+      box-shadow: none !important;
+    }
+
+    /* ================= RECEIPT DETAIL MODAL ================= */
+    .modal-backdrop-scrim {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .modal-dialog-card {
+      width: 100%;
+      max-width: 380px;
+      background-color: #FFFFFF;
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .modal-header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-cat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-cat-icon .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .modal-card-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 900;
+      color: #1E293B;
+    }
+    .modal-card-sub {
+      font-size: 10.5px;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+    .modal-dismiss-btn {
       background: none;
       border: none;
-      color: #FFCDD2;
+      color: #94A3B8;
       cursor: pointer;
       padding: 4px;
       display: flex;
       align-items: center;
     }
-    .remove-receipt-btn:hover {
-      color: #FF8A80;
-    }
-    .remove-receipt-btn .material-symbols-outlined {
-      font-size: 18px;
-    }
-
-    .form-actions-row {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-    }
-    .cancel-btn {
-      flex: 1;
-      height: 46px;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      border-color: #ECEFF1 !important;
-      color: #546E7A !important;
-    }
-    .submit-action-btn {
-      flex: 2;
-      height: 46px;
-      background-color: #E53935 !important;
-      color: #FFFFFF !important;
-      border-radius: 12px !important;
-      font-weight: 800 !important;
-      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.15) !important;
-    }
-    .submit-action-btn:disabled {
-      background-color: #ECEFF1 !important;
-      color: #90A4AE !important;
-      box-shadow: none !important;
-    }
-
-    /* Modal dialog styling upgrades */
-    .modal-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-    }
-    .modal-card {
-      background-color: #FFFFFF;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      border: 1px solid rgba(0,0,0,0.03);
-      overflow: hidden;
-      animation: zoomIn 0.2s ease-out;
-    }
-    @keyframes zoomIn {
-      from { transform: scale(0.95); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    .modal-header {
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ECEFF1;
-    }
-    .modal-header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .modal-icon-box {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-icon-box .material-symbols-outlined {
-      font-size: 18px;
-    }
-    .modal-title {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 900;
-      color: #263238;
-    }
-    .modal-close-btn {
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #90A4AE;
-      display: flex;
-      align-items: center;
-    }
-    .modal-close-btn .material-symbols-outlined {
-      font-size: 20px;
-    }
-    .modal-body {
-      padding: 20px;
+    .modal-card-body {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      max-height: 80vh;
-      overflow-y: auto;
+      gap: 8px;
     }
-    .modal-details-row {
+    .detail-row {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      font-size: 13.5px;
-      border-bottom: 1px solid #F5F7F8;
-      padding-bottom: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #F8FAFC;
     }
-    .modal-details-row:last-of-type {
-      border-bottom: none;
-      padding-bottom: 0;
+    .detail-key {
+      font-size: 11.5px;
+      color: #64748B;
+      font-weight: 700;
     }
-    .modal-lbl {
-      color: #78909C;
-      font-weight: 500;
-      flex-shrink: 0;
-    }
-    .modal-val {
-      color: #37474F;
+    .detail-val {
+      font-size: 12.5px;
       font-weight: 800;
+      color: #1E293B;
+    }
+    .detail-val.bold-amount {
+      font-size: 16px;
+      font-weight: 900;
+      color: #16A34A;
+    }
+    .detail-val.desc-text {
+      max-width: 180px;
       text-align: right;
+      font-size: 11.5px;
+      color: #475569;
     }
-    .modal-val.desc-align {
-      text-align: right;
-      max-width: 65%;
-      word-break: break-word;
-    }
-    .modal-val.green {
-      color: #2E7D32;
-    }
-    .modal-val.bold {
-      font-size: 15.5px;
-    }
-
-    /* Modal receipt attachment area */
-    .modal-receipt-container {
+    .modal-receipt-box {
       margin-top: 10px;
     }
-    .receipt-section-lbl {
-      font-size: 11px;
+    .receipt-box-label {
+      font-size: 9.5px;
       font-weight: 800;
-      color: #78909C;
-      text-transform: uppercase;
+      color: #94A3B8;
       letter-spacing: 0.5px;
-      margin-bottom: 8px;
+      display: block;
+      margin-bottom: 6px;
     }
-    .receipt-img-card {
+    .receipt-frame {
       border-radius: 12px;
       overflow: hidden;
-      border: 1px solid #ECEFF1;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-      max-height: 200px;
-      background-color: #FAFBFC;
+      border: 1px solid #E2E8F0;
+      max-height: 220px;
+      background-color: #F8FAFC;
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    .receipt-full-img {
+    .receipt-display-image {
       width: 100%;
       height: 100%;
+      max-height: 220px;
       object-fit: contain;
-      max-height: 200px;
     }
 
     /* Animation effects */
     .animated-fade-in {
-      animation: fadeIn 0.25s ease-in-out forwards;
+      animation: fadeIn 0.22s ease-in-out forwards;
     }
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   `]
 })
@@ -1431,13 +1577,11 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     if (this.userId) {
       this.loadExpenses();
     } else {
-      // Fallback check getProfile
       this.driverService.getProfile().subscribe({
         next: (res: any) => {
           const profile = res?.value || res;
           if (profile) {
             this.userId = profile.id || profile.userId || profile.driverId || 1;
-            console.log('[Expenses] Resolved driver userId from profile fallback:', this.userId);
           } else {
             this.userId = 1;
           }
@@ -1454,7 +1598,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   loadExpenses(): void {
     if (!this.userId) {
-      console.warn('[Expenses] userId not loaded yet, skipping getExpenses');
       this.isLoading = false;
       this.isRefreshing = false;
       this.cdr.detectChanges();
@@ -1469,7 +1612,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
     this.driverService.getExpenses(this.userId, fromDate, toDate).subscribe({
       next: (res: any) => {
-        console.log('[Expenses] getExpenses response:', res);
         if (Array.isArray(res)) {
           this.expenses = res;
         } else if (res && Array.isArray(res.expenses)) {
@@ -1558,7 +1700,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       { id: timestamp - 800000, date: new Date(Date.now() - 86400000 * 9).toISOString(), category: 4, amount: 15.00, description: 'Valet and inside cleaning', status: 'Pending' }
     ];
 
-    // Pre-seed mock images for demonstration in webview
     this.expenses.forEach((item, index) => {
       const mockReceiptBase64 = this.getMockReceiptBase64(index);
       if (mockReceiptBase64) {
@@ -1583,26 +1724,26 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   getCategoryColor(catVal: number | string): string {
     const val = Number(catVal);
     switch (val) {
-      case 0: return '#E53935'; 
-      case 1: return '#1E88E5'; 
-      case 2: return '#43A047'; 
-      case 3: return '#8E24AA'; 
-      case 4: return '#00ACC1'; 
-      case 5: return '#F4511E'; 
-      default: return '#757575'; 
+      case 0: return '#CD1A21'; 
+      case 1: return '#0284C7'; 
+      case 2: return '#16A34A'; 
+      case 3: return '#7C3AED'; 
+      case 4: return '#0891B2'; 
+      case 5: return '#EA580C'; 
+      default: return '#64748B'; 
     }
   }
 
   getCategoryColorLight(catVal: number | string): string {
     const val = Number(catVal);
     switch (val) {
-      case 0: return 'rgba(229, 57, 53, 0.1)';
-      case 1: return 'rgba(30, 136, 245, 0.1)';
-      case 2: return 'rgba(67, 160, 71, 0.1)';
-      case 3: return 'rgba(142, 36, 170, 0.1)';
-      case 4: return 'rgba(0, 172, 193, 0.1)';
-      case 5: return 'rgba(244, 81, 30, 0.1)';
-      default: return 'rgba(117, 117, 117, 0.1)';
+      case 0: return 'rgba(205, 26, 33, 0.1)';
+      case 1: return 'rgba(2, 132, 199, 0.1)';
+      case 2: return 'rgba(22, 163, 74, 0.1)';
+      case 3: return 'rgba(124, 58, 237, 0.1)';
+      case 4: return 'rgba(8, 145, 178, 0.1)';
+      case 5: return 'rgba(234, 88, 12, 0.1)';
+      default: return 'rgba(100, 116, 139, 0.1)';
     }
   }
 
@@ -1667,6 +1808,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   onAmountChange(val: string): void {
     this.amount = parseFloat(val) || 0;
+    this.cdr.detectChanges();
+  }
+
+  addAmount(extra: number): void {
+    this.amount = +(this.amount + extra).toFixed(2);
+    this.cdr.detectChanges();
+  }
+
+  resetAmount(): void {
+    this.amount = 0;
     this.cdr.detectChanges();
   }
 
@@ -1755,7 +1906,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const returnedId = res?.value?.id || res?.id || Date.now();
         
-        // If driver captured a receipt image, cache it locally linked to this claim ID
         if (this.capturedReceiptPhoto) {
           localStorage.setItem(`receipt_img_${returnedId}`, this.capturedReceiptPhoto);
         }
@@ -1771,7 +1921,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         this.isFormOpen = false;
         
-        // Add fake item locally to demonstrate working functionality immediately
         const newFakeId = Date.now();
         const newFake: ExpenseItem = {
           id: newFakeId,
@@ -1782,7 +1931,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           status: 'Pending'
         };
 
-        // Cache local receipt image
         if (this.capturedReceiptPhoto) {
           localStorage.setItem(`receipt_img_${newFakeId}`, this.capturedReceiptPhoto);
         }
@@ -1797,7 +1945,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   viewReceipt(item: ExpenseItem): void {
     this.activeItem = item;
-    // Attempt to load captured receipt image from cache
     this.activeItemReceiptImg = localStorage.getItem(`receipt_img_${item.id}`);
     this.isPreviewOpen = true;
     this.cdr.detectChanges();
@@ -1823,11 +1970,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     const yDiff = currentY - this.startY;
 
     if (yDiff > 0 && window.scrollY === 0) {
-      // Pulling down
       this.pullDistance = Math.min(yDiff * 0.4, 80);
       this.cdr.detectChanges();
       
-      // Prevent browser default pull-to-refresh
       if (this.pullDistance > 10) {
         if (event.cancelable) event.preventDefault();
       }
@@ -1845,9 +1990,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Helper to generate a nice mock CSS receipt background for placeholder items
   private getMockReceiptBase64(index: number): string {
-    // Generate a simple SVG receipt as data URL
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
         <rect width="100%" height="100%" fill="#FCFDFD"/>

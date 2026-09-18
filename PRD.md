@@ -350,6 +350,14 @@ The Angular router guards and services parse the `token` parameter directly from
   - Integrated 3-column telemetry metrics grid (Distance, Duration, Total Fare) with dynamic cash / rank badge.
   - Implemented 1-tap quick fare stepper controls (`-£1.00`, `+£1.00`, `+£2.00`, `+£5.00`, `Reset`) and direct currency input override.
   - Added high-contrast gradient action button (`Create & Start Trip`) with animated spinner and verified with Vitest (2/2 passing) and `ng build`.
+- [x] **Driver Expenses Log UI & Claim Hub Overhaul (`expenses.ts`)**:
+  - Redesigned the Expenses & Tax Claim interface with an executive financial overview hero card displaying Total Claimed, item counters, and a 3-column status pill breakdown (Approved in emerald, Pending in amber, Declined in rose).
+  - Built a collapsible Category Spend Breakdown meter featuring percentage calculations, dynamic progress bars, and category expense counts.
+  - Added quick date range filter pills (`All Time`, `Past 7 Days`, `Past 30 Days`, `Past 90 Days`) and status filter chips (`All`, `Pending`, `Approved`, `Declined`) with live item counts.
+  - Overhauled individual expense cards with category color badge iconography, claim dates, approval state indicators, notes preview, and interactive action buttons (View Receipt, Delete with confirmation).
+  - Modernized the expense creation form with category icon selectors (Fuel, Maintenance, Tolls, Vehicle Wash, Parking, Insurance, Other), fast amount stepper chips (`+£10`, `+£20`, `+£50`, `Clear`), interactive date picker, camera receipt scan trigger, and real-time validation.
+  - Added a high-resolution modal receipt dialog with zoom inspection, metadata header, and full download action.
+  - Verified with 100% passing Vitest test suite and clean Angular compilation.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
