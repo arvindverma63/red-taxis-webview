@@ -264,8 +264,8 @@ interface Booking {
               [ngClass]="getTripProgress(selectedBooking.id)"
               (click)="advanceTripStatus(selectedBooking)"
             >
-              <span class="material-symbols-outlined">{{ getStatusIcon(selectedBooking.id) }}</span>
-              <span>{{ getStatusLabel(selectedBooking.id) }}</span>
+              <span class="material-symbols-outlined action-btn-icon">{{ getStatusIcon(selectedBooking.id) }}</span>
+              <span class="action-btn-text">{{ getStatusLabel(selectedBooking.id) }}</span>
             </button>
 
             <button 
@@ -274,8 +274,8 @@ interface Booking {
               (click)="setActiveJob(selectedBooking)"
               [disabled]="isSettingActive"
             >
-              <span class="material-symbols-outlined">play_arrow</span>
-              <span>{{ isSettingActive ? 'Starting...' : 'Start Active Trip' }}</span>
+              <span class="material-symbols-outlined action-btn-icon">play_arrow</span>
+              <span class="action-btn-text">{{ isSettingActive ? 'Starting...' : 'Start Active Trip' }}</span>
             </button>
 
             <!-- Passenger Direct Contact -->
@@ -284,8 +284,8 @@ interface Booking {
               [href]="'tel:' + selectedBooking.phoneNumber" 
               class="action-pill call-btn"
             >
-              <span class="material-symbols-outlined">call</span>
-              <span>Call</span>
+              <span class="material-symbols-outlined action-btn-icon">call</span>
+              <span class="action-btn-text">Call</span>
             </a>
 
             <a 
@@ -293,8 +293,8 @@ interface Booking {
               [href]="'sms:' + selectedBooking.phoneNumber" 
               class="action-pill sms-btn"
             >
-              <span class="material-symbols-outlined">chat</span>
-              <span>SMS</span>
+              <span class="material-symbols-outlined action-btn-icon">chat</span>
+              <span class="action-btn-text">SMS</span>
             </a>
 
             <button 
@@ -303,7 +303,7 @@ interface Booking {
               (click)="copyText(selectedBooking.phoneNumber, 'Phone number copied')"
               title="Copy Phone"
             >
-              <span class="material-symbols-outlined">content_copy</span>
+              <span class="material-symbols-outlined action-btn-icon">content_copy</span>
             </button>
           </div>
 
@@ -1120,52 +1120,79 @@ interface Booking {
 
     /* Quick Actions */
     .sheet-quick-actions {
-      padding: 10px 16px;
+      padding: 12px 16px;
       display: flex;
-      gap: 8px;
-      border-bottom: 1px solid #F1F5F9;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #E2E8F0;
+      background: #FAFAFC;
       overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .sheet-quick-actions::-webkit-scrollbar {
+      display: none;
     }
     .action-pill {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 7px 12px;
-      border-radius: 20px;
-      font-size: 11.5px;
+      justify-content: center;
+      gap: 7px;
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 700;
+      letter-spacing: 0.2px;
       cursor: pointer;
       text-decoration: none;
       white-space: nowrap;
-      border: 1px solid transparent;
-      transition: opacity 0.15s ease;
+      border: 1.5px solid transparent;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
     }
-    .action-pill:active { opacity: 0.8; }
-    .action-pill .material-symbols-outlined { font-size: 16px; }
+    .action-pill:active { 
+      transform: scale(0.97); 
+      opacity: 0.9;
+    }
+    .action-pill .material-symbols-outlined { 
+      font-size: 18px; 
+      line-height: 1;
+    }
 
     .action-pill.start-trip-btn {
-      background: #CD1A21;
+      background: linear-gradient(135deg, #CD1A21 0%, #E11D48 100%);
       color: #FFFFFF;
+      box-shadow: 0 3px 10px rgba(205, 26, 33, 0.28);
     }
     .action-pill.status-toggle {
-      background: #10B981;
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
       color: #FFFFFF;
+      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.32);
+    }
+    .action-pill.status-toggle.pickedUp {
+      background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.32);
     }
     .action-pill.call-btn {
-      background: #DCFCE7;
-      color: #15803D;
-      border-color: #BBF7D0;
+      background: #ECFDF5;
+      color: #047857;
+      border-color: #6EE7B7;
+      box-shadow: 0 1px 4px rgba(16, 185, 129, 0.12);
     }
     .action-pill.sms-btn {
-      background: #E0F2FE;
-      color: #0369A1;
-      border-color: #BAE6FD;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-color: #93C5FD;
+      box-shadow: 0 1px 4px rgba(59, 130, 246, 0.12);
     }
     .action-pill.copy-btn {
-      background: #F1F5F9;
+      background: #FFFFFF;
       color: #475569;
-      border-color: #E2E8F0;
-      padding: 7px 9px;
+      border-color: #CBD5E1;
+      width: 42px;
+      padding: 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
     /* Sheet Scroll Area */
@@ -1392,14 +1419,16 @@ interface Booking {
     }
     .slide-complete-track {
       position: relative;
-      height: 46px;
-      background: #111827;
-      border-radius: 23px;
+      height: 48px;
+      background: #F1F5F9;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 24px;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       user-select: none;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
     }
     .slide-fill-bar {
       position: absolute;
@@ -1407,17 +1436,21 @@ interface Booking {
       top: 0;
       bottom: 0;
       background: linear-gradient(90deg, #10B981, #059669);
-      border-radius: 23px;
+      border-radius: 24px;
       transition: width 0.05s ease;
+      opacity: 0.9;
     }
     .slide-track-text {
       position: relative;
       z-index: 2;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      color: #FFFFFF;
+      color: #1E293B;
       letter-spacing: 0.3px;
       pointer-events: none;
+    }
+    .slide-track-text.submitting {
+      color: #059669;
     }
     .slide-thumb-btn {
       position: absolute;
@@ -1426,16 +1459,25 @@ interface Booking {
       height: 40px;
       border-radius: 50%;
       background: #FFFFFF;
-      color: #111827;
+      color: #10B981;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: grab;
       z-index: 3;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      border: 1.5px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       touch-action: none;
+      transition: box-shadow 0.15s ease;
     }
-    .slide-thumb-btn:active { cursor: grabbing; }
+    .slide-thumb-btn:active { 
+      cursor: grabbing; 
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .slide-thumb-btn .material-symbols-outlined {
+      font-size: 22px;
+      font-weight: 700;
+    }
 
     .animated-fade-in {
       animation: fadeIn 0.2s ease-in-out;
@@ -1498,9 +1540,39 @@ interface Booking {
     }
     :host-context(.dark-theme) .card-footer-row,
     :host-context(.dark-theme) .sheet-header,
-    :host-context(.dark-theme) .sheet-quick-actions,
     :host-context(.dark-theme) .sheet-footer {
       border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .sheet-quick-actions {
+      background: #16161A;
+      border-color: #2D2D35;
+    }
+    :host-context(.dark-theme) .action-pill.call-btn {
+      background: #064E3B;
+      border-color: #059669;
+      color: #A7F3D0;
+    }
+    :host-context(.dark-theme) .action-pill.sms-btn {
+      background: #1E3A8A;
+      border-color: #2563EB;
+      color: #BFDBFE;
+    }
+    :host-context(.dark-theme) .action-pill.copy-btn {
+      background: #2D2D35;
+      border-color: #3E3E48;
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .slide-complete-track {
+      background: #2D2D35;
+      border-color: #3E3E48;
+    }
+    :host-context(.dark-theme) .slide-track-text {
+      color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .slide-thumb-btn {
+      background: #1E1E24;
+      color: #10B981;
+      border-color: #3E3E48;
     }
     :host-context(.dark-theme) .modal-sheet {
       background: #1E1E24;

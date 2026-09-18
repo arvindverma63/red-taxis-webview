@@ -400,10 +400,28 @@ The Angular router guards and services parse the `token` parameter directly from
   - Integrated real-time query search bar filtering bookings by booking ID (`#ID`), passenger name, pickup/destination addresses, and UK postcodes.
   - Redesigned booking cards with active trip pulse beacon ribbons, payment badges (`Cash`, `Card`, `Account`, `Rank`), UK postcode chips, vehicle class indicators, and animated loading skeleton shimmer bars.
   - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
+- [x] **Dispatch Status Overlays & Live Amended Booking Data Resolution (`job-offer.ts`)**:
+  - Redesigned the full-screen notifications for Amended, Cancelled, and Unallocated bookings with executive themed header banners (Amended Royal Blue, Cancelled Crimson, Unallocated Amber) and status badges.
+  - Connected automatic live booking resolution (`GET /api/Bookings/FindById`, `GET /api/DriverApp/TodaysJobs`, `GET /api/DriverApp/FutureJobs`, `GET /api/DriverApp/RetrieveJobOffer`) to fetch and display the complete journey route, via stops, postcodes, updated fare, payment scope, passenger credentials, and dispatch notes even when notifications arrive with only a booking ID.
+  - Added a prominent "Acknowledge & View Bookings" action with native bridge dismissal and seamless routing back to `/bookings`.
+  - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
+
+- [x] **Executive Booking Details Quick Action Buttons & Light Slide-to-Complete (`bookings.ts`)**:
+  - Redesigned the Quick Action buttons on the Booking Details bottom sheet with substantial 42px tactile touch targets, bold typography, rich elevation, and distinct colorways:
+    - **I Have Arrived / Active Trip Progression**: Emerald gradient (`#059669` to `#10B981`) with elevated drop shadow (`rgba(16, 185, 129, 0.32)`).
+    - **Start Active Trip**: Crimson gradient (`#CD1A21` to `#E11D48`).
+    - **Call Passenger**: Soft emerald background (`#ECFDF5`), rich green text (`#047857`), and crisp border (`#6EE7B7`).
+    - **SMS Passenger**: Soft sky blue background (`#EFF6FF`), cobalt blue text (`#1D4ED8`), and crisp border (`#93C5FD`).
+    - **Copy Phone Number**: Clean squared pill button (`42x42px`) with subtle border and clipboard icon.
+  - Upgraded the **Slide to Complete Trip** slider to use a clean light-themed track (`#F1F5F9`, `#CBD5E1` border), high-contrast dark label (`#1E293B`), dynamic green fill bar (`#10B981`), and white tactile thumb.
+  - Added comprehensive dark mode overrides for quick actions and the light slider.
+  - Verified with 100% passing Vitest unit tests (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
+
 
 
 

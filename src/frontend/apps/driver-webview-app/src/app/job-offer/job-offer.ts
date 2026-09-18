@@ -15,7 +15,9 @@ interface JobDetails {
   id: string;
   fare: number;
   pickup: string;
+  pickupPostCode?: string;
   dropoff: string;
+  destinationPostCode?: string;
   vias?: ViaStop[];
   paymentType: string;
   vehicleType: string;
@@ -29,41 +31,104 @@ interface JobDetails {
   imports: [CommonModule],
   template: `
     <div class="job-offer-container">
-      <!-- Full screen status pages for Cancelled, Unallocated, and Amended bookings -->
+      <!-- Executive Status Screen for Cancelled, Unallocated, and Amended bookings -->
       <div class="status-overlay-card animated-fade-in" *ngIf="jobStatus && jobStatus !== 'active'">
-        <div class="status-header">
-          <span class="material-symbols-outlined status-icon" [ngClass]="jobStatus">
-            {{ getStatusIconName() }}
-          </span>
-          <h2 class="status-title">{{ getStatusTitleText() }}</h2>
-          <p class="status-body">{{ getStatusBodyText() }}</p>
-        </div>
-
-        <div class="status-details-box" *ngIf="job">
-          <div class="status-row">
-            <span class="status-lbl">Booking Reference:</span>
-            <span class="status-val font-mono">#{{ job.id }}</span>
-          </div>
-          <div class="status-row" *ngIf="job.passenger">
-            <span class="status-lbl">Passenger:</span>
-            <span class="status-val font-bold">{{ job.passenger }}</span>
-          </div>
-          <div class="status-row">
-            <span class="status-lbl">Route:</span>
-            <span class="status-val route-compact">{{ job.pickup }} ➔ {{ job.dropoff }}</span>
-          </div>
-          <div class="status-row" *ngIf="job.vias && job.vias.length > 0">
-            <span class="status-lbl">Via Stops ({{ job.vias.length }}):</span>
-            <span class="status-val route-compact">
-              <span *ngFor="let via of job.vias; let i = index">
-                {{ i + 1 }}. {{ via.address }}<br *ngIf="i < job.vias.length - 1"/>
-              </span>
+        <!-- Status Header Banner -->
+        <div class="status-banner" [ngClass]="jobStatus">
+          <div class="status-icon-circle">
+            <span class="material-symbols-outlined status-icon">
+              {{ getStatusIconName() }}
             </span>
           </div>
+          <div class="status-banner-text">
+            <div class="status-badge-row">
+              <span class="status-type-pill">{{ getStatusBadgeText() }}</span>
+              <span class="status-ref-tag font-mono">#{{ job?.id || jobIdFromUrl }}</span>
+            </div>
+            <h2 class="status-title">{{ getStatusTitleText() }}</h2>
+            <p class="status-body">{{ getStatusBodyText() }}</p>
+          </div>
         </div>
 
-        <button class="status-ok-btn" (click)="dismissStatusScreen()">
-          <span>Acknowledge & Close</span>
+        <!-- Comprehensive Booking Details Card -->
+        <div class="status-details-card" *ngIf="job">
+          <!-- Summary Metrics: Passenger, Fare, Payment -->
+          <div class="status-meta-row">
+            <div class="status-meta-item">
+              <span class="meta-label">PASSENGER</span>
+              <span class="meta-val font-bold">{{ job.passenger || 'Passenger' }}</span>
+            </div>
+            <div class="status-meta-item" *ngIf="job.fare > 0">
+              <span class="meta-label">TOTAL FARE</span>
+              <span class="meta-val fare-green">£{{ job.fare.toFixed(2) }}</span>
+            </div>
+            <div class="status-meta-item">
+              <span class="meta-label">PAYMENT</span>
+              <span class="meta-val payment-tag" [ngClass]="job.paymentType.toLowerCase()">{{ job.paymentType || 'Cash' }}</span>
+            </div>
+          </div>
+
+          <!-- Complete Journey Route Stepper -->
+          <div class="status-route-stepper">
+            <!-- Pickup -->
+            <div class="status-route-row">
+              <div class="status-node-col">
+                <span class="status-node-dot pickup"></span>
+                <div class="status-node-line"></div>
+              </div>
+              <div class="status-node-info">
+                <div class="status-node-header">
+                  <span class="status-node-tag pickup">PICKUP LOCATION</span>
+                  <span class="postcode-tag" *ngIf="job.pickupPostCode">{{ job.pickupPostCode }}</span>
+                </div>
+                <span class="status-node-addr">{{ job.pickup }}</span>
+              </div>
+            </div>
+
+            <!-- Via Stops (if any) -->
+            <div class="status-route-row" *ngFor="let via of job.vias; let i = index">
+              <div class="status-node-col">
+                <span class="status-node-dot via"></span>
+                <div class="status-node-line"></div>
+              </div>
+              <div class="status-node-info">
+                <div class="status-node-header">
+                  <span class="status-node-tag via">VIA STOP {{ i + 1 }}</span>
+                  <span class="postcode-tag" *ngIf="via.postCode">{{ via.postCode }}</span>
+                </div>
+                <span class="status-node-addr">{{ via.address }}</span>
+              </div>
+            </div>
+
+            <!-- Destination -->
+            <div class="status-route-row">
+              <div class="status-node-col">
+                <span class="status-node-dot dropoff"></span>
+              </div>
+              <div class="status-node-info">
+                <div class="status-node-header">
+                  <span class="status-node-tag dropoff">DESTINATION</span>
+                  <span class="postcode-tag" *ngIf="job.destinationPostCode">{{ job.destinationPostCode }}</span>
+                </div>
+                <span class="status-node-addr">{{ job.dropoff }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Driver Notes Box (if any) -->
+          <div class="status-notes-box" *ngIf="job.notes && job.notes.trim().length > 0">
+            <span class="material-symbols-outlined notes-icon">speaker_notes</span>
+            <div class="notes-content">
+              <span class="notes-title">Instructions & Notes:</span>
+              <p class="notes-text">{{ job.notes }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button class="status-ok-btn" [ngClass]="jobStatus" (click)="dismissStatusScreen()">
+          <span class="material-symbols-outlined">check_circle</span>
+          <span>Acknowledge & View Bookings</span>
         </button>
       </div>
 
@@ -729,70 +794,263 @@ interface JobDetails {
     }
     .btn-decline-offer .material-symbols-outlined { font-size: 16px; color: #DC2626; }
 
-    /* Status Overlay */
+    /* Status Overlay & Professional Notification Sheets */
     .status-overlay-card {
       position: relative;
       z-index: 10;
       background: #FFFFFF;
-      border-radius: 20px;
-      padding: 24px 20px;
-      max-width: 440px;
-      width: 90%;
+      border-radius: 24px;
+      padding: 0;
+      max-width: 480px;
+      width: 94%;
       margin: auto;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      max-height: 90vh;
+    }
+
+    .status-banner {
+      padding: 16px 18px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      position: relative;
+    }
+    .status-banner.amended {
+      background: linear-gradient(135deg, #1D4ED8 0%, #0F172A 100%);
+    }
+    .status-banner.cancelled {
+      background: linear-gradient(135deg, #B91C1C 0%, #0F172A 100%);
+    }
+    .status-banner.unallocated {
+      background: linear-gradient(135deg, #B45309 0%, #0F172A 100%);
+    }
+
+    .status-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.15);
+      display: flex;
       align-items: center;
-      text-align: center;
-      gap: 14px;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
     }
-    .status-icon {
-      font-size: 48px;
+    .status-icon-circle .status-icon {
+      font-size: 26px;
+      color: #FFFFFF;
     }
-    .status-icon.cancelled { color: #EF4444; }
-    .status-icon.unallocated { color: #F59E0B; }
-    .status-icon.amended { color: #3B82F6; }
+
+    .status-banner-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .status-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .status-type-pill {
+      font-size: 9.5px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      text-transform: uppercase;
+    }
+    .status-ref-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.85);
+    }
     .status-title {
       margin: 0;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 800;
-      color: #0F172A;
+      color: #FFFFFF;
+      letter-spacing: -0.2px;
     }
     .status-body {
       margin: 0;
-      font-size: 12px;
-      color: #64748B;
-      line-height: 1.4;
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.35;
     }
-    .status-details-box {
-      width: 100%;
-      background: #F8FAFC;
-      border-radius: 10px;
-      padding: 10px 12px;
-      border: 1px solid #E2E8F0;
+
+    .status-details-card {
+      padding: 14px 18px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      text-align: left;
+      gap: 12px;
+      overflow-y: auto;
+      max-height: 52vh;
+      background: #FFFFFF;
     }
-    .status-row {
+
+    .status-meta-row {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      font-size: 11px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 8px 12px;
+      gap: 8px;
     }
-    .status-lbl { color: #64748B; font-weight: 500; }
-    .status-val { color: #0F172A; font-weight: 600; }
+    .status-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .status-meta-item .meta-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.3px;
+    }
+    .status-meta-item .meta-val {
+      font-size: 12.5px;
+      color: #0F172A;
+    }
+    .status-meta-item .fare-green {
+      font-weight: 900;
+      color: #15803D;
+      font-size: 14px;
+    }
+    .status-meta-item .payment-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #475569;
+    }
+
+    .status-route-stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .status-route-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .status-node-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 14px;
+      flex-shrink: 0;
+      padding-top: 3px;
+    }
+    .status-node-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .status-node-dot.pickup { background: #10B981; }
+    .status-node-dot.via { background: #F59E0B; }
+    .status-node-dot.dropoff { background: #EF4444; }
+    .status-node-line {
+      width: 2px;
+      height: 18px;
+      background: #CBD5E1;
+      margin: 2px 0;
+    }
+
+    .status-node-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .status-node-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-node-tag {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .status-node-tag.pickup { color: #15803D; }
+    .status-node-tag.via { color: #B45309; }
+    .status-node-tag.dropoff { color: #B91C1C; }
+    .status-node-addr {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0F172A;
+      line-height: 1.35;
+    }
+
+    .status-notes-box {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .status-notes-box .notes-icon {
+      font-size: 18px;
+      color: #D97706;
+      flex-shrink: 0;
+    }
+    .status-notes-box .notes-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .status-notes-box .notes-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #B45309;
+      text-transform: uppercase;
+    }
+    .status-notes-box .notes-text {
+      margin: 0;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #92400E;
+    }
+
     .status-ok-btn {
-      width: 100%;
-      background: #CD1A21;
+      width: calc(100% - 36px);
+      margin: 0 18px 18px 18px;
       color: #FFFFFF;
       border: none;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: opacity 0.15s ease, transform 0.1s ease;
     }
+    .status-ok-btn:active {
+      transform: scale(0.98);
+    }
+    .status-ok-btn.amended { background: #2563EB; }
+    .status-ok-btn.cancelled { background: #DC2626; }
+    .status-ok-btn.unallocated { background: #D97706; }
 
     /* Animations */
     .animated-slide-up {
@@ -845,15 +1103,21 @@ interface JobDetails {
       background: #1E1E24;
       color: #ECEFF1;
     }
-    :host-context(.dark-theme) .status-title {
-      color: #ECEFF1;
+    :host-context(.dark-theme) .status-details-card {
+      background: #1E1E24;
     }
-    :host-context(.dark-theme) .status-details-box {
+    :host-context(.dark-theme) .status-meta-row,
+    :host-context(.dark-theme) .status-route-stepper {
       background: #16161A;
       border-color: #2D2D35;
     }
-    :host-context(.dark-theme) .status-val {
+    :host-context(.dark-theme) .status-meta-item .meta-val,
+    :host-context(.dark-theme) .status-node-addr {
       color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .status-notes-box {
+      background: #241A08;
+      border-color: #452D08;
     }
   `]
 })
@@ -908,11 +1172,17 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         } catch (_) {}
       }
 
+      const pickupParam = params['pickup'];
+      const dropoffParam = params['dropoff'];
+      const isPlaceholder = !pickupParam || pickupParam === 'Pickup Location' || !dropoffParam || dropoffParam === 'Destination';
+
       this.job = {
         id: this.jobIdFromUrl || '84920',
         fare: isNaN(fareVal) ? 0.00 : fareVal,
-        pickup: params['pickup'] || 'Pickup Location',
-        dropoff: params['dropoff'] || 'Destination',
+        pickup: pickupParam || 'Pickup Location',
+        pickupPostCode: params['pickupPostCode'] || params['pickupPostcode'] || '',
+        dropoff: dropoffParam || 'Destination',
+        destinationPostCode: params['destinationPostCode'] || params['destinationPostcode'] || '',
         vias: vias.length > 0 ? vias : undefined,
         paymentType: params['paymentType'] || 'Cash',
         vehicleType: params['vehicleType'] || 'Standard Saloon',
@@ -920,9 +1190,109 @@ export class JobOfferComponent implements OnInit, OnDestroy {
         notes: params['notes'] || ''
       };
 
+      // Fetch live full booking data when a booking ID or GUID is present, or if values are placeholders/status alerts
+      if (this.jobIdFromUrl || this.guid || isPlaceholder || this.jobStatus !== 'active') {
+        this.fetchFullBookingDetails();
+      }
+
       this.startTimer();
       this.cdr.detectChanges();
     });
+  }
+
+  fetchFullBookingDetails(): void {
+    const bookingId = this.jobIdFromUrl || this.job?.id;
+    if (bookingId && !bookingId.startsWith('sim-')) {
+      this.driverService.getJobById(bookingId).subscribe({
+        next: (res: any) => {
+          const data = res?.value || res?.data || res;
+          if (data && (data.pickupAddress || data.pickup || data.bookingId)) {
+            this.applyFetchedBooking(data);
+          } else {
+            this.fetchFromGeneralJobs(bookingId);
+          }
+        },
+        error: () => {
+          this.fetchFromGeneralJobs(bookingId);
+        }
+      });
+    } else if (this.guid) {
+      this.driverService.retrieveJobOffer(this.guid).subscribe({
+        next: (res: any) => {
+          const data = res?.value || res?.data || res;
+          if (data) {
+            this.applyFetchedBooking(data);
+          }
+        },
+        error: () => {}
+      });
+    }
+  }
+
+  private fetchFromGeneralJobs(bookingId: string): void {
+    this.driverService.getTodaysJobs().subscribe({
+      next: (res: any) => {
+        const list = Array.isArray(res) ? res : (res?.value || res?.bookings || res?.data || []);
+        const match = list.find((j: any) => (j.bookingId || j.id || j.bookingNo || '').toString() === bookingId.toString());
+        if (match) {
+          this.applyFetchedBooking(match);
+        } else {
+          this.driverService.getFutureJobs().subscribe({
+            next: (fRes: any) => {
+              const fList = Array.isArray(fRes) ? fRes : (fRes?.value || fRes?.bookings || fRes?.data || []);
+              const fMatch = fList.find((j: any) => (j.bookingId || j.id || j.bookingNo || '').toString() === bookingId.toString());
+              if (fMatch) {
+                this.applyFetchedBooking(fMatch);
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+
+  private applyFetchedBooking(b: any): void {
+    const fareVal = parseFloat((b.price || b.fare || b.amount || b.driverPrice || this.job?.fare || 0).toString());
+    const vias: ViaStop[] = [];
+    if (Array.isArray(b.vias) && b.vias.length > 0) {
+      for (const v of b.vias) {
+        if (typeof v === 'string') {
+          vias.push({ address: v });
+        } else if (v && typeof v === 'object') {
+          vias.push({
+            address: v.address || v.stopAddress || 'Via Stop',
+            postCode: v.postCode || v.postcode || ''
+          });
+        }
+      }
+    }
+
+    let paymentType = b.paymentType || b.paymentMethod || this.job?.paymentType || 'Cash';
+    if (b.scope !== undefined && b.scope !== null) {
+      const scope = parseInt(b.scope.toString()) || 0;
+      switch (scope) {
+        case 0: paymentType = 'Cash'; break;
+        case 1: paymentType = 'Account'; break;
+        case 2: paymentType = 'Rank'; break;
+        case 4: paymentType = 'Card'; break;
+      }
+    }
+
+    this.job = {
+      id: (b.bookingId || b.id || b.bookingNo || this.job?.id || '').toString(),
+      fare: isNaN(fareVal) ? (this.job?.fare || 0) : fareVal,
+      pickup: b.pickupAddress || b.pickup || b.from || this.job?.pickup || 'Pickup Location',
+      pickupPostCode: b.pickupPostCode || b.pickupPostcode || b.postcode || this.job?.pickupPostCode || '',
+      dropoff: b.destinationAddress || b.dropoffAddress || b.dropoff || b.to || this.job?.dropoff || 'Destination',
+      destinationPostCode: b.destinationPostCode || b.destinationPostcode || this.job?.destinationPostCode || '',
+      vias: vias.length > 0 ? vias : this.job?.vias,
+      paymentType,
+      vehicleType: b.vehicleType || b.vehicle || this.job?.vehicleType || 'Standard Saloon',
+      passenger: b.passengerName || b.cellText || b.passenger || b.customerName || this.job?.passenger || 'Passenger',
+      notes: b.details || b.notes || b.comment || this.job?.notes || ''
+    };
+
+    this.cdr.detectChanges();
   }
 
   startTimer(): void {
@@ -1109,30 +1479,39 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     }
   }
 
+  getStatusBadgeText(): string {
+    switch (this.jobStatus) {
+      case 'amended': return 'AMENDED DETAILS';
+      case 'cancelled': return 'DISPATCH CANCELLED';
+      case 'unallocated': return 'TRIP RECALLED';
+      default: return 'DISPATCH UPDATE';
+    }
+  }
+
   getStatusIconName(): string {
     switch (this.jobStatus) {
       case 'cancelled': return 'cancel';
-      case 'unallocated': return 'info';
-      case 'amended': return 'edit';
-      default: return 'info';
+      case 'unallocated': return 'history_toggle_off';
+      case 'amended': return 'edit_document';
+      default: return 'notifications_active';
     }
   }
 
   getStatusTitleText(): string {
     switch (this.jobStatus) {
-      case 'cancelled': return 'Job Cancelled';
-      case 'unallocated': return 'Job Unallocated';
-      case 'amended': return 'Job Amended';
-      default: return 'Job Notification';
+      case 'cancelled': return 'Booking Cancelled by Dispatch';
+      case 'unallocated': return 'Booking Unallocated';
+      case 'amended': return 'Booking Details Amended';
+      default: return 'Booking Status Updated';
     }
   }
 
   getStatusBodyText(): string {
     switch (this.jobStatus) {
-      case 'cancelled': return 'This booking was cancelled by dispatch.';
-      case 'unallocated': return 'This booking was unallocated from your dispatch queue.';
-      case 'amended': return 'The operator has amended the details of this trip.';
-      default: return 'Booking status updated.';
+      case 'cancelled': return 'This trip has been cancelled by the operator. Please do not proceed to pickup.';
+      case 'unallocated': return 'This booking has been recalled or reassigned from your dispatch queue.';
+      case 'amended': return 'The operator has amended the route, schedule, or passenger instructions for this trip. Please review below.';
+      default: return 'The details for this dispatch booking have been updated.';
     }
   }
 
