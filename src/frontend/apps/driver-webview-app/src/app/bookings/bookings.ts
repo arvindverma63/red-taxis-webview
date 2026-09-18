@@ -367,40 +367,56 @@ interface Booking {
             </div>
 
             <!-- 2. Financial Summary & Journey Telemetry -->
+            <!-- 2. Financial Summary & Journey Telemetry -->
             <div class="detail-block-card">
               <div class="block-header">
                 <span class="material-symbols-outlined header-icon red-icon">payments</span>
                 <span class="block-title">FARE & METRICS</span>
               </div>
 
-              <div class="fare-metrics-grid">
-                <!-- Total Fare Hero -->
-                <div class="metric-tile fare-tile">
-                  <span class="tile-label">TOTAL FARE</span>
-                  <div class="tile-main-fare">
-                    <span class="cur">£</span>
-                    <span class="amt">{{ selectedBooking.fare.toFixed(2) }}</span>
+              <div class="fare-metrics-stack">
+                <!-- Row 1: Total Fare Hero Banner -->
+                <div class="metric-fare-banner">
+                  <div class="fare-banner-left">
+                    <span class="metric-sec-label">TOTAL FARE</span>
+                    <div class="tile-main-fare">
+                      <span class="cur">£</span>
+                      <span class="amt">{{ selectedBooking.fare.toFixed(2) }}</span>
+                    </div>
                   </div>
-                  <span class="payment-type-tag" [ngClass]="selectedBooking.paymentType.toLowerCase()">
-                    {{ selectedBooking.paymentType }}
-                  </span>
-                </div>
-
-                <!-- Estimated Duration -->
-                <div class="metric-tile" *ngIf="selectedBooking.durationMinutes">
-                  <span class="tile-label">EST. DURATION</span>
-                  <div class="tile-value-row">
-                    <span class="material-symbols-outlined tile-ico">timer</span>
-                    <span class="tile-val">{{ selectedBooking.durationMinutes }} mins</span>
+                  <div class="fare-banner-right">
+                    <span class="payment-badge-pill" [ngClass]="selectedBooking.paymentType.toLowerCase()">
+                      <span class="material-symbols-outlined badge-ico">payments</span>
+                      <span>{{ selectedBooking.paymentType }}</span>
+                    </span>
                   </div>
                 </div>
 
-                <!-- Estimated Distance -->
-                <div class="metric-tile" *ngIf="selectedBooking.mileageText">
-                  <span class="tile-label">EST. DISTANCE</span>
-                  <div class="tile-value-row">
-                    <span class="material-symbols-outlined tile-ico">route</span>
-                    <span class="tile-val">{{ selectedBooking.mileageText }}</span>
+                <!-- Row 2: Telemetry Metrics Row (Duration & Distance) -->
+                <div class="telemetry-row" *ngIf="selectedBooking.durationMinutes || selectedBooking.mileageText">
+                  <!-- Duration Tile -->
+                  <div class="telemetry-tile" *ngIf="selectedBooking.durationMinutes">
+                    <div class="telemetry-icon-box blue">
+                      <span class="material-symbols-outlined">timer</span>
+                    </div>
+                    <div class="telemetry-body">
+                      <span class="telemetry-lbl">EST. DURATION</span>
+                      <span class="telemetry-val">{{ formatDuration(selectedBooking.durationMinutes) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Distance Tile -->
+                  <div class="telemetry-tile" *ngIf="selectedBooking.mileageText">
+                    <div class="telemetry-icon-box green">
+                      <span class="material-symbols-outlined">route</span>
+                    </div>
+                    <div class="telemetry-body">
+                      <span class="telemetry-lbl">EST. DISTANCE</span>
+                      <span class="telemetry-val">{{ getPrimaryDistance(selectedBooking.mileageText) }}</span>
+                      <span class="telemetry-breakdown" *ngIf="getDistanceSubtext(selectedBooking.mileageText)">
+                        {{ getDistanceSubtext(selectedBooking.mileageText) }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1293,57 +1309,156 @@ interface Booking {
     }
 
     /* Fare & Metrics */
-    .fare-metrics-grid {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr;
-      gap: 8px;
-    }
-    .metric-tile {
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      border-radius: 10px;
-      padding: 8px 10px;
+    .fare-metrics-stack {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 8px;
     }
-    .metric-tile.fare-tile {
+
+    .metric-fare-banner {
       background: #FEF2F2;
-      border-color: #FECACA;
+      border: 1px solid #FECACA;
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
-    .tile-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: #64748B;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+
+    .fare-banner-left {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
     }
+
+    .metric-sec-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #991B1B;
+      letter-spacing: 0.5px;
+    }
+
     .tile-main-fare {
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 900;
       color: #0F172A;
       display: flex;
       align-items: baseline;
+      gap: 1px;
     }
-    .tile-main-fare .cur { color: #CD1A21; font-size: 13px; }
-    .payment-type-tag {
-      font-size: 9px;
-      font-weight: 700;
+
+    .tile-main-fare .cur { color: #CD1A21; font-size: 15px; font-weight: 900; }
+
+    .payment-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
       text-transform: uppercase;
+      background: #DCFCE7;
       color: #15803D;
-      margin-top: 1px;
+      border: 1px solid #BBF7D0;
     }
-    .tile-value-row {
+
+    .payment-badge-pill.card {
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-color: #BFDBFE;
+    }
+
+    .payment-badge-pill.account {
+      background: #FAF5FF;
+      color: #7E22CE;
+      border-color: #E9D5FF;
+    }
+
+    .payment-badge-pill .badge-ico {
+      font-size: 14px;
+    }
+
+    .telemetry-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .telemetry-tile {
+      flex: 1 1 140px;
+      min-width: 0;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .telemetry-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 4px;
-      margin-top: 2px;
+      justify-content: center;
+      flex-shrink: 0;
     }
-    .tile-ico { font-size: 14px; color: #64748B; }
-    .tile-val {
-      font-size: 12px;
+
+    .telemetry-icon-box .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    .telemetry-icon-box.blue {
+      background: #EFF6FF;
+      color: #2563EB;
+    }
+
+    .telemetry-icon-box.green {
+      background: #ECFDF5;
+      color: #059669;
+    }
+
+    .telemetry-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .telemetry-lbl {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #64748B;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .telemetry-val {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #0F172A;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .telemetry-breakdown {
+      font-size: 10.5px;
       font-weight: 700;
-      color: #1E293B;
+      color: #059669;
+      background: #F0FDF4;
+      border: 1px solid #DCFCE7;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-top: 3px;
+      display: inline-block;
+      line-height: 1.3;
     }
 
     /* Specs Grid */
@@ -1582,13 +1697,35 @@ interface Booking {
       background: #16161A;
       border-color: #2D2D35;
     }
-    :host-context(.dark-theme) .metric-tile {
-      background: #1E1E24;
-      border-color: #2D2D35;
+    :host-context(.dark-theme) .metric-fare-banner {
+      background: #2A1719 !important;
+      border-color: #4C1D24 !important;
     }
-    :host-context(.dark-theme) .metric-tile.fare-tile {
-      background: #2A1719;
-      border-color: #4C1D24;
+    :host-context(.dark-theme) .metric-sec-label {
+      color: #F87171 !important;
+    }
+    :host-context(.dark-theme) .telemetry-tile {
+      background: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .telemetry-val {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .telemetry-lbl {
+      color: #94A3B8 !important;
+    }
+    :host-context(.dark-theme) .telemetry-icon-box.blue {
+      background: #1E3A8A !important;
+      color: #93C5FD !important;
+    }
+    :host-context(.dark-theme) .telemetry-icon-box.green {
+      background: #064E3B !important;
+      color: #A7F3D0 !important;
+    }
+    :host-context(.dark-theme) .telemetry-breakdown {
+      background: #064E3B !important;
+      border-color: #059669 !important;
+      color: #A7F3D0 !important;
     }
     :host-context(.dark-theme) .sheet-close-btn,
     :host-context(.dark-theme) .sheet-dismiss-btn,
@@ -1676,6 +1813,44 @@ export class BookingsComponent implements OnInit {
     this.sliderPosition = 0;
     this.isDragging = false;
     this.cdr.detectChanges();
+  }
+
+  formatDuration(minutes: number): string {
+    if (!minutes || isNaN(minutes)) return '';
+    if (minutes >= 60) {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return `${h}h ${m > 0 ? m + 'm ' : ''}(${minutes} mins)`;
+    }
+    return `${minutes} mins`;
+  }
+
+  getPrimaryDistance(mileageText: string): string {
+    if (!mileageText) return '';
+    const text = mileageText.trim();
+    if (text.includes('-') || text.includes('(')) {
+      const parts = text.split(/[-–(]/);
+      if (parts.length > 0 && parts[0].trim().length > 0) {
+        return parts[0].trim();
+      }
+    }
+    if (!isNaN(Number(text))) {
+      return `${text} miles`;
+    }
+    return text;
+  }
+
+  getDistanceSubtext(mileageText: string): string {
+    if (!mileageText) return '';
+    const deadMatch = mileageText.match(/Dead\s*Miles?:\s*([0-9.]+)/i);
+    const tripMatch = mileageText.match(/Trip\s*Miles?:\s*([0-9.]+)/i);
+    if (deadMatch || tripMatch) {
+      const parts: string[] = [];
+      if (deadMatch) parts.push(`Dead: ${deadMatch[1]} mi`);
+      if (tripMatch) parts.push(`Trip: ${tripMatch[1]} mi`);
+      return parts.join(' • ');
+    }
+    return '';
   }
 
   copyText(text: string, message: string): void {

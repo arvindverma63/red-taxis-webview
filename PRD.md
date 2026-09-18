@@ -434,8 +434,19 @@ The Angular router guards and services parse the `token` parameter directly from
   - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
 
 ### ⏳ Remaining Work / Roadmap
+- [x] **Row-Wise Executive Fare & Metrics & Resilient Extra-Large Distance Formatting (`bookings.ts`)**:
+  - Overhauled the cramped 3-column `FARE & METRICS` layout in the Booking Details modal into a clean, spacious two-tier row-wise hierarchy:
+    - **Row 1 (Total Fare Hero Banner)**: Full-width elevated banner with high-contrast total fare (`£Total` at `22px / font-weight: 900`) and rounded payment pill badge (`Cash`, `Card`, `Account`).
+    - **Row 2 (Journey Telemetry Row)**: Dedicated side-by-side tiles for `EST. DURATION` and `EST. DISTANCE` with `flex: 1 1 140px; flex-wrap: wrap;` allowing responsive auto-wrapping without overflowing or squishing under Extra Large font scaling (130%).
+  - Added smart distance parsing (`getPrimaryDistance` and `getDistanceSubtext`) to format verbose mileage strings (e.g., `528.3 Miles - (Dead Miles: 229.1) + (Trip Miles: 299.1)` into a bold primary distance `528.3 Miles` with a clean subtext pill `Dead: 229.1 mi • Trip: 299.1 mi`).
+  - Added formatted duration handling (`formatDuration`) converting raw minutes (e.g., `554 mins`) into readable hours and minutes (`9h 14m (554 mins)`).
+  - Added comprehensive dark mode styling for all fare hero banners, telemetry tiles, and breakdown badges.
+  - Verified with 100% passing Vitest (`npx vitest run`), Angular production build (`npx ng build`), and Flutter test suite (`flutter test`).
+
+### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 
