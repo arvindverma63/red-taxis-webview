@@ -79,10 +79,7 @@ interface BookingSummary {
 
             <!-- Driver Fare / Price -->
             <div class="input-field-group">
-              <label class="field-label">
-                <span>Driver Fare Amount</span>
-                <span class="field-hint">Base trip fare</span>
-              </label>
+              <label class="field-label">Driver Fare Amount</label>
               <div class="executive-input-wrapper">
                 <span class="input-prefix-icon">£</span>
                 <input 
@@ -92,23 +89,14 @@ interface BookingSummary {
                   class="executive-input" 
                   [value]="completeForm.price" 
                   (input)="onPriceInput($event)"
+                  placeholder="0.00"
                 />
-              </div>
-              <div class="quick-chips-row">
-                <button type="button" class="quick-chip" (click)="addPrice(1)">+£1</button>
-                <button type="button" class="quick-chip" (click)="addPrice(2)">+£2</button>
-                <button type="button" class="quick-chip" (click)="addPrice(5)">+£5</button>
-                <button type="button" class="quick-chip" (click)="addPrice(10)">+£10</button>
-                <button type="button" class="quick-chip reset" (click)="resetPrice()">Reset ({{ fare }})</button>
               </div>
             </div>
 
             <!-- Driver Tip -->
             <div class="input-field-group">
-              <label class="field-label">
-                <span>Driver Tip</span>
-                <span class="field-hint">Gratuity received</span>
-              </label>
+              <label class="field-label">Driver Tip</label>
               <div class="executive-input-wrapper">
                 <span class="input-prefix-icon">£</span>
                 <input 
@@ -118,14 +106,8 @@ interface BookingSummary {
                   class="executive-input" 
                   [value]="completeForm.tip" 
                   (input)="onTipInput($event)"
+                  placeholder="0.00"
                 />
-              </div>
-              <div class="quick-chips-row">
-                <button type="button" class="quick-chip" [class.active]="completeForm.tip === 1" (click)="setTip(1)">+£1</button>
-                <button type="button" class="quick-chip" [class.active]="completeForm.tip === 2" (click)="setTip(2)">+£2</button>
-                <button type="button" class="quick-chip" [class.active]="completeForm.tip === 5" (click)="setTip(5)">+£5</button>
-                <button type="button" class="quick-chip" [class.active]="completeForm.tip === 10" (click)="setTip(10)">+£10</button>
-                <button type="button" class="quick-chip reset" *ngIf="completeForm.tip > 0" (click)="setTip(0)">Clear</button>
               </div>
             </div>
           </div>
@@ -139,62 +121,42 @@ interface BookingSummary {
 
             <!-- Waiting Time (Minutes) -->
             <div class="input-field-group">
-              <label class="field-label">
-                <span>Waiting Time</span>
-                <span class="field-hint">Total wait duration</span>
-              </label>
-              <div class="stepper-input-wrapper">
-                <button type="button" class="stepper-btn" (click)="stepWaiting(-5)" [disabled]="completeForm.waitingTime <= 0">
-                  <span class="material-symbols-outlined">remove</span>
-                </button>
-                <div class="stepper-val-display">
-                  <span class="stepper-num">{{ completeForm.waitingTime }}</span>
-                  <span class="stepper-unit">mins</span>
-                </div>
-                <button type="button" class="stepper-btn" (click)="stepWaiting(5)">
-                  <span class="material-symbols-outlined">add</span>
-                </button>
-              </div>
-              <div class="quick-chips-row">
-                <button type="button" class="quick-chip" (click)="setWaiting(5)">5m</button>
-                <button type="button" class="quick-chip" (click)="setWaiting(10)">10m</button>
-                <button type="button" class="quick-chip" (click)="setWaiting(15)">15m</button>
-                <button type="button" class="quick-chip" (click)="setWaiting(30)">30m</button>
-                <button type="button" class="quick-chip reset" *ngIf="completeForm.waitingTime > 0" (click)="setWaiting(0)">Clear</button>
+              <label class="field-label">Waiting Time (Minutes)</label>
+              <div class="executive-input-wrapper no-currency">
+                <span class="material-symbols-outlined input-prefix-icon">schedule</span>
+                <input 
+                  type="number" 
+                  step="1" 
+                  min="0"
+                  class="executive-input" 
+                  [value]="completeForm.waitingTime" 
+                  (input)="onWaitingInput($event)"
+                  placeholder="0"
+                />
+                <span class="input-suffix-text">mins</span>
               </div>
             </div>
 
             <!-- Parking & Toll Charges -->
             <div class="input-field-group">
-              <label class="field-label">
-                <span>Parking & Toll Charges</span>
-                <span class="field-hint">Airports / dropoff fees</span>
-              </label>
+              <label class="field-label">Parking & Toll Charges</label>
               <div class="executive-input-wrapper">
                 <span class="input-prefix-icon">£</span>
                 <input 
                   type="number" 
-                  step="0.50" 
+                  step="0.01" 
                   min="0"
                   class="executive-input" 
                   [value]="completeForm.parkingCharge" 
                   (input)="onParkingInput($event)"
+                  placeholder="0.00"
                 />
-              </div>
-              <div class="quick-chips-row">
-                <button type="button" class="quick-chip" (click)="addParking(2.50)">+£2.50</button>
-                <button type="button" class="quick-chip" (click)="addParking(5.00)">+£5.00</button>
-                <button type="button" class="quick-chip" (click)="addParking(7.50)">+£7.50</button>
-                <button type="button" class="quick-chip reset" *ngIf="completeForm.parkingCharge > 0" (click)="setParking(0)">Clear</button>
               </div>
             </div>
 
             <!-- Account Price (Only for Account Bookings or Surcharges) -->
             <div class="input-field-group" *ngIf="bookingDetails?.paymentType?.toLowerCase() === 'account'">
-              <label class="field-label">
-                <span>Account Billed Price</span>
-                <span class="field-hint">Invoice amount</span>
-              </label>
+              <label class="field-label">Account Billed Price</label>
               <div class="executive-input-wrapper">
                 <span class="input-prefix-icon">£</span>
                 <input 
@@ -204,6 +166,7 @@ interface BookingSummary {
                   class="executive-input" 
                   [value]="completeForm.payment" 
                   (input)="onPaymentInput($event)"
+                  placeholder="0.00"
                 />
               </div>
             </div>
@@ -576,18 +539,9 @@ interface BookingSummary {
     }
 
     .field-label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 800;
       color: #1E293B;
-    }
-
-    .field-hint {
-      font-size: 11px;
-      font-weight: 600;
-      color: #94A3B8;
     }
 
     .executive-input-wrapper {
@@ -605,14 +559,23 @@ interface BookingSummary {
       pointer-events: none;
     }
 
+    .input-suffix-text {
+      position: absolute;
+      right: 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #64748B;
+      pointer-events: none;
+    }
+
     .executive-input {
       width: 100%;
-      height: 46px;
+      height: 48px;
       border: 1.5px solid #CBD5E1;
       border-radius: 12px;
       padding: 0 14px 0 34px;
-      font-size: 16px;
-      font-weight: 800;
+      font-size: 15px;
+      font-weight: 700;
       color: #0F172A;
       background: #F8FAFC;
       outline: none;
@@ -620,103 +583,15 @@ interface BookingSummary {
       transition: all 0.18s ease;
     }
 
+    .executive-input-wrapper.no-currency .executive-input {
+      padding-left: 38px;
+      padding-right: 48px;
+    }
+
     .executive-input:focus {
       border-color: #059669;
       background: #FFFFFF;
       box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-    }
-
-    /* Stepper for Waiting Time */
-    .stepper-input-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 46px;
-      background: #F8FAFC;
-      border: 1.5px solid #CBD5E1;
-      border-radius: 12px;
-      padding: 4px;
-      box-sizing: border-box;
-    }
-
-    .stepper-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
-      border: 1px solid #E2E8F0;
-      background: #FFFFFF;
-      color: #0F172A;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      transition: all 0.15s ease;
-    }
-
-    .stepper-btn:active {
-      transform: scale(0.94);
-      background: #F1F5F9;
-    }
-
-    .stepper-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .stepper-val-display {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-    }
-
-    .stepper-num {
-      font-size: 18px;
-      font-weight: 900;
-      color: #0F172A;
-    }
-
-    .stepper-unit {
-      font-size: 12px;
-      font-weight: 700;
-      color: #64748B;
-    }
-
-    /* Quick Chips */
-    .quick-chips-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 2px;
-    }
-
-    .quick-chip {
-      background: #F1F5F9;
-      border: 1px solid #E2E8F0;
-      border-radius: 8px;
-      padding: 5px 10px;
-      font-size: 11.5px;
-      font-weight: 800;
-      color: #334155;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .quick-chip:active {
-      transform: scale(0.95);
-    }
-
-    .quick-chip.active {
-      background: #059669;
-      border-color: #059669;
-      color: #FFFFFF;
-    }
-
-    .quick-chip.reset {
-      background: #FEF2F2;
-      border-color: #FECACA;
-      color: #DC2626;
-      margin-left: auto;
     }
 
     /* 4. Settlement Breakdown Card */
@@ -905,28 +780,14 @@ interface BookingSummary {
 
     :host-context(.dark-theme) .field-label,
     :host-context(.dark-theme) .node-addr,
-    :host-context(.dark-theme) .stepper-num,
     :host-context(.dark-theme) .breakdown-row,
     :host-context(.dark-theme) .breakdown-row.total-row {
       color: #ECEFF1 !important;
     }
 
-    :host-context(.dark-theme) .executive-input,
-    :host-context(.dark-theme) .stepper-input-wrapper {
+    :host-context(.dark-theme) .executive-input {
       background: #16161A !important;
       border-color: #2D2D35 !important;
-      color: #ECEFF1 !important;
-    }
-
-    :host-context(.dark-theme) .stepper-btn {
-      background: #2D2D35 !important;
-      border-color: #3E3E48 !important;
-      color: #ECEFF1 !important;
-    }
-
-    :host-context(.dark-theme) .quick-chip {
-      background: #2D2D35 !important;
-      border-color: #3E3E48 !important;
       color: #ECEFF1 !important;
     }
 
@@ -1053,42 +914,19 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
     this.completeForm.price = isNaN(val) ? 0 : val;
   }
 
-  addPrice(amt: number): void {
-    this.completeForm.price = Math.round((this.completeForm.price + amt) * 100) / 100;
-  }
-
-  resetPrice(): void {
-    this.completeForm.price = this.fare;
-  }
-
   onTipInput(event: Event): void {
     const val = parseFloat((event.target as HTMLInputElement).value);
     this.completeForm.tip = isNaN(val) ? 0 : val;
   }
 
-  setTip(amt: number): void {
-    this.completeForm.tip = amt;
-  }
-
-  stepWaiting(delta: number): void {
-    this.completeForm.waitingTime = Math.max(0, this.completeForm.waitingTime + delta);
-  }
-
-  setWaiting(mins: number): void {
-    this.completeForm.waitingTime = mins;
+  onWaitingInput(event: Event): void {
+    const val = parseInt((event.target as HTMLInputElement).value) || 0;
+    this.completeForm.waitingTime = Math.max(0, val);
   }
 
   onParkingInput(event: Event): void {
     const val = parseFloat((event.target as HTMLInputElement).value);
     this.completeForm.parkingCharge = isNaN(val) ? 0 : val;
-  }
-
-  addParking(amt: number): void {
-    this.completeForm.parkingCharge = Math.round((this.completeForm.parkingCharge + amt) * 100) / 100;
-  }
-
-  setParking(amt: number): void {
-    this.completeForm.parkingCharge = amt;
   }
 
   onPaymentInput(event: Event): void {
