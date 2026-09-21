@@ -200,9 +200,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       TenantBranding? resolvedBranding = customBranding;
 
       // 1. Attempt remote public tenant-info resolution
-      if (resolvedBranding == null) {
-        resolvedBranding = await fetchTenantInfo(tenantId, tenantKey);
-      }
+      resolvedBranding ??= await fetchTenantInfo(tenantId, tenantKey);
 
       // 2. Secondary fallback to /api/Tenant/Resolve if not resolved
       if (resolvedBranding == null) {

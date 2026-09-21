@@ -87,7 +87,7 @@ interface DashTotals {
         <!-- Route timeline -->
         <div class="active-route">
           <!-- Pickup Location -->
-          <div class="route-node">
+          <div class="route-node clickable-route-node" (click)="openGoogleMap(activeBooking.pickupPostCode || activeBooking.pickup, $event)" title="Open in Google Maps">
             <span class="material-symbols-outlined node-icon green">my_location</span>
             <div class="node-text">
               <div class="node-meta-line">
@@ -98,6 +98,7 @@ interface DashTotals {
             </div>
             <a 
               [href]="getMapUrl(activeBooking.pickupPostCode || activeBooking.pickup)" 
+              (click)="openGoogleMap(activeBooking.pickupPostCode || activeBooking.pickup, $event)"
               target="_blank" 
               class="map-btn" 
               title="Navigate to Pickup with Google Maps"
@@ -107,7 +108,7 @@ interface DashTotals {
           </div>
 
           <!-- Via Stops (if any) -->
-          <div class="route-node via-node" *ngFor="let via of activeBooking.vias; let i = index">
+          <div class="route-node via-node clickable-route-node" *ngFor="let via of activeBooking.vias; let i = index" (click)="openGoogleMap(via.postCode || via.address, $event)" title="Open in Google Maps">
             <span class="material-symbols-outlined node-icon amber">pin_drop</span>
             <div class="node-text">
               <div class="node-meta-line">
@@ -118,6 +119,7 @@ interface DashTotals {
             </div>
             <a 
               [href]="getMapUrl(via.postCode || via.address)" 
+              (click)="openGoogleMap(via.postCode || via.address, $event)"
               target="_blank" 
               class="map-btn" 
               [title]="'Navigate to Via Stop ' + (i + 1) + ' with Google Maps'"
@@ -127,7 +129,7 @@ interface DashTotals {
           </div>
 
           <!-- Dropoff Destination -->
-          <div class="route-node">
+          <div class="route-node clickable-route-node" (click)="openGoogleMap(activeBooking.destinationPostCode || activeBooking.dropoff, $event)" title="Open in Google Maps">
             <span class="material-symbols-outlined node-icon red">location_on</span>
             <div class="node-text">
               <div class="node-meta-line">
@@ -138,6 +140,7 @@ interface DashTotals {
             </div>
             <a 
               [href]="getMapUrl(activeBooking.destinationPostCode || activeBooking.dropoff)" 
+              (click)="openGoogleMap(activeBooking.destinationPostCode || activeBooking.dropoff, $event)"
               target="_blank" 
               class="map-btn" 
               title="Navigate to Dropoff with Google Maps"
@@ -500,6 +503,20 @@ interface DashTotals {
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+    .clickable-route-node {
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 4px 6px;
+      margin: -2px -6px;
+      transition: background 0.16s ease, transform 0.12s ease;
+    }
+    .clickable-route-node:hover {
+      background: rgba(46, 125, 50, 0.08);
+    }
+    .clickable-route-node:active {
+      transform: scale(0.985);
+      background: rgba(46, 125, 50, 0.16);
     }
     .node-icon {
       font-size: 20px;
@@ -970,6 +987,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const maxTarget = 500;
     const progress = Math.min(1, Math.max(0, this.currentEarnings / maxTarget));
     return 353.43 * (1 - progress);
+  }
+
+  openGoogleMap(addressOrPostcode: string, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (!addressOrPostcode || !addressOrPostcode.trim()) return;
+    const cleanAddr = addressOrPostcode.trim();
+    const channel = (window as any).FlutterChannel;
+    if (channel) {
+      channel.postMessage(`open_map:${cleanAddr}`);
+    } else {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddr)}`;
+      window.open(url, '_blank');
+    }
   }
 
   getMapUrl(addressOrPostcode: string): string {

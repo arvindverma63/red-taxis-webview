@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -10,7 +9,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/trip/trip.dart';
-import 'package:driver_app/features/earnings/earnings.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/shift/shift.dart';
@@ -131,6 +129,20 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                     'fare': fare,
                   },
                 );
+              }
+            } else if (message.message.startsWith('open_map:')) {
+              final query = message.message.substring('open_map:'.length).trim();
+              if (query.isNotEmpty) {
+                final mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}');
+                try {
+                  canLaunchUrl(mapUri).then((canLaunch) {
+                    if (canLaunch) {
+                      launchUrl(mapUri, mode: LaunchMode.externalApplication);
+                    }
+                  });
+                } catch (e) {
+                  debugPrint("Error launching Google Maps: $e");
+                }
               }
             } else if (message.message == 'close_complete_job' ||
                 message.message == 'close_custom_webview' ||
@@ -345,12 +357,13 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () async {
+                        final nav = Navigator.of(context);
                         if (_controller != null && await _controller!.canGoBack()) {
                           await _controller!.goBack();
                         } else if (widget.onBack != null) {
                           widget.onBack!();
                         } else {
-                          Navigator.of(context).maybePop();
+                          nav.maybePop();
                         }
                       },
                     )

@@ -184,6 +184,20 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                 },
               );
             }
+          } else if (message.message.startsWith('open_map:')) {
+            final query = message.message.substring('open_map:'.length).trim();
+            if (query.isNotEmpty) {
+              final mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}');
+              try {
+                canLaunchUrl(mapUri).then((canLaunch) {
+                  if (canLaunch) {
+                    launchUrl(mapUri, mode: LaunchMode.externalApplication);
+                  }
+                });
+              } catch (e) {
+                debugPrint("Error launching Google Maps: $e");
+              }
+            }
           } else if (message.message == 'close_complete_job') {
             ref.read(navigationProvider.notifier).closeCustomWebView();
           }

@@ -71,7 +71,7 @@ interface JobDetails {
           <!-- Complete Journey Route Stepper -->
           <div class="status-route-stepper">
             <!-- Pickup -->
-            <div class="status-route-row">
+            <div class="status-route-row clickable-step" (click)="openGoogleMap(job.pickupPostCode || job.pickup, $event)" title="Open in Google Maps">
               <div class="status-node-col">
                 <span class="status-node-dot pickup"></span>
                 <div class="status-node-line"></div>
@@ -80,13 +80,14 @@ interface JobDetails {
                 <div class="status-node-header">
                   <span class="status-node-tag pickup">PICKUP LOCATION</span>
                   <span class="postcode-tag" *ngIf="job.pickupPostCode">{{ job.pickupPostCode }}</span>
+                  <span class="map-tag"><span class="material-symbols-outlined">near_me</span> Map</span>
                 </div>
                 <span class="status-node-addr">{{ job.pickup }}</span>
               </div>
             </div>
 
             <!-- Via Stops (if any) -->
-            <div class="status-route-row" *ngFor="let via of job.vias; let i = index">
+            <div class="status-route-row clickable-step" *ngFor="let via of job.vias; let i = index" (click)="openGoogleMap(via.postCode || via.address, $event)" title="Open in Google Maps">
               <div class="status-node-col">
                 <span class="status-node-dot via"></span>
                 <div class="status-node-line"></div>
@@ -95,13 +96,14 @@ interface JobDetails {
                 <div class="status-node-header">
                   <span class="status-node-tag via">VIA STOP {{ i + 1 }}</span>
                   <span class="postcode-tag" *ngIf="via.postCode">{{ via.postCode }}</span>
+                  <span class="map-tag"><span class="material-symbols-outlined">near_me</span> Map</span>
                 </div>
                 <span class="status-node-addr">{{ via.address }}</span>
               </div>
             </div>
 
             <!-- Destination -->
-            <div class="status-route-row">
+            <div class="status-route-row clickable-step" (click)="openGoogleMap(job.destinationPostCode || job.dropoff, $event)" title="Open in Google Maps">
               <div class="status-node-col">
                 <span class="status-node-dot dropoff"></span>
               </div>
@@ -109,6 +111,7 @@ interface JobDetails {
                 <div class="status-node-header">
                   <span class="status-node-tag dropoff">DESTINATION</span>
                   <span class="postcode-tag" *ngIf="job.destinationPostCode">{{ job.destinationPostCode }}</span>
+                  <span class="map-tag"><span class="material-symbols-outlined">near_me</span> Map</span>
                 </div>
                 <span class="status-node-addr">{{ job.dropoff }}</span>
               </div>
@@ -227,7 +230,7 @@ interface JobDetails {
           <!-- Connected Route Stepper -->
           <div class="route-stepper">
             <!-- Pickup Stop -->
-            <div class="stepper-row">
+            <div class="stepper-row clickable-step" (click)="openGoogleMap(job.pickupPostCode || job.pickup, $event)" title="Open in Google Maps">
               <div class="node-col">
                 <div class="node-circle pickup">
                   <span class="material-symbols-outlined">my_location</span>
@@ -235,13 +238,17 @@ interface JobDetails {
                 <div class="node-connector"></div>
               </div>
               <div class="node-content">
-                <span class="node-lbl pickup-lbl">PICKUP LOCATION</span>
+                <div class="via-header">
+                  <span class="node-lbl pickup-lbl">PICKUP LOCATION</span>
+                  <span class="postcode-tag" *ngIf="job.pickupPostCode">{{ job.pickupPostCode }}</span>
+                  <span class="map-tag"><span class="material-symbols-outlined">near_me</span> Map</span>
+                </div>
                 <span class="node-address">{{ job.pickup }}</span>
               </div>
             </div>
 
             <!-- Via Stops (if any) -->
-            <div class="stepper-row via-step" *ngFor="let via of job.vias; let i = index">
+            <div class="stepper-row via-step clickable-step" *ngFor="let via of job.vias; let i = index" (click)="openGoogleMap(via.postCode || via.address, $event)" title="Open in Google Maps">
               <div class="node-col">
                 <div class="node-circle via">
                   <span class="material-symbols-outlined">pin_drop</span>
@@ -252,20 +259,25 @@ interface JobDetails {
                 <div class="via-header">
                   <span class="node-lbl via-lbl">VIA STOP {{ i + 1 }}</span>
                   <span class="via-postcode-chip" *ngIf="via.postCode">{{ via.postCode }}</span>
+                  <span class="map-tag"><span class="material-symbols-outlined">near_me</span> Map</span>
                 </div>
                 <span class="node-address">{{ via.address }}</span>
               </div>
             </div>
 
             <!-- Dropoff Stop -->
-            <div class="stepper-row">
+            <div class="stepper-row clickable-step" (click)="openGoogleMap(job.destinationPostCode || job.dropoff, $event)" title="Open in Google Maps">
               <div class="node-col">
                 <div class="node-circle dropoff">
                   <span class="material-symbols-outlined">location_on</span>
                 </div>
               </div>
               <div class="node-content">
-                <span class="node-lbl dropoff-lbl">DESTINATION</span>
+                <div class="via-header">
+                  <span class="node-lbl dropoff-lbl">DESTINATION</span>
+                  <span class="postcode-tag" *ngIf="job.destinationPostCode">{{ job.destinationPostCode }}</span>
+                  <span class="map-tag"><span class="material-symbols-outlined">near_me</span> Map</span>
+                </div>
                 <span class="node-address">{{ job.dropoff }}</span>
               </div>
             </div>
@@ -691,6 +703,37 @@ interface JobDetails {
       color: #000000;
       padding: 1px 4px;
       border-radius: 3px;
+    }
+
+    .clickable-step {
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 4px 6px;
+      margin: -4px -6px;
+      transition: background-color 0.15s ease;
+    }
+    .clickable-step:hover {
+      background-color: rgba(2, 132, 199, 0.08);
+    }
+    .clickable-step:active {
+      background-color: rgba(2, 132, 199, 0.16);
+      transform: scale(0.99);
+    }
+
+    .map-tag {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 9px;
+      font-weight: 800;
+      color: #0284C7;
+      background: rgba(2, 132, 199, 0.1);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .map-tag .material-symbols-outlined {
+      font-size: 11px;
     }
 
     /* 3. Smooth Slider Footer (Light Track Theme & Guaranteed Visible Action) */
@@ -1119,6 +1162,10 @@ interface JobDetails {
       background: #241A08;
       border-color: #452D08;
     }
+    :host-context(.dark-theme) .map-tag {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38BDF8;
+    }
   `]
 })
 export class JobOfferComponent implements OnInit, OnDestroy {
@@ -1544,6 +1591,26 @@ export class JobOfferComponent implements OnInit, OnDestroy {
       case 'amended': return 'The operator has amended the route, schedule, or passenger instructions for this trip. Please review below.';
       default: return 'The details for this dispatch booking have been updated.';
     }
+  }
+
+  openGoogleMap(addressOrPostcode: string, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (!addressOrPostcode || !addressOrPostcode.trim()) return;
+    const cleanAddr = addressOrPostcode.trim();
+    const channel = (window as any).FlutterChannel;
+    if (channel) {
+      channel.postMessage(`open_map:${cleanAddr}`);
+    } else {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddr)}`;
+      window.open(url, '_blank');
+    }
+  }
+
+  getMapUrl(addressOrPostcode: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOrPostcode || '')}`;
   }
 
   dismissStatusScreen(): void {

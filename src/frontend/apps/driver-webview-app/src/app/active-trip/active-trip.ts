@@ -79,7 +79,7 @@ interface JobDetails {
             <!-- Route timeline -->
             <div class="route-section">
               <!-- Pickup Stop -->
-              <div class="route-stop-row">
+              <div class="route-stop-row clickable-stop-row" (click)="openGoogleMap(job.pickup, $event)" title="Open in Google Maps">
                 <div class="stop-indicator">
                   <div class="timeline-dot green">
                     <div class="dot-inner"></div>
@@ -87,13 +87,16 @@ interface JobDetails {
                   <div class="stop-line"></div>
                 </div>
                 <div class="address-node">
-                  <span class="addr-label green-txt">PICKUP LOCATION</span>
+                  <div class="via-label-row">
+                    <span class="addr-label green-txt">PICKUP LOCATION</span>
+                    <span class="map-hint-pill"><span class="material-symbols-outlined">near_me</span> Map</span>
+                  </div>
                   <span class="addr-text">{{ job.pickup }}</span>
                 </div>
               </div>
 
               <!-- Via Stops -->
-              <div class="route-stop-row via-row" *ngFor="let via of job.vias; let i = index">
+              <div class="route-stop-row via-row clickable-stop-row" *ngFor="let via of job.vias; let i = index" (click)="openGoogleMap(via.postCode || via.address, $event)" title="Open in Google Maps">
                 <div class="stop-indicator">
                   <div class="timeline-dot yellow">
                     <div class="dot-inner"></div>
@@ -104,20 +107,24 @@ interface JobDetails {
                   <div class="via-label-row">
                     <span class="addr-label yellow-txt">VIA STOP {{ i + 1 }}</span>
                     <span class="via-badge" *ngIf="via.postCode">{{ via.postCode }}</span>
+                    <span class="map-hint-pill"><span class="material-symbols-outlined">near_me</span> Map</span>
                   </div>
                   <span class="addr-text">{{ via.address }}</span>
                 </div>
               </div>
 
               <!-- Dropoff Stop -->
-              <div class="route-stop-row dropoff-row">
+              <div class="route-stop-row dropoff-row clickable-stop-row" (click)="openGoogleMap(job.dropoff, $event)" title="Open in Google Maps">
                 <div class="stop-indicator">
                   <div class="timeline-dot red">
                     <div class="dot-inner"></div>
                   </div>
                 </div>
                 <div class="address-node">
-                  <span class="addr-label red-txt">DROPOFF LOCATION</span>
+                  <div class="via-label-row">
+                    <span class="addr-label red-txt">DROPOFF LOCATION</span>
+                    <span class="map-hint-pill"><span class="material-symbols-outlined">near_me</span> Map</span>
+                  </div>
                   <span class="addr-text">{{ job.dropoff }}</span>
                 </div>
               </div>
@@ -527,6 +534,38 @@ interface JobDetails {
       letter-spacing: 0.5px;
     }
 
+    .map-hint-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 8.5px;
+      font-weight: 800;
+      color: #0284C7;
+      background: #E0F2FE;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-left: auto;
+      letter-spacing: 0.2px;
+    }
+    .map-hint-pill .material-symbols-outlined {
+      font-size: 10px;
+    }
+
+    .clickable-stop-row {
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 4px 6px;
+      margin: -2px -6px;
+      transition: background 0.16s ease, transform 0.12s ease;
+    }
+    .clickable-stop-row:hover {
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .clickable-stop-row:active {
+      transform: scale(0.985);
+      background: rgba(16, 185, 129, 0.16);
+    }
+
     .addr-label {
       font-size: 8px;
       font-weight: 800;
@@ -894,7 +933,28 @@ export class ActiveTripComponent implements OnInit {
   }
 
   navigateRoute(): void {
-    this.notifyNativeApp('navigate');
+    const target = this.status === 'enRouteToPickup' ? this.job?.pickup : this.job?.dropoff;
+    if (target) {
+      this.openGoogleMap(target);
+    } else {
+      this.notifyNativeApp('navigate');
+    }
+  }
+
+  openGoogleMap(addressOrPostcode?: string, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (!addressOrPostcode || !addressOrPostcode.trim()) return;
+    const cleanAddr = addressOrPostcode.trim();
+    const channel = (window as any).FlutterChannel;
+    if (channel) {
+      channel.postMessage(`open_map:${cleanAddr}`);
+    } else {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddr)}`;
+      window.open(url, '_blank');
+    }
   }
 
   private notifyNativeApp(message: string): void {

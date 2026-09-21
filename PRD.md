@@ -472,6 +472,18 @@ The Angular router guards and services parse the `token` parameter directly from
     - Added `arrived_at_pickup` and `start_trip` handlers inside `dashboard_view.dart`'s `FlutterChannel` to keep native Riverpod state in sync with remote WebViews.
   - **Build Verification**: Verified 100% green compilation on Angular (`ng build`) and Flutter test suite (12/12 tests passing).
 
+- [x] **Universal 1-Tap Google Maps Navigation Across All Addresses (`bookings.ts`, `dashboard.ts`, `active-trip.ts`, `job-offer.ts`, `webview_screen.dart`, `dashboard_view.dart`)**:
+  - Implemented Ace Taxis-style 1-tap Google Maps address navigation across every address element in the application:
+    - **My Bookings Cards & Details Sheet (`bookings.ts`)**: Made inline pickup & dropoff addresses on booking cards and all route stepper nodes (pickup, via stops, destination) clickable with custom map pin icons, hover/touch states, and Google Maps deep linking.
+    - **Dashboard Active Booking Card (`dashboard.ts`)**: Made pickup, via stops, and dropoff route nodes clickable with tactile feedback and navigation launcher.
+    - **Active Trip Lifecycle Screens (`active-trip.ts`)**: Made all route stop rows clickable with `(click)="openGoogleMap(...)"` and added visual map navigation pills.
+    - **Incoming Dispatch Job Offer & Status Overlays (`job-offer.ts`)**: Made pickup, via stops, and dropoff nodes clickable with tactile `.clickable-step` animations and `.map-tag` badges in both light and dark themes.
+  - **Dual-Dispatch Hybrid Bridging**:
+    - Webview components dispatch `open_map:<query>` via native `FlutterChannel` Javascript interface, with graceful fallback to `window.open(https://www.google.com/maps/search/?api=1&query=..., '_blank')`.
+    - Native Flutter handlers in `webview_screen.dart` and `dashboard_view.dart` intercept `open_map:` messages and launch Google Maps using `url_launcher` with `LaunchMode.externalApplication`.
+  - **Dark Theme & Accessibility**: Fully styled with hover highlights, tap scaling, and dark theme support (`.dark-theme`).
+  - **Build Verification**: Verified 100% green compilation on Angular production bundle (`ng build`) and Flutter suite.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

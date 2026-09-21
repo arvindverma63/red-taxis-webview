@@ -45,7 +45,6 @@ class _MainShellState extends ConsumerState<MainShell> {
     final authState = ref.watch(authProvider);
     final navState = ref.watch(navigationProvider);
     final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
-    final primaryColor = branding.primaryColor;
     final token = authState.token ?? '';
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     final themeStr = isDark ? 'dark' : 'light';

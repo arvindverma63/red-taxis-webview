@@ -177,10 +177,11 @@ interface Booking {
 
             <div class="route-addresses-col">
               <!-- Pickup Stop -->
-              <div class="stop-entry pickup">
+              <div class="stop-entry pickup clickable-address-inline" (click)="openGoogleMap(booking.pickupPostCode || booking.pickup, $event)" title="Open in Google Maps">
                 <div class="stop-meta-header">
                   <span class="address-time-pill">{{ booking.time }}</span>
                   <span class="postcode-tag" *ngIf="booking.pickupPostCode">{{ booking.pickupPostCode }}</span>
+                  <span class="inline-map-hint"><span class="material-symbols-outlined">near_me</span></span>
                 </div>
                 <div class="address-text-full pickup" [title]="booking.pickup">{{ booking.pickup }}</div>
               </div>
@@ -192,10 +193,11 @@ interface Booking {
               </div>
 
               <!-- Dropoff Stop -->
-              <div class="stop-entry dropoff">
+              <div class="stop-entry dropoff clickable-address-inline" (click)="openGoogleMap(booking.destinationPostCode || booking.dropoff, $event)" title="Open in Google Maps">
                 <div class="stop-meta-header">
                   <span class="address-time-pill dropoff-time">{{ booking.date }}</span>
                   <span class="postcode-tag" *ngIf="booking.destinationPostCode">{{ booking.destinationPostCode }}</span>
+                  <span class="inline-map-hint"><span class="material-symbols-outlined">near_me</span></span>
                 </div>
                 <div class="address-text-full dropoff" [title]="booking.dropoff">{{ booking.dropoff }}</div>
               </div>
@@ -323,7 +325,7 @@ interface Booking {
 
               <div class="route-stepper-container">
                 <!-- Pickup Point -->
-                <div class="stepper-stop pickup">
+                <div class="stepper-stop pickup clickable-address" (click)="openGoogleMap(selectedBooking.pickupPostCode || selectedBooking.pickup, $event)" title="Open in Google Maps">
                   <div class="stop-node-indicator green">
                     <span class="material-symbols-outlined">my_location</span>
                   </div>
@@ -333,13 +335,14 @@ interface Booking {
                       <span class="postcode-badge" *ngIf="selectedBooking.pickupPostCode">
                         {{ selectedBooking.pickupPostCode }}
                       </span>
+                      <span class="map-action-pill"><span class="material-symbols-outlined map-icon">near_me</span> Map</span>
                     </div>
                     <p class="stop-address-txt">{{ selectedBooking.pickup }}</p>
                   </div>
                 </div>
 
                 <!-- Via Stops (if any) -->
-                <div class="stepper-stop via" *ngFor="let via of selectedBooking.vias; let i = index">
+                <div class="stepper-stop via clickable-address" *ngFor="let via of selectedBooking.vias; let i = index" (click)="openGoogleMap(via.postCode || via.address, $event)" title="Open in Google Maps">
                   <div class="stop-node-indicator amber">
                     <span class="material-symbols-outlined">pin_drop</span>
                   </div>
@@ -347,13 +350,14 @@ interface Booking {
                     <div class="stop-meta-row">
                       <span class="stop-type-tag amber">VIA STOP {{ i + 1 }}</span>
                       <span class="postcode-badge" *ngIf="via.postCode">{{ via.postCode }}</span>
+                      <span class="map-action-pill"><span class="material-symbols-outlined map-icon">near_me</span> Map</span>
                     </div>
                     <p class="stop-address-txt">{{ via.address }}</p>
                   </div>
                 </div>
 
                 <!-- Dropoff Point -->
-                <div class="stepper-stop dropoff">
+                <div class="stepper-stop dropoff clickable-address" (click)="openGoogleMap(selectedBooking.destinationPostCode || selectedBooking.dropoff, $event)" title="Open in Google Maps">
                   <div class="stop-node-indicator red">
                     <span class="material-symbols-outlined">location_on</span>
                   </div>
@@ -363,6 +367,7 @@ interface Booking {
                       <span class="postcode-badge" *ngIf="selectedBooking.destinationPostCode">
                         {{ selectedBooking.destinationPostCode }}
                       </span>
+                      <span class="map-action-pill"><span class="material-symbols-outlined map-icon">near_me</span> Map</span>
                     </div>
                     <p class="stop-address-txt">{{ selectedBooking.dropoff }}</p>
                   </div>
@@ -1345,6 +1350,67 @@ interface Booking {
       line-height: 1.35;
     }
 
+    .clickable-address {
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 6px 8px;
+      margin: -2px -6px;
+      transition: background 0.16s ease, transform 0.12s ease;
+    }
+    .clickable-address:hover {
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .clickable-address:active {
+      transform: scale(0.985);
+      background: rgba(16, 185, 129, 0.16);
+    }
+
+    .map-action-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 9px;
+      font-weight: 800;
+      color: #0284C7;
+      background: #E0F2FE;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: auto;
+      letter-spacing: 0.2px;
+    }
+    .map-action-pill .map-icon {
+      font-size: 11px;
+    }
+
+    .clickable-address-inline {
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin: -2px -4px;
+      transition: background 0.16s ease;
+    }
+    .clickable-address-inline:hover {
+      background: rgba(2, 132, 199, 0.08);
+    }
+    .clickable-address-inline:active {
+      background: rgba(2, 132, 199, 0.16);
+    }
+
+    .inline-map-hint {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: #F1F5F9;
+      color: #0284C7;
+      margin-left: auto;
+    }
+    .inline-map-hint .material-symbols-outlined {
+      font-size: 12px;
+    }
+
     /* Fare & Metrics */
     .fare-metrics-stack {
       display: flex;
@@ -1744,6 +1810,23 @@ interface Booking {
       background: #16161A;
       border-color: #2D2D35;
     }
+    :host-context(.dark-theme) .clickable-address:hover {
+      background: rgba(16, 185, 129, 0.16);
+    }
+    :host-context(.dark-theme) .clickable-address:active {
+      background: rgba(16, 185, 129, 0.25);
+    }
+    :host-context(.dark-theme) .map-action-pill {
+      background: #0C4A6E;
+      color: #38BDF8;
+    }
+    :host-context(.dark-theme) .clickable-address-inline:hover {
+      background: rgba(56, 189, 248, 0.15);
+    }
+    :host-context(.dark-theme) .inline-map-hint {
+      background: #2D2D35;
+      color: #38BDF8;
+    }
     :host-context(.dark-theme) .metric-fare-banner {
       background: #2A1719 !important;
       border-color: #4C1D24 !important;
@@ -1911,6 +1994,26 @@ export class BookingsComponent implements OnInit {
     }).catch(err => {
       console.warn('Clipboard write failed:', err);
     });
+  }
+
+  openGoogleMap(addressOrPostcode: string, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (!addressOrPostcode || !addressOrPostcode.trim()) return;
+    const cleanAddr = addressOrPostcode.trim();
+    const channel = (window as any).FlutterChannel;
+    if (channel) {
+      channel.postMessage(`open_map:${cleanAddr}`);
+    } else {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddr)}`;
+      window.open(url, '_blank');
+    }
+  }
+
+  getMapUrl(addressOrPostcode: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOrPostcode || '')}`;
   }
 
   getTripProgress(bookingId: string): string {

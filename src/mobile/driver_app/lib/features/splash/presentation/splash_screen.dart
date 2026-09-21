@@ -439,7 +439,7 @@ class _VectorRadarRingPainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     const int dashCount = 28;
-    final double dashAngle = (2 * math.pi) / dashCount;
+    const double dashAngle = (2 * math.pi) / dashCount;
     for (int i = 0; i < dashCount; i++) {
       if (i % 2 == 0) {
         final startAngle = i * dashAngle;
