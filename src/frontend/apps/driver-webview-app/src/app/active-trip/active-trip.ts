@@ -756,7 +756,14 @@ export class ActiveTripComponent implements OnInit {
           passenger: passenger ? decodeURIComponent(passenger) : 'Passenger',
           notes: notes ? decodeURIComponent(notes) : ''
         };
-        this.status = statusParam || 'enRouteToPickup';
+        let activeStatus = statusParam || 'enRouteToPickup';
+        try {
+          const saved = localStorage.getItem('driver_trip_status_' + id);
+          if (saved === 'arrived') activeStatus = 'arrived';
+          else if (saved === 'pickedUp' || saved === 'onTrip') activeStatus = 'onTrip';
+        } catch (_) {}
+
+        this.status = activeStatus;
         this.sliderPosition = 0;
         this.isSubmitting = false;
         this.cdr.detectChanges();
@@ -835,6 +842,9 @@ export class ActiveTripComponent implements OnInit {
   completeTrip(): void {
     if (this.isSubmitting) return;
     this.isSubmitting = true;
+    if (this.job?.id) {
+      try { localStorage.removeItem('driver_trip_status_' + this.job.id); } catch (_) {}
+    }
     this.cdr.detectChanges();
     this.notifyNativeApp('complete_trip');
   }
@@ -859,10 +869,22 @@ export class ActiveTripComponent implements OnInit {
 
   onMainAction(): void {
     if (this.status === 'arrived') {
+      if (this.job?.id) {
+        try { localStorage.setItem('driver_trip_status_' + this.job.id, 'pickedUp'); } catch (_) {}
+      }
+      this.status = 'onTrip';
+      this.cdr.detectChanges();
+      this.notifyNativeApp('start_trip:' + (this.job?.id || ''));
       this.notifyNativeApp('start_trip');
     } else if (this.status === 'onTrip') {
       this.completeTrip();
     } else {
+      if (this.job?.id) {
+        try { localStorage.setItem('driver_trip_status_' + this.job.id, 'arrived'); } catch (_) {}
+      }
+      this.status = 'arrived';
+      this.cdr.detectChanges();
+      this.notifyNativeApp('arrived_at_pickup:' + (this.job?.id || ''));
       this.notifyNativeApp('arrived_at_pickup');
     }
   }

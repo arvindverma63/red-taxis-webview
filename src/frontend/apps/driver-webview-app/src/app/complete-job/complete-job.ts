@@ -1074,6 +1074,9 @@ export class CompleteJobComponent implements OnInit, OnDestroy {
   }
 
   private onCompleteSuccess(): void {
+    if (this.jobId) {
+      try { localStorage.removeItem('driver_trip_status_' + this.jobId); } catch (_) {}
+    }
     this.isSubmitting = false;
     this.snackBar.open('Trip completed successfully!', 'OK', { duration: 3000 });
     this.notifyNativeApp('close_complete_job');

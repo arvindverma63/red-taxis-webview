@@ -158,6 +158,12 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                 paymentType: 'Card',
               ),
             );
+          } else if (message.message.startsWith('arrived_at_pickup')) {
+            ref.read(tripProvider.notifier).markArrived();
+          } else if (message.message.startsWith('start_trip')) {
+            ref.read(tripProvider.notifier).startTrip();
+          } else if (message.message.startsWith('complete_trip')) {
+            ref.read(tripProvider.notifier).completeTrip();
           } else if (message.message == 'go_online') {
             ref.read(shiftProvider.notifier).goOnline();
           } else if (message.message == 'go_offline') {

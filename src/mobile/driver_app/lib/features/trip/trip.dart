@@ -394,10 +394,25 @@ class TripNotifier extends StateNotifier<TripState> {
             final details = _mapJobToDetails(finalJobData, activeBookingId);
             final statusVal = int.tryParse((finalJobData['status'] ?? finalJobData['Status'] ?? '0').toString()) ?? 0;
             TripStatus activeStatus = TripStatus.enRouteToPickup;
-            if (statusVal == 3006) {
-              activeStatus = TripStatus.onTrip;
-            } else if (statusVal == 3) {
-              activeStatus = TripStatus.arrived;
+
+            try {
+              const storage = FlutterSecureStorage(
+                aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              );
+              final savedStatus = await storage.read(key: 'active_trip_status_$activeBookingId');
+              if (savedStatus == 'arrived') {
+                activeStatus = TripStatus.arrived;
+              } else if (savedStatus == 'onTrip') {
+                activeStatus = TripStatus.onTrip;
+              }
+            } catch (_) {}
+
+            if (activeStatus == TripStatus.enRouteToPickup) {
+              if (statusVal == 3006) {
+                activeStatus = TripStatus.onTrip;
+              } else if (statusVal == 3 || statusVal == 3005) {
+                activeStatus = TripStatus.arrived;
+              }
             }
 
             state = TripState(status: activeStatus, currentTrip: details);
@@ -544,10 +559,17 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   Future<void> markArrived() async {
-    if (state.status == TripStatus.enRouteToPickup && state.currentTrip != null) {
+    if ((state.status == TripStatus.enRouteToPickup || state.status == TripStatus.idle) && state.currentTrip != null) {
       final auth = _ref.read(authProvider);
       final token = auth.token;
       final jobId = state.currentTrip!.id;
+
+      try {
+        const storage = FlutterSecureStorage(
+          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        );
+        await storage.write(key: 'active_trip_status_$jobId', value: 'arrived');
+      } catch (_) {}
 
       if (!_isMockTrip(jobId)) {
         try {
@@ -570,10 +592,17 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   Future<void> startTrip() async {
-    if (state.status == TripStatus.arrived && state.currentTrip != null) {
+    if ((state.status == TripStatus.arrived || state.status == TripStatus.enRouteToPickup || state.status == TripStatus.idle) && state.currentTrip != null) {
       final auth = _ref.read(authProvider);
       final token = auth.token;
       final jobId = state.currentTrip!.id;
+
+      try {
+        const storage = FlutterSecureStorage(
+          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        );
+        await storage.write(key: 'active_trip_status_$jobId', value: 'onTrip');
+      } catch (_) {}
 
       if (!_isMockTrip(jobId)) {
         try {
@@ -597,11 +626,18 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   Future<void> completeTrip() async {
-    if (state.status == TripStatus.onTrip && state.currentTrip != null) {
+    if ((state.status == TripStatus.onTrip || state.status == TripStatus.arrived) && state.currentTrip != null) {
       final auth = _ref.read(authProvider);
       final token = auth.token;
       final jobId = state.currentTrip!.id;
       final fare = state.currentTrip!.fare;
+
+      try {
+        const storage = FlutterSecureStorage(
+          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        );
+        await storage.delete(key: 'active_trip_status_$jobId');
+      } catch (_) {}
 
       if (!_isMockTrip(jobId)) {
         setActiveJob(0);

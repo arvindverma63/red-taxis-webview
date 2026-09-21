@@ -1051,10 +1051,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   advanceActiveTrip(): void {
     if (!this.activeBooking) return;
     const bookingIdNum = parseInt(this.activeBooking.id) || 0;
+    const bookingIdStr = this.activeBooking.id;
 
     if (this.activeTripProgress === 'assigned') {
       this.snackBar.open('Marking arrived at pickup...', 'Dismiss', { duration: 2000 });
       this.activeTripProgress = 'arrived';
+      try {
+        localStorage.setItem('driver_trip_status_' + bookingIdStr, 'arrived');
+      } catch (_) {}
+      this.notifyNativeApp('arrived_at_pickup:' + bookingIdStr);
+      this.notifyNativeApp('arrived_at_pickup');
+
       if (bookingIdNum > 0) {
         this.driverService.markArrived(bookingIdNum).subscribe({
           next: (res) => {
@@ -1070,6 +1077,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } else if (this.activeTripProgress === 'arrived') {
       this.snackBar.open('Starting trip (POB)...', 'Dismiss', { duration: 2000 });
       this.activeTripProgress = 'pickedUp';
+      try {
+        localStorage.setItem('driver_trip_status_' + bookingIdStr, 'pickedUp');
+      } catch (_) {}
+      this.notifyNativeApp('start_trip:' + bookingIdStr);
+      this.notifyNativeApp('start_trip');
       this.snackBar.open('Passenger onboard, trip started!', 'Dismiss', { duration: 2500 });
     }
     this.cdr.detectChanges();
@@ -1090,6 +1102,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   completeActiveBooking(): void {
     if (!this.activeBooking) return;
+    const bookingIdStr = this.activeBooking.id;
+    try {
+      localStorage.removeItem('driver_trip_status_' + bookingIdStr);
+    } catch (_) {}
     const channel = (window as any).FlutterChannel;
     if (channel) {
       channel.postMessage(`open_complete_job:${this.activeBooking.id}:${this.activeBooking.fare}`);
@@ -1206,6 +1222,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.activeBooking = null;
         }
 
+        // Restore trip progression status (assigned -> arrived -> pickedUp)
+        if (activeJobIdStr) {
+          let restored: 'assigned' | 'arrived' | 'pickedUp' = 'assigned';
+          try {
+            const saved = localStorage.getItem('driver_trip_status_' + activeJobIdStr);
+            if (saved === 'arrived' || saved === 'pickedUp') {
+              restored = saved as any;
+            }
+          } catch (_) {}
+
+          // Also check backend status codes if not yet set in localStorage
+          const rawStatus = (activeRaw?.status || activeRaw?.Status || '').toString().toLowerCase();
+          const statusCode = parseInt(rawStatus) || 0;
+          if (restored === 'assigned') {
+            if (statusCode === 3 || statusCode === 3005 || rawStatus.includes('arrived')) {
+              restored = 'arrived';
+              try { localStorage.setItem('driver_trip_status_' + activeJobIdStr, 'arrived'); } catch (_) {}
+            } else if (statusCode === 3006 || rawStatus.includes('pob') || rawStatus.includes('ontrip')) {
+              restored = 'pickedUp';
+              try { localStorage.setItem('driver_trip_status_' + activeJobIdStr, 'pickedUp'); } catch (_) {}
+            }
+          }
+          this.activeTripProgress = restored;
+        } else {
+          this.activeTripProgress = 'assigned';
+        }
+
         // Fetch complete live booking record to guarantee all via stops & details are fully populated
         if (activeJobIdStr) {
           this.driverService.getJobById(activeJobIdStr).pipe(catchError(() => of(null))).subscribe(detailedJob => {
@@ -1234,6 +1277,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
               if (!isNaN(fetchedFare) && fetchedFare > 0) {
                 this.activeBooking.fare = fetchedFare;
               }
+
+              const detailedRawStatus = (d.status || d.Status || '').toString().toLowerCase();
+              const detailedStatusCode = parseInt(detailedRawStatus) || 0;
+              if (this.activeTripProgress === 'assigned') {
+                if (detailedStatusCode === 3 || detailedStatusCode === 3005 || detailedRawStatus.includes('arrived')) {
+                  this.activeTripProgress = 'arrived';
+                  try { localStorage.setItem('driver_trip_status_' + activeJobIdStr, 'arrived'); } catch (_) {}
+                } else if (detailedStatusCode === 3006 || detailedRawStatus.includes('pob') || detailedRawStatus.includes('ontrip')) {
+                  this.activeTripProgress = 'pickedUp';
+                  try { localStorage.setItem('driver_trip_status_' + activeJobIdStr, 'pickedUp'); } catch (_) {}
+                }
+              }
+
               this.cdr.detectChanges();
             }
           });

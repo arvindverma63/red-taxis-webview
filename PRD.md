@@ -461,6 +461,17 @@ The Angular router guards and services parse the `token` parameter directly from
     4. **Double-Back-to-Exit Safety**: On the root Dashboard with no history, requires a double-tap within 2 seconds with an informative SnackBar prompt before exiting the app.
   - Verified with 100% passing Flutter test suite (12/12 tests passing) and Vitest suite.
 
+- [x] **Trip Status Persistence & Lifecycle State Synchronization on Refresh (`dashboard.ts`, `bookings.ts`, `active-trip.ts`, `trip.dart`, `dashboard_view.dart`)**:
+  - Resolved the issue where clicking "Arrived" / "I Have Arrived" succeeded, but refreshing the page or switching tabs reset the button back to "Mark Arrived" / "I Have Arrived".
+  - **Storage & State Persistence**:
+    - Persisted `driver_trip_status_{bookingId}` (`arrived` $\rightarrow$ `pickedUp`/`onTrip`) in `localStorage` across Angular components (`DashboardComponent`, `BookingsComponent`, `ActiveTripComponent`) with cleanup on `CompleteJob`.
+    - Persisted active trip status in native `FlutterSecureStorage` (`active_trip_status_{bookingId}`) in `TripNotifier` (`trip.dart`), ensuring `checkActiveJob()` restores `TripStatus.arrived` / `TripStatus.onTrip` upon reload rather than reverting to `enRouteToPickup`.
+  - **Backend Status Mapping & Envelope Parsing**:
+    - Connected fallback status evaluation against backend API status codes (`status == 3` / `3005` $\rightarrow$ `arrived`, `status == 3006` $\rightarrow$ `pickedUp`/`onTrip`) across `loadDashboardData()` and `getTripProgress()`.
+  - **Bidirectional Native Bridge Sync**:
+    - Added `arrived_at_pickup` and `start_trip` handlers inside `dashboard_view.dart`'s `FlutterChannel` to keep native Riverpod state in sync with remote WebViews.
+  - **Build Verification**: Verified 100% green compilation on Angular (`ng build`) and Flutter test suite (12/12 tests passing).
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

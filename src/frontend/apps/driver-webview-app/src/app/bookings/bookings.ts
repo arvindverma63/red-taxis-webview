@@ -1914,7 +1914,36 @@ export class BookingsComponent implements OnInit {
   }
 
   getTripProgress(bookingId: string): string {
-    return this.driverTripStatus[bookingId] || 'upcoming';
+    if (this.driverTripStatus[bookingId]) {
+      return this.driverTripStatus[bookingId];
+    }
+    try {
+      const saved = localStorage.getItem('driver_trip_status_' + bookingId);
+      if (saved === 'arrived' || saved === 'pickedUp') {
+        this.driverTripStatus[bookingId] = saved as any;
+        return saved;
+      }
+    } catch (_) {}
+
+    // Check if the booking object itself has arrived/pickedUp status
+    const bk = (this.selectedBooking && this.selectedBooking.id === bookingId)
+      ? this.selectedBooking
+      : this.bookings.find((b: Booking) => b.id === bookingId);
+    if (bk) {
+      const rawStatus = (bk.status || '').toString().toLowerCase();
+      const code = parseInt(rawStatus) || 0;
+      if (code === 3 || code === 3005 || rawStatus.includes('arrived')) {
+        this.driverTripStatus[bookingId] = 'arrived';
+        try { localStorage.setItem('driver_trip_status_' + bookingId, 'arrived'); } catch (_) {}
+        return 'arrived';
+      } else if (code === 3006 || rawStatus.includes('pob') || rawStatus.includes('ontrip')) {
+        this.driverTripStatus[bookingId] = 'pickedUp';
+        try { localStorage.setItem('driver_trip_status_' + bookingId, 'pickedUp'); } catch (_) {}
+        return 'pickedUp';
+      }
+    }
+
+    return 'upcoming';
   }
 
   getStatusIcon(bookingId: string): string {
@@ -1934,9 +1963,17 @@ export class BookingsComponent implements OnInit {
   advanceTripStatus(booking: Booking): void {
     const current = this.getTripProgress(booking.id);
     const bookingIdNum = parseInt(booking.id) || 0;
+    const channel = (window as any).FlutterChannel;
 
     if (current === 'upcoming') {
       this.driverTripStatus[booking.id] = 'arrived';
+      try {
+        localStorage.setItem('driver_trip_status_' + booking.id, 'arrived');
+      } catch (_) {}
+      if (channel) {
+        channel.postMessage('arrived_at_pickup:' + booking.id);
+        channel.postMessage('arrived_at_pickup');
+      }
       this.snackBar.open('Status updated: Arrived at pickup!', 'OK', { duration: 2500 });
       if (bookingIdNum > 0) {
         this.driverService.markArrived(bookingIdNum).subscribe({
@@ -1946,6 +1983,13 @@ export class BookingsComponent implements OnInit {
       }
     } else if (current === 'arrived') {
       this.driverTripStatus[booking.id] = 'pickedUp';
+      try {
+        localStorage.setItem('driver_trip_status_' + booking.id, 'pickedUp');
+      } catch (_) {}
+      if (channel) {
+        channel.postMessage('start_trip:' + booking.id);
+        channel.postMessage('start_trip');
+      }
       this.snackBar.open('Status updated: Passenger on board (POB)!', 'OK', { duration: 2500 });
     }
     this.cdr.detectChanges();
@@ -1977,6 +2021,10 @@ export class BookingsComponent implements OnInit {
   completeBooking(booking: Booking): void {
     const bookingIdNum = parseInt(booking.id) || 0;
     if (bookingIdNum <= 0) return;
+    try {
+      localStorage.removeItem('driver_trip_status_' + booking.id);
+      delete this.driverTripStatus[booking.id];
+    } catch (_) {}
     this.closeDetails();
 
     const channel = (window as any).FlutterChannel;
