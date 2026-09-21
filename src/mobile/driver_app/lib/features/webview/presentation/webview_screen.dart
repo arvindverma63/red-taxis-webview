@@ -53,6 +53,34 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
     }
   }
 
+  Future<void> _openExternalMap(String address) async {
+    final clean = address.trim();
+    if (clean.isEmpty) return;
+    final encoded = Uri.encodeComponent(clean);
+    final geoUri = Uri.parse('geo:0,0?q=$encoded');
+    final webMapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+
+    try {
+      if (await canLaunchUrl(geoUri)) {
+        await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      if (await canLaunchUrl(webMapUri)) {
+        await launchUrl(webMapUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      await launchUrl(webMapUri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint("[WebviewScreen] Error launching map: $e");
+    }
+  }
+
   @override
   void dispose() {
     if (widget.tabIndex != null) {
@@ -133,16 +161,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
             } else if (message.message.startsWith('open_map:')) {
               final query = message.message.substring('open_map:'.length).trim();
               if (query.isNotEmpty) {
-                final mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}');
-                try {
-                  canLaunchUrl(mapUri).then((canLaunch) {
-                    if (canLaunch) {
-                      launchUrl(mapUri, mode: LaunchMode.externalApplication);
-                    }
-                  });
-                } catch (e) {
-                  debugPrint("Error launching Google Maps: $e");
-                }
+                _openExternalMap(query);
               }
             } else if (message.message == 'close_complete_job' ||
                 message.message == 'close_custom_webview' ||
