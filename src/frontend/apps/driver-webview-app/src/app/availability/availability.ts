@@ -276,11 +276,24 @@ export interface DriverFleetAvailability {
             <span class="slots-count-badge">{{ selectedDaySlots.length }} configured</span>
           </div>
 
+          <!-- Load Error Banner -->
+          <div *ngIf="hasLoadError && !isLoading" class="error-banner-card">
+            <span class="material-symbols-outlined error-banner-icon">wifi_off</span>
+            <div class="error-banner-text">
+              <p class="error-banner-title">Unable to synchronize schedule</p>
+              <p class="error-banner-sub">{{ loadErrorMessage }}</p>
+            </div>
+            <button type="button" class="btn-retry-sync" (click)="loadMyAvailabilities()">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Retry</span>
+            </button>
+          </div>
+
           <!-- Shimmer Placeholder -->
           <div *ngIf="isLoading" class="shimmer-placeholder list-shimmer"></div>
 
           <!-- Empty State -->
-          <div *ngIf="!isLoading && selectedDaySlots.length === 0" class="empty-slots-card">
+          <div *ngIf="!isLoading && !hasLoadError && selectedDaySlots.length === 0" class="empty-slots-card">
             <span class="material-symbols-outlined empty-icon">event_busy</span>
             <p class="empty-title">No shifts configured for this day</p>
             <p class="empty-subtitle">Choose a quick preset above or set your custom working hours to let dispatch know your schedule.</p>
@@ -361,11 +374,24 @@ export interface DriverFleetAvailability {
             </div>
           </div>
 
+          <!-- Fleet Error Banner -->
+          <div *ngIf="hasFleetError && !isLoadingFleet" class="error-banner-card">
+            <span class="material-symbols-outlined error-banner-icon">cloud_off</span>
+            <div class="error-banner-text">
+              <p class="error-banner-title">Unable to load fleet availability</p>
+              <p class="error-banner-sub">{{ fleetErrorMessage }}</p>
+            </div>
+            <button type="button" class="btn-retry-sync" (click)="loadFleetAvailabilities()">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Retry</span>
+            </button>
+          </div>
+
           <!-- Loading State -->
           <div *ngIf="isLoadingFleet" class="shimmer-placeholder list-shimmer"></div>
 
           <!-- Empty Fleet State -->
-          <div *ngIf="!isLoadingFleet && filteredFleetDrivers.length === 0" class="empty-slots-card">
+          <div *ngIf="!isLoadingFleet && !hasFleetError && filteredFleetDrivers.length === 0" class="empty-slots-card">
             <span class="material-symbols-outlined empty-icon">group_off</span>
             <p class="empty-title">No fleet records found</p>
             <p class="empty-subtitle">No driver availability data reported for {{ formatSelectedDate() }}.</p>
@@ -1236,6 +1262,72 @@ export interface DriverFleetAvailability {
       color: #0747A6;
     }
 
+    /* Error Banner */
+    .error-banner-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      border-radius: 12px;
+    }
+    :host-context(.dark-theme) .error-banner-card {
+      background: #2D1517;
+      border-color: #7F1D1D;
+    }
+    .error-banner-icon {
+      font-size: 24px;
+      color: #DC2626;
+      flex-shrink: 0;
+    }
+    .error-banner-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .error-banner-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #991B1B;
+      margin: 0;
+    }
+    :host-context(.dark-theme) .error-banner-title {
+      color: #F87171;
+    }
+    .error-banner-sub {
+      font-size: 11px;
+      color: #B91C1C;
+      margin: 0;
+      line-height: 1.3;
+    }
+    :host-context(.dark-theme) .error-banner-sub {
+      color: #FCA5A5;
+    }
+    .btn-retry-sync {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      background: #DC2626;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s ease;
+    }
+    .btn-retry-sync:active {
+      opacity: 0.8;
+    }
+    .btn-retry-sync .material-symbols-outlined {
+      font-size: 16px;
+    }
+
     /* Shimmer Placeholder */
     .shimmer-placeholder {
       background: linear-gradient(90deg, #E0E2EC 25%, #F0F2FA 50%, #E0E2EC 75%);
@@ -1283,6 +1375,10 @@ export class AvailabilityComponent implements OnInit {
   isLoadingFleet: boolean = false;
   isSaving: boolean = false;
   isRefreshing: boolean = false;
+  hasLoadError: boolean = false;
+  loadErrorMessage: string = '';
+  hasFleetError: boolean = false;
+  fleetErrorMessage: string = '';
 
   // Touch pull to refresh
   pullStartY = 0;
@@ -1443,13 +1539,42 @@ export class AvailabilityComponent implements OnInit {
     }
   }
 
+  private extractErrorMessage(err: any, fallback: string): string {
+    if (!err) return fallback;
+    if (typeof err === 'string') return err;
+    if (typeof err.error === 'string' && err.error.trim().length > 0 && !err.error.includes('<html') && !err.error.includes('<!DOCTYPE')) {
+      return err.error.trim();
+    }
+    if (err.error && typeof err.error === 'object') {
+      if (err.error.message && typeof err.error.message === 'string') return err.error.message;
+      if (err.error.title && typeof err.error.title === 'string') return err.error.title;
+      if (err.error.error && typeof err.error.error === 'string') return err.error.error;
+      if (err.error.errorMessage && typeof err.error.errorMessage === 'string') return err.error.errorMessage;
+      if (err.error.errors && typeof err.error.errors === 'object') {
+        const msgs = Object.values(err.error.errors).flat().filter(m => typeof m === 'string');
+        if (msgs.length > 0) return msgs.join('. ');
+      }
+    }
+    if (err.status === 0) return 'Unable to connect to server. Please check your internet connection.';
+    if (err.status === 400) return 'Invalid shift details or conflicting availability slot.';
+    if (err.status === 401) return 'Session expired. Please log in again.';
+    if (err.status === 403) return 'You do not have permission to modify availability.';
+    if (err.status === 404) return 'Driver account not found on dispatch server.';
+    if (err.status === 409) return 'This time slot overlaps with an existing shift.';
+    if (err.status >= 500) return 'Dispatch server is temporarily busy. Please try again in a moment.';
+    return fallback;
+  }
+
   // ---------------- API CALLS ----------------
   loadMyAvailabilities(): void {
     this.isLoading = true;
+    this.hasLoadError = false;
+    this.loadErrorMessage = '';
     this.driverService.getAvailabilities().subscribe({
       next: (res: any) => {
         this.isLoading = false;
         this.isRefreshing = false;
+        this.hasLoadError = false;
         let list: any[] = [];
         if (Array.isArray(res)) {
           list = res;
@@ -1476,6 +1601,8 @@ export class AvailabilityComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         this.isRefreshing = false;
+        this.hasLoadError = true;
+        this.loadErrorMessage = this.extractErrorMessage(err, 'Unable to load schedule from server.');
         console.error('[Availability] Failed to load availabilities from API:', err);
         this.filterSlotsForSelectedDay();
       }
@@ -1484,11 +1611,14 @@ export class AvailabilityComponent implements OnInit {
 
   loadFleetAvailabilities(): void {
     this.isLoadingFleet = true;
+    this.hasFleetError = false;
+    this.fleetErrorMessage = '';
     const dateStr = this.getDateKey(this.getSelectedDate());
 
     this.driverService.getAllDriversAvailability(dateStr).subscribe({
       next: (res: any) => {
         this.isLoadingFleet = false;
+        this.hasFleetError = false;
         const list = Array.isArray(res) ? res : (res?.drivers || res?.Drivers || []);
         this.fleetDrivers = list.map((d: any) => ({
           fullName: d.fullName || d.driverName || d.FullName || 'Driver',
@@ -1502,7 +1632,10 @@ export class AvailabilityComponent implements OnInit {
       },
       error: (err) => {
         this.isLoadingFleet = false;
+        this.hasFleetError = true;
+        this.fleetErrorMessage = this.extractErrorMessage(err, 'Unable to load fleet schedule.');
         console.error('[Availability] Failed to load fleet availability:', err);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -1549,6 +1682,14 @@ export class AvailabilityComponent implements OnInit {
     const toTime = `${this.toHour}:${this.toMinute}`;
     const resolvedUserId = this.getUserIdFromToken();
 
+    // Client-side time validation
+    const fromMins = parseInt(this.fromHour, 10) * 60 + parseInt(this.fromMinute, 10);
+    const toMins = parseInt(this.toHour, 10) * 60 + parseInt(this.toMinute, 10);
+    if (fromMins >= toMins) {
+      this.snackBar.open('Start time must be earlier than end time.', 'Close', { duration: 3500 });
+      return;
+    }
+
     const payload = {
       userId: resolvedUserId,
       date: dateFormatted,
@@ -1569,15 +1710,15 @@ export class AvailabilityComponent implements OnInit {
         this.snackBar.open(
           type === 1 ? 'Availability added successfully ✅' : 'Marked unavailable for selected time ❌',
           'Close',
-          { duration: 3000, panelClass: type === 1 ? ['green-snackbar'] : ['red-snackbar'] }
+          { duration: 3000 }
         );
         this.loadMyAvailabilities();
       },
       error: (err) => {
         this.isSaving = false;
         console.error('[Availability] SetAvailability error:', err);
-        const errorText = err?.error?.message || err?.message || 'Error saving availability to server';
-        this.snackBar.open(`Notice: ${errorText}`, 'Close', { duration: 3000 });
+        const errorText = this.extractErrorMessage(err, 'Unable to save availability to server.');
+        this.snackBar.open(errorText, 'Close', { duration: 3500 });
         this.loadMyAvailabilities();
       }
     });
@@ -1587,12 +1728,13 @@ export class AvailabilityComponent implements OnInit {
     if (!slot.id) return;
     this.driverService.deleteAvailability(slot.id).subscribe({
       next: () => {
-        this.snackBar.open('Shift removed successfully', 'Close', { duration: 2500 });
+        this.snackBar.open('Shift removed successfully ✅', 'Close', { duration: 2500 });
         this.loadMyAvailabilities();
       },
       error: (err) => {
         console.error('[Availability] Delete error:', err);
-        this.snackBar.open('Shift removed', 'Close', { duration: 2500 });
+        const errorText = this.extractErrorMessage(err, 'Unable to remove shift. Please try again.');
+        this.snackBar.open(errorText, 'Close', { duration: 3500 });
         this.loadMyAvailabilities();
       }
     });

@@ -488,6 +488,11 @@ The Angular router guards and services parse the `token` parameter directly from
   - Upgraded `decline()` and `autoReject()` in `JobOfferComponent` (`job-offer.ts`) to query refreshed active offer GUIDs on stale rejection dispatch (`replyJobOffer?response=2001`), display toast feedback, send `close_custom_webview` signal to native bridge, and navigate cleanly back to `/bookings`.
   - Added native bridge `job_rejected` and `job_accepted` handling in `webview_screen.dart` and `dashboard_view.dart` to automatically close active custom webview overlay sheets (`closeCustomWebView()`) returning drivers to the primary dashboard.
   - Enhanced native Flutter `rejectJob()` in `trip.dart` to asynchronously notify `/api/DriverApp/JobOfferReply?jobno=...&response=2001&guid=...` on native rejection triggers.
+- [x] **Driver Availability API Response & Exception Sanitization (`availability.ts`)**:
+  - Implemented comprehensive error extraction pipeline (`extractErrorMessage`) preventing raw HTTP exception strings (`Http failure response...`, `500 Server Error`, stack dumps) from ever showing to drivers.
+  - Added pre-dispatch client-side validation on shift time ranges (preventing start time $\ge$ end time errors before network requests).
+  - Added modern inline error banners with 1-tap **Retry** action for network sync and fleet schedule loading failures.
+  - Added positive feedback toast messaging on saving shifts and clean error handling on shift deletion.
   - Verified with 100% green passing Angular compilation (`ng build`) and Flutter test suite (12/12 passing).
 
 ### ⏳ Remaining Work / Roadmap
