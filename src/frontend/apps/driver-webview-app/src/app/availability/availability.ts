@@ -117,7 +117,11 @@ export interface DriverFleetAvailability {
           >
             <span class="day-letter">{{ day.dayLetter }}</span>
             <span class="day-number">{{ day.date.getDate() }}</span>
-            <span class="slot-dot" *ngIf="hasSlotsForDay(day.date)"></span>
+            <span 
+              class="slot-dot" 
+              *ngIf="hasSlotsForDay(day.date)" 
+              [class.unavail-dot]="getDaySlotType(day.date) === 2"
+            ></span>
           </button>
         </div>
       </div>
@@ -772,6 +776,9 @@ export interface DriverFleetAvailability {
       background-color: #00875A;
       position: absolute;
       bottom: 4px;
+    }
+    .slot-dot.unavail-dot {
+      background-color: #DE350B;
     }
     .day-pill-btn.selected .slot-dot {
       background-color: #FFFFFF;
@@ -1617,6 +1624,40 @@ export class AvailabilityComponent implements OnInit {
     return fallback;
   }
 
+  parseSlotType(item: any): number {
+    const rawType = item.availabilityType !== undefined 
+      ? item.availabilityType 
+      : (item.AvailabilityType !== undefined 
+        ? item.AvailabilityType 
+        : (item.type !== undefined ? item.type : (item.Type !== undefined ? item.Type : undefined)));
+
+    if (typeof rawType === 'number') {
+      return rawType;
+    }
+    if (typeof rawType === 'string') {
+      const lower = rawType.toLowerCase().trim();
+      if (lower === 'unavailable' || lower === '2' || lower === 'off' || lower === 'unavail') return 2;
+      if (lower === 'available' || lower === '1' || lower === 'avail') return 1;
+      const parsed = parseInt(rawType, 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+
+    const desc = (item.note || item.Note || item.description || item.Description || '').toString().toLowerCase();
+    if (desc.includes('unavailable') || desc.includes('day off') || desc.includes('off duty') || desc.includes('off')) {
+      return 2;
+    }
+
+    return 1;
+  }
+
+  getDaySlotType(targetDate: Date): number | null {
+    const targetKey = this.getDateKey(targetDate);
+    const slots = this.allMySlots.filter(slot => this.getDateKey(slot.date) === targetKey);
+    if (slots.length === 0) return null;
+    if (slots.some(s => s.type === 2)) return 2;
+    return 1;
+  }
+
   // ---------------- API CALLS ----------------
   loadMyAvailabilities(): void {
     this.isLoading = true;
@@ -1643,8 +1684,8 @@ export class AvailabilityComponent implements OnInit {
           from: this.formatTimeStr(item.from ?? item.From ?? '08:00'),
           to: this.formatTimeStr(item.to ?? item.To ?? '17:00'),
           giveOrTake: !!(item.giveOrTake ?? item.GiveOrTake),
-          type: item.type !== undefined ? item.type : (item.Type !== undefined ? item.Type : 1),
-          note: item.note ?? item.Note ?? '',
+          type: this.parseSlotType(item),
+          note: item.note ?? item.Note ?? item.description ?? item.Description ?? '',
           allocated: !!(item.allocated ?? item.Allocated)
         }));
 

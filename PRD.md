@@ -493,11 +493,10 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added pre-dispatch client-side validation on shift time ranges (preventing start time $\ge$ end time errors before network requests).
   - Added modern inline error banners with 1-tap **Retry** action for network sync and fleet schedule loading failures.
   - Added positive feedback toast messaging on saving shifts and clean error handling on shift deletion.
-- [x] **Past Date Availability Selection & Scheduling Prevention (`availability.ts`)**:
-  - Disabled previous week navigation (`chevron_left`) when currently on the active week (`currentWeekOffset <= 0`).
-  - Added past date detection (`isPastDate`) that automatically disables and dims past day pill buttons (`[disabled]="isPastDate(day.date)"`) in the current week.
-  - Automatically defaults the initial selected day on app load to **Today** rather than Monday.
-  - Prevented saving or clicking past date availability slots with clean snackbar feedback (*"Cannot schedule shifts for dates in the past."*).
+- [x] **Backend DTO AvailabilityType & Unavailable Slot Mapping Resolution (`availability.ts`)**:
+  - Resolved model mismatch where C# backend DTO returns `AvailabilityType` and `Description` rather than `type` / `note`.
+  - Built `parseSlotType` resolver handling numeric enum values (`1` for Available, `2` for Unavailable), string representations (`"Unavailable"`, `"Available"`), and description text fallbacks (`"Day Off"`, `"Unavailable"`).
+  - Added visual distinction on the 7-day pill indicator dots (emerald for available shifts, crimson for unavailable shifts).
   - Verified with 100% green passing Angular compilation (`ng build`) and Flutter test suite (12/12 passing).
 
 ### ⏳ Remaining Work / Roadmap
