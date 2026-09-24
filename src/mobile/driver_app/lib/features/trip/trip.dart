@@ -553,8 +553,31 @@ class TripNotifier extends StateNotifier<TripState> {
   }
 
   Future<void> rejectJob() async {
-    if (state.currentTrip != null) {
-      state = const TripState(status: TripStatus.idle);
+    final trip = state.currentTrip;
+    state = const TripState(status: TripStatus.idle);
+    if (trip != null) {
+      final jobId = trip.id;
+      final bookingIdInt = int.tryParse(jobId) ?? 0;
+      final guid = trip.guid;
+      if (bookingIdInt > 0 && !_isMockTrip(jobId)) {
+        try {
+          final auth = _ref.read(authProvider);
+          final token = auth.token;
+          await _dio.get(
+            '/api/DriverApp/JobOfferReply',
+            queryParameters: {
+              'jobno': bookingIdInt,
+              'response': 2001, // 2001 = Reject / Decline
+              if (guid.isNotEmpty) 'guid': guid,
+            },
+            options: Options(
+              headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+            ),
+          );
+        } catch (e) {
+          debugPrint("[TripNotifier] rejectJob API error: $e");
+        }
+      }
     }
   }
 

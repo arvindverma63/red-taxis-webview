@@ -130,8 +130,10 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
             debugPrint("FlutterChannel message received: ${message.message}");
             if (message.message == 'job_accepted') {
               ref.read(tripProvider.notifier).acceptJob();
+              ref.read(navigationProvider.notifier).closeCustomWebView();
             } else if (message.message == 'job_rejected') {
               ref.read(tripProvider.notifier).rejectJob();
+              ref.read(navigationProvider.notifier).closeCustomWebView();
             } else if (message.message == 'arrived_at_pickup') {
               ref.read(tripProvider.notifier).markArrived();
             } else if (message.message == 'start_trip') {

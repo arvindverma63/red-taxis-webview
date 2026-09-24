@@ -1515,17 +1515,41 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     const numericJobId = parseInt(jobId) || 0;
     const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
 
+    const finishDecline = () => {
+      this.snackBar.open(`Job #${jobId || ''} Declined`, 'OK', { duration: 2500 });
+      this.notifyNativeApp('job_rejected');
+      this.notifyNativeApp('close_custom_webview');
+      this.router.navigate(['/bookings']);
+    };
+
     if (jobId && !jobId.startsWith('sim-')) {
       this.driverService.replyJobOffer(numericJobId, 2001, effectiveGuid).subscribe({
         next: () => {
-          this.notifyNativeApp('job_rejected');
+          finishDecline();
         },
-        error: () => {
-          this.notifyNativeApp('job_rejected');
+        error: (err: any) => {
+          console.warn('Initial JobOfferReply (reject) failed. Querying fresh GUID...', err);
+          this.driverService.getJobOffers().pipe(catchError(() => of([]))).subscribe((offersRes: any) => {
+            const list = Array.isArray(offersRes) ? offersRes : (offersRes?.value || offersRes?.data || offersRes?.jobs || []);
+            const matching = list.find((item: any) => {
+              const bId = (item.bookingId || item.bookingNo || item.id || item.data?.bookingId || '').toString();
+              return bId === jobId;
+            });
+            const freshGuid = (matching?.guid || matching?.Guid || matching?.notificationId || matching?.data?.guid || '').toString();
+
+            if (freshGuid && freshGuid !== effectiveGuid) {
+              this.driverService.replyJobOffer(numericJobId, 2001, freshGuid).subscribe({
+                next: () => finishDecline(),
+                error: () => finishDecline()
+              });
+            } else {
+              finishDecline();
+            }
+          });
         }
       });
     } else {
-      this.notifyNativeApp('job_rejected');
+      finishDecline();
     }
   }
 
@@ -1536,13 +1560,20 @@ export class JobOfferComponent implements OnInit, OnDestroy {
     const numericJobId = parseInt(jobId) || 0;
     const effectiveGuid = this.guid || (typeof localStorage !== 'undefined' ? localStorage.getItem('last_guid') || '' : '');
 
+    const finishAutoReject = () => {
+      this.snackBar.open('Job Offer Expired', 'OK', { duration: 2500 });
+      this.notifyNativeApp('job_rejected');
+      this.notifyNativeApp('close_custom_webview');
+      this.router.navigate(['/bookings']);
+    };
+
     if (jobId && !jobId.startsWith('sim-')) {
       this.driverService.replyJobOffer(numericJobId, 2001, effectiveGuid).subscribe({
-        next: () => this.notifyNativeApp('job_rejected'),
-        error: () => this.notifyNativeApp('job_rejected')
+        next: () => finishAutoReject(),
+        error: () => finishAutoReject()
       });
     } else {
-      this.notifyNativeApp('job_rejected');
+      finishAutoReject();
     }
   }
 

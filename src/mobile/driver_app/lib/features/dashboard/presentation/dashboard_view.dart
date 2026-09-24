@@ -217,7 +217,15 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             if (query.isNotEmpty) {
               _openExternalMap(query);
             }
-          } else if (message.message == 'close_complete_job') {
+          } else if (message.message == 'job_accepted') {
+            ref.read(tripProvider.notifier).acceptJob();
+            ref.read(navigationProvider.notifier).closeCustomWebView();
+          } else if (message.message == 'job_rejected') {
+            ref.read(tripProvider.notifier).rejectJob();
+            ref.read(navigationProvider.notifier).closeCustomWebView();
+          } else if (message.message == 'close_complete_job' ||
+              message.message == 'close_custom_webview' ||
+              message.message == 'dismiss_status') {
             ref.read(navigationProvider.notifier).closeCustomWebView();
           }
         },

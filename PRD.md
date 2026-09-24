@@ -484,6 +484,12 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Dark Theme & Accessibility**: Fully styled with hover highlights, tap scaling, and dark theme support (`.dark-theme`).
   - **Build Verification**: Verified 100% green compilation on Angular production bundle (`ng build`) and Flutter suite.
 
+- [x] **Reject Booking Lifecycle & Custom Webview Dismissal Fix (`job-offer.ts`, `webview_screen.dart`, `dashboard_view.dart`, `trip.dart`)**:
+  - Upgraded `decline()` and `autoReject()` in `JobOfferComponent` (`job-offer.ts`) to query refreshed active offer GUIDs on stale rejection dispatch (`replyJobOffer?response=2001`), display toast feedback, send `close_custom_webview` signal to native bridge, and navigate cleanly back to `/bookings`.
+  - Added native bridge `job_rejected` and `job_accepted` handling in `webview_screen.dart` and `dashboard_view.dart` to automatically close active custom webview overlay sheets (`closeCustomWebView()`) returning drivers to the primary dashboard.
+  - Enhanced native Flutter `rejectJob()` in `trip.dart` to asynchronously notify `/api/DriverApp/JobOfferReply?jobno=...&response=2001&guid=...` on native rejection triggers.
+  - Verified with 100% green passing Angular compilation (`ng build`) and Flutter test suite (12/12 passing).
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
