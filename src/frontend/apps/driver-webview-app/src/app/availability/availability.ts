@@ -89,7 +89,7 @@ export interface DriverFleetAvailability {
       <!-- 2. Week Range Navigator Card -->
       <div class="week-nav-card">
         <div class="week-header-row">
-          <button class="nav-arrow-btn" (click)="navigateWeek(-1)" [disabled]="isLoading">
+          <button class="nav-arrow-btn" (click)="navigateWeek(-1)" [disabled]="currentWeekOffset <= 0 || isLoading" title="Previous Week">
             <span class="material-symbols-outlined">chevron_left</span>
           </button>
           
@@ -98,7 +98,7 @@ export interface DriverFleetAvailability {
             <span class="week-date-range">{{ formatWeekRange() }}</span>
           </div>
 
-          <button class="nav-arrow-btn" (click)="navigateWeek(1)" [disabled]="isLoading">
+          <button class="nav-arrow-btn" (click)="navigateWeek(1)" [disabled]="isLoading" title="Next Week">
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
@@ -110,7 +110,10 @@ export interface DriverFleetAvailability {
             class="day-pill-btn"
             [class.selected]="selectedDayIndex === i"
             [class.has-slots]="hasSlotsForDay(day.date)"
+            [class.disabled]="isPastDate(day.date)"
+            [disabled]="isPastDate(day.date)"
             (click)="selectDay(i)"
+            [title]="isPastDate(day.date) ? 'Past date cannot be selected' : day.dayLetter"
           >
             <span class="day-letter">{{ day.dayLetter }}</span>
             <span class="day-number">{{ day.date.getDate() }}</span>
@@ -684,6 +687,17 @@ export interface DriverFleetAvailability {
       background-color: #E2E4EB;
       transform: scale(0.95);
     }
+    .nav-arrow-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+      background-color: #F1F3F9;
+    }
+    :host-context(.dark-theme) .nav-arrow-btn:disabled {
+      background-color: #1E1E24 !important;
+      border-color: #2D2D35 !important;
+      opacity: 0.3;
+    }
     .week-label-box {
       display: flex;
       align-items: center;
@@ -718,6 +732,20 @@ export interface DriverFleetAvailability {
       cursor: pointer;
       position: relative;
       transition: all 0.15s ease;
+    }
+    .day-pill-btn.disabled,
+    .day-pill-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed !important;
+      background-color: #F1F3F9 !important;
+      border-color: #E2E4EB !important;
+      pointer-events: none;
+    }
+    :host-context(.dark-theme) .day-pill-btn.disabled,
+    :host-context(.dark-theme) .day-pill-btn:disabled {
+      background-color: #16161A !important;
+      border-color: #24242C !important;
+      opacity: 0.28;
     }
     .day-letter {
       font-size: 11px;
@@ -1405,8 +1433,17 @@ export class AvailabilityComponent implements OnInit {
     }
   }
 
+  isPastDate(dateVal: Date | string): boolean {
+    if (!dateVal) return false;
+    const targetKey = this.getDateKey(dateVal);
+    const todayKey = this.getDateKey(new Date());
+    return targetKey < todayKey;
+  }
+
   initWeek(offset: number): void {
-    this.currentWeekOffset += offset;
+    const newOffset = this.currentWeekOffset + offset;
+    // Disallow navigating into the past before current week
+    this.currentWeekOffset = Math.max(0, newOffset);
     const now = new Date();
     // Start of week (Monday)
     const dayOfWeek = now.getDay();
@@ -1428,13 +1465,22 @@ export class AvailabilityComponent implements OnInit {
       });
     }
 
-    if (offset !== 0) {
+    if (this.currentWeekOffset === 0) {
+      // On current week, default selected day to Today
+      const todayKey = this.getDateKey(now);
+      const todayIdx = this.currentWeekDays.findIndex(d => this.getDateKey(d.date) === todayKey);
+      this.selectedDayIndex = todayIdx !== -1 ? todayIdx : 0;
+    } else {
+      // On future weeks, default to Monday (index 0)
       this.selectedDayIndex = 0;
     }
     this.filterSlotsForSelectedDay();
   }
 
   navigateWeek(direction: number): void {
+    if (direction < 0 && this.currentWeekOffset <= 0) {
+      return;
+    }
     this.initWeek(direction);
     if (this.activeMode === 'fleet') {
       this.loadFleetAvailabilities();
@@ -1442,10 +1488,16 @@ export class AvailabilityComponent implements OnInit {
   }
 
   selectDay(index: number): void {
-    this.selectedDayIndex = index;
-    this.filterSlotsForSelectedDay();
-    if (this.activeMode === 'fleet') {
-      this.loadFleetAvailabilities();
+    if (index >= 0 && index < this.currentWeekDays.length) {
+      if (this.isPastDate(this.currentWeekDays[index].date)) {
+        this.snackBar.open('Cannot set availability for past dates.', 'Close', { duration: 2500 });
+        return;
+      }
+      this.selectedDayIndex = index;
+      this.filterSlotsForSelectedDay();
+      if (this.activeMode === 'fleet') {
+        this.loadFleetAvailabilities();
+      }
     }
   }
 
@@ -1676,6 +1728,11 @@ export class AvailabilityComponent implements OnInit {
 
   saveAvailability(type: number): void {
     const selDate = this.getSelectedDate();
+    if (this.isPastDate(selDate)) {
+      this.snackBar.open('Cannot schedule shifts for dates in the past.', 'Close', { duration: 3500 });
+      return;
+    }
+
     const dateKey = this.getDateKey(selDate);
     const dateFormatted = `${dateKey}T00:00:00.000Z`;
     const fromTime = `${this.fromHour}:${this.fromMinute}`;
