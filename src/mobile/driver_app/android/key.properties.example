@@ -1,0 +1,8 @@
+# Example key.properties file for Google Play Release Signing
+# Copy this file to 'key.properties' in this directory (android/) and fill in your values.
+# DO NOT commit the actual 'key.properties' or your '.jks' keystore file to version control.
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=upload-keystore.jks

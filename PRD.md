@@ -493,11 +493,13 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added pre-dispatch client-side validation on shift time ranges (preventing start time $\ge$ end time errors before network requests).
   - Added modern inline error banners with 1-tap **Retry** action for network sync and fleet schedule loading failures.
   - Added positive feedback toast messaging on saving shifts and clean error handling on shift deletion.
-- [x] **Backend DTO AvailabilityType & Unavailable Slot Mapping Resolution (`availability.ts`)**:
-  - Resolved model mismatch where C# backend DTO returns `AvailabilityType` and `Description` rather than `type` / `note`.
-  - Built `parseSlotType` resolver handling numeric enum values (`1` for Available, `2` for Unavailable), string representations (`"Unavailable"`, `"Available"`), and description text fallbacks (`"Day Off"`, `"Unavailable"`).
-  - Added visual distinction on the 7-day pill indicator dots (emerald for available shifts, crimson for unavailable shifts).
-  - Verified with 100% green passing Angular compilation (`ng build`) and Flutter test suite (12/12 passing).
+- [x] **Google Play Store Release Signing & Application-Side Setup (`driver_app` & `customer_app`)**:
+  - Configured resilient release signing in `build.gradle.kts` with dynamic `key.properties` loading and fallback to debug signing in local development environments.
+  - Added [key.properties.example](file:///d:/redtaxis/src/mobile/driver_app/android/key.properties.example) and [key.properties.example](file:///d:/redtaxis/src/mobile/customer_app/android/key.properties.example) templates with step-by-step keystore generation instructions.
+  - Configured `proguard-rules.pro` Proguard code shrinking and obfuscation rules for both applications.
+  - Added required Play Store permissions (`INTERNET`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `POST_NOTIFICATIONS`), `usesCleartextTraffic="true"`, and standardized Play Store application labels in `AndroidManifest.xml`.
+  - Removed broad `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, and `READ_EXTERNAL_STORAGE` permissions with explicit `tools:node="remove"` manifest directives to fully comply with Google Play's system photo picker policy for Android 13+ (API 33+).
+  - Verified 100% clean build health with `flutter analyze` and `flutter test` across both mobile apps.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
