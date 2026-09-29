@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -438,6 +439,26 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                               if (isOnline) {
                                 ref.read(shiftProvider.notifier).goOffline();
                               } else {
+                                final branding = ref.read(authProvider).tenantBranding ?? TenantBranding.defaultFirstTaxis();
+                                final hasAccepted = await LocationDisclosureDialog.hasAccepted();
+                                if (!hasAccepted && context.mounted) {
+                                  final accepted = await LocationDisclosureDialog.show(
+                                    context,
+                                    fleetName: branding.name,
+                                  );
+                                  if (!accepted) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Background location consent is required to go on duty.'),
+                                          backgroundColor: Color(0xFFCD1A21),
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                }
+
                                 final result = await ref.read(shiftProvider.notifier).goOnline();
                                 if (result != LocationPermissionResult.granted && context.mounted) {
                                   _showLocationSettingsDialog(context, result);
@@ -471,7 +492,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             ),
 
             // Thin Loading bar for WebView loading state
-            if (_isLoading && !_hasError)
+            if (_isLoading && !_hasError && !Platform.environment.containsKey('FLUTTER_TEST'))
               const SizedBox(
                 height: 3,
                 child: LinearProgressIndicator(
@@ -509,6 +530,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   }
 
   void _showLocationSettingsDialog(BuildContext context, LocationPermissionResult result) {
+    if (result == LocationPermissionResult.disclosureDeclined) return;
     String title;
     String message;
     bool isServiceDisabled = result == LocationPermissionResult.serviceDisabled;
@@ -517,8 +539,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       title = 'Location Services Disabled';
       message = 'GPS location services are disabled on your device. Please enable location services to go online.';
     } else {
-      title = 'Location Permission Required';
-      message = '${ref.read(authProvider).tenantBranding?.name ?? "Red Taxis"} requires precise background location permissions to receive booking offers. Please grant permission in settings.';
+      title = 'Background Location Required';
+      message = '${ref.read(authProvider).tenantBranding?.name ?? "Red Taxis"} requires background location access to receive booking offers while on duty. Please open app settings and select "Allow all the time".';
     }
 
     showDialog(

@@ -26,6 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   bool _obscureTenantKey = true;
   bool _rememberMe = true;
+  bool _agreeToTerms = false;
   bool _isResolvingTenant = false;
   DateTime? _lastBackPressTime;
 
@@ -103,6 +104,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _submitLogin() {
     FocusScope.of(context).unfocus();
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Color(0xFFCD1A21),
+          content: Row(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Please accept the Terms & Conditions and Privacy Policy to sign in.'),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
     if (_loginFormKey.currentState!.validate()) {
       ref.read(authProvider.notifier).signIn(
             _usernameController.text.trim(),
@@ -518,6 +537,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          _buildLegalFooter(TenantBranding.defaultRedTaxis(), isDark),
         ],
       ),
     );
@@ -698,32 +721,123 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
           const SizedBox(height: 12),
 
-          // Remember Me Toggle
+          // 1. Remember Me Toggle Row
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                height: 24,
-                width: 24,
+                height: 20,
+                width: 20,
                 child: Checkbox(
                   value: _rememberMe,
                   activeColor: branding.primaryColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   onChanged: (val) => setState(() => _rememberMe = val ?? true),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Remember my login on this device',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? Colors.grey[300] : const Color(0xFF475569),
-                  fontWeight: FontWeight.w500,
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _rememberMe = !_rememberMe),
+                  child: Text(
+                    'Remember my login on this device',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+
+          // 2. Compulsory Terms & Privacy Policy Checkbox Row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: 20,
+                width: 20,
+                child: Checkbox(
+                  value: _agreeToTerms,
+                  activeColor: branding.primaryColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (val) => setState(() => _agreeToTerms = val ?? false),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'I agree to the ',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final accepted = await PrivacyPolicyDialog.show(
+                          context,
+                          fleetName: branding.name,
+                          initialTab: 1,
+                        );
+                        if (accepted && mounted) setState(() => _agreeToTerms = true);
+                      },
+                      child: Text(
+                        'Terms & Conditions',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: branding.primaryColor,
+                          decoration: TextDecoration.underline,
+                          decorationColor: branding.primaryColor.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      ' and ',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final accepted = await PrivacyPolicyDialog.show(
+                          context,
+                          fleetName: branding.name,
+                          initialTab: 0,
+                        );
+                        if (accepted && mounted) setState(() => _agreeToTerms = true);
+                      },
+                      child: Text(
+                        'Privacy Policy',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: branding.primaryColor,
+                          decoration: TextDecoration.underline,
+                          decorationColor: branding.primaryColor.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 22),
 
           // Sign In Submit Button
           ElevatedButton(
@@ -749,7 +863,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
           // Security SSL Badge
           Center(
@@ -770,6 +884,83 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLegalFooter(TenantBranding branding, bool isDark) {
+    final linkColor = branding.primaryColor;
+    final textColor = isDark ? Colors.grey[400] : const Color(0xFF64748B);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              'By signing in, you agree to our ',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: textColor,
+              ),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: () {
+                PrivacyPolicyDialog.show(
+                  context,
+                  fleetName: branding.name,
+                  initialTab: 1, // Terms of Service tab
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                child: Text(
+                  'Terms of Service',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: linkColor,
+                    decoration: TextDecoration.underline,
+                    decorationColor: linkColor.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              ' and ',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: textColor,
+              ),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: () {
+                PrivacyPolicyDialog.show(
+                  context,
+                  fleetName: branding.name,
+                  initialTab: 0, // Privacy Policy tab
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                child: Text(
+                  'Privacy Policy',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: linkColor,
+                    decoration: TextDecoration.underline,
+                    decorationColor: linkColor.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

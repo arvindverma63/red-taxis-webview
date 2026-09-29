@@ -17,18 +17,12 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.redtaxis.customer_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.2.13676358"
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
-    }
-
-    packaging {
-        jniLibs {
-            keepDebugSymbols += listOf("**/*.so")
-        }
     }
 
     kotlinOptions {

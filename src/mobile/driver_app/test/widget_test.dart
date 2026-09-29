@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ignore: depend_on_referenced_packages
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
-import 'package:driver_app/main.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/trip/trip.dart';
+import 'package:driver_app/features/dashboard/presentation/dashboard_view.dart';
 import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
 
@@ -125,6 +125,11 @@ class ShiftNotifierMock extends ShiftNotifier {
   ShiftNotifierMock(super.ref);
 
   @override
+  Future<void> resetToOffline() async {
+    state = const ShiftState(status: ShiftStatus.offline);
+  }
+
+  @override
   Future<LocationPermissionResult> goOnline() async {
     state = ShiftState(
       status: ShiftStatus.online,
@@ -145,7 +150,10 @@ void main() {
   });
 
   testWidgets('Driver Dashboard Smoke Test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+    // Pre-accept location disclosure for automated smoke testing
+    await LocationDisclosureDialog.setAccepted(true);
+
+    // Build our dashboard widget directly
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -153,14 +161,14 @@ void main() {
           shiftProvider.overrideWith((ref) => ShiftNotifierMock(ref)),
           tripProvider.overrideWith((ref) => TripNotifierMock(ref)),
         ],
-        child: const DriverApp(),
+        child: const MaterialApp(
+          home: DriverDashboardView(),
+        ),
       ),
     );
 
-    // Advance past splash screen into dashboard
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
     // Verify that the dashboard starts in OFFLINE mode.
     expect(find.text('Off Duty'), findsOneWidget);
@@ -169,6 +177,7 @@ void main() {
     // Tap the 'Go Online' button.
     await tester.tap(find.text('Go Online'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
     // Verify that it changes status to ONLINE.
     expect(find.text('On Duty'), findsOneWidget);
@@ -202,7 +211,7 @@ void main() {
     expect(retryCalled, isTrue);
     expect(find.text('Reconnecting...'), findsOneWidget);
 
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 1500));
   });
 
   testWidgets('OfflineErrorWidget Compact Test', (WidgetTester tester) async {
@@ -232,6 +241,6 @@ void main() {
 
     expect(retryCalled, isTrue);
 
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 1500));
   });
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
+import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/presentation/widgets/qr_scanner_modal.dart';
@@ -250,6 +251,45 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                     _saveSetting('settings_screen', val);
                   },
                 ),
+              ),
+              _buildDivider(isDark),
+              _buildCompactRow(
+                icon: Icons.policy_outlined,
+                iconColor: const Color(0xFF10B981),
+                title: 'Background Location Disclosure',
+                subtitle: 'Review Google Play data & tracking disclosure',
+                isDark: isDark,
+                trailing: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: Colors.grey,
+                ),
+                onTap: () {
+                  LocationDisclosureDialog.show(
+                    context,
+                    fleetName: branding.name,
+                    isReadOnly: true,
+                  );
+                },
+              ),
+              _buildDivider(isDark),
+              _buildCompactRow(
+                icon: Icons.shield_outlined,
+                iconColor: const Color(0xFF3B82F6),
+                title: 'Privacy Policy & Terms',
+                subtitle: 'Review ${branding.name} legal & data policies',
+                isDark: isDark,
+                trailing: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: Colors.grey,
+                ),
+                onTap: () {
+                  PrivacyPolicyDialog.show(
+                    context,
+                    fleetName: branding.name,
+                  );
+                },
               ),
             ],
           ),
@@ -517,8 +557,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     required String subtitle,
     required bool isDark,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
-    return Padding(
+    final rowContent = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
@@ -562,6 +603,14 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        child: rowContent,
+      );
+    }
+    return rowContent;
   }
 
   Widget _buildDivider(bool isDark) {

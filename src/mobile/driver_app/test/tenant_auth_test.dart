@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
+import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
 
 void main() {
@@ -112,6 +113,77 @@ void main() {
       expect(FontSizeOption.standard.scale, 1.0);
       expect(FontSizeOption.large.scale, 1.15);
       expect(FontSizeOption.extraLarge.scale, 1.30);
+    });
+
+    testWidgets('LocationDisclosureDialog displays required Google Play background disclosure wording', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: LocationDisclosureDialog(
+              fleetName: 'Red Taxis',
+              isReadOnly: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Background Location Access'), findsOneWidget);
+      expect(find.text('Prominent Disclosure & Consent'), findsOneWidget);
+      expect(find.textContaining('even when the app is closed or not in use', findRichText: true), findsOneWidget);
+      expect(find.text('Agree & Enable Location'), findsOneWidget);
+      expect(find.text('Deny & Stay Offline'), findsOneWidget);
+    });
+
+    testWidgets('LocationDisclosureDialog displays in read-only mode with Close button', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: LocationDisclosureDialog(
+              fleetName: 'First Taxis',
+              isReadOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.textContaining('First Taxis collects location data', findRichText: true), findsOneWidget);
+    });
+
+    testWidgets('PrivacyPolicyDialog renders Privacy Policy and Terms tabs with fleet branding', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PrivacyPolicyDialog(
+              fleetName: 'Red Taxis',
+              initialTabIndex: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Red Taxis Legal'), findsOneWidget);
+      expect(find.text('Privacy Policy'), findsWidgets);
+      expect(find.text('Terms of Service'), findsOneWidget);
+      expect(find.text('Your Privacy Is Protected'), findsOneWidget);
+      expect(find.text('Information We Collect'), findsOneWidget);
+      expect(find.text('I Understand'), findsOneWidget);
+      expect(find.text('Web Version'), findsOneWidget);
+
+      // Switch to Terms of Service tab
+      await tester.tap(find.text('Terms of Service'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Driver Terms of Service'), findsOneWidget);
+      expect(find.text('Driver Eligibility & Compliance'), findsOneWidget);
+    });
+
+    test('PrivacyPolicyDialog has correct staging-saas URLs', () {
+      expect(PrivacyPolicyDialog.defaultPrivacyUrl, 'https://staging-saas.redtaxi.co.uk/privacy-policy');
+      expect(PrivacyPolicyDialog.defaultTermsUrl, 'https://staging-saas.redtaxi.co.uk/terms-and-conditions');
     });
   });
 }

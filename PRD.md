@@ -500,6 +500,21 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added required Play Store permissions (`INTERNET`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `POST_NOTIFICATIONS`), `usesCleartextTraffic="true"`, and standardized Play Store application labels in `AndroidManifest.xml`.
   - Removed broad `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, and `READ_EXTERNAL_STORAGE` permissions with explicit `tools:node="remove"` manifest directives to fully comply with Google Play's system photo picker policy for Android 13+ (API 33+).
   - Verified 100% clean build health with `flutter analyze` and `flutter test` across both mobile apps.
+- [x] **Google Play Prominent Background Location Disclosure & User Consent (`driver_app`)**:
+  - Implemented dedicated Google Play policy-compliant `LocationDisclosureDialog` (`location_disclosure_dialog.dart`) adhering strictly to the User Data Prominent Disclosure and Consent policy for `BACKGROUND_LOCATION`.
+  - Included mandatory explicit disclosure wording stating that the app collects location data to enable live ride dispatching, route navigation, nearby passenger matching, and arrival ETAs **"even when the app is closed or not in use"**.
+  - Integrated affirmative and negative consent actions ("Agree & Enable Location" vs "Deny & Stay Offline") with persistent secure storage caching (`has_accepted_location_disclosure`).
+  - Wired disclosure prompt directly into the "Go Online" shift lifecycle (`dashboard_view.dart`), displaying the disclosure before invoking system runtime location permissions.
+  - Added "Background Location Disclosure" review tile under "Device & Tracking" in `SettingsView` (`settings_view.dart`) allowing drivers and Google Play reviewers to inspect data usage and tracking policies at any time.
+  - Added widget and unit test coverage in `tenant_auth_test.dart` verifying prominent disclosure rendering, wording compliance, and button states.
+- [x] **Privacy Policy & Terms of Service Login Integration (`driver_app`)**:
+  - Implemented multi-tenant compliant `PrivacyPolicyDialog` (`privacy_policy_dialog.dart`) featuring segmented tab navigation (`Privacy Policy` & `Terms of Service`), dynamic fleet branding, data collection breakdowns (credentials, GPS telemetry, compliance documents, trip earnings), GDPR rights, and tab-aware external web links to `https://staging-saas.redtaxi.co.uk/privacy-policy` and `https://staging-saas.redtaxi.co.uk/terms-and-conditions`.
+  - Added compulsory `I agree to the Terms & Conditions and Privacy Policy` interactive checkbox and validation guard in `LoginScreen` (`login_screen.dart`), preventing unauthenticated driver sign-ins until terms and privacy policies are explicitly accepted.
+  - Polished login screen UI alignment: cleanly unified `Remember my login` and `Terms & Conditions` checkboxes with consistent margins, tap target sizing, and typography, removing redundant footer duplicates.
+  - Integrated "Privacy Policy & Terms" inspection tile under "Device & Tracking" in `SettingsView` (`settings_view.dart`).
+  - Resolved flex layout constraints across `theme.dart` and `privacy_policy_dialog.dart` ensuring buttons in horizontal rows never inherit unbounded infinite width.
+  - Bumped driver app release version to `1.0.1+5` (`versionCode 5`) and generated optimized release bundle `app-release.aab` (52.8 MB).
+  - Added comprehensive widget and unit test suite in `tenant_auth_test.dart` (16/16 tests passing green).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
