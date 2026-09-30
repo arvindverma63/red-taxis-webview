@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 class QrScannerModal extends StatefulWidget {
   const QrScannerModal({super.key});
@@ -20,20 +21,25 @@ class QrScannerModal extends StatefulWidget {
 }
 
 class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProviderStateMixin {
-  late MobileScannerController _scannerController;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController? _scannerController;
   late AnimationController _laserAnimController;
   bool _torchEnabled = false;
   bool _hasDetected = false;
   String? _parseError;
 
   @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      _scannerController?.pauseCamera();
+    }
+    _scannerController?.resumeCamera();
+  }
+
+  @override
   void initState() {
     super.initState();
-    _scannerController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      torchEnabled: false,
-    );
     _laserAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
@@ -43,7 +49,7 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
   @override
   void dispose() {
     _laserAnimController.dispose();
-    _scannerController.dispose();
+    _scannerController?.dispose();
     super.dispose();
   }
 
@@ -127,25 +133,24 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
     return null;
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (_hasDetected) return;
-
-    for (final barcode in capture.barcodes) {
-      final rawValue = barcode.rawValue;
+  void _onQRViewCreated(QRViewController controller) {
+    _scannerController = controller;
+    controller.scannedDataStream.listen((scanData) {
+      if (_hasDetected) return;
+      final rawValue = scanData.code;
       if (rawValue != null && rawValue.isNotEmpty) {
         final result = _parseBarcodeData(rawValue);
         if (result != null) {
           _hasDetected = true;
           HapticFeedback.mediumImpact();
           Navigator.of(context).pop(result);
-          return;
         } else {
           setState(() {
             _parseError = 'Unrecognized QR code format. Please use a fleet QR.';
           });
         }
       }
-    }
+    });
   }
 
   void _selectPreset(String tenantId, String tenantKey) {
@@ -244,8 +249,9 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                     color: _torchEnabled ? Colors.amber : (isDark ? Colors.grey[300] : Colors.grey[700]),
                   ),
                   onPressed: () async {
-                    await _scannerController.toggleTorch();
-                    setState(() => _torchEnabled = !_torchEnabled);
+                    await _scannerController?.toggleFlash();
+                    final status = await _scannerController?.getFlashStatus();
+                    setState(() => _torchEnabled = status ?? !_torchEnabled);
                   },
                 ),
                 // Camera Flip
@@ -254,7 +260,7 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                     Icons.flip_camera_ios_rounded,
                     color: isDark ? Colors.grey[300] : Colors.grey[700],
                   ),
-                  onPressed: () => _scannerController.switchCamera(),
+                  onPressed: () => _scannerController?.flipCamera(),
                 ),
                 // Close Button
                 IconButton(
@@ -281,57 +287,58 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: MobileScanner(
-                      controller: _scannerController,
-                      onDetect: _onDetect,
+                    child: QRView(
+                      key: qrKey,
+                      onQRViewCreated: _onQRViewCreated,
+                      overlay: QrScannerOverlayShape(
+                        borderColor: primaryColor,
+                        borderRadius: 20,
+                        borderLength: 30,
+                        borderWidth: 4,
+                        cutOutSize: 230,
+                      ),
                     ),
                   ),
                 ),
 
-                // Viewfinder Target Frame
-                Container(
-                  width: 230,
-                  height: 230,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: primaryColor,
-                      width: 2.5,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Animated scanning laser line
-                      AnimatedBuilder(
-                        animation: _laserAnimController,
-                        builder: (context, child) {
-                          return Positioned(
-                            top: _laserAnimController.value * 210,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    primaryColor.withValues(alpha: 0.1),
-                                    primaryColor,
-                                    primaryColor.withValues(alpha: 0.1),
+                // Animated scanning laser line
+                Positioned(
+                  child: SizedBox(
+                    width: 230,
+                    height: 230,
+                    child: Stack(
+                      children: [
+                        AnimatedBuilder(
+                          animation: _laserAnimController,
+                          builder: (context, child) {
+                            return Positioned(
+                              top: _laserAnimController.value * 210,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      primaryColor.withValues(alpha: 0.1),
+                                      primaryColor,
+                                      primaryColor.withValues(alpha: 0.1),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: primaryColor.withValues(alpha: 0.6),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
                                   ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primaryColor.withValues(alpha: 0.6),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
