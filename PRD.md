@@ -524,6 +524,9 @@ The Angular router guards and services parse the `token` parameter directly from
     - Registered external URL schemes in `LSApplicationQueriesSchemes` (`tel`, `telprompt`, `sms`, `mailto`, `maps`, `comgooglemaps`, `waze`, `https`, `http`) enabling 1-tap Google Maps, Waze, and native passenger dialers on iOS.
     - Embedded webview rendering optimizations (`io.flutter.embedded_views_preview: true`) and App Transport Security policies (`NSAllowsArbitraryLoadsInWebContent`).
   - Integrated `UNUserNotificationCenterDelegate` across `AppDelegate.swift` for both Driver and Customer apps to guarantee foreground heads-up banner presentation for dispatches, status changes, and FCM alerts.
+  - Standardized iOS 16.0 deployment target in `Podfile` with `CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES` and static framework linkage (`use_frameworks! :linkage => :static`).
+  - Upgraded to `qr_code_scanner_plus` using native iOS AVFoundation (`AVCaptureMetadataOutput`), eliminating legacy x86_64 Google MLKit binary dependencies and enabling 100% native `arm64` compilation on Apple Silicon.
+  - Set up remote Mac Mini SSH build pipeline via Tailscale (`100.99.125.21`), successfully compiling and launching both **Driver App** and **Customer App** on the **iPhone 17 Simulator**.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
