@@ -67,19 +67,41 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires camera access to take compliance document scan photographs.</string>
+	<string>This app requires camera access to take compliance document scan photographs and verify driver documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires photo library access to upload driver compliance documents.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Red Taxis requires precise location access to track trips and send nearby booking offers while active.</string>
+	<string>Red Taxis requires precise location access to track trips, navigate routes, and match nearby ride requests while active.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Red Taxis requires continuous precise background location access to track active bookings and receive jobs even when backgrounded.</string>
+	<string>Red Taxis requires continuous background location access to calculate accurate trip mileage, track active bookings, and receive incoming dispatch offers even when the app is in the background or screen is locked.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Red Taxis requires continuous background location access to receive booking offers.</string>
+	<string>Red Taxis requires continuous background location access to dispatch nearby rides and track driver status.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 		<string>remote-notification</string>
+		<string>fetch</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>telprompt</string>
+		<string>sms</string>
+		<string>mailto</string>
+		<string>maps</string>
+		<string>comgooglemaps</string>
+		<string>waze</string>
+		<string>https</string>
+		<string>http</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
 </dict>
 </plist>
