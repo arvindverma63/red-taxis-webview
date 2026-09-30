@@ -516,6 +516,15 @@ The Angular router guards and services parse the `token` parameter directly from
   - Bumped driver app release version to `1.0.1+5` (`versionCode 5`) and generated optimized release bundle `app-release.aab` (52.8 MB).
   - Added comprehensive widget and unit test suite in `tenant_auth_test.dart` (16/16 tests passing green).
 
+- [x] **Native iOS Hardware, Permissions, Background Location & Notification Suite (`driver_app` & `customer_app`)**:
+  - Configured `Info.plist` with comprehensive iOS permissions and descriptions:
+    - Background GPS tracking (`location` mode, `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, and `NSLocationAlwaysUsageDescription`).
+    - Camera & Photo Library access (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`) for driver document verification and QR fleet scanning.
+    - Remote Push Notifications (`remote-notification`, `fetch` background modes).
+    - Registered external URL schemes in `LSApplicationQueriesSchemes` (`tel`, `telprompt`, `sms`, `mailto`, `maps`, `comgooglemaps`, `waze`, `https`, `http`) enabling 1-tap Google Maps, Waze, and native passenger dialers on iOS.
+    - Embedded webview rendering optimizations (`io.flutter.embedded_views_preview: true`) and App Transport Security policies (`NSAllowsArbitraryLoadsInWebContent`).
+  - Integrated `UNUserNotificationCenterDelegate` across `AppDelegate.swift` for both Driver and Customer apps to guarantee foreground heads-up banner presentation for dispatches, status changes, and FCM alerts.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
