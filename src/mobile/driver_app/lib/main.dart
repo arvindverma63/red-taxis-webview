@@ -85,6 +85,19 @@ void main() async {
       },
     );
 
+    // Explicitly request iOS notification authorization
+    final iosPlugin = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+    if (iosPlugin != null) {
+      final granted = await iosPlugin.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint("iOS notification permission granted: $granted");
+    }
+
     // Trigger system permission handler prompt on Android 13+ & iOS
     await Permission.notification.request();
 

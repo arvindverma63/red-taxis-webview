@@ -8,6 +8,8 @@ import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/presentation/widgets/qr_scanner_modal.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:driver_app/main.dart' show flutterLocalNotificationsPlugin;
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -31,6 +33,58 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  Future<void> _sendTestNotification(TenantBranding branding) async {
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+      );
+      const DarwinNotificationDetails darwinPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: darwinPlatformChannelSpecifics,
+      );
+
+      await flutterLocalNotificationsPlugin.show(
+        DateTime.now().millisecond,
+        '🚕 ${branding.name} Dispatch Alert',
+        'New Job Offer: 42 High St -> Heathrow Airport (£32.50)',
+        platformChannelSpecifics,
+        payload: '{"type":"test_dispatch"}',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Test notification banner sent!'),
+            backgroundColor: branding.primaryColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to trigger notification: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -204,6 +258,16 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                     _saveSetting('settings_sms', val);
                   },
                 ),
+              ),
+              _buildDivider(isDark),
+              _buildCompactRow(
+                icon: Icons.notification_important_outlined,
+                iconColor: const Color(0xFFEC4899),
+                title: 'Test Notification',
+                subtitle: 'Send instant heads-up alert banner',
+                isDark: isDark,
+                onTap: () => _sendTestNotification(branding),
+                trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? Colors.grey[500] : Colors.grey[400]),
               ),
             ],
           ),

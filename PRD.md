@@ -527,8 +527,10 @@ The Angular router guards and services parse the `token` parameter directly from
   - Standardized iOS 16.0 deployment target in `Podfile` with `CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES` and static framework linkage (`use_frameworks! :linkage => :static`).
   - Upgraded to `qr_code_scanner_plus` using native iOS AVFoundation (`AVCaptureMetadataOutput`), eliminating legacy x86_64 Google MLKit binary dependencies and enabling 100% native `arm64` compilation on Apple Silicon.
   - Set up remote Mac Mini SSH build pipeline via Tailscale (`100.99.125.21`), successfully compiling and launching both **Driver App** and **Customer App** on the **iPhone 17 Simulator**.
-- [x] **Universal iOS & Android Notification Permission Prompt & FirebaseOptions Resolution (`driver_app` & `customer_app`)**:
-  - Configured explicit `DarwinInitializationSettings(requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true)` and `DarwinFlutterLocalNotificationsPlugin.requestPermissions(...)` across both mobile apps.
+- [x] **Universal iOS & Android Notification Permission Prompt & Foreground Presentation Delegate (`driver_app` & `customer_app`)**:
+  - Configured explicit `DarwinInitializationSettings(requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true)` and `IOSFlutterLocalNotificationsPlugin.requestPermissions(...)` across both mobile apps.
+  - Implemented `userNotificationCenter(_:willPresent:withCompletionHandler:)` in `AppDelegate.swift` for both Driver and Customer apps to guarantee foreground banner presentation (`[.banner, .badge, .sound, .list]`).
+  - Added "Test Notification" trigger under Preferences in `SettingsView` ([`settings_view.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/settings/presentation/settings_view.dart)) allowing instant testing of heads-up dispatch banners directly on the iOS Simulator or physical devices.
   - Added dual-stage `Permission.notification.request()` permission prompt trigger on startup.
   - Added cross-platform `DefaultFirebaseOptions` ([`firebase_options.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/firebase_options.dart)) supplying explicit `apiKey`, `appId`, `messagingSenderId`, `projectId`, and `iosBundleId` to `Firebase.initializeApp(options: ...)`.
   - Added safe fallback initialization in `updateFcmToken()` (`auth.dart`) ensuring `Firebase.apps.isNotEmpty` before attempting to retrieve or update device tokens to the backend.
