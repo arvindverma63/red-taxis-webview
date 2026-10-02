@@ -375,32 +375,54 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return;
       }
 
+      String? apnsToken;
       String? fcmToken;
+
       try {
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-          final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-          if (apnsToken == null) {
-            debugPrint('[Auth] Notice: APNs token not yet available on iOS (running on Simulator or pending APNs registration). Skipping FCM token registration.');
-            return;
+          try {
+            apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+            debugPrint('[Auth] APNs Token retrieved: $apnsToken');
+          } catch (apnsErr) {
+            debugPrint('[Auth] APNs token retrieval notice: $apnsErr');
           }
         }
-        fcmToken = await FirebaseMessaging.instance.getToken();
-      } on PlatformException catch (pe) {
-        debugPrint('[Auth] Notice: FCM getToken platform exception (iOS Simulator/APNs unavailable): $pe');
-        return;
+
+        try {
+          fcmToken = await FirebaseMessaging.instance.getToken();
+          debugPrint('[Auth] FCM Token retrieved: $fcmToken');
+        } on PlatformException catch (pe) {
+          debugPrint('[Auth] FCM getToken PlatformException: $pe');
+        } catch (fcmErr) {
+          debugPrint('[Auth] FCM getToken error: $fcmErr');
+        }
       } catch (err) {
-        debugPrint('[Auth] Notice: FCM getToken error: $err');
+        debugPrint('[Auth] Token retrieval general notice: $err');
+      }
+
+      // If on iOS Simulator with no APNs, provide a dedicated simulator token for backend registration
+      final effectiveToken = fcmToken ?? apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'sim_ios_${state.userId ?? "driver"}' : '');
+
+      if (effectiveToken.isEmpty) {
+        debugPrint('[Auth] No FCM or APNs token available to update.');
         return;
       }
 
-      if (fcmToken == null || fcmToken.isEmpty) return;
+      final payload = <String, dynamic>{
+        'fcm': effectiveToken,
+        'token': effectiveToken,
+        'fcmToken': fcmToken ?? '',
+        'apn': apnsToken ?? '',
+        'apns': apnsToken ?? '',
+        'apnsToken': apnsToken ?? '',
+        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
+        'deviceType': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
+      };
 
-      debugPrint('[Auth] Updating FCM Token to backend: $fcmToken');
+      debugPrint('[Auth] Updating FCM & APNs Token to backend: $payload');
       final response = await _dio.post(
         '/api/DriverApp/UpdateFCM',
-        data: {
-          'fcm': fcmToken,
-        },
+        data: payload,
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

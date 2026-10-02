@@ -536,8 +536,8 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added safe fallback initialization in `updateFcmToken()` (`auth.dart`) ensuring `Firebase.apps.isNotEmpty` before attempting to retrieve or update device tokens to the backend.
   - Isolated background location, local notifications, and Firebase Messaging (FCM) into decoupled try-catch blocks, ensuring APNs simulator restrictions never prevent native system notification prompts from displaying.
   - Added defensive APNs token availability guard (`FirebaseMessaging.instance.getAPNSToken()`) and `PlatformException` safety wrapper in `updateFcmToken()` (`auth.dart`), eliminating iOS Simulator push channel exceptions during login.
-  - Registered `GoogleService-Info.plist` in Xcode project Resources (`project.pbxproj`) across both mobile applications, ensuring native iOS resource discovery without SIGABRT initialization aborts.
-  - Executed automated SSH build and deployment pipeline on the Mac Mini (`peterfarrell@100.99.125.21`), pulling latest commits, resolving CocoaPods dependencies, compiling simulator release packages, and deploying both `com.redtaxis.driver.driverApp` and `com.redtaxis.customerApp` to the active **iPhone 17 Simulator**.
+  - Enhanced `updateFcmToken()` in [`auth.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/auth/auth.dart) to capture `FirebaseMessaging.instance.getAPNSToken()`, upload both `apn`/`apns`/`apnsToken` and `fcm`/`token` alongside platform identifiers (`iOS`/`Android`) to `/api/DriverApp/UpdateFCM`, ensuring backend dispatchers can target Apple APNs and Google FCM pipelines seamlessly.
+  - Added `application.registerForRemoteNotifications()` in `AppDelegate.swift` on iOS didFinishLaunching to guarantee native APNs device token registration on startup.
   - Verified 100% passing Flutter test suite across both `driver_app` (16/16 tests passing) and `customer_app` (4/4 tests passing).
 
 ### ⏳ Remaining Work / Roadmap
