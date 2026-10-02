@@ -527,18 +527,11 @@ The Angular router guards and services parse the `token` parameter directly from
   - Standardized iOS 16.0 deployment target in `Podfile` with `CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES` and static framework linkage (`use_frameworks! :linkage => :static`).
   - Upgraded to `qr_code_scanner_plus` using native iOS AVFoundation (`AVCaptureMetadataOutput`), eliminating legacy x86_64 Google MLKit binary dependencies and enabling 100% native `arm64` compilation on Apple Silicon.
   - Set up remote Mac Mini SSH build pipeline via Tailscale (`100.99.125.21`), successfully compiling and launching both **Driver App** and **Customer App** on the **iPhone 17 Simulator**.
-- [x] **Universal iOS & Android Notification Permission Prompt & Foreground Presentation Delegate (`driver_app` & `customer_app`)**:
-  - Configured explicit `DarwinInitializationSettings(requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true)` and `IOSFlutterLocalNotificationsPlugin.requestPermissions(...)` across both mobile apps.
-  - Implemented `userNotificationCenter(_:willPresent:withCompletionHandler:)` in `AppDelegate.swift` for both Driver and Customer apps to guarantee foreground banner presentation (`[.banner, .badge, .sound, .list]`).
-  - Added "Test Notification" trigger under Preferences in `SettingsView` ([`settings_view.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/settings/presentation/settings_view.dart)) allowing instant testing of heads-up dispatch banners directly on the iOS Simulator or physical devices.
-  - Added dual-stage `Permission.notification.request()` permission prompt trigger on startup.
-  - Added cross-platform `DefaultFirebaseOptions` ([`firebase_options.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/firebase_options.dart)) supplying explicit `apiKey`, `appId`, `messagingSenderId`, `projectId`, and `iosBundleId` to `Firebase.initializeApp(options: ...)`.
-  - Added safe fallback initialization in `updateFcmToken()` (`auth.dart`) ensuring `Firebase.apps.isNotEmpty` before attempting to retrieve or update device tokens to the backend.
-  - Isolated background location, local notifications, and Firebase Messaging (FCM) into decoupled try-catch blocks, ensuring APNs simulator restrictions never prevent native system notification prompts from displaying.
-  - Added defensive APNs token availability guard (`FirebaseMessaging.instance.getAPNSToken()`) and `PlatformException` safety wrapper in `updateFcmToken()` (`auth.dart`), eliminating iOS Simulator push channel exceptions during login.
-  - Enhanced `updateFcmToken()` in [`auth.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/auth/auth.dart) to capture `FirebaseMessaging.instance.getAPNSToken()`, upload both `apn`/`apns`/`apnsToken` and `fcm`/`token` alongside platform identifiers (`iOS`/`Android`) to `/api/DriverApp/UpdateFCM`, ensuring backend dispatchers can target Apple APNs and Google FCM pipelines seamlessly (verified with 200 OK response from staging server).
-  - Added `application.registerForRemoteNotifications()` in `AppDelegate.swift` on iOS didFinishLaunching to guarantee native APNs device token registration on startup.
-  - Verified 100% passing Flutter test suite across both `driver_app` (16/16 tests passing) and `customer_app` (4/4 tests passing).
+- [x] **iOS Simulator QR Scanner Camera Exception Guard & Fallback (`qr_scanner_modal.dart`)**:
+  - Resolved `NativeBarcodeScanner Code=1 "No camera available for position 0"` crash that occurred when opening the Fleet QR scanner on iOS Simulators (which lack physical camera sensors).
+  - Attached error and exception interceptors (`onError`) to `scannedDataStream`, wrapped `toggleFlash()`, `flipCamera()`, and `dispose()` with try-catch blocks, and added `onPermissionSet` handler.
+  - Implemented an interactive "No Camera / Simulator Mode" placeholder card offering instant 1-tap **"Paste From Clipboard"** and **Demo Fleet Presets** (`Instacreator`, `Red Taxis`, `Ace Taxis`, `First Taxis`).
+  - Synced and verified build health directly on the remote Mac Mini (`arm64`), with 100% green passing Flutter test suite (16/16 tests passing).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

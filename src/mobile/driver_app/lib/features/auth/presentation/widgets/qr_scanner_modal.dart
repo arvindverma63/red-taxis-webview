@@ -27,14 +27,18 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
   bool _torchEnabled = false;
   bool _hasDetected = false;
   String? _parseError;
+  bool _cameraError = false;
+  String? _cameraErrorMessage;
 
   @override
   void reassemble() {
     super.reassemble();
-    if (Platform.isAndroid) {
-      _scannerController?.pauseCamera();
-    }
-    _scannerController?.resumeCamera();
+    try {
+      if (Platform.isAndroid) {
+        _scannerController?.pauseCamera();
+      }
+      _scannerController?.resumeCamera();
+    } catch (_) {}
   }
 
   @override
@@ -49,7 +53,9 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
   @override
   void dispose() {
     _laserAnimController.dispose();
-    _scannerController?.dispose();
+    try {
+      _scannerController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -135,22 +141,47 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
 
   void _onQRViewCreated(QRViewController controller) {
     _scannerController = controller;
-    controller.scannedDataStream.listen((scanData) {
-      if (_hasDetected) return;
-      final rawValue = scanData.code;
-      if (rawValue != null && rawValue.isNotEmpty) {
-        final result = _parseBarcodeData(rawValue);
-        if (result != null) {
-          _hasDetected = true;
-          HapticFeedback.mediumImpact();
-          Navigator.of(context).pop(result);
-        } else {
+    controller.scannedDataStream.listen(
+      (scanData) {
+        if (_hasDetected) return;
+        final rawValue = scanData.code;
+        if (rawValue != null && rawValue.isNotEmpty) {
+          final result = _parseBarcodeData(rawValue);
+          if (result != null) {
+            _hasDetected = true;
+            HapticFeedback.mediumImpact();
+            if (mounted) {
+              Navigator.of(context).pop(result);
+            }
+          } else {
+            if (mounted) {
+              setState(() {
+                _parseError = 'Unrecognized QR code format. Please use a fleet QR.';
+              });
+            }
+          }
+        }
+      },
+      onError: (error) {
+        if (mounted) {
           setState(() {
-            _parseError = 'Unrecognized QR code format. Please use a fleet QR.';
+            _cameraError = true;
+            _cameraErrorMessage = error.toString().contains('No camera available')
+                ? 'Camera is not available on simulator.'
+                : 'Unable to start camera feed.';
           });
         }
-      }
-    });
+      },
+    );
+  }
+
+  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
+    if (!p && mounted) {
+      setState(() {
+        _cameraError = true;
+        _cameraErrorMessage = 'Camera permission was not granted.';
+      });
+    }
   }
 
   void _selectPreset(String tenantId, String tenantKey) {
@@ -249,9 +280,13 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                     color: _torchEnabled ? Colors.amber : (isDark ? Colors.grey[300] : Colors.grey[700]),
                   ),
                   onPressed: () async {
-                    await _scannerController?.toggleFlash();
-                    final status = await _scannerController?.getFlashStatus();
-                    setState(() => _torchEnabled = status ?? !_torchEnabled);
+                    try {
+                      await _scannerController?.toggleFlash();
+                      final status = await _scannerController?.getFlashStatus();
+                      if (mounted) {
+                        setState(() => _torchEnabled = status ?? !_torchEnabled);
+                      }
+                    } catch (_) {}
                   },
                 ),
                 // Camera Flip
@@ -260,7 +295,11 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
                     Icons.flip_camera_ios_rounded,
                     color: isDark ? Colors.grey[300] : Colors.grey[700],
                   ),
-                  onPressed: () => _scannerController?.flipCamera(),
+                  onPressed: () async {
+                    try {
+                      await _scannerController?.flipCamera();
+                    } catch (_) {}
+                  },
                 ),
                 // Close Button
                 IconButton(
@@ -278,69 +317,132 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Live Camera Scanner
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: QRView(
-                      key: qrKey,
-                      onQRViewCreated: _onQRViewCreated,
-                      overlay: QrScannerOverlayShape(
-                        borderColor: primaryColor,
-                        borderRadius: 20,
-                        borderLength: 30,
-                        borderWidth: 4,
-                        cutOutSize: 230,
+                if (!_cameraError)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: QRView(
+                        key: qrKey,
+                        onQRViewCreated: _onQRViewCreated,
+                        onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+                        overlay: QrScannerOverlayShape(
+                          borderColor: primaryColor,
+                          borderRadius: 20,
+                          borderLength: 30,
+                          borderWidth: 4,
+                          cutOutSize: 230,
+                        ),
                       ),
                     ),
-                  ),
-                ),
-
-                // Animated scanning laser line
-                Positioned(
-                  child: SizedBox(
-                    width: 230,
-                    height: 230,
-                    child: Stack(
+                  )
+                else
+                  // Simulator / No Camera fallback view
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        AnimatedBuilder(
-                          animation: _laserAnimController,
-                          builder: (context, child) {
-                            return Positioned(
-                              top: _laserAnimController.value * 210,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      primaryColor.withValues(alpha: 0.1),
-                                      primaryColor,
-                                      primaryColor.withValues(alpha: 0.1),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryColor.withValues(alpha: 0.6),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.videocam_off_rounded, color: primaryColor, size: 32),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _cameraErrorMessage ?? 'Camera Not Available',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'iOS Simulators do not have a camera. You can paste a code or pick a demo fleet below to activate instantly.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: _pasteFromClipboard,
+                          icon: const Icon(Icons.content_paste_rounded, size: 18),
+                          label: const Text('Paste From Clipboard'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
+
+                // Animated scanning laser line (only if camera is active)
+                if (!_cameraError)
+                  Positioned(
+                    child: SizedBox(
+                      width: 230,
+                      height: 230,
+                      child: Stack(
+                        children: [
+                          AnimatedBuilder(
+                            animation: _laserAnimController,
+                            builder: (context, child) {
+                              return Positioned(
+                                top: _laserAnimController.value * 210,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        primaryColor.withValues(alpha: 0.1),
+                                        primaryColor,
+                                        primaryColor.withValues(alpha: 0.1),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: primaryColor.withValues(alpha: 0.6),
+                                        blurRadius: 8,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // Parse error notice
                 if (_parseError != null)
