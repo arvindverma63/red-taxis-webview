@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:driver_app/firebase_options.dart';
@@ -368,8 +369,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
-      final fcmToken = await FirebaseMessaging.instance.getToken();
-      if (fcmToken == null) return;
+
+      String? fcmToken;
+      try {
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+          final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+          if (apnsToken == null) {
+            debugPrint('[Auth] Notice: APNs token not yet available on iOS (running on Simulator or pending APNs registration). Skipping FCM token registration.');
+            return;
+          }
+        }
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } on PlatformException catch (pe) {
+        debugPrint('[Auth] Notice: FCM getToken platform exception (iOS Simulator/APNs unavailable): $pe');
+        return;
+      } catch (err) {
+        debugPrint('[Auth] Notice: FCM getToken error: $err');
+        return;
+      }
+
+      if (fcmToken == null || fcmToken.isEmpty) return;
 
       debugPrint('[Auth] Updating FCM Token to backend: $fcmToken');
       final response = await _dio.post(
