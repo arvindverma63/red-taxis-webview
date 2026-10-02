@@ -12,10 +12,13 @@ import 'package:driver_app/features/splash/presentation/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:driver_app/core/location/background_location_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:driver_app/firebase_options.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   debugPrint("================ FCM BACKGROUND MESSAGE ================");
   debugPrint("Message ID: ${message.messageId}");
   debugPrint("Title: ${message.notification?.title}");
@@ -39,24 +42,31 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Initialize background location service
   try {
-    await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    
-    // Initialize background location service
     await initializeBackgroundLocationService();
-    
+  } catch (e) {
+    debugPrint('Background location initialization error: $e');
+  }
+
+  // 2. Initialize local notifications and request permissions for iOS & Android
+  try {
     // Create Android High Importance Notification Channel
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    // Initialize local notifications setting launcher icon
+    // Initialize local notifications with explicit iOS/Darwin permissions
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings();
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
@@ -72,15 +82,40 @@ void main() async {
       },
     );
 
+    // Explicitly request notification permissions via Darwin plugin for iOS
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            DarwinFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+    // Also trigger system permission handler prompt on Android 13+ & iOS
+    await Permission.notification.request();
+
     // Check if app was opened via a local notification tap (terminated state)
-    final launchDetails = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+    final launchDetails =
+        await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
     if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
       final payload = launchDetails.notificationResponse?.payload;
       if (payload != null && payload.isNotEmpty) {
-        debugPrint("App launched from local notification click: payload=$payload");
+        debugPrint(
+            "App launched from local notification click: payload=$payload");
         NotificationNavigationHandler.handlePayload(payload);
       }
     }
+  } catch (e) {
+    debugPrint('Local notifications initialization error: $e');
+  }
+
+  // 3. Initialize Firebase Messaging (FCM)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     final messaging = FirebaseMessaging.instance;
     final settings = await messaging.requestPermission(
@@ -88,17 +123,22 @@ void main() async {
       badge: true,
       sound: true,
     );
-    debugPrint('User notification permission status: ${settings.authorizationStatus}');
-    
+    debugPrint(
+        'User notification permission status: ${settings.authorizationStatus}');
+
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
       sound: true,
     );
-    
-    final token = await messaging.getToken();
-    debugPrint('FCM Token: $token');
-    
+
+    try {
+      final token = await messaging.getToken();
+      debugPrint('FCM Token: $token');
+    } catch (tokenErr) {
+      debugPrint('FCM getToken notice (simulator/APNs unavailable): $tokenErr');
+    }
+
     // FCM Foreground listener: show local heads-up notification with data payload and route immediately
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint("================ FCM FOREGROUND MESSAGE ================");
@@ -107,12 +147,12 @@ void main() async {
       debugPrint("Body: ${message.notification?.body}");
       debugPrint("Data: ${message.data}");
       debugPrint("========================================================");
-      
+
       // Automatically trigger navigation/job offer overlay immediately on foreground message
       NotificationNavigationHandler.handlePayload(message.data);
 
       final notification = message.notification;
-      
+
       // If notification payload exists, show native heads-up banner on Android/iOS
       if (notification != null) {
         flutterLocalNotificationsPlugin.show(

@@ -5,7 +5,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:driver_app/firebase_options.dart';
 import 'package:driver_app/core/config/constants.dart';
 import 'package:driver_app/core/theme/theme.dart';
 
@@ -361,6 +363,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (token == null) return;
 
     try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
       final fcmToken = await FirebaseMessaging.instance.getToken();
       if (fcmToken == null) return;
 
