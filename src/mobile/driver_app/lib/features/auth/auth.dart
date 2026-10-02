@@ -364,10 +364,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (token == null) return;
 
     try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
+      try {
+        if (Firebase.apps.isEmpty) {
+          await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform,
+          );
+        }
+      } catch (fbErr) {
+        debugPrint('[Auth] Notice: Firebase initialization skipped or unavailable: $fbErr');
+        return;
       }
 
       String? fcmToken;
