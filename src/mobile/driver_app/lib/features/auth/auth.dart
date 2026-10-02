@@ -399,8 +399,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         debugPrint('[Auth] Token retrieval general notice: $err');
       }
 
-      // If on iOS Simulator with no APNs, provide a dedicated simulator token for backend registration
-      final effectiveToken = fcmToken ?? apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'sim_ios_${state.userId ?? "driver"}' : 'sim_android_${state.userId ?? "driver"}');
+      // On iOS, explicitly prioritize and set the APNs token in the primary 'fcm' and 'token' fields
+      final effectiveToken = (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
+          ? (apnsToken ?? fcmToken ?? 'sim_apn_ios_${state.userId ?? "driver"}')
+          : (fcmToken ?? apnsToken ?? 'sim_fcm_android_${state.userId ?? "driver"}');
 
       if (effectiveToken.isEmpty) {
         debugPrint('[Auth] No FCM or APNs token available to update.');
@@ -408,12 +410,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
 
       final payload = <String, dynamic>{
-        'fcm': effectiveToken,
-        'token': effectiveToken,
+        'fcm': (defaultTargetPlatform == TargetPlatform.iOS && apnsToken != null && apnsToken.isNotEmpty)
+            ? apnsToken
+            : effectiveToken,
+        'token': (defaultTargetPlatform == TargetPlatform.iOS && apnsToken != null && apnsToken.isNotEmpty)
+            ? apnsToken
+            : effectiveToken,
+        'apn': apnsToken ?? effectiveToken,
+        'apns': apnsToken ?? effectiveToken,
+        'apnsToken': apnsToken ?? effectiveToken,
         'fcmToken': fcmToken ?? '',
-        'apn': apnsToken ?? '',
-        'apns': apnsToken ?? '',
-        'apnsToken': apnsToken ?? '',
         'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
         'deviceType': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
       };
