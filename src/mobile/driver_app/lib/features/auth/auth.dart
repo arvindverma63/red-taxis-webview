@@ -371,8 +371,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
         }
       } catch (fbErr) {
-        debugPrint('[Auth] Notice: Firebase initialization skipped or unavailable: $fbErr');
-        return;
+        debugPrint('[Auth] Notice: Firebase initialization error/bypassed: $fbErr');
       }
 
       String? apnsToken;
@@ -401,7 +400,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
 
       // If on iOS Simulator with no APNs, provide a dedicated simulator token for backend registration
-      final effectiveToken = fcmToken ?? apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'sim_ios_${state.userId ?? "driver"}' : '');
+      final effectiveToken = fcmToken ?? apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? 'sim_ios_${state.userId ?? "driver"}' : 'sim_android_${state.userId ?? "driver"}');
 
       if (effectiveToken.isEmpty) {
         debugPrint('[Auth] No FCM or APNs token available to update.');
@@ -420,17 +419,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
       };
 
       debugPrint('[Auth] Updating FCM & APNs Token to backend: $payload');
-      final response = await _dio.post(
-        '/api/DriverApp/UpdateFCM',
-        data: payload,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
-      debugPrint('[Auth] FCM Token update response status: ${response.statusCode}');
+      try {
+        final response = await _dio.post(
+          '/api/DriverApp/UpdateFCM',
+          data: payload,
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+        debugPrint('[Auth] DriverApp/UpdateFCM response status: ${response.statusCode}');
+      } catch (dErr) {
+        debugPrint('[Auth] DriverApp/UpdateFCM notice: $dErr, trying UserProfile/UpdateFCM...');
+        final res2 = await _dio.post(
+          '/api/UserProfile/UpdateFCM',
+          data: payload,
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+        debugPrint('[Auth] UserProfile/UpdateFCM response status: ${res2.statusCode}');
+      }
     } catch (e) {
       debugPrint('[Auth] Failed to update FCM Token to backend: $e');
     }
