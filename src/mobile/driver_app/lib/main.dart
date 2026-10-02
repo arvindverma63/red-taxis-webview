@@ -46,11 +46,84 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
-  // 1. Initialize background location service
+  // 1. Initialize Firebase Messaging (FCM) first on primary Flutter engine
   try {
-    await initializeBackgroundLocationService();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    final messaging = FirebaseMessaging.instance;
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    debugPrint(
+        'User notification permission status: ${settings.authorizationStatus}');
+
+    await messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    try {
+      final token = await messaging.getToken();
+      debugPrint('FCM Token: $token');
+    } catch (tokenErr) {
+      debugPrint('FCM getToken notice (simulator/APNs unavailable): $tokenErr');
+    }
+
+    // FCM Foreground listener: show local heads-up notification with data payload and route immediately
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint("================ FCM FOREGROUND MESSAGE ================");
+      debugPrint("Message ID: ${message.messageId}");
+      debugPrint("Title: ${message.notification?.title}");
+      debugPrint("Body: ${message.notification?.body}");
+      debugPrint("Data: ${message.data}");
+      debugPrint("========================================================");
+
+      NotificationNavigationHandler.handlePayload(message.data);
+
+      final notification = message.notification;
+      if (notification != null) {
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channel.id,
+              channel.name,
+              channelDescription: channel.description,
+              importance: Importance.high,
+              priority: Priority.high,
+              playSound: true,
+            ),
+            iOS: const DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          payload: jsonEncode(message.data),
+        );
+      }
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint("App opened via FCM notification: payload=${message.data}");
+      NotificationNavigationHandler.handlePayload(message.data);
+    });
+
+    final initialMessage = await messaging.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint("Initial FCM notification message: payload=${initialMessage.data}");
+      NotificationNavigationHandler.handlePayload(initialMessage.data);
+    }
   } catch (e) {
-    debugPrint('Background location initialization error: $e');
+    debugPrint('Firebase initialization notice: $e');
   }
 
   // 2. Initialize local notifications and request permissions for iOS & Android
@@ -116,90 +189,11 @@ void main() async {
     debugPrint('Local notifications initialization error: $e');
   }
 
-  // 3. Initialize Firebase Messaging (FCM)
+  // 3. Initialize background location service
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    debugPrint(
-        'User notification permission status: ${settings.authorizationStatus}');
-
-    await messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    try {
-      final token = await messaging.getToken();
-      debugPrint('FCM Token: $token');
-    } catch (tokenErr) {
-      debugPrint('FCM getToken notice (simulator/APNs unavailable): $tokenErr');
-    }
-
-    // FCM Foreground listener: show local heads-up notification with data payload and route immediately
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint("================ FCM FOREGROUND MESSAGE ================");
-      debugPrint("Message ID: ${message.messageId}");
-      debugPrint("Title: ${message.notification?.title}");
-      debugPrint("Body: ${message.notification?.body}");
-      debugPrint("Data: ${message.data}");
-      debugPrint("========================================================");
-
-      // Automatically trigger navigation/job offer overlay immediately on foreground message
-      NotificationNavigationHandler.handlePayload(message.data);
-
-      final notification = message.notification;
-
-      // If notification payload exists, show native heads-up banner on Android/iOS
-      if (notification != null) {
-        flutterLocalNotificationsPlugin.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              channel.id,
-              channel.name,
-              channelDescription: channel.description,
-              importance: Importance.high,
-              priority: Priority.high,
-              playSound: true,
-            ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-          payload: jsonEncode(message.data),
-        );
-      }
-    });
-
-    // FCM Background Notification Tap
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("FCM notification opened app: ${message.data}");
-      NotificationNavigationHandler.handlePayload(message.data);
-    });
-
-    // FCM Terminated Cold-start Tap
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        debugPrint("FCM initial message on startup: ${message.data}");
-        NotificationNavigationHandler.handlePayload(message.data);
-      }
-    });
+    await initializeBackgroundLocationService();
   } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
+    debugPrint('Background location initialization error: $e');
   }
 
   runApp(
