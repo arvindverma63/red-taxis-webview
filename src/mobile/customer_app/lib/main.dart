@@ -50,16 +50,6 @@ void main() {
           initializationSettings,
         );
 
-        // Explicitly request permissions on iOS/macOS via Darwin plugin
-        await flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-                DarwinFlutterLocalNotificationsPlugin>()
-            ?.requestPermissions(
-              alert: true,
-              badge: true,
-              sound: true,
-            );
-
         // Request system notification permission via permission_handler (Android 13+ & iOS)
         await Permission.notification.request();
       } catch (e) {

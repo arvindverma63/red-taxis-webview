@@ -13,6 +13,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:driver_app/core/location/background_location_service.dart';
 import 'package:driver_app/firebase_options.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -82,17 +83,7 @@ void main() async {
       },
     );
 
-    // Explicitly request notification permissions via Darwin plugin for iOS
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            DarwinFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-    // Also trigger system permission handler prompt on Android 13+ & iOS
+    // Trigger system permission handler prompt on Android 13+ & iOS
     await Permission.notification.request();
 
     // Check if app was opened via a local notification tap (terminated state)
