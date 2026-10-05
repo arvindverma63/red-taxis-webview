@@ -13,9 +13,17 @@ import { of } from 'rxjs';
 export interface DriverDoc {
   type: number;
   name: string;
-  status: 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing' | 'Pending Verification';
+  status: 'Valid' | 'Approved' | 'Expiring Soon' | 'Expired' | 'Missing' | 'Pending Verification' | 'Rejected';
+  rawStatus?: number; // 0 = Pending, 1 = Approved, 2 = Rejected
   expiry: string;
   url?: string | null;
+  id?: number | null;
+  userId?: number | null;
+  originalFileName?: string | null;
+  uploadedAt?: string | null;
+  reviewedByUserId?: number | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
 }
 
 @Component({
@@ -305,9 +313,11 @@ export interface DriverDoc {
                 <span class="material-symbols-outlined">{{ getDocIcon(doc.status) }}</span>
               </div>
 
-              <!-- Title & Expiry -->
+              <!-- Title & Expiry / Rejection info -->
               <div class="compact-doc-info">
-                <span class="compact-doc-name">{{ doc.name }}</span>
+                <div class="compact-doc-name-row">
+                  <span class="compact-doc-name">{{ doc.name }}</span>
+                </div>
                 <span class="compact-doc-sub" [ngClass]="getDocStatusClass(doc.status)">
                   {{ getDocExpiryFormatted(doc) }}
                 </span>
@@ -315,8 +325,19 @@ export interface DriverDoc {
 
               <!-- Status Tag & Action -->
               <div class="compact-doc-right">
+                <!-- Direct Re-upload button if Rejected -->
+                <button 
+                  *ngIf="doc.status === 'Rejected'" 
+                  class="reupload-action-btn"
+                  title="Re-upload Document"
+                  (click)="$event.stopPropagation(); navigateToUpload(doc.type, doc.name)"
+                >
+                  <span class="material-symbols-outlined">cloud_upload</span>
+                  <span>Re-upload</span>
+                </button>
+
                 <span class="compact-status-tag" [ngClass]="getDocStatusClass(doc.status)">
-                  {{ doc.status }}
+                  {{ getDisplayStatus(doc) }}
                 </span>
                 <span class="material-symbols-outlined row-chevron">chevron_right</span>
               </div>
@@ -352,8 +373,24 @@ export interface DriverDoc {
                 {{ getDocIcon(previewDoc.status) }}
               </span>
               <div class="status-strip-text">
-                <span class="status-main-label">{{ previewDoc.status }}</span>
+                <span class="status-main-label">{{ getDisplayStatus(previewDoc) }}</span>
                 <span class="status-expiry-label">{{ getDocExpiryFormatted(previewDoc) }}</span>
+              </div>
+            </div>
+
+            <!-- Rejection Alert Banner (shown when rejected by admin) -->
+            <div class="rejection-alert-card" *ngIf="previewDoc.status === 'Rejected'">
+              <div class="rejection-alert-header">
+                <span class="material-symbols-outlined alert-icon">error</span>
+                <div class="rejection-alert-titles">
+                  <h4 class="rejection-alert-title">Document Rejected by Admin</h4>
+                  <p class="rejection-alert-reason" *ngIf="previewDoc.rejectionReason">
+                    <strong>Reason:</strong> "{{ previewDoc.rejectionReason }}"
+                  </p>
+                  <p class="rejection-alert-hint">
+                    Please re-upload a clear, readable, and valid copy of this document to complete verification.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -371,9 +408,17 @@ export interface DriverDoc {
               </ng-container>
               <ng-template #noPreview>
                 <div class="no-preview-placeholder">
-                  <span class="material-symbols-outlined placeholder-icon">description</span>
-                  <span class="placeholder-title">Document Under Review</span>
-                  <span class="placeholder-text">Uploaded certificate is pending dispatch verification.</span>
+                  <span class="material-symbols-outlined placeholder-icon">
+                    {{ previewDoc.status === 'Rejected' ? 'cancel' : 'description' }}
+                  </span>
+                  <span class="placeholder-title">
+                    {{ previewDoc.status === 'Rejected' ? 'Re-upload Required' : 'Document Under Review' }}
+                  </span>
+                  <span class="placeholder-text">
+                    {{ previewDoc.status === 'Rejected' 
+                      ? 'This document was rejected. Please upload a fresh document.' 
+                      : 'Uploaded certificate is pending dispatch verification.' }}
+                  </span>
                 </div>
               </ng-template>
             </div>
@@ -381,9 +426,13 @@ export interface DriverDoc {
           
           <footer class="preview-footer">
             <button class="btn-cancel" (click)="closePreview()">Close</button>
-            <button class="btn-primary" (click)="reuploadFromPreview()">
+            <button 
+              class="btn-primary" 
+              [class.btn-danger]="previewDoc.status === 'Rejected'"
+              (click)="reuploadFromPreview()"
+            >
               <span class="material-symbols-outlined">cloud_upload</span>
-              <span>Update Document</span>
+              <span>{{ previewDoc.status === 'Rejected' ? 'Re-upload Document' : 'Update Document' }}</span>
             </button>
           </footer>
         </div>
@@ -880,10 +929,11 @@ export interface DriverDoc {
       bottom: 0;
       width: 3px;
     }
-    .doc-color-bar.valid { background: #10B981; }
+    .doc-color-bar.valid, .doc-color-bar.approved { background: #10B981; }
     .doc-color-bar.expiring-soon { background: #F59E0B; }
     .doc-color-bar.expired { background: #EF4444; }
     .doc-color-bar.pending-verification { background: #6366F1; }
+    .doc-color-bar.rejected { background: #DC2626; }
     .doc-color-bar.missing { background: #94A3B8; }
 
     .compact-doc-icon {
@@ -898,10 +948,11 @@ export interface DriverDoc {
     .compact-doc-icon .material-symbols-outlined {
       font-size: 16px;
     }
-    .compact-doc-icon.valid { background: #DCFCE7; color: #15803D; }
+    .compact-doc-icon.valid, .compact-doc-icon.approved { background: #DCFCE7; color: #15803D; }
     .compact-doc-icon.expiring-soon { background: #FEF3C7; color: #B45309; }
     .compact-doc-icon.expired { background: #FEE2E2; color: #B91C1C; }
     .compact-doc-icon.pending-verification { background: #EEF2FF; color: #4F46E5; }
+    .compact-doc-icon.rejected { background: #FEE2E2; color: #DC2626; }
     .compact-doc-icon.missing { background: #F1F5F9; color: #64748B; }
 
     .compact-doc-info {
@@ -910,6 +961,11 @@ export interface DriverDoc {
       display: flex;
       flex-direction: column;
       gap: 1px;
+    }
+    .compact-doc-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .compact-doc-name {
       font-size: 12px;
@@ -922,17 +978,43 @@ export interface DriverDoc {
     .compact-doc-sub {
       font-size: 10px;
       color: #64748B;
+      line-height: 1.3;
     }
-    .compact-doc-sub.missing { color: #DC2626; font-weight: 500; }
+    .compact-doc-sub.missing { color: #64748B; font-weight: 500; }
+    .compact-doc-sub.pending-verification { color: #4F46E5; font-weight: 500; }
     .compact-doc-sub.expiring-soon { color: #D97706; font-weight: 500; }
     .compact-doc-sub.expired { color: #DC2626; font-weight: 500; }
+    .compact-doc-sub.rejected { color: #DC2626; font-weight: 600; }
 
     .compact-doc-right {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       flex-shrink: 0;
     }
+    .reupload-action-btn {
+      background: #DC2626;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(220, 38, 38, 0.25);
+      transition: transform 0.1s ease, background 0.12s ease;
+    }
+    .reupload-action-btn:active {
+      transform: scale(0.95);
+      background: #B91C1C;
+    }
+    .reupload-action-btn .material-symbols-outlined {
+      font-size: 13px;
+    }
+
     .compact-status-tag {
       font-size: 9px;
       font-weight: 700;
@@ -941,10 +1023,11 @@ export interface DriverDoc {
       letter-spacing: 0.2px;
       text-transform: uppercase;
     }
-    .compact-status-tag.valid { background: #DCFCE7; color: #166534; }
+    .compact-status-tag.valid, .compact-status-tag.approved { background: #DCFCE7; color: #166534; }
     .compact-status-tag.expiring-soon { background: #FEF3C7; color: #92400E; }
     .compact-status-tag.expired { background: #FEE2E2; color: #991B1B; }
     .compact-status-tag.pending-verification { background: #EEF2FF; color: #3730A3; }
+    .compact-status-tag.rejected { background: #FEE2E2; color: #991B1B; }
     .compact-status-tag.missing { background: #E2E8F0; color: #334155; }
 
     .row-chevron {
@@ -1029,10 +1112,11 @@ export interface DriverDoc {
       padding: 8px 10px;
       border-radius: 8px;
     }
-    .preview-status-strip.valid { background: #DCFCE7; color: #166534; }
+    .preview-status-strip.valid, .preview-status-strip.approved { background: #DCFCE7; color: #166534; }
     .preview-status-strip.expiring-soon { background: #FEF3C7; color: #92400E; }
     .preview-status-strip.expired { background: #FEE2E2; color: #991B1B; }
     .preview-status-strip.pending-verification { background: #EEF2FF; color: #3730A3; }
+    .preview-status-strip.rejected { background: #FEE2E2; color: #991B1B; border: 1px solid rgba(220, 38, 38, 0.25); }
     .preview-status-strip.missing { background: #F1F5F9; color: #475569; }
 
     .status-strip-icon {
@@ -1049,6 +1133,52 @@ export interface DriverDoc {
     .status-expiry-label {
       font-size: 10px;
       opacity: 0.85;
+    }
+
+    /* Rejection Alert Banner */
+    .rejection-alert-card {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .rejection-alert-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .rejection-alert-header .alert-icon {
+      color: #DC2626;
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .rejection-alert-titles {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .rejection-alert-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #991B1B;
+    }
+    .rejection-alert-reason {
+      margin: 0;
+      font-size: 11px;
+      color: #B91C1C;
+      background: rgba(220, 38, 38, 0.08);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border-left: 3px solid #DC2626;
+    }
+    .rejection-alert-hint {
+      margin: 0;
+      font-size: 10px;
+      color: #7F1D1D;
+      opacity: 0.9;
     }
 
     .preview-image-container {
@@ -1129,6 +1259,12 @@ export interface DriverDoc {
       gap: 5px;
       cursor: pointer;
     }
+    .btn-primary.btn-danger {
+      background: #DC2626;
+    }
+    .btn-primary.btn-danger:hover {
+      background: #B91C1C;
+    }
     .btn-primary .material-symbols-outlined {
       font-size: 16px;
     }
@@ -1188,6 +1324,27 @@ export interface DriverDoc {
     }
     :host-context(.dark-theme) .compact-doc-name {
       color: #ECEFF1;
+    }
+    :host-context(.dark-theme) .reupload-action-btn {
+      background: #EF4444;
+    }
+    :host-context(.dark-theme) .reupload-action-btn:active {
+      background: #DC2626;
+    }
+    :host-context(.dark-theme) .rejection-alert-card {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    :host-context(.dark-theme) .rejection-alert-title {
+      color: #FCA5A5;
+    }
+    :host-context(.dark-theme) .rejection-alert-reason {
+      color: #FECACA;
+      background: rgba(239, 68, 68, 0.2);
+      border-left-color: #EF4444;
+    }
+    :host-context(.dark-theme) .rejection-alert-hint {
+      color: #F87171;
     }
     :host-context(.dark-theme) .preview-modal-card {
       background: #1E1E24;
@@ -1301,39 +1458,107 @@ export class ProfileComponent implements OnInit {
         this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || 'No Plate';
       }
 
-      // Fetch dynamic compliance expiries if userId is resolved
+      // Fetch live documents from /api/v2/drivers/{userId}/documents if userId is resolved
       if (userId) {
-        this.driverService.getDriverExpirys().pipe(
-          catchError(err => {
-            console.warn('[Profile] Failed to fetch document expiries from staging:', err);
-            return of(null);
-          })
-        ).subscribe({
-          next: (expirysResponse) => {
-            if (expirysResponse && expirysResponse.success && Array.isArray(expirysResponse.value)) {
-              const myExpirys = expirysResponse.value.filter((e: any) => e.userId === userId);
-              console.log(`[Profile] Found ${myExpirys.length} document expiry database entries for userId ${userId}`);
-              
-              myExpirys.forEach((exp: any) => {
-                const docType = exp.documentType;
-                const docItem = this.documents.find(d => d.type === docType);
-                if (docItem) {
-                  docItem.expiry = this.formatExpiryDate(exp.expiryDate);
-                  docItem.status = this.getDocumentStatus(exp.expiryDate);
-                  docItem.url = exp.documentUrl || exp.fileUrl || exp.url || exp.documentPath || exp.path || exp.filePath || exp.file || exp.document || localStorage.getItem('pending_upload_url_' + docType) || null;
-                  localStorage.removeItem('pending_upload_' + docType);
-                }
-              });
-            }
-          },
-          complete: () => {
-            this.applyPendingUploads();
-            this.isLoading = false;
-            this.isRefreshing = false;
-            this.cdr.detectChanges();
-          }
-        });
+        this.fetchDriverDocuments(userId);
       } else {
+        this.applyPendingUploads();
+        this.isLoading = false;
+        this.isRefreshing = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private fetchDriverDocuments(userId: number): void {
+    this.driverService.getDriverDocuments(userId).pipe(
+      catchError(err => {
+        console.warn(`[Profile] /api/v2/drivers/${userId}/documents error:`, err);
+        return of(null);
+      })
+    ).subscribe({
+      next: (docsResponse) => {
+        if (docsResponse && (docsResponse.success || Array.isArray(docsResponse.data) || Array.isArray(docsResponse))) {
+          const docList: any[] = Array.isArray(docsResponse) 
+            ? docsResponse 
+            : (docsResponse.data || docsResponse.value || []);
+          
+          console.log(`[Profile] Loaded ${docList.length} documents from /api/v2/drivers/${userId}/documents:`, docList);
+
+          docList.forEach((item: any) => {
+            const docType = Number(item.documentType ?? item.type);
+            const doc = this.documents.find(d => d.type === docType);
+            if (doc) {
+              doc.id = item.id;
+              doc.userId = item.userId;
+              doc.rawStatus = item.status;
+              doc.url = item.fileUrl || item.url || item.documentUrl || null;
+              doc.originalFileName = item.originalFileName || null;
+              doc.uploadedAt = item.uploadedAt || null;
+              doc.reviewedAt = item.reviewedAt || null;
+              doc.reviewedByUserId = item.reviewedByUserId || null;
+              doc.rejectionReason = item.rejectionReason || null;
+
+              // 0 = Pending, 1 = Approved, 2 = Rejected
+              if (item.status === 1) {
+                doc.status = 'Approved';
+                doc.expiry = item.reviewedAt 
+                  ? `Approved ${this.formatSimpleDate(item.reviewedAt)}` 
+                  : 'Approved & Verified';
+              } else if (item.status === 2) {
+                doc.status = 'Rejected';
+                doc.expiry = item.rejectionReason 
+                  ? `Reason: ${item.rejectionReason}` 
+                  : 'Rejected by Admin • Re-upload required';
+              } else if (item.status === 0) {
+                doc.status = 'Pending Verification';
+                doc.expiry = item.uploadedAt 
+                  ? `Uploaded ${this.formatSimpleDate(item.uploadedAt)}` 
+                  : 'Under Review';
+              }
+
+              // Server state received, clear local temporary flags
+              localStorage.removeItem('pending_upload_' + docType);
+              localStorage.removeItem('pending_upload_url_' + docType);
+            }
+          });
+        }
+      },
+      complete: () => {
+        // Enrich with any specific expiry dates from GetDriverExpirys
+        this.enrichWithExpirys(userId);
+      }
+    });
+  }
+
+  private enrichWithExpirys(userId: number): void {
+    this.driverService.getDriverExpirys().pipe(
+      catchError(err => {
+        console.warn('[Profile] Failed to fetch document expiries:', err);
+        return of(null);
+      })
+    ).subscribe({
+      next: (expirysResponse) => {
+        if (expirysResponse && expirysResponse.success && Array.isArray(expirysResponse.value)) {
+          const myExpirys = expirysResponse.value.filter((e: any) => e.userId === userId);
+          console.log(`[Profile] Enriched ${myExpirys.length} expiries for userId ${userId}`);
+          
+          myExpirys.forEach((exp: any) => {
+            const docType = exp.documentType;
+            const docItem = this.documents.find(d => d.type === docType);
+            if (docItem) {
+              if (docItem.status !== 'Rejected' && docItem.status !== 'Pending Verification') {
+                docItem.expiry = this.formatExpiryDate(exp.expiryDate);
+                docItem.status = this.getDocumentStatus(exp.expiryDate);
+              }
+              if (!docItem.url) {
+                docItem.url = exp.documentUrl || exp.fileUrl || exp.url || null;
+              }
+            }
+          });
+        }
+      },
+      complete: () => {
         this.applyPendingUploads();
         this.isLoading = false;
         this.isRefreshing = false;
@@ -1363,11 +1588,11 @@ export class ProfileComponent implements OnInit {
   }
 
   getVerifiedCount(): number {
-    return this.documents.filter(d => d.status === 'Valid').length;
+    return this.documents.filter(d => d.status === 'Valid' || d.status === 'Approved').length;
   }
 
   getActionNeededCount(): number {
-    return this.documents.filter(d => d.status === 'Missing' || d.status === 'Expired' || d.status === 'Expiring Soon').length;
+    return this.documents.filter(d => d.status === 'Missing' || d.status === 'Rejected' || d.status === 'Expired' || d.status === 'Expiring Soon').length;
   }
 
   getCompliancePercentage(): number {
@@ -1386,28 +1611,64 @@ export class ProfileComponent implements OnInit {
     return status.toLowerCase().replace(/\s+/g, '-');
   }
 
+  getDisplayStatus(doc: DriverDoc | null): string {
+    if (!doc) return '';
+    if (doc.status === 'Approved' || doc.status === 'Valid') return 'Approved';
+    if (doc.status === 'Pending Verification') return 'Pending';
+    if (doc.status === 'Rejected') return 'Rejected';
+    if (doc.status === 'Missing') return 'Missing';
+    return doc.status;
+  }
+
   getDocIcon(status: string): string {
     switch (status) {
-      case 'Valid': return 'check_circle';
-      case 'Expiring Soon': return 'warning';
-      case 'Expired': return 'cancel';
-      case 'Pending Verification': return 'hourglass_top';
-      default: return 'upload_file';
+      case 'Valid':
+      case 'Approved':
+        return 'check_circle';
+      case 'Expiring Soon': 
+        return 'warning';
+      case 'Expired': 
+        return 'cancel';
+      case 'Pending Verification': 
+        return 'hourglass_top';
+      case 'Rejected':
+        return 'error';
+      default: 
+        return 'upload_file';
     }
   }
 
   getDocExpiryFormatted(doc: DriverDoc): string {
-    if (doc.status === 'Missing' || doc.expiry === 'Not Uploaded') return 'Upload required';
-    if (doc.status === 'Pending Verification' || doc.expiry === 'Under Review') return 'Under review by dispatch';
+    if (doc.status === 'Rejected') {
+      return doc.rejectionReason ? `Reason: ${doc.rejectionReason}` : 'Rejected by Admin • Re-upload required';
+    }
+    if (doc.status === 'Missing' || doc.expiry === 'Not Uploaded') {
+      return 'Upload required';
+    }
+    if (doc.status === 'Pending Verification' || doc.expiry === 'Under Review') {
+      return doc.uploadedAt 
+        ? `Uploaded ${this.formatSimpleDate(doc.uploadedAt)} • Under Review` 
+        : 'Under review by dispatch';
+    }
+    if (doc.status === 'Approved') {
+      return doc.reviewedAt 
+        ? `Approved ${this.formatSimpleDate(doc.reviewedAt)}` 
+        : (doc.expiry && doc.expiry !== 'Not Uploaded' ? `Expires: ${doc.expiry}` : 'Approved & Verified');
+    }
     return `Expires: ${doc.expiry}`;
   }
 
   getFilteredDocuments(): DriverDoc[] {
     if (this.selectedDocFilter === 'action') {
-      return this.documents.filter(d => d.status === 'Missing' || d.status === 'Expired' || d.status === 'Expiring Soon');
+      return this.documents.filter(d => 
+        d.status === 'Missing' || 
+        d.status === 'Rejected' || 
+        d.status === 'Expired' || 
+        d.status === 'Expiring Soon'
+      );
     }
     if (this.selectedDocFilter === 'verified') {
-      return this.documents.filter(d => d.status === 'Valid');
+      return this.documents.filter(d => d.status === 'Valid' || d.status === 'Approved');
     }
     return this.documents;
   }
@@ -1463,6 +1724,17 @@ export class ProfileComponent implements OnInit {
     const day = d.getDate();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  formatSimpleDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = d.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `${day} ${months[d.getMonth()]} ${d.getFullYear()}, ${h}:${m}`;
   }
 
   copyToClipboard(text: string, message: string): void {

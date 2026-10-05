@@ -532,6 +532,25 @@ The Angular router guards and services parse the `token` parameter directly from
   - Attached error and exception interceptors (`onError`) to `scannedDataStream`, wrapped `toggleFlash()`, `flipCamera()`, and `dispose()` with try-catch blocks, and added `onPermissionSet` handler.
   - Implemented an interactive "No Camera / Simulator Mode" placeholder card offering instant 1-tap **"Paste From Clipboard"** and **Demo Fleet Presets** (`Instacreator`, `Red Taxis`, `Ace Taxis`, `First Taxis`).
   - Synced and verified build health directly on the remote Mac Mini (`arm64`), with 100% green passing Flutter test suite (16/16 tests passing).
+- [x] **Universal iOS & Android Notification Permission Prompt & Foreground Presentation Delegate (`driver_app` & `customer_app`)**:
+  - Configured explicit `DarwinInitializationSettings(requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true)` and `IOSFlutterLocalNotificationsPlugin.requestPermissions(...)` across both mobile apps.
+  - Implemented `userNotificationCenter(_:willPresent:withCompletionHandler:)` in `AppDelegate.swift` for both Driver and Customer apps to guarantee foreground banner presentation (`[.banner, .badge, .sound, .list]`).
+  - Added "Test Notification" trigger under Preferences in `SettingsView` ([`settings_view.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/settings/presentation/settings_view.dart)) allowing instant testing of heads-up dispatch banners directly on the iOS Simulator or physical devices.
+  - Added dual-stage `Permission.notification.request()` permission prompt trigger on startup.
+  - Added cross-platform `DefaultFirebaseOptions` ([`firebase_options.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/firebase_options.dart)) supplying explicit `apiKey`, `appId`, `messagingSenderId`, `projectId`, and `iosBundleId` to `Firebase.initializeApp(options: ...)`.
+  - Added safe fallback initialization in `updateFcmToken()` (`auth.dart`) ensuring `Firebase.apps.isNotEmpty` before attempting to retrieve or update device tokens to the backend.
+  - Isolated background location, local notifications, and Firebase Messaging (FCM) into decoupled try-catch blocks, ensuring APNs simulator restrictions never prevent native system notification prompts from displaying.
+  - Added defensive APNs token availability guard (`FirebaseMessaging.instance.getAPNSToken()`) and `PlatformException` safety wrapper in `updateFcmToken()` (`auth.dart`), eliminating iOS Simulator push channel exceptions during login.
+  - Enhanced `updateFcmToken()` in [`auth.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/auth/auth.dart) to capture `FirebaseMessaging.instance.getAPNSToken()`, upload both `apn`/`apns`/`apnsToken` and `fcm`/`token` alongside platform identifiers (`iOS`/`Android`) to `/api/DriverApp/UpdateFCM`, ensuring backend dispatchers can target Apple APNs and Google FCM pipelines seamlessly (verified with 200 OK response from staging server).
+  - Added `application.registerForRemoteNotifications()` in `AppDelegate.swift` on iOS didFinishLaunching to guarantee native APNs device token registration on startup.
+  - Verified 100% passing Flutter test suite across both `driver_app` (16/16 tests passing) and `customer_app` (4/4 tests passing).
+- [x] **Live Driver Compliance Documents API & Admin Rejection Re-Upload Integration (`profile.ts`, `driver.service.ts`)**:
+  - Replaced local storage status handling with real staging API `GET /api/v2/drivers/{userId}/documents`.
+  - Mapped backend document status codes: `0 = Pending` (Under Review), `1 = Approved` (Verified), `2 = Rejected` (Action Needed).
+  - Designed dedicated UI for rejected documents with rose/red badges, distinct icons, and full display of the admin's `rejectionReason` (e.g. "Photo is unreadable") on both the listing card and in the Inspection Preview modal.
+  - Added 1-tap **"Re-upload"** quick actions directly on rejected document rows and inside the inspection preview sheet, navigating drivers straight to the camera/crop upload portal.
+  - Synchronized and enriched documents with dynamic expiration dates via `GetDriverExpirys` while preserving server rejection/pending states.
+  - Verified with 100% green passing tests in Vitest and clean Angular production build (`ng build`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

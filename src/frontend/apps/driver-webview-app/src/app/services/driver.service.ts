@@ -191,6 +191,16 @@ export class DriverService {
     );
   }
 
+  getDriverDocuments(userId: number): Observable<any> {
+    console.log(`API Webview Request: GET /api/v2/drivers/${userId}/documents`);
+    return this.http.get(`${this.baseUrl}/api/v2/drivers/${userId}/documents`, { headers: this.getHeaders() }).pipe(
+      tap({
+        next: (res) => console.log(`API Webview Response: GET /api/v2/drivers/${userId}/documents success:`, res),
+        error: (err) => console.error(`API Webview Error: GET /api/v2/drivers/${userId}/documents failed:`, err)
+      })
+    );
+  }
+
   getDriverExpirys(): Observable<any> {
     console.log('API Webview Request: GET /api/AdminUI/GetDriverExpirys');
     return this.http.get(`${this.baseUrl}/api/AdminUI/GetDriverExpirys`, { headers: this.getHeaders() }).pipe(
