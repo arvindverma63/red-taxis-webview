@@ -945,6 +945,7 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
 
   docType = 0;
   docName = 'Document';
+  userId?: number;
 
   selectedFile: File | null = null;
   imageSrc: string | null = null;
@@ -986,8 +987,15 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      this.docType = Number(params['type']) || 0;
+      const typeParam = params['type'] ?? params['documentType'] ?? params['docType'];
+      this.docType = (typeParam !== undefined && typeParam !== null && !isNaN(Number(typeParam)))
+        ? Number(typeParam)
+        : 0;
       this.docName = params['name'] || 'Document';
+      const uid = params['userId'] || params['driverId'] || params['id'];
+      if (uid && !isNaN(Number(uid))) {
+        this.userId = Number(uid);
+      }
     });
   }
 
@@ -1312,8 +1320,12 @@ export class DocumentUploadComponent implements OnInit, OnDestroy {
     const formData = new FormData();
     formData.append('file', this.croppedFile);
     formData.append('type', this.docType.toString());
+    formData.append('documentType', this.docType.toString());
+    if (this.userId) {
+      formData.append('userId', this.userId.toString());
+    }
 
-    this.driverService.uploadDocument(formData).pipe(
+    this.driverService.uploadDocument(formData, this.docType, this.userId).pipe(
       catchError(err => {
         console.error('[Upload] Real upload failed:', err);
         this.snackBar.open(`Error: Failed to upload file. ${err.error || err.statusText || 'Connection error'}`, 'Dismiss', {

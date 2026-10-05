@@ -1804,7 +1804,8 @@ export class ProfileComponent implements OnInit {
   }
 
   navigateToUpload(type: number, name: string): void {
-    this.router.navigate(['/upload'], { queryParams: { type, name } });
+    const userId = this.driverId || this.getDriverUserId();
+    this.router.navigate(['/upload'], { queryParams: { type, name, userId } });
   }
 
   onDocClick(doc: DriverDoc): void {

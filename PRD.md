@@ -552,12 +552,14 @@ The Angular router guards and services parse the `token` parameter directly from
   - Synchronized and enriched documents with dynamic expiration dates via `GetDriverExpirys` while preserving server rejection/pending states.
   - Resolved multi-document upload and listing status persistence: `GET /api/v2/drivers/{userId}/documents` serves as the authoritative single source of truth for all documents.
   - Fixed userId resolution to support URL query params (`userId`/`driverId`), JWT token claims, and default driver ID `3`, preventing collisions with superadmin ID `1`.
-  - Removed stale `localStorage` flags (`pending_upload_X`) that falsely reverted previously uploaded or rejected documents back into pending state.
+  - Fixed multi-document upload endpoint parameter binding: `POST /api/DriverApp/UploadDocument?type=${docType}&documentType=${docType}&userId=${userId}` now sends the target document type in query parameters, fixing the backend model-binding default that forced all uploaded certificates to type 0 (Private Hire Motor Insurance).
+  - Wired document upload portal navigation and upload submission to dynamically preserve and transmit the selected document type (`0` to `8`) and driver `userId`.
   - Verified with 100% green passing tests in Vitest, Flutter test suite (16/16 tests), and clean Angular production build (`ng build`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 

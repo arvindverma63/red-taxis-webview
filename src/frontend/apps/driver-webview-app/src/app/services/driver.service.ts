@@ -176,9 +176,13 @@ export class DriverService {
     );
   }
 
-  uploadDocument(formData: FormData): Observable<any> {
-    console.log('API Webview Request: POST /api/DriverApp/UploadDocument');
-    return this.http.post(`${this.baseUrl}/api/DriverApp/UploadDocument`, formData, {
+  uploadDocument(formData: FormData, docType: number = 0, userId?: number): Observable<any> {
+    let url = `${this.baseUrl}/api/DriverApp/UploadDocument?type=${docType}&documentType=${docType}`;
+    if (userId) {
+      url += `&userId=${userId}`;
+    }
+    console.log(`API Webview Request: POST ${url}`);
+    return this.http.post(url, formData, {
       headers: this.getHeaders(),
       reportProgress: true,
       observe: 'events',
