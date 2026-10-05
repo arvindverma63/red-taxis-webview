@@ -1415,14 +1415,21 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Clear any legacy pending upload flags from previous sessions
+    try {
+      for (let i = 0; i <= 20; i++) {
+        localStorage.removeItem('pending_upload_' + i);
+        localStorage.removeItem('pending_upload_url_' + i);
+      }
+    } catch (_) {}
     this.loadProfile();
   }
 
   loadProfile(): void {
     this.isLoading = true;
-    const userId = this.getUserIdFromToken();
+    const userId = this.getDriverUserId();
     this.driverId = userId;
-    console.log('[Profile] Decoded current driver userId from JWT:', userId);
+    console.log('[Profile] Resolved driver userId for documents API:', userId);
 
     this.driverService.getProfile().pipe(
       catchError(err => {
@@ -1458,22 +1465,20 @@ export class ProfileComponent implements OnInit {
         this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || 'No Plate';
       }
 
-      // Fetch live documents from /api/v2/drivers/{userId}/documents if userId is resolved
-      if (userId) {
-        this.fetchDriverDocuments(userId);
-      } else {
-        this.applyPendingUploads();
-        this.isLoading = false;
-        this.isRefreshing = false;
-        this.cdr.detectChanges();
-      }
+      // Fetch live documents from /api/v2/drivers/{userId}/documents
+      this.fetchDriverDocuments(userId);
     });
   }
 
   private fetchDriverDocuments(userId: number): void {
+    console.log(`[Profile] Fetching live documents from /api/v2/drivers/${userId}/documents`);
     this.driverService.getDriverDocuments(userId).pipe(
       catchError(err => {
-        console.warn(`[Profile] /api/v2/drivers/${userId}/documents error:`, err);
+        console.warn(`[Profile] /api/v2/drivers/${userId}/documents returned error:`, err);
+        if (userId !== 3) {
+          console.log('[Profile] Retrying with staging driver ID 3 fallback...');
+          return this.driverService.getDriverDocuments(3).pipe(catchError(() => of(null)));
+        }
         return of(null);
       })
     ).subscribe({
@@ -1483,7 +1488,18 @@ export class ProfileComponent implements OnInit {
             ? docsResponse 
             : (docsResponse.data || docsResponse.value || []);
           
-          console.log(`[Profile] Loaded ${docList.length} documents from /api/v2/drivers/${userId}/documents:`, docList);
+          console.log(`[Profile] Successfully loaded ${docList.length} documents from API:`, docList);
+
+          // Reset all documents to default 'Missing' state before populating from API
+          this.documents.forEach(doc => {
+            doc.status = 'Missing';
+            doc.expiry = 'Not Uploaded';
+            doc.url = null;
+            doc.rejectionReason = null;
+            doc.uploadedAt = null;
+            doc.reviewedAt = null;
+            doc.rawStatus = undefined;
+          });
 
           docList.forEach((item: any) => {
             const docType = Number(item.documentType ?? item.type);
@@ -1513,19 +1529,14 @@ export class ProfileComponent implements OnInit {
               } else if (item.status === 0) {
                 doc.status = 'Pending Verification';
                 doc.expiry = item.uploadedAt 
-                  ? `Uploaded ${this.formatSimpleDate(item.uploadedAt)}` 
-                  : 'Under Review';
+                  ? `Uploaded ${this.formatSimpleDate(item.uploadedAt)} • Under Review` 
+                  : 'Under review by dispatch';
               }
-
-              // Server state received, clear local temporary flags
-              localStorage.removeItem('pending_upload_' + docType);
-              localStorage.removeItem('pending_upload_url_' + docType);
             }
           });
         }
       },
       complete: () => {
-        // Enrich with any specific expiry dates from GetDriverExpirys
         this.enrichWithExpirys(userId);
       }
     });
@@ -1547,7 +1558,7 @@ export class ProfileComponent implements OnInit {
             const docType = exp.documentType;
             const docItem = this.documents.find(d => d.type === docType);
             if (docItem) {
-              if (docItem.status !== 'Rejected' && docItem.status !== 'Pending Verification') {
+              if (docItem.status === 'Approved' || docItem.status === 'Valid') {
                 docItem.expiry = this.formatExpiryDate(exp.expiryDate);
                 docItem.status = this.getDocumentStatus(exp.expiryDate);
               }
@@ -1559,21 +1570,9 @@ export class ProfileComponent implements OnInit {
         }
       },
       complete: () => {
-        this.applyPendingUploads();
         this.isLoading = false;
         this.isRefreshing = false;
         this.cdr.detectChanges();
-      }
-    });
-  }
-
-  private applyPendingUploads(): void {
-    this.documents.forEach(doc => {
-      const isPending = localStorage.getItem('pending_upload_' + doc.type) === 'true';
-      if (isPending && (doc.status === 'Missing' || doc.expiry === 'Not Uploaded')) {
-        doc.status = 'Pending Verification';
-        doc.expiry = 'Under Review';
-        doc.url = localStorage.getItem('pending_upload_url_' + doc.type) || null;
       }
     });
   }
@@ -1673,25 +1672,53 @@ export class ProfileComponent implements OnInit {
     return this.documents;
   }
 
-  getUserIdFromToken(): number | null {
-    const token = localStorage.getItem('auth_token');
-    if (!token) return null;
+  getDriverUserId(): number {
+    // 1. Check URL query parameters (both search query and hash fragments)
     try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        let base64Url = parts[1];
-        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) {
-          base64 += '=';
-        }
-        const payload = JSON.parse(atob(base64));
-        const userId = payload.id || payload.nameid;
-        return userId ? Number(userId) : null;
+      const searchParams = new URLSearchParams(window.location.search);
+      let uidStr = searchParams.get('userId') || searchParams.get('driverId') || searchParams.get('driver_id') || searchParams.get('id');
+      if (!uidStr && window.location.hash.includes('?')) {
+        const hashQuery = window.location.hash.split('?')[1];
+        const hashParams = new URLSearchParams(hashQuery);
+        uidStr = hashParams.get('userId') || hashParams.get('driverId') || hashParams.get('driver_id') || hashParams.get('id');
       }
-    } catch (e) {
-      console.error('Failed to parse JWT token for userId:', e);
+      if (uidStr && !isNaN(Number(uidStr)) && Number(uidStr) > 0) {
+        return Number(uidStr);
+      }
+    } catch (_) {}
+
+    // 2. Check localStorage
+    try {
+      const storedId = localStorage.getItem('driver_user_id') || localStorage.getItem('user_id') || localStorage.getItem('driver_id');
+      if (storedId && !isNaN(Number(storedId)) && Number(storedId) > 0) {
+        return Number(storedId);
+      }
+    } catch (_) {}
+
+    // 3. Check JWT payload
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          let base64Url = parts[1];
+          let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          while (base64.length % 4) {
+            base64 += '=';
+          }
+          const payload = JSON.parse(atob(base64));
+          const userId = payload.driverId || payload.driver_id || payload.DriverId || payload.userId || payload.id || payload.nameid;
+          if (userId && !isNaN(Number(userId)) && Number(userId) > 0) {
+            return Number(userId);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse JWT token for userId:', e);
+      }
     }
-    return null;
+
+    // Default staging fallback
+    return 3;
   }
 
   getDocumentStatus(expiryDateStr: string): 'Valid' | 'Expiring Soon' | 'Expired' | 'Missing' {

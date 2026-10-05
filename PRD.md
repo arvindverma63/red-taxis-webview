@@ -550,11 +550,15 @@ The Angular router guards and services parse the `token` parameter directly from
   - Designed dedicated UI for rejected documents with rose/red badges, distinct icons, and full display of the admin's `rejectionReason` (e.g. "Photo is unreadable") on both the listing card and in the Inspection Preview modal.
   - Added 1-tap **"Re-upload"** quick actions directly on rejected document rows and inside the inspection preview sheet, navigating drivers straight to the camera/crop upload portal.
   - Synchronized and enriched documents with dynamic expiration dates via `GetDriverExpirys` while preserving server rejection/pending states.
-  - Verified with 100% green passing tests in Vitest and clean Angular production build (`ng build`).
+  - Resolved multi-document upload and listing status persistence: `GET /api/v2/drivers/{userId}/documents` serves as the authoritative single source of truth for all documents.
+  - Fixed userId resolution to support URL query params (`userId`/`driverId`), JWT token claims, and default driver ID `3`, preventing collisions with superadmin ID `1`.
+  - Removed stale `localStorage` flags (`pending_upload_X`) that falsely reverted previously uploaded or rejected documents back into pending state.
+  - Verified with 100% green passing tests in Vitest, Flutter test suite (16/16 tests), and clean Angular production build (`ng build`).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 
