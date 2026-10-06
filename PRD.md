@@ -582,10 +582,12 @@ The Angular router guards and services parse the `token` parameter directly from
   - Retained the high-contrast scanning HUD, animated laser bar, and demo fleet presets (`Instacreator`, `Red Taxis`, `Ace Taxis`, `First Taxis`) with clipboard pasting fallback.
   - Verified remote Mac Mini execution via SSH: compiled with Metal/Impeller backend and launched directly on the **iPhone 17 iOS Simulator** (`134C0DFA-7220-4A6B-8ECB-CB787EC5B6C6`) with exit code 0 (`iOS notification permission granted`, `TTS speech engine initialized`).
   - Verified with 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
-- [x] **iOS APNs Push Entitlements, Token Polling & Simulator Fallback (`Runner.entitlements`, `project.pbxproj`, `auth.dart`)**:
-  - Configured `Runner.entitlements` with `<key>aps-environment</key><string>development</string>` and linked `CODE_SIGN_ENTITLEMENTS` in `project.pbxproj` across Debug, Release, and Profile build targets.
-  - Added asynchronous APNs token retry polling in `auth.dart` with 4 sequential acquisition attempts to accommodate Apple's APNs registration delay on initial launch.
-  - Implemented safe fallback to simulated identifier (`sim_apn_ios_<userId>`) on unsigned iOS Simulators (which do not establish live APNs gateway sessions without an active Apple Developer Program certificate), preventing 500 errors on backend `UpdateFCM` registration.
+- [x] **iOS APNs & FCM Token Generation on Apple Silicon Simulator (`Runner.entitlements`, `project.pbxproj`, `AppDelegate.swift`, `auth.dart`)**:
+  - Added [`Runner.entitlements`](file:///d:/redtaxis/src/mobile/driver_app/ios/Runner/Runner.entitlements) with `<key>aps-environment</key><string>development</string>` and linked `CODE_SIGN_ENTITLEMENTS` in `project.pbxproj`.
+  - Added native APNs registration callbacks in [`AppDelegate.swift`](file:///d:/redtaxis/src/mobile/driver_app/ios/Runner/AppDelegate.swift).
+  - Verified live token generation on the Mac Mini **iPhone 17 iOS Simulator**: successfully registered for push notifications and generated live FCM Token (`dEIqNug_JkFjjcwbEHh1nE:APA91bE_QTJtHzcb7ha7...`).
+  - Added asynchronous token polling and stream listeners in `auth.dart` to dispatch live device tokens to `/api/DriverApp/UpdateFCM`.
+  - Maintained 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
