@@ -39,10 +39,13 @@ import UserNotifications
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
-    if #available(iOS 14.0, *) {
-      completionHandler([.banner, .badge, .sound, .list])
-    } else {
-      completionHandler([.alert, .badge, .sound])
+    print("[iOS Native AppDelegate] Foreground notification arrived: \(notification.request.content.userInfo)")
+    super.userNotificationCenter(center, willPresent: notification) { _ in
+      if #available(iOS 14.0, *) {
+        completionHandler([.banner, .badge, .sound, .list])
+      } else {
+        completionHandler([.alert, .badge, .sound])
+      }
     }
   }
 
