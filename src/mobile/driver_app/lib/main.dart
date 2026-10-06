@@ -113,7 +113,13 @@ void main() async {
       debugPrint("Data: ${message.data}");
       debugPrint("========================================================");
 
-      NotificationNavigationHandler.handlePayload(message.data);
+      final mergedData = <String, dynamic>{
+        ...message.data,
+        if (message.notification?.title != null) 'title': message.notification!.title,
+        if (message.notification?.body != null) 'body': message.notification!.body,
+      };
+
+      NotificationNavigationHandler.handlePayload(mergedData);
 
       final title = message.notification?.title ?? message.data['title'] ?? '🚕 Dispatch Notification';
       final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'New alert received';
@@ -121,20 +127,30 @@ void main() async {
       NotificationSoundService.showNotification(
         title: title,
         body: body,
-        data: message.data,
+        data: mergedData,
         id: message.notification?.hashCode ?? message.hashCode,
       );
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint("App opened via FCM notification: payload=${message.data}");
-      NotificationNavigationHandler.handlePayload(message.data);
+      final mergedData = <String, dynamic>{
+        ...message.data,
+        if (message.notification?.title != null) 'title': message.notification!.title,
+        if (message.notification?.body != null) 'body': message.notification!.body,
+      };
+      NotificationNavigationHandler.handlePayload(mergedData);
     });
 
     final initialMessage = await messaging.getInitialMessage();
     if (initialMessage != null) {
       debugPrint("Initial FCM notification message: payload=${initialMessage.data}");
-      NotificationNavigationHandler.handlePayload(initialMessage.data);
+      final mergedData = <String, dynamic>{
+        ...initialMessage.data,
+        if (initialMessage.notification?.title != null) 'title': initialMessage.notification!.title,
+        if (initialMessage.notification?.body != null) 'body': initialMessage.notification!.body,
+      };
+      NotificationNavigationHandler.handlePayload(mergedData);
     }
   } catch (e) {
     debugPrint('Firebase initialization notice: $e');

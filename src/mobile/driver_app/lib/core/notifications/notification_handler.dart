@@ -6,7 +6,7 @@ import 'package:driver_app/features/navigation/presentation/navigation_notifier.
 import 'package:driver_app/features/trip/trip.dart';
 
 class NotificationNavigationHandler {
-  static Map<String, dynamic>? _pendingPayload;
+  static final List<Map<String, dynamic>> _pendingPayloads = [];
   static WidgetRef? _activeRef;
   static String? _lastGuid;
 
@@ -15,11 +15,13 @@ class NotificationNavigationHandler {
   /// Register active WidgetRef or container ref from the main shell
   static void registerRef(WidgetRef ref) {
     _activeRef = ref;
-    if (_pendingPayload != null) {
-      debugPrint("NotificationNavigationHandler: Processing pending payload on registration");
-      final payload = _pendingPayload!;
-      _pendingPayload = null;
-      handlePayload(payload, ref: ref);
+    if (_pendingPayloads.isNotEmpty) {
+      debugPrint("NotificationNavigationHandler: Processing ${_pendingPayloads.length} pending payload(s) on registration");
+      final payloadsToProcess = List<Map<String, dynamic>>.from(_pendingPayloads);
+      _pendingPayloads.clear();
+      for (final payload in payloadsToProcess) {
+        handlePayload(payload, ref: ref);
+      }
     }
   }
 
@@ -48,6 +50,24 @@ class NotificationNavigationHandler {
       data = Map<String, dynamic>.from(rawPayload);
     }
 
+    // Unwrap nested 'data' or 'Data' objects if present (common in FCM / APNs payloads)
+    if (data.containsKey('data')) {
+      final inner = data['data'];
+      if (inner is Map) {
+        data = {...data, ...Map<String, dynamic>.from(inner)};
+      } else if (inner is String && inner.trim().startsWith('{')) {
+        try {
+          final decoded = jsonDecode(inner);
+          if (decoded is Map) {
+            data = {...data, ...Map<String, dynamic>.from(decoded)};
+          }
+        } catch (_) {}
+      }
+    }
+    if (data.containsKey('Data') && data['Data'] is Map) {
+      data = {...data, ...Map<String, dynamic>.from(data['Data'])};
+    }
+
     if (data.isEmpty) {
       debugPrint("NotificationNavigationHandler: Empty notification data payload");
       return;
@@ -57,7 +77,7 @@ class NotificationNavigationHandler {
 
     if (targetRef == null) {
       debugPrint("NotificationNavigationHandler: UI ref not ready yet, queuing pending payload");
-      _pendingPayload = data;
+      _pendingPayloads.add(data);
       return;
     }
 

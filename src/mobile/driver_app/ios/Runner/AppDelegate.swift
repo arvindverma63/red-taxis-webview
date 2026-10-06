@@ -45,5 +45,14 @@ import UserNotifications
       completionHandler([.alert, .badge, .sound])
     }
   }
+
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    print("[iOS Native AppDelegate] Notification clicked/received by user: \(response.notification.request.content.userInfo)")
+    super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+  }
 }
 
