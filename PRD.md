@@ -590,6 +590,7 @@ The Angular router guards and services parse the `token` parameter directly from
   - Prioritized the valid Firebase Registration Token (`fcmToken`) in `'fcm'`, `'token'`, and `'deviceToken'` fields, ensuring backend Firebase Admin SDK push dispatchers target iOS and Android devices without `registration-token-not-registered` errors.
   - Bundled custom category WAV sound assets (`job_offer.wav`, `job_cancel.wav`, `job_amended.wav`, `general_alert.wav`) in Xcode `PBXResourcesBuildPhase` and enabled crystal-clear spoken voice announcements on iOS in `NotificationSoundService`.
   - Upgraded `NotificationNavigationHandler` to handle nested FCM/APNs payload objects (`data['data']`), queue all pending payloads until the `MainShell` UI finishes mounting, and implemented `UNUserNotificationCenterDelegate`'s `didReceive response` in `AppDelegate.swift` for instant offer page and tab routing upon notification clicks on iOS.
+  - Added dedicated pattern matching for `"New booking allocated"` / `"booking.allocated"` notifications, automatically triggering `fetchAndOfferJob` or backend `checkActiveJob()` synchronization to transition drivers directly to the job offer/allocation view.
   - Maintained 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
 
 ### ⏳ Remaining Work / Roadmap
