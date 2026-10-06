@@ -593,6 +593,11 @@ The Angular router guards and services parse the `token` parameter directly from
   - Resolved iOS foreground event starvation in `AppDelegate.swift` by chaining `super.userNotificationCenter(center, willPresent: notification)`, ensuring `FirebaseMessaging.onMessage` triggers instantaneously on notification arrival so the full-screen offer page overlays immediately without requiring manual clicks.
   - Maintained 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
 
+- [x] **Driver App iOS Version Bump & App Store Release Preparation (`pubspec.yaml`)**:
+  - Bumped version code to `1.0.2+8` for App Store Connect submission compliance (resolving Transporter duplicate build error -19232).
+  - Synchronized build parameters and CocoaPods dependencies on the build machine.
+  - Formulated deployment checklist covering signing, archiving, Transporter upload, and App Store submission.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
