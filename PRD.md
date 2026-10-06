@@ -587,6 +587,7 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added native APNs registration callbacks in [`AppDelegate.swift`](file:///d:/redtaxis/src/mobile/driver_app/ios/Runner/AppDelegate.swift).
   - Verified live token generation on the Mac Mini **iPhone 17 iOS Simulator**: successfully registered for push notifications and generated live FCM Token (`dEIqNug_JkFjjcwbEHh1nE:APA91bE_QTJtHzcb7ha7...`).
   - Added asynchronous token polling and stream listeners in `auth.dart` to dispatch live device tokens to `/api/DriverApp/UpdateFCM`.
+  - Prioritized the valid Firebase Registration Token (`fcmToken`) in `'fcm'`, `'token'`, and `'deviceToken'` fields, ensuring backend Firebase Admin SDK push dispatchers target iOS and Android devices without `registration-token-not-registered` errors.
   - Bundled custom category WAV sound assets (`job_offer.wav`, `job_cancel.wav`, `job_amended.wav`, `general_alert.wav`) in Xcode `PBXResourcesBuildPhase` and enabled crystal-clear spoken voice announcements on iOS in `NotificationSoundService`.
   - Maintained 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
 
