@@ -232,74 +232,91 @@ class NotificationNavigationHandler {
       return;
     }
 
-    // 4. Check for Job Offer / Booking Allocation payload (Strict matches only)
+    // 4. Check for Job Offer / Booking Allocation payload (Catch all offer and allocation variations)
     final isBookingOffer = !isCancelled && !isUnallocated && !isAmended && (
         notificationType == '1' ||
         notificationType == 'allocated' ||
         notificationType == 'offered' ||
         notificationType == 'job_offered' ||
         notificationType == 'job_offer' ||
+        notificationType == 'new_booking' ||
+        notificationType == 'booking_allocated' ||
+        notificationType == 'booking.allocated' ||
+        notificationType == 'allocated_booking' ||
+        notificationTitle.contains('allocated') ||
+        notificationTitle.contains('new booking') ||
+        notificationTitle.contains('job offer') ||
+        notificationTitle.contains('job assigned') ||
+        notificationTitle.contains('booking assigned') ||
+        notificationBody.contains('allocated') ||
+        notificationBody.contains('new booking') ||
+        notificationBody.contains('offered') ||
         (deepLink.isNotEmpty && deepLink.toLowerCase().startsWith('booking')) ||
         (bookingId.isNotEmpty && (notificationType.isEmpty || notificationType == '1' || notificationType == 'job_offer' || notificationType == 'allocated')) ||
         (guid.isNotEmpty && (notificationType == '1' || notificationType.isEmpty || notificationType == 'job_offer' || notificationType == 'allocated'))
     );
 
-    if (isBookingOffer && (bookingId.isNotEmpty || guid.isNotEmpty)) {
-      final fare = double.tryParse(data['fare']?.toString() ?? data['price']?.toString() ?? '0.0') ?? 0.0;
-      final pickup = data['pickupAddress'] ?? data['pickup'] ?? data['from'] ?? 'Pickup address';
-      final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? data['to'] ?? 'Dropoff destination';
-      final paymentType = data['paymentType'] ?? data['payment'] ?? 'Cash';
-      final vehicleType = data['vehicleType'] ?? data['vehicle'] ?? 'Standard Saloon';
-      final passenger = data['passengerName'] ?? data['passenger'] ?? data['customerName'] ?? 'Passenger';
-      final notes = data['notes'] ?? data['details'] ?? '';
+    if (isBookingOffer) {
+      if (bookingId.isNotEmpty || guid.isNotEmpty) {
+        final fare = double.tryParse(data['fare']?.toString() ?? data['price']?.toString() ?? '0.0') ?? 0.0;
+        final pickup = data['pickupAddress'] ?? data['pickup'] ?? data['from'] ?? 'Pickup address';
+        final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? data['to'] ?? 'Dropoff destination';
+        final paymentType = data['paymentType'] ?? data['payment'] ?? 'Cash';
+        final vehicleType = data['vehicleType'] ?? data['vehicle'] ?? 'Standard Saloon';
+        final passenger = data['passengerName'] ?? data['passenger'] ?? data['customerName'] ?? 'Passenger';
+        final notes = data['notes'] ?? data['details'] ?? '';
 
-      final rawVias = data['vias'] ?? data['Vias'] ?? data['via'] ?? data['Via'] ?? data['viaStops'] ?? data['ViaStops'];
-      final List<String> vias = [];
-      if (rawVias is List) {
-        for (final v in rawVias) {
-          if (v is String && v.trim().isNotEmpty) {
-            vias.add(v.trim());
-          } else if (v is Map) {
-            final addr = (v['address'] ?? v['Address'] ?? v['description'] ?? '').toString();
-            if (addr.isNotEmpty) vias.add(addr);
-          }
-        }
-      } else if (rawVias is String && rawVias.trim().isNotEmpty) {
-        try {
-          final decoded = jsonDecode(rawVias);
-          if (decoded is List) {
-            for (final v in decoded) {
-              if (v is String && v.trim().isNotEmpty) {
-                vias.add(v.trim());
-              } else if (v is Map) {
-                final addr = (v['address'] ?? v['description'] ?? '').toString();
-                if (addr.isNotEmpty) vias.add(addr);
-              }
+        final rawVias = data['vias'] ?? data['Vias'] ?? data['via'] ?? data['Via'] ?? data['viaStops'] ?? data['ViaStops'];
+        final List<String> vias = [];
+        if (rawVias is List) {
+          for (final v in rawVias) {
+            if (v is String && v.trim().isNotEmpty) {
+              vias.add(v.trim());
+            } else if (v is Map) {
+              final addr = (v['address'] ?? v['Address'] ?? v['description'] ?? '').toString();
+              if (addr.isNotEmpty) vias.add(addr);
             }
           }
-        } catch (_) {
-          final parts = rawVias.split(RegExp(r'[;|]')).map((s) => s.trim()).where((s) => s.isNotEmpty);
-          vias.addAll(parts);
+        } else if (rawVias is String && rawVias.trim().isNotEmpty) {
+          try {
+            final decoded = jsonDecode(rawVias);
+            if (decoded is List) {
+              for (final v in decoded) {
+                if (v is String && v.trim().isNotEmpty) {
+                  vias.add(v.trim());
+                } else if (v is Map) {
+                  final addr = (v['address'] ?? v['description'] ?? '').toString();
+                  if (addr.isNotEmpty) vias.add(addr);
+                }
+              }
+            }
+          } catch (_) {
+            final parts = rawVias.split(RegExp(r'[;|]')).map((s) => s.trim()).where((s) => s.isNotEmpty);
+            vias.addAll(parts);
+          }
         }
-      }
 
-      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId', guid='$guid', viasCount=${vias.length}");
-      targetRef.read(tripProvider.notifier).fetchAndOfferJob(
-            bookingId,
-            guid: guid,
-            fallbackDetails: TripDetails(
-              id: bookingId,
+        debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId', guid='$guid', viasCount=${vias.length}");
+        targetRef.read(tripProvider.notifier).fetchAndOfferJob(
+              bookingId,
               guid: guid,
-              pickupAddress: pickup.toString(),
-              dropoffAddress: dropoff.toString(),
-              vias: vias,
-              fare: fare,
-              paymentType: paymentType.toString(),
-              vehicleType: vehicleType.toString(),
-              passenger: passenger.toString(),
-              notes: notes.toString(),
-            ),
-          );
+              fallbackDetails: TripDetails(
+                id: bookingId,
+                guid: guid,
+                pickupAddress: pickup.toString(),
+                dropoffAddress: dropoff.toString(),
+                vias: vias,
+                fare: fare,
+                paymentType: paymentType.toString(),
+                vehicleType: vehicleType.toString(),
+                passenger: passenger.toString(),
+                notes: notes.toString(),
+              ),
+            );
+      } else {
+        debugPrint("NotificationNavigationHandler: Booking offer notification received without specific bookingId; checking active job from backend");
+        targetRef.read(tripProvider.notifier).checkActiveJob();
+      }
       return;
     }
 
