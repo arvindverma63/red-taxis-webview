@@ -366,9 +366,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       try {
         if (Firebase.apps.isEmpty) {
-          await Firebase.initializeApp(
-            options: DefaultFirebaseOptions.currentPlatform,
-          );
+          if (defaultTargetPlatform == TargetPlatform.android) {
+            await Firebase.initializeApp();
+          } else {
+            await Firebase.initializeApp(
+              options: DefaultFirebaseOptions.currentPlatform,
+            );
+          }
         }
       } catch (fbErr) {
         debugPrint('[Auth] Notice: Firebase initialization error/bypassed: $fbErr');

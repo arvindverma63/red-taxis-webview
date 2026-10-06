@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,23 +12,50 @@ import 'package:driver_app/features/splash/presentation/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:driver_app/core/notifications/notification_sound_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:driver_app/core/location/background_location_service.dart';
 import 'package:driver_app/firebase_options.dart';
 
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await Firebase.initializeApp();
+    } else {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    debugPrint("Background Firebase initializeApp error: $e");
+  }
   debugPrint("================ FCM BACKGROUND MESSAGE ================");
   debugPrint("Message ID: ${message.messageId}");
   debugPrint("Title: ${message.notification?.title}");
   debugPrint("Body: ${message.notification?.body}");
   debugPrint("Data: ${message.data}");
   debugPrint("========================================================");
+
+  try {
+    await NotificationSoundService.registerNotificationChannels();
+    final title = message.notification?.title ?? message.data['title'] ?? '🚕 Dispatch Notification';
+    final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'New alert received';
+
+    await NotificationSoundService.showNotification(
+      title: title,
+      body: body,
+      data: message.data,
+      id: message.notification?.hashCode ?? message.hashCode,
+      speakTts: false, // On background/closed state, native Android NotificationChannel audio handles the sound!
+    );
+  } catch (e) {
+    debugPrint("Background notification dispatch error: $e");
+  }
 }
 
-// Global high importance channel definition for Android heads-up alerts
+// Global default channel definition for Android
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
   'high_importance_channel', // id
   'High Importance Notifications', // title
@@ -44,13 +70,16 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
 
-  // 1. Initialize Firebase Messaging (FCM) first on primary Flutter engine
+  // 1. Initialize Firebase Messaging (FCM) on primary Flutter engine
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await Firebase.initializeApp();
+    } else {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     final messaging = FirebaseMessaging.instance;
@@ -75,7 +104,7 @@ void main() async {
       debugPrint('FCM getToken notice (simulator/APNs unavailable): $tokenErr');
     }
 
-    // FCM Foreground listener: show local heads-up notification with data payload and route immediately
+    // FCM Foreground listener: show local heads-up notification with custom category sound and route immediately
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint("================ FCM FOREGROUND MESSAGE ================");
       debugPrint("Message ID: ${message.messageId}");
@@ -86,30 +115,15 @@ void main() async {
 
       NotificationNavigationHandler.handlePayload(message.data);
 
-      final notification = message.notification;
-      if (notification != null) {
-        flutterLocalNotificationsPlugin.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              channel.id,
-              channel.name,
-              channelDescription: channel.description,
-              importance: Importance.high,
-              priority: Priority.high,
-              playSound: true,
-            ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-          payload: jsonEncode(message.data),
-        );
-      }
+      final title = message.notification?.title ?? message.data['title'] ?? '🚕 Dispatch Notification';
+      final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'New alert received';
+
+      NotificationSoundService.showNotification(
+        title: title,
+        body: body,
+        data: message.data,
+        id: message.notification?.hashCode ?? message.hashCode,
+      );
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -126,13 +140,14 @@ void main() async {
     debugPrint('Firebase initialization notice: $e');
   }
 
-  // 2. Initialize local notifications and request permissions for iOS & Android
+  // 2. Initialize local notifications and register sound-specific channels
   try {
-    // Create Android High Importance Notification Channel
+    // Create Android High Importance & Categorized Notification Channels
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+    await NotificationSoundService.registerNotificationChannels();
 
     // Initialize local notifications with explicit iOS/Darwin permissions
     const AndroidInitializationSettings initializationSettingsAndroid =

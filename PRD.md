@@ -555,7 +555,27 @@ The Angular router guards and services parse the `token` parameter directly from
   - Fixed multi-document upload endpoint parameter binding: `POST /api/DriverApp/UploadDocument?type=${docType}&documentType=${docType}&userId=${userId}` now sends the target document type in query parameters, fixing the backend model-binding default that forced all uploaded certificates to type 0 (Private Hire Motor Insurance).
   - Wired document upload portal navigation and upload submission to dynamically preserve and transmit the selected document type (`0` to `8`) and driver `userId`.
   - Verified with 100% green passing tests in Vitest, Flutter test suite (16/16 tests), and clean Angular production build (`ng build`).
-
+- [x] **Job Offer WebView High-Speed Loading & Cache Optimization (`webview_screen.dart`, `trip.dart`, `job-offer.ts`, `vercel.json`)**:
+  - **Removed WebViewController Cache Invalidation**: Eliminated `..clearCache()` from `DriverWebviewScreen` initialization, allowing Chromium and WebKit to persistently cache JavaScript bundles, CSS stylesheets, Material vector glyphs, and images in memory/disk.
+  - **In-Place URL & Hash Navigation**: Updated `didUpdateWidget` in `DriverWebviewScreen` to detect same-origin navigation (hash and query parameters changes) and replace the address in-place via JavaScript `window.location.replace(...)`, completely eliminating the destructive full-page `loadRequest()` teardown that previously reloaded the web app twice during job offer initialization.
+  - **Eliminated Redundant Angular Network Waterfall**: Updated `JobOfferComponent` (`job-offer.ts`) so that when the URL already carries valid parameters (pickup, dropoff, fare, passenger, notes, vias), it renders instantly on the first frame without triggering redundant background calls to `getJobById`, `getTodaysJobs`, and `getFutureJobs`.
+  - **Parallel & Resilient Background Enrichment**: Optimized Flutter `fetchAndOfferJob` in `trip.dart` to immediately offer rich fallback data extracted from incoming push notifications and query backend enrichment endpoints (`RetrieveJobOffer` and `FindById`) concurrently with a resilient 3-second timeout.
+  - **Immutable Vercel Static Caching**: Added `Cache-Control: public, max-age=31536000, immutable` headers in `vercel.json` for all JavaScript, CSS, font, and image assets.
+  - **Verified Build & Test Health**: 100% green passing status across Vitest (`npx vitest run`), Flutter test suite (`flutter test` 16/16 tests passing), and clean Angular production build (`ng build`).
+- [x] **Notification Sounds by Category, Live Voice Speech Engine & Closed App Support (`MainActivity.kt`, `AndroidManifest.xml`, `notification_sound_service.dart`, `main.dart`, `settings_view.dart`, `res/raw/`)**:
+  - **Native Android OS Notification Channels (`MainActivity.kt`)**: Created 4 distinct native notification channels on startup in `MainActivity.onCreate()` with dedicated audio resources:
+    1. `job_offer_speech_v1`: `raw/job_offer` (Chime + *"New job offer"*)
+    2. `job_cancel_speech_v1`: `raw/job_cancel` (Chime + *"Job offer cancelled"*)
+    3. `job_amended_speech_v1`: `raw/job_amended` (Chime + *"Job amended"*)
+    4. `general_alert_speech_v1`: `raw/general_alert` (Chime + *"New alert received"*)
+  - **Eliminated Dual-Speech Audio Overlap**: Separated `jobAmended` from `jobCancel`, generated dedicated `job_amended.wav` audio asset, and prevented overlapping TTS speech from playing concurrently over native channel audio.
+  - **Closed/Background Handler Dispatch (`main.dart`)**: Updated `@pragma('vm:entry-point') Future<void> _firebaseMessagingBackgroundHandler` to register channels and dispatch local banner notifications with custom audio when the app is killed or running headless.
+  - **Manifest Meta-Data & Permissions (`AndroidManifest.xml`)**:
+    - Configured `com.google.firebase.messaging.default_notification_channel_id` to `job_offer_speech_v1`.
+    - Added `android.permission.VIBRATE` and `android.permission.USE_FULL_SCREEN_INTENT`.
+  - **Strict Categorization Engine with Title & Body Inspection**: Enhanced `NotificationSoundService.categorize()` to inspect amendment keywords (`amend`, `amended`, `modified`, `updated`, `type: 3`) before cancellation checks, ensuring edited bookings only speak *"Job amended"*.
+  - **Settings Sound Testing Hub**: Added interactive 1-tap sound test actions in `SettingsView` ([`settings_view.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/settings/presentation/settings_view.dart)) allowing drivers to preview **Job Offer**, **Job Cancel**, **Job Amended**, and **General Alert** sounds with live heads-up banners.
+  - **Verified Build & Test Suite**: 100% clean passes on `flutter analyze` (0 issues), `flutter test` (16/16 green), and Vitest (`npx vitest run` 2/2 green).
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.

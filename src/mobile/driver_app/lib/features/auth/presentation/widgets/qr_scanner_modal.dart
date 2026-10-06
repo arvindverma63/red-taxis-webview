@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QrScannerModal extends StatefulWidget {
   const QrScannerModal({super.key});
@@ -12,7 +11,7 @@ class QrScannerModal extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const QrScannerModal(),
+      builder: (context) => const QrScannerModal(),
     );
   }
 
@@ -20,104 +19,86 @@ class QrScannerModal extends StatefulWidget {
   State<QrScannerModal> createState() => _QrScannerModalState();
 }
 
-class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProviderStateMixin {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? _scannerController;
+class _QrScannerModalState extends State<QrScannerModal>
+    with SingleTickerProviderStateMixin {
+  late MobileScannerController _scannerController;
   late AnimationController _laserAnimController;
   bool _torchEnabled = false;
-  bool _hasDetected = false;
   String? _parseError;
-  bool _cameraError = false;
-  String? _cameraErrorMessage;
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    try {
-      if (Platform.isAndroid) {
-        _scannerController?.pauseCamera();
-      }
-      _scannerController?.resumeCamera();
-    } catch (_) {}
-  }
 
   @override
   void initState() {
     super.initState();
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
     _laserAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _laserAnimController.dispose();
-    try {
-      _scannerController?.dispose();
-    } catch (_) {}
+    _scannerController.dispose();
     super.dispose();
   }
 
-  Map<String, String>? _parseBarcodeData(String raw) {
+  Map<String, String>? _parseQrPayload(String raw) {
     final clean = raw.trim();
 
-    // 1. Check if JSON format: {"tenantId": "...", "tenantKey": "...", "companyName": "..."}
+    // 1. Check if JSON payload: {"tenantId": "...", "tenantKey": "..."}
     if (clean.startsWith('{') && clean.endsWith('}')) {
       try {
-        final decoded = jsonDecode(clean);
-        if (decoded is Map<String, dynamic>) {
-          final tenantId = decoded['tenantId']?.toString() ?? decoded['id']?.toString() ?? decoded['orgId']?.toString();
-          final tenantKey = decoded['tenantKey']?.toString() ?? decoded['key']?.toString() ?? decoded['accessKey']?.toString() ?? decoded['tenant_key']?.toString();
-          final companyName = decoded['companyName']?.toString() ?? decoded['name']?.toString() ?? decoded['displayName']?.toString();
-          final primaryColour = decoded['primaryColour']?.toString() ?? decoded['primaryColor']?.toString();
+        final data = jsonDecode(clean);
+        if (data is Map<String, dynamic>) {
+          final tenantId = data['tenantId']?.toString() ?? data['id']?.toString() ?? data['fleetId']?.toString();
+          final tenantKey = data['tenantKey']?.toString() ?? data['key']?.toString() ?? data['apiKey']?.toString();
+          final companyName = data['companyName']?.toString() ?? data['name']?.toString() ?? data['brand']?.toString();
+          final primaryColour = data['primaryColour']?.toString() ?? data['primaryColor']?.toString() ?? data['color']?.toString();
+
           if (tenantId != null && tenantId.isNotEmpty) {
-            final map = <String, String>{
+            return {
               'tenantId': tenantId,
               'tenantKey': tenantKey ?? '',
+              if (companyName != null) 'companyName': companyName,
+              if (primaryColour != null) 'primaryColour': primaryColour,
             };
-            if (companyName != null && companyName.isNotEmpty) {
-              map['companyName'] = companyName;
-            }
-            if (primaryColour != null && primaryColour.isNotEmpty) {
-              map['primaryColour'] = primaryColour;
-            }
-            return map;
           }
         }
       } catch (_) {}
     }
 
-    // 2. Check if URI / URL format (e.g. redtaxis://setup?tenantId=...&tenantKey=...)
-    try {
-      final uri = Uri.parse(clean);
-      if (uri.queryParameters.containsKey('tenantId') || uri.queryParameters.containsKey('tenant_id') || uri.queryParameters.containsKey('key') || uri.queryParameters.containsKey('tenantKey')) {
-        final tenantId = uri.queryParameters['tenantId'] ?? uri.queryParameters['tenant_id'] ?? (uri.path.startsWith('org_') ? uri.path : uri.path.replaceAll('/', ''));
-        final tenantKey = uri.queryParameters['tenantKey'] ?? uri.queryParameters['tenant_key'] ?? uri.queryParameters['key'] ?? '';
-        final companyName = uri.queryParameters['companyName'] ?? uri.queryParameters['name'] ?? uri.queryParameters['company'];
+    // 2. Check if deep link URL: redtaxis://fleet?tenantId=org_...&tenantKey=rtk_...
+    // or https://staging.redtaxi.co.uk/driver?tenantId=org_...
+    if (clean.contains('://') || clean.contains('tenantId=')) {
+      try {
+        final uri = Uri.parse(clean);
+        final tenantId = uri.queryParameters['tenantId'] ?? uri.queryParameters['id'] ?? uri.queryParameters['tenant'];
+        final tenantKey = uri.queryParameters['tenantKey'] ?? uri.queryParameters['key'] ?? uri.queryParameters['token'];
+        final companyName = uri.queryParameters['companyName'] ?? uri.queryParameters['name'] ?? uri.queryParameters['fleet'];
         final primaryColour = uri.queryParameters['primaryColour'] ?? uri.queryParameters['primaryColor'] ?? uri.queryParameters['color'];
-        if (tenantId.isNotEmpty) {
-          final map = <String, String>{
+
+        if (tenantId != null && tenantId.isNotEmpty) {
+          return {
             'tenantId': tenantId,
-            'tenantKey': tenantKey,
+            'tenantKey': tenantKey ?? '',
+            if (companyName != null) 'companyName': companyName,
+            if (primaryColour != null) 'primaryColour': primaryColour,
           };
-          if (companyName != null && companyName.isNotEmpty) {
-            map['companyName'] = companyName;
-          }
-          if (primaryColour != null && primaryColour.isNotEmpty) {
-            map['primaryColour'] = primaryColour;
-          }
-          return map;
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
     // 3. Check if colon / pipe separated format: "org_...:rtk_pub_..." or "org_...|rtk_pub_...|companyName"
     if (clean.contains(':') || clean.contains('|')) {
       final delimiter = clean.contains(':') ? ':' : '|';
       final parts = clean.split(delimiter);
       if (parts.length >= 2) {
-        final map = <String, String>{
+        final map = {
           'tenantId': parts[0].trim(),
           'tenantKey': parts[1].trim(),
         };
@@ -129,7 +110,7 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
     }
 
     // 4. Fallback if single identifier is supplied
-    if (clean.startsWith('org_')) {
+    if (clean.startsWith('org_') || clean.startsWith('fleet_')) {
       return {
         'tenantId': clean,
         'tenantKey': '',
@@ -139,48 +120,22 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
     return null;
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    _scannerController = controller;
-    controller.scannedDataStream.listen(
-      (scanData) {
-        if (_hasDetected) return;
-        final rawValue = scanData.code;
-        if (rawValue != null && rawValue.isNotEmpty) {
-          final result = _parseBarcodeData(rawValue);
-          if (result != null) {
-            _hasDetected = true;
-            HapticFeedback.mediumImpact();
-            if (mounted) {
-              Navigator.of(context).pop(result);
-            }
-          } else {
-            if (mounted) {
-              setState(() {
-                _parseError = 'Unrecognized QR code format. Please use a fleet QR.';
-              });
-            }
-          }
-        }
-      },
-      onError: (error) {
-        if (mounted) {
+  void _onDetect(BarcodeCapture capture) {
+    final barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      final rawValue = barcode.rawValue;
+      if (rawValue != null && rawValue.isNotEmpty) {
+        final parsed = _parseQrPayload(rawValue);
+        if (parsed != null) {
+          HapticFeedback.mediumImpact();
+          Navigator.of(context).pop(parsed);
+          return;
+        } else {
           setState(() {
-            _cameraError = true;
-            _cameraErrorMessage = error.toString().contains('No camera available')
-                ? 'Camera is not available on simulator.'
-                : 'Unable to start camera feed.';
+            _parseError = 'Invalid QR code. Please scan a valid fleet setup code.';
           });
         }
-      },
-    );
-  }
-
-  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
-    if (!p && mounted) {
-      setState(() {
-        _cameraError = true;
-        _cameraErrorMessage = 'Camera permission was not granted.';
-      });
+      }
     }
   }
 
@@ -196,15 +151,13 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text;
     if (text != null && text.isNotEmpty) {
-      final result = _parseBarcodeData(text);
-      if (result != null) {
-        if (mounted) {
-          HapticFeedback.mediumImpact();
-          Navigator.of(context).pop(result);
-        }
+      final parsed = _parseQrPayload(text);
+      if (parsed != null && mounted) {
+        HapticFeedback.mediumImpact();
+        Navigator.of(context).pop(parsed);
       } else {
         setState(() {
-          _parseError = 'Pasted text does not contain valid fleet credentials.';
+          _parseError = 'Clipboard does not contain a valid fleet code or URL.';
         });
       }
     }
@@ -217,232 +170,145 @@ class _QrScannerModalState extends State<QrScannerModal> with SingleTickerProvid
     final primaryColor = theme.colorScheme.primary;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
-          // Drag handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 44,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(10),
-              ),
+          // Header handle
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[700] : Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
+          const SizedBox(height: 16),
 
-          // Modal Top App Bar
+          // Title & Controls
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.qr_code_scanner_rounded, color: primaryColor, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Scan Fleet QR Code',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Scan Fleet QR Code',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
-                      Text(
-                        'Point camera at your fleet activation QR',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Point camera at your fleet setup QR code',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                // Torch Toggle
-                IconButton(
-                  icon: Icon(
-                    _torchEnabled ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                    color: _torchEnabled ? Colors.amber : (isDark ? Colors.grey[300] : Colors.grey[700]),
-                  ),
-                  onPressed: () async {
-                    try {
-                      await _scannerController?.toggleFlash();
-                      final status = await _scannerController?.getFlashStatus();
-                      if (mounted) {
-                        setState(() => _torchEnabled = status ?? !_torchEnabled);
-                      }
-                    } catch (_) {}
-                  },
-                ),
-                // Camera Flip
-                IconButton(
-                  icon: Icon(
-                    Icons.flip_camera_ios_rounded,
-                    color: isDark ? Colors.grey[300] : Colors.grey[700],
-                  ),
-                  onPressed: () async {
-                    try {
-                      await _scannerController?.flipCamera();
-                    } catch (_) {}
-                  },
-                ),
-                // Close Button
-                IconButton(
-                  icon: Icon(Icons.close_rounded, color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                  onPressed: () => Navigator.of(context).pop(),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _torchEnabled ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                        color: _torchEnabled ? Colors.amber : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                      ),
+                      onPressed: () {
+                        _scannerController.toggleTorch();
+                        setState(() {
+                          _torchEnabled = !_torchEnabled;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: isDark ? Colors.grey[300] : Colors.grey[700],
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1),
-
-          // Camera Viewport & Overlay
+          // Camera Viewfinder Box
           Expanded(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                if (!_cameraError)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: QRView(
-                        key: qrKey,
-                        onQRViewCreated: _onQRViewCreated,
-                        onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
-                        overlay: QrScannerOverlayShape(
-                          borderColor: primaryColor,
-                          borderRadius: 20,
-                          borderLength: 30,
-                          borderWidth: 4,
-                          cutOutSize: 230,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  // Simulator / No Camera fallback view
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                    padding: const EdgeInsets.all(24),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                      ),
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.videocam_off_rounded, color: primaryColor, size: 32),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _cameraErrorMessage ?? 'Camera Not Available',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'iOS Simulators do not have a camera. You can paste a code or pick a demo fleet below to activate instantly.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1.4,
-                            color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: _pasteFromClipboard,
-                          icon: const Icon(Icons.content_paste_rounded, size: 18),
-                          label: const Text('Paste From Clipboard'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: MobileScanner(
+                      controller: _scannerController,
+                      onDetect: _onDetect,
                     ),
                   ),
+                ),
 
-                // Animated scanning laser line (only if camera is active)
-                if (!_cameraError)
-                  Positioned(
-                    child: SizedBox(
-                      width: 230,
-                      height: 230,
-                      child: Stack(
-                        children: [
-                          AnimatedBuilder(
-                            animation: _laserAnimController,
-                            builder: (context, child) {
-                              return Positioned(
-                                top: _laserAnimController.value * 210,
-                                left: 0,
-                                right: 0,
-                                child: Container(
-                                  height: 3,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        primaryColor.withValues(alpha: 0.1),
-                                        primaryColor,
-                                        primaryColor.withValues(alpha: 0.1),
-                                      ],
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: primaryColor.withValues(alpha: 0.6),
-                                        blurRadius: 8,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                // Viewfinder Target Frame
+                Container(
+                  width: 230,
+                  height: 230,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: primaryColor,
+                      width: 2.5,
                     ),
                   ),
+                  child: Stack(
+                    children: [
+                      // Animated scanning laser line
+                      AnimatedBuilder(
+                        animation: _laserAnimController,
+                        builder: (context, child) {
+                          return Positioned(
+                            top: _laserAnimController.value * 210,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 3,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    primaryColor.withValues(alpha: 0.1),
+                                    primaryColor,
+                                    primaryColor.withValues(alpha: 0.1),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primaryColor.withValues(alpha: 0.6),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Parse error notice
                 if (_parseError != null)

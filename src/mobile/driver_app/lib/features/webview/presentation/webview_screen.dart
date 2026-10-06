@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -123,7 +124,6 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(isDarkInitial ? const Color(0xFF121214) : const Color(0xFFFFFFFF))
         ..enableZoom(false)
-        ..clearCache()
         ..addJavaScriptChannel(
           'FlutterChannel',
           onMessageReceived: (JavaScriptMessage message) {
@@ -323,8 +323,29 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   @override
   void didUpdateWidget(covariant DriverWebviewScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!kIsWeb && oldWidget.url != widget.url) {
-      _controller?.loadRequest(Uri.parse(widget.url));
+    if (!kIsWeb && oldWidget.url != widget.url && _controller != null) {
+      final oldUri = Uri.tryParse(oldWidget.url);
+      final newUri = Uri.tryParse(widget.url);
+      if (oldUri != null &&
+          newUri != null &&
+          oldUri.scheme == newUri.scheme &&
+          oldUri.host == newUri.host &&
+          oldUri.path == newUri.path) {
+        final jsTarget = jsonEncode(widget.url);
+        _controller?.runJavaScript("""
+          (function() {
+            try {
+              if (window.location.href !== $jsTarget) {
+                window.location.replace($jsTarget);
+              }
+            } catch (e) {
+              window.location.href = $jsTarget;
+            }
+          })();
+        """);
+      } else {
+        _controller?.loadRequest(Uri.parse(widget.url));
+      }
     }
   }
 

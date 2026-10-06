@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Scratch & Temporary files
+scratch/
+tmp/
+*.tmp
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

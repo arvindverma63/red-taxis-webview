@@ -8,8 +8,7 @@ import 'package:driver_app/core/location/location.dart';
 import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/auth/presentation/widgets/qr_scanner_modal.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:driver_app/main.dart' show flutterLocalNotificationsPlugin;
+import 'package:driver_app/core/notifications/notification_sound_service.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -35,41 +34,46 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     _loadSettings();
   }
 
-  Future<void> _sendTestNotification(TenantBranding branding) async {
+  Future<void> _sendTestNotification(TenantBranding branding, [NotificationCategory category = NotificationCategory.jobOffer]) async {
     try {
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
-        'high_importance_channel',
-        'High Importance Notifications',
-        channelDescription: 'This channel is used for important notifications.',
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: true,
-        enableVibration: true,
-      );
-      const DarwinNotificationDetails darwinPlatformChannelSpecifics =
-          DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: darwinPlatformChannelSpecifics,
-      );
+      String title;
+      String body;
+      Map<String, dynamic> payload;
 
-      await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecond,
-        '🚕 ${branding.name} Dispatch Alert',
-        'New Job Offer: 42 High St -> Heathrow Airport (£32.50)',
-        platformChannelSpecifics,
-        payload: '{"type":"test_dispatch"}',
+      switch (category) {
+        case NotificationCategory.jobOffer:
+          title = '🚕 New Job Offer Available';
+          body = 'Pickup: 42 High St -> Heathrow Airport (£32.50)';
+          payload = {'notificationType': '1', 'jobId': 'JOB-9021', 'fare': '32.50'};
+          break;
+        case NotificationCategory.jobCancel:
+        case NotificationCategory.jobUnallocated:
+          title = '❌ Job Offer Cancelled';
+          body = 'Booking #JOB-9021 has been cancelled by passenger';
+          payload = {'notificationType': '4', 'jobId': 'JOB-9021'};
+          break;
+        case NotificationCategory.jobAmended:
+          title = '✏️ Job Details Amended';
+          body = 'Booking #JOB-9021 pickup time or destination modified';
+          payload = {'notificationType': '3', 'jobId': 'JOB-9021'};
+          break;
+        case NotificationCategory.general:
+          title = '📢 ${branding.name} Announcement';
+          body = 'Peak surge bonus active in Central Zone tonight!';
+          payload = {'notificationType': 'general'};
+          break;
+      }
+
+      await NotificationSoundService.showNotification(
+        title: title,
+        body: body,
+        data: payload,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Test notification banner sent!'),
+            content: Text('${title.split(" ")[1]} test notification sound dispatched!'),
             backgroundColor: branding.primaryColor,
             duration: const Duration(seconds: 2),
           ),
@@ -261,13 +265,43 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               ),
               _buildDivider(isDark),
               _buildCompactRow(
-                icon: Icons.notification_important_outlined,
-                iconColor: const Color(0xFFEC4899),
-                title: 'Test Notification',
-                subtitle: 'Send instant heads-up alert banner',
+                icon: Icons.local_taxi_rounded,
+                iconColor: const Color(0xFF10B981),
+                title: 'Test Job Offer Sound',
+                subtitle: 'Play loud ascending dispatch chime & vibration',
                 isDark: isDark,
-                onTap: () => _sendTestNotification(branding),
-                trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? Colors.grey[500] : Colors.grey[400]),
+                onTap: () => _sendTestNotification(branding, NotificationCategory.jobOffer),
+                trailing: Icon(Icons.volume_up_rounded, size: 16, color: branding.primaryColor),
+              ),
+              _buildDivider(isDark),
+              _buildCompactRow(
+                icon: Icons.cancel_outlined,
+                iconColor: const Color(0xFFEF4444),
+                title: 'Test Job Cancel Sound',
+                subtitle: 'Play descending warning chime & "Job offer cancelled"',
+                isDark: isDark,
+                onTap: () => _sendTestNotification(branding, NotificationCategory.jobCancel),
+                trailing: const Icon(Icons.volume_up_rounded, size: 16, color: Color(0xFFEF4444)),
+              ),
+              _buildDivider(isDark),
+              _buildCompactRow(
+                icon: Icons.edit_notifications_outlined,
+                iconColor: const Color(0xFFF59E0B),
+                title: 'Test Job Amended Sound',
+                subtitle: 'Play notification chime & "Job amended"',
+                isDark: isDark,
+                onTap: () => _sendTestNotification(branding, NotificationCategory.jobAmended),
+                trailing: const Icon(Icons.volume_up_rounded, size: 16, color: Color(0xFFF59E0B)),
+              ),
+              _buildDivider(isDark),
+              _buildCompactRow(
+                icon: Icons.notifications_active_outlined,
+                iconColor: const Color(0xFF38BDF8),
+                title: 'Test General Alert Sound',
+                subtitle: 'Play crisp announcement ping',
+                isDark: isDark,
+                onTap: () => _sendTestNotification(branding, NotificationCategory.general),
+                trailing: const Icon(Icons.volume_up_rounded, size: 16, color: Color(0xFF38BDF8)),
               ),
             ],
           ),
