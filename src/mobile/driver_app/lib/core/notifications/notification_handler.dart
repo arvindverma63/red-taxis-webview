@@ -257,66 +257,81 @@ class NotificationNavigationHandler {
     );
 
     if (isBookingOffer) {
-      if (bookingId.isNotEmpty || guid.isNotEmpty) {
-        final fare = double.tryParse(data['fare']?.toString() ?? data['price']?.toString() ?? '0.0') ?? 0.0;
-        final pickup = data['pickupAddress'] ?? data['pickup'] ?? data['from'] ?? 'Pickup address';
-        final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? data['to'] ?? 'Dropoff destination';
-        final paymentType = data['paymentType'] ?? data['payment'] ?? 'Cash';
-        final vehicleType = data['vehicleType'] ?? data['vehicle'] ?? 'Standard Saloon';
-        final passenger = data['passengerName'] ?? data['passenger'] ?? data['customerName'] ?? 'Passenger';
-        final notes = data['notes'] ?? data['details'] ?? '';
+      final fare = double.tryParse(data['fare']?.toString() ?? data['price']?.toString() ?? '0.0') ?? 0.0;
+      final pickup = data['pickupAddress'] ?? data['pickup'] ?? data['from'] ?? 'Pickup address';
+      final dropoff = data['dropoffAddress'] ?? data['dropoff'] ?? data['to'] ?? 'Dropoff destination';
+      final paymentType = data['paymentType'] ?? data['payment'] ?? 'Cash';
+      final vehicleType = data['vehicleType'] ?? data['vehicle'] ?? 'Standard Saloon';
+      final passenger = data['passengerName'] ?? data['passenger'] ?? data['customerName'] ?? 'Passenger';
+      final notes = data['notes'] ?? data['details'] ?? '';
 
-        final rawVias = data['vias'] ?? data['Vias'] ?? data['via'] ?? data['Via'] ?? data['viaStops'] ?? data['ViaStops'];
-        final List<String> vias = [];
-        if (rawVias is List) {
-          for (final v in rawVias) {
-            if (v is String && v.trim().isNotEmpty) {
-              vias.add(v.trim());
-            } else if (v is Map) {
-              final addr = (v['address'] ?? v['Address'] ?? v['description'] ?? '').toString();
-              if (addr.isNotEmpty) vias.add(addr);
-            }
-          }
-        } else if (rawVias is String && rawVias.trim().isNotEmpty) {
-          try {
-            final decoded = jsonDecode(rawVias);
-            if (decoded is List) {
-              for (final v in decoded) {
-                if (v is String && v.trim().isNotEmpty) {
-                  vias.add(v.trim());
-                } else if (v is Map) {
-                  final addr = (v['address'] ?? v['description'] ?? '').toString();
-                  if (addr.isNotEmpty) vias.add(addr);
-                }
-              }
-            }
-          } catch (_) {
-            final parts = rawVias.split(RegExp(r'[;|]')).map((s) => s.trim()).where((s) => s.isNotEmpty);
-            vias.addAll(parts);
+      final rawVias = data['vias'] ?? data['Vias'] ?? data['via'] ?? data['Via'] ?? data['viaStops'] ?? data['ViaStops'];
+      final List<String> vias = [];
+      if (rawVias is List) {
+        for (final v in rawVias) {
+          if (v is String && v.trim().isNotEmpty) {
+            vias.add(v.trim());
+          } else if (v is Map) {
+            final addr = (v['address'] ?? v['Address'] ?? v['description'] ?? '').toString();
+            if (addr.isNotEmpty) vias.add(addr);
           }
         }
-
-        debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$bookingId', guid='$guid', viasCount=${vias.length}");
-        targetRef.read(tripProvider.notifier).fetchAndOfferJob(
-              bookingId,
-              guid: guid,
-              fallbackDetails: TripDetails(
-                id: bookingId,
-                guid: guid,
-                pickupAddress: pickup.toString(),
-                dropoffAddress: dropoff.toString(),
-                vias: vias,
-                fare: fare,
-                paymentType: paymentType.toString(),
-                vehicleType: vehicleType.toString(),
-                passenger: passenger.toString(),
-                notes: notes.toString(),
-              ),
-            );
-      } else {
-        debugPrint("NotificationNavigationHandler: Booking offer notification received without specific bookingId; checking active job from backend");
-        targetRef.read(tripProvider.notifier).checkActiveJob();
+      } else if (rawVias is String && rawVias.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(rawVias);
+          if (decoded is List) {
+            for (final v in decoded) {
+              if (v is String && v.trim().isNotEmpty) {
+                vias.add(v.trim());
+              } else if (v is Map) {
+                final addr = (v['address'] ?? v['description'] ?? '').toString();
+                if (addr.isNotEmpty) vias.add(addr);
+              }
+            }
+          }
+        } catch (_) {
+          final parts = rawVias.split(RegExp(r'[;|]')).map((s) => s.trim()).where((s) => s.isNotEmpty);
+          vias.addAll(parts);
+        }
       }
+
+      final effectiveBookingId = bookingId.isNotEmpty ? bookingId : '1';
+
+      debugPrint("NotificationNavigationHandler: Triggering fetchAndOfferJob for bookingId='$effectiveBookingId', guid='$guid', viasCount=${vias.length}");
+      targetRef.read(tripProvider.notifier).fetchAndOfferJob(
+            effectiveBookingId,
+            guid: guid,
+            fallbackDetails: TripDetails(
+              id: effectiveBookingId,
+              guid: guid,
+              pickupAddress: pickup.toString(),
+              dropoffAddress: dropoff.toString(),
+              vias: vias,
+              fare: fare,
+              paymentType: paymentType.toString(),
+              vehicleType: vehicleType.toString(),
+              passenger: passenger.toString(),
+              notes: notes.toString(),
+            ),
+          );
+
+      // Also directly open custom webview for /job-offer as a foolproof overlay guarantee!
+      navNotifier.openCustomWebView(
+        route: '/job-offer',
+        title: 'New Job Offer',
+        params: {
+          if (bookingId.isNotEmpty) 'jobId': bookingId,
+          if (guid.isNotEmpty) 'guid': guid,
+          if (fare > 0) 'fare': fare.toString(),
+          'pickup': pickup.toString(),
+          'dropoff': dropoff.toString(),
+          'paymentType': paymentType.toString(),
+          'vehicleType': vehicleType.toString(),
+          'passenger': passenger.toString(),
+          if (notes.toString().isNotEmpty) 'notes': notes.toString(),
+          ..._extractParams(data),
+        },
+      );
       return;
     }
 
