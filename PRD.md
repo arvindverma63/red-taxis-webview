@@ -580,6 +580,7 @@ The Angular router guards and services parse the `token` parameter directly from
   - Replaced `mobile_scanner` (which introduced legacy GoogleMLKit binaries lacking arm64 simulator slices) with `qr_code_scanner_plus: ^2.1.2`, leveraging Apple's native AVFoundation frameworks for 100% native compilation on Apple Silicon iOS simulators.
   - Upgraded `firebase_core: ^3.8.0` and `firebase_messaging: ^15.2.0` in `driver_app/pubspec.yaml` to ensure clean CocoaPods resolution and dependency harmonization.
   - Retained the high-contrast scanning HUD, animated laser bar, and demo fleet presets (`Instacreator`, `Red Taxis`, `Ace Taxis`, `First Taxis`) with clipboard pasting fallback.
+  - Verified remote Mac Mini execution via SSH: compiled with Metal/Impeller backend and launched directly on the **iPhone 17 iOS Simulator** (`134C0DFA-7220-4A6B-8ECB-CB787EC5B6C6`) with exit code 0 (`iOS notification permission granted`, `TTS speech engine initialized`).
   - Verified with 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
 
 ### ⏳ Remaining Work / Roadmap
