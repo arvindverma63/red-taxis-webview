@@ -366,9 +366,9 @@ class NotificationSoundService {
       final details = getDetailsForCategory(category);
       final notificationId = id ?? DateTime.now().millisecond;
 
-      // On mobile devices, the NotificationChannel plays the chime + voice WAV file.
-      // If speakTts is explicitly true (e.g. settings testing), speak without overlapping.
-      if (speakTts) {
+      // On Android, NotificationChannel plays the native WAV chime.
+      // On iOS, trigger TTS voice speech as well to ensure crystal-clear voice alert announcements.
+      if (speakTts || (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)) {
         speakCategory(category);
       }
 

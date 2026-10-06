@@ -16,6 +16,10 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		A1B2C3D4294A63AB00263BE5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4294A618700263BE5 /* GoogleService-Info.plist */; };
+		E10000012E4A618700263BE5 /* job_offer.wav in Resources */ = {isa = PBXBuildFile; fileRef = E10000012E4A618700263BE4 /* job_offer.wav */; };
+		E10000022E4A618700263BE5 /* job_cancel.wav in Resources */ = {isa = PBXBuildFile; fileRef = E10000022E4A618700263BE4 /* job_cancel.wav */; };
+		E10000032E4A618700263BE5 /* job_amended.wav in Resources */ = {isa = PBXBuildFile; fileRef = E10000032E4A618700263BE4 /* job_amended.wav */; };
+		E10000042E4A618700263BE5 /* general_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = E10000042E4A618700263BE4 /* general_alert.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +63,10 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4294A618700263BE5 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		E10000012E4A618700263BE4 /* job_offer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = job_offer.wav; sourceTree = "<group>"; };
+		E10000022E4A618700263BE4 /* job_cancel.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = job_cancel.wav; sourceTree = "<group>"; };
+		E10000032E4A618700263BE4 /* job_amended.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = job_amended.wav; sourceTree = "<group>"; };
+		E10000042E4A618700263BE4 /* general_alert.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = general_alert.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +131,10 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				E10000012E4A618700263BE4 /* job_offer.wav */,
+				E10000022E4A618700263BE4 /* job_cancel.wav */,
+				E10000032E4A618700263BE4 /* job_amended.wav */,
+				E10000042E4A618700263BE4 /* general_alert.wav */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -223,6 +235,10 @@
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				A1B2C3D4294A63AB00263BE5 /* GoogleService-Info.plist in Resources */,
+				E10000012E4A618700263BE5 /* job_offer.wav in Resources */,
+				E10000022E4A618700263BE5 /* job_cancel.wav in Resources */,
+				E10000032E4A618700263BE5 /* job_amended.wav in Resources */,
+				E10000042E4A618700263BE5 /* general_alert.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
