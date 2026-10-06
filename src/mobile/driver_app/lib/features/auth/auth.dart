@@ -383,11 +383,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       try {
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-          try {
-            apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-            debugPrint('[Auth] APNs Token retrieved: $apnsToken');
-          } catch (apnsErr) {
-            debugPrint('[Auth] APNs token retrieval notice: $apnsErr');
+          // APNs registration with Apple servers is asynchronous and may take 1-3 seconds on startup.
+          for (int attempt = 0; attempt < 4; attempt++) {
+            try {
+              apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+              if (apnsToken != null && apnsToken.isNotEmpty) {
+                debugPrint('[Auth] APNs Token successfully acquired (attempt ${attempt + 1}): $apnsToken');
+                break;
+              }
+            } catch (apnsErr) {
+              debugPrint('[Auth] APNs token retrieval attempt ${attempt + 1} notice: $apnsErr');
+            }
+            if (attempt < 3) {
+              await Future.delayed(const Duration(milliseconds: 1200));
+            }
           }
         }
 
@@ -395,9 +404,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
           fcmToken = await FirebaseMessaging.instance.getToken();
           debugPrint('[Auth] FCM Token retrieved: $fcmToken');
         } on PlatformException catch (pe) {
-          debugPrint('[Auth] FCM getToken PlatformException: $pe');
+          debugPrint('[Auth] FCM getToken PlatformException (expected on unsigned simulator): $pe');
         } catch (fcmErr) {
-          debugPrint('[Auth] FCM getToken error: $fcmErr');
+          debugPrint('[Auth] FCM getToken notice: $fcmErr');
         }
       } catch (err) {
         debugPrint('[Auth] Token retrieval general notice: $err');
