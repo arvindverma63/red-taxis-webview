@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 class QrScannerModal extends StatefulWidget {
   const QrScannerModal({super.key});
@@ -21,19 +22,27 @@ class QrScannerModal extends StatefulWidget {
 
 class _QrScannerModalState extends State<QrScannerModal>
     with SingleTickerProviderStateMixin {
-  late MobileScannerController _scannerController;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController? _controller;
   late AnimationController _laserAnimController;
   bool _torchEnabled = false;
   String? _parseError;
+  bool _isProcessing = false;
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    try {
+      if (Platform.isAndroid) {
+        _controller?.pauseCamera();
+      }
+      _controller?.resumeCamera();
+    } catch (_) {}
+  }
 
   @override
   void initState() {
     super.initState();
-    _scannerController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      torchEnabled: false,
-    );
     _laserAnimController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -43,8 +52,28 @@ class _QrScannerModalState extends State<QrScannerModal>
   @override
   void dispose() {
     _laserAnimController.dispose();
-    _scannerController.dispose();
     super.dispose();
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    _controller = controller;
+    controller.scannedDataStream.listen((scanData) {
+      final code = scanData.code;
+      if (code != null && code.isNotEmpty && !_isProcessing) {
+        final parsed = _parseQrPayload(code);
+        if (parsed != null && mounted) {
+          _isProcessing = true;
+          HapticFeedback.mediumImpact();
+          Navigator.of(context).pop(parsed);
+        } else if (mounted) {
+          setState(() {
+            _parseError = 'Invalid QR code. Please scan a valid fleet setup code.';
+          });
+        }
+      }
+    }, onError: (err) {
+      debugPrint('QR Scanner camera notice: $err');
+    });
   }
 
   Map<String, String>? _parseQrPayload(String raw) {
@@ -118,25 +147,6 @@ class _QrScannerModalState extends State<QrScannerModal>
     }
 
     return null;
-  }
-
-  void _onDetect(BarcodeCapture capture) {
-    final barcodes = capture.barcodes;
-    for (final barcode in barcodes) {
-      final rawValue = barcode.rawValue;
-      if (rawValue != null && rawValue.isNotEmpty) {
-        final parsed = _parseQrPayload(rawValue);
-        if (parsed != null) {
-          HapticFeedback.mediumImpact();
-          Navigator.of(context).pop(parsed);
-          return;
-        } else {
-          setState(() {
-            _parseError = 'Invalid QR code. Please scan a valid fleet setup code.';
-          });
-        }
-      }
-    }
   }
 
   void _selectPreset(String tenantId, String tenantKey) {
@@ -223,11 +233,13 @@ class _QrScannerModalState extends State<QrScannerModal>
                         _torchEnabled ? Icons.flash_on_rounded : Icons.flash_off_rounded,
                         color: _torchEnabled ? Colors.amber : (isDark ? Colors.grey[300] : Colors.grey[700]),
                       ),
-                      onPressed: () {
-                        _scannerController.toggleTorch();
-                        setState(() {
-                          _torchEnabled = !_torchEnabled;
-                        });
+                      onPressed: () async {
+                        try {
+                          await _controller?.toggleFlash();
+                          setState(() {
+                            _torchEnabled = !_torchEnabled;
+                          });
+                        } catch (_) {}
                       },
                     ),
                     IconButton(
@@ -256,57 +268,65 @@ class _QrScannerModalState extends State<QrScannerModal>
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: MobileScanner(
-                      controller: _scannerController,
-                      onDetect: _onDetect,
+                    child: QRView(
+                      key: qrKey,
+                      onQRViewCreated: _onQRViewCreated,
+                      overlay: QrScannerOverlayShape(
+                        borderColor: primaryColor,
+                        borderRadius: 16,
+                        borderLength: 30,
+                        borderWidth: 4,
+                        cutOutSize: 240,
+                      ),
+                      onPermissionSet: (ctrl, p) {
+                        if (!p && mounted) {
+                          setState(() {
+                            _parseError = 'Camera permission required to scan QR code.';
+                          });
+                        }
+                      },
                     ),
                   ),
                 ),
 
-                // Viewfinder Target Frame
-                Container(
-                  width: 230,
-                  height: 230,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: primaryColor,
-                      width: 2.5,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Animated scanning laser line
-                      AnimatedBuilder(
-                        animation: _laserAnimController,
-                        builder: (context, child) {
-                          return Positioned(
-                            top: _laserAnimController.value * 210,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    primaryColor.withValues(alpha: 0.1),
-                                    primaryColor,
-                                    primaryColor.withValues(alpha: 0.1),
+                // Animated scanning laser line
+                Positioned(
+                  child: SizedBox(
+                    width: 230,
+                    height: 230,
+                    child: AnimatedBuilder(
+                      animation: _laserAnimController,
+                      builder: (context, child) {
+                        return Stack(
+                          children: [
+                            Positioned(
+                              top: _laserAnimController.value * 210,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      primaryColor.withValues(alpha: 0.1),
+                                      primaryColor,
+                                      primaryColor.withValues(alpha: 0.1),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: primaryColor.withValues(alpha: 0.6),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
                                   ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primaryColor.withValues(alpha: 0.6),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
 

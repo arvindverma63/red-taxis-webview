@@ -574,8 +574,14 @@ The Angular router guards and services parse the `token` parameter directly from
     - Configured `com.google.firebase.messaging.default_notification_channel_id` to `job_offer_speech_v1`.
     - Added `android.permission.VIBRATE` and `android.permission.USE_FULL_SCREEN_INTENT`.
   - **Strict Categorization Engine with Title & Body Inspection**: Enhanced `NotificationSoundService.categorize()` to inspect amendment keywords (`amend`, `amended`, `modified`, `updated`, `type: 3`) before cancellation checks, ensuring edited bookings only speak *"Job amended"*.
-  - **Settings Sound Testing Hub**: Added interactive 1-tap sound test actions in `SettingsView` ([`settings_view.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/settings/presentation/settings_view.dart)) allowing drivers to preview **Job Offer**, **Job Cancel**, **Job Amended**, and **General Alert** sounds with live heads-up banners.
   - **Verified Build & Test Suite**: 100% clean passes on `flutter analyze` (0 issues), `flutter test` (16/16 green), and Vitest (`npx vitest run` 2/2 green).
+
+- [x] **Apple Silicon arm64 Simulator Native QR Scanner & Firebase SDK Upgrade (`pubspec.yaml`, `qr_scanner_modal.dart`)**:
+  - Replaced `mobile_scanner` (which introduced legacy GoogleMLKit binaries lacking arm64 simulator slices) with `qr_code_scanner_plus: ^2.1.2`, leveraging Apple's native AVFoundation frameworks for 100% native compilation on Apple Silicon iOS simulators.
+  - Upgraded `firebase_core: ^3.8.0` and `firebase_messaging: ^15.2.0` in `driver_app/pubspec.yaml` to ensure clean CocoaPods resolution and dependency harmonization.
+  - Retained the high-contrast scanning HUD, animated laser bar, and demo fleet presets (`Instacreator`, `Red Taxis`, `Ace Taxis`, `First Taxis`) with clipboard pasting fallback.
+  - Verified with 0 analyzer issues on `flutter analyze` and 100% passing tests (16/16) on `flutter test`.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
