@@ -412,10 +412,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         debugPrint('[Auth] Token retrieval general notice: $err');
       }
 
-      // On iOS, explicitly prioritize and set the APNs token in the primary 'fcm' and 'token' fields
-      final effectiveToken = (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
-          ? (apnsToken ?? fcmToken ?? 'sim_apn_ios_${state.userId ?? "driver"}')
-          : (fcmToken ?? apnsToken ?? 'sim_fcm_android_${state.userId ?? "driver"}');
+      // Prioritize the Firebase FCM Token for 'fcm', 'token', and 'fcmToken' fields,
+      // as backend dispatchers utilize the Firebase Admin SDK to route notifications to Apple/Google gateways.
+      final effectiveToken = fcmToken ?? apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS
+          ? 'sim_apn_ios_${state.userId ?? "driver"}'
+          : 'sim_fcm_android_${state.userId ?? "driver"}');
 
       if (effectiveToken.isEmpty) {
         debugPrint('[Auth] No FCM or APNs token available to update.');
@@ -423,16 +424,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
 
       final payload = <String, dynamic>{
-        'fcm': (defaultTargetPlatform == TargetPlatform.iOS && apnsToken != null && apnsToken.isNotEmpty)
-            ? apnsToken
-            : effectiveToken,
-        'token': (defaultTargetPlatform == TargetPlatform.iOS && apnsToken != null && apnsToken.isNotEmpty)
-            ? apnsToken
-            : effectiveToken,
-        'apn': apnsToken ?? effectiveToken,
-        'apns': apnsToken ?? effectiveToken,
-        'apnsToken': apnsToken ?? effectiveToken,
-        'fcmToken': fcmToken ?? '',
+        'fcm': fcmToken ?? effectiveToken,
+        'token': fcmToken ?? effectiveToken,
+        'fcmToken': fcmToken ?? effectiveToken,
+        'apn': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? effectiveToken : ''),
+        'apns': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? effectiveToken : ''),
+        'apnsToken': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? effectiveToken : ''),
+        'deviceToken': fcmToken ?? effectiveToken,
         'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
         'deviceType': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
       };
