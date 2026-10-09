@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -359,6 +360,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  StreamSubscription<String>? _tokenRefreshSub;
+
   Future<void> updateFcmToken() async {
     final token = state.token;
     if (token == null) return;
@@ -378,13 +381,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         debugPrint('[Auth] Notice: Firebase initialization error/bypassed: $fbErr');
       }
 
+      // Attach token refresh listener to automatically update backend when APNs/FCM token is issued or refreshed
+      _tokenRefreshSub ??= FirebaseMessaging.instance.onTokenRefresh.listen((refreshedToken) {
+        debugPrint('[Auth] FCM Token refreshed asynchronously: $refreshedToken');
+        _sendTokenToBackend(refreshedToken, null);
+      });
+
       String? apnsToken;
       String? fcmToken;
 
       try {
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-          // APNs registration with Apple servers is asynchronous and may take 1-3 seconds on startup.
-          for (int attempt = 0; attempt < 4; attempt++) {
+          // On physical iOS devices, APNs registration with Apple servers is asynchronous and may take 2-5 seconds on startup.
+          for (int attempt = 0; attempt < 8; attempt++) {
             try {
               apnsToken = await FirebaseMessaging.instance.getAPNSToken();
               if (apnsToken != null && apnsToken.isNotEmpty) {
@@ -394,8 +403,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
             } catch (apnsErr) {
               debugPrint('[Auth] APNs token retrieval attempt ${attempt + 1} notice: $apnsErr');
             }
-            if (attempt < 3) {
-              await Future.delayed(const Duration(milliseconds: 1200));
+            if (attempt < 7) {
+              await Future.delayed(const Duration(milliseconds: 1500));
             }
           }
         }
@@ -404,7 +413,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           fcmToken = await FirebaseMessaging.instance.getToken();
           debugPrint('[Auth] FCM Token retrieved: $fcmToken');
         } on PlatformException catch (pe) {
-          debugPrint('[Auth] FCM getToken PlatformException (expected on unsigned simulator): $pe');
+          debugPrint('[Auth] FCM getToken PlatformException: $pe');
         } catch (fcmErr) {
           debugPrint('[Auth] FCM getToken notice: $fcmErr');
         }
@@ -412,44 +421,50 @@ class AuthNotifier extends StateNotifier<AuthState> {
         debugPrint('[Auth] Token retrieval general notice: $err');
       }
 
-      // Prioritize the Firebase FCM Token for 'fcm', 'token', and 'fcmToken' fields,
-      // as backend dispatchers utilize the Firebase Admin SDK to route notifications to Apple/Google gateways.
-      final effectiveToken = fcmToken ?? apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS
-          ? 'sim_apn_ios_${state.userId ?? "driver"}'
-          : 'sim_fcm_android_${state.userId ?? "driver"}');
-
-      if (effectiveToken.isEmpty) {
-        debugPrint('[Auth] No FCM or APNs token available to update.');
-        return;
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await _sendTokenToBackend(fcmToken, apnsToken);
+      } else if (apnsToken != null && apnsToken.isNotEmpty) {
+        await _sendTokenToBackend(apnsToken, apnsToken);
+      } else {
+        debugPrint('[Auth] APNs/FCM token is still pending registration with Apple/Firebase.');
       }
+    } catch (e) {
+      debugPrint('[Auth] Failed to update FCM Token to backend: $e');
+    }
+  }
 
-      final payload = <String, dynamic>{
-        'fcm': fcmToken ?? effectiveToken,
-        'token': fcmToken ?? effectiveToken,
-        'fcmToken': fcmToken ?? effectiveToken,
-        'apn': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? effectiveToken : ''),
-        'apns': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? effectiveToken : ''),
-        'apnsToken': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? effectiveToken : ''),
-        'deviceToken': fcmToken ?? effectiveToken,
-        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
-        'deviceType': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
-      };
+  Future<void> _sendTokenToBackend(String primaryToken, String? apnsToken) async {
+    final token = state.token;
+    if (token == null) return;
 
-      debugPrint('[Auth] Updating FCM & APNs Token to backend: $payload');
+    final payload = <String, dynamic>{
+      'fcm': primaryToken,
+      'token': primaryToken,
+      'fcmToken': primaryToken,
+      'apn': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? primaryToken : ''),
+      'apns': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? primaryToken : ''),
+      'apnsToken': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? primaryToken : ''),
+      'deviceToken': primaryToken,
+      'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
+      'deviceType': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
+    };
+
+    debugPrint('[Auth] Updating FCM & APNs Token to backend: $payload');
+    try {
+      final response = await _dio.post(
+        '/api/DriverApp/UpdateFCM',
+        data: payload,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      debugPrint('[Auth] DriverApp/UpdateFCM response status: ${response.statusCode}');
+    } catch (dErr) {
+      debugPrint('[Auth] DriverApp/UpdateFCM notice: $dErr, trying UserProfile/UpdateFCM...');
       try {
-        final response = await _dio.post(
-          '/api/DriverApp/UpdateFCM',
-          data: payload,
-          options: Options(
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          ),
-        );
-        debugPrint('[Auth] DriverApp/UpdateFCM response status: ${response.statusCode}');
-      } catch (dErr) {
-        debugPrint('[Auth] DriverApp/UpdateFCM notice: $dErr, trying UserProfile/UpdateFCM...');
         final res2 = await _dio.post(
           '/api/UserProfile/UpdateFCM',
           data: payload,
@@ -461,9 +476,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
           ),
         );
         debugPrint('[Auth] UserProfile/UpdateFCM response status: ${res2.statusCode}');
+      } catch (e2) {
+        debugPrint('[Auth] Both FCM update endpoints failed: $e2');
       }
-    } catch (e) {
-      debugPrint('[Auth] Failed to update FCM Token to backend: $e');
     }
   }
 

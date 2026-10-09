@@ -598,6 +598,11 @@ The Angular router guards and services parse the `token` parameter directly from
   - Synchronized build parameters and CocoaPods dependencies on the build machine.
   - Formulated deployment checklist covering signing, archiving, Transporter upload, and App Store submission.
 
+- [x] **Physical iOS Device Push Notifications & Async APNs Token Handshake (`Runner.xcodeproj`, `auth.dart`)**:
+  - Added the explicit **Push Notifications** capability in Xcode under **Signing & Capabilities** for Target `Runner`, generating required Apple APNs entitlements for physical iOS devices.
+  - Upgraded `AuthNotifier.updateFcmToken()` in [`auth.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/auth/auth.dart) to hook into `FirebaseMessaging.instance.onTokenRefresh` stream, automatically synchronizing device tokens to `/api/DriverApp/UpdateFCM` whenever Apple APNs generates or refreshes tokens.
+  - Extended APNs token retrieval loop on startup (up to 8 retry cycles with 1.5s intervals) to allow physical iPhones time to complete the Apple APNs gateway registration before dispatching device tokens to backend servers.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
