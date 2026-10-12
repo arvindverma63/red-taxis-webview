@@ -1,110 +1,366 @@
 <div class="active-tracking-container">
   <!-- Top Floating App Bar -->
   <div class="tracking-app-bar">
-    <button class="back-btn" (click)="goToBook()">
+    <button class="icon-btn back-btn" (click)="goToBook()" title="Back to Booking">
       <span class="material-symbols-outlined">arrow_back</span>
     </button>
-    <span class="bar-title">Live Ride Tracking</span>
-    <button class="help-btn" (click)="callOffice()">
-      <span class="material-symbols-outlined">support_agent</span>
-    </button>
+    <div class="bar-title-wrap">
+      <span class="bar-title">Live Ride Tracking</span>
+      <span class="live-pill" *ngIf="activeBooking">
+        <span class="pulse-dot"></span> LIVE
+      </span>
+    </div>
+    <div class="bar-actions">
+      <button class="icon-btn safety-btn" (click)="toggleSafetyModal(true)" title="Safety Toolkit">
+        <span class="material-symbols-outlined">shield</span>
+      </button>
+      <button class="icon-btn help-btn" (click)="callOffice()" title="Call Dispatch Office">
+        <span class="material-symbols-outlined">support_agent</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-banner" *ngIf="toastMessage">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ toastMessage }}</span>
   </div>
 
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-state">
-    <span class="material-symbols-outlined spinner-icon">progress_activity</span>
-    <p>Checking live ride status...</p>
+    <div class="loading-card">
+      <span class="material-symbols-outlined spinner-icon">progress_activity</span>
+      <h3>Connecting to Live Dispatch</h3>
+      <p>Synchronizing real-time vehicle GPS coordinates and ride telemetry...</p>
+    </div>
   </div>
 
   <!-- No Active Ride State -->
-  <div *ngIf="!isLoading && !activeBooking" class="no-ride-card">
-    <span class="material-symbols-outlined no-ride-icon">local_taxi</span>
-    <h2>No Active Ride</h2>
-    <p>You do not have any active trip in progress. Request a taxi from the home screen.</p>
-    <button class="btn btn-primary" (click)="goToBook()">
-      <span class="material-symbols-outlined">add_circle</span>
-      Book a Taxi Now
-    </button>
+  <div *ngIf="!isLoading && !activeBooking" class="no-ride-wrapper">
+    <div class="no-ride-card">
+      <div class="no-ride-emblem">
+        <span class="material-symbols-outlined">local_taxi</span>
+      </div>
+      <h2>No Active Ride</h2>
+      <p>You don't have any taxi journey currently in progress. Ready to head out? Request your driver in seconds.</p>
+      
+      <div class="no-ride-actions">
+        <button class="btn btn-primary btn-block" (click)="goToBook()">
+          <span class="material-symbols-outlined">add_location_alt</span>
+          Book a Taxi Now
+        </button>
+        <button class="btn btn-secondary btn-block" (click)="goToBook()">
+          <span class="material-symbols-outlined">history</span>
+          View Past Trip Receipts
+        </button>
+      </div>
+
+      <div class="features-preview">
+        <div class="feature-item">
+          <span class="material-symbols-outlined">bolt</span>
+          <span>Fast Pickups</span>
+        </div>
+        <div class="feature-item">
+          <span class="material-symbols-outlined">verified_user</span>
+          <span>Vetted Drivers</span>
+        </div>
+        <div class="feature-item">
+          <span class="material-symbols-outlined">payments</span>
+          <span>Fixed Fares</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Live Ride View -->
+  <!-- Live Active Ride View -->
   <div *ngIf="!isLoading && activeBooking" class="live-ride-wrapper">
-    <!-- Map Area -->
+    <!-- Interactive Simulated Vector Navigation Map -->
     <div class="map-view">
-      <div class="gps-pin-container">
-        <div class="pulse-ring"></div>
-        <div class="car-badge">
+      <!-- Simulated Vector Road & Terrain SVG -->
+      <svg class="map-vector-canvas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#10B981" />
+            <stop offset="60%" stop-color="#FE2020" />
+            <stop offset="100%" stop-color="#DC2626" />
+          </linearGradient>
+          <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- City Ground Background -->
+        <rect width="100%" height="100%" class="map-ground" />
+
+        <!-- Green Park Zones -->
+        <rect x="60" y="80" width="220" height="150" rx="16" class="map-park" />
+        <rect x="520" y="320" width="220" height="180" rx="20" class="map-park" />
+
+        <!-- River Curve -->
+        <path d="M-50,450 C260,420 380,560 850,510" class="map-river" />
+
+        <!-- Secondary Street Grid -->
+        <g class="map-grid-streets">
+          <line x1="0" y1="80" x2="800" y2="800" />
+          <line x1="0" y1="160" x2="800" y2="160" />
+          <line x1="0" y1="240" x2="800" y2="240" />
+          <line x1="0" y1="320" x2="800" y2="320" />
+          <line x1="0" y1="400" x2="800" y2="400" />
+          <line x1="0" y1="480" x2="800" y2="480" />
+          <line x1="100" y1="0" x2="100" y2="600" />
+          <line x1="220" y1="0" x2="220" y2="600" />
+          <line x1="340" y1="0" x2="340" y2="600" />
+          <line x1="460" y1="0" x2="460" y2="600" />
+          <line x1="580" y1="0" x2="580" y2="600" />
+          <line x1="700" y1="0" x2="700" y2="600" />
+        </g>
+
+        <!-- Main Avenues -->
+        <path d="M0,220 C320,240 480,180 800,200" class="map-avenue-border" />
+        <path d="M0,220 C320,240 480,180 800,200" class="map-avenue-core" />
+        <path d="M360,0 C380,260 420,440 400,600" class="map-avenue-border" />
+        <path d="M360,0 C380,260 420,440 400,600" class="map-avenue-core" />
+
+        <!-- Highway Ribbon -->
+        <path d="M0,100 C280,140 600,290 800,420" class="map-highway-border" />
+        <path d="M0,100 C280,140 600,290 800,420" class="map-highway-core" />
+
+        <!-- Active Journey Route Polyline -->
+        <path d="M280,280 L380,220 L440,290 L560,380" class="map-route-glow" filter="url(#routeGlow)" />
+        <path d="M280,280 L380,220 L440,290 L560,380" class="map-route-core" />
+        <path d="M280,280 L380,220 L440,290 L560,380" class="map-route-dash" />
+
+        <!-- Pickup Marker -->
+        <circle cx="280" cy="280" r="18" class="pin-pulse-pickup" />
+        <circle cx="280" cy="280" r="9" class="pin-pickup-core" />
+        <circle cx="280" cy="280" r="4" fill="#ffffff" />
+
+        <!-- Destination Marker -->
+        <circle cx="560" cy="380" r="18" class="pin-pulse-dropoff" />
+        <circle cx="560" cy="380" r="9" class="pin-dropoff-core" />
+        <circle cx="560" cy="380" r="4" fill="#ffffff" />
+      </svg>
+
+      <!-- Animated Moving Vehicle Node -->
+      <div class="moving-vehicle-node" style="left: 48%; top: 40%;">
+        <div class="vehicle-radar-aura"></div>
+        <div class="vehicle-headlights"></div>
+        <div class="taxi-emblem-badge">
           <span class="material-symbols-outlined">local_taxi</span>
         </div>
-        <div class="eta-floating-tag">
-          {{ activeBooking.status === 'arrived' ? 'Vehicle Arrived' : (activeBooking.status === 'on_trip' ? 'On Trip' : 'Driver En Route') }}
+        <div class="driver-floating-tag">
+          <span class="tag-status-dot"></span>
+          <span>{{ activeBooking.driverName || 'Ace Driver' }} • 0.6 mi</span>
+        </div>
+      </div>
+
+      <!-- Live GPS Telemetry Floating Chip -->
+      <div class="telemetry-badge">
+        <span class="telemetry-dot"></span>
+        <span>GPS Live Tracking</span>
+      </div>
+
+      <!-- Quick Map Utilities -->
+      <div class="map-controls-dock">
+        <button class="map-control-btn" (click)="openGoogleMap(activeBooking.dropoffAddress)" title="Open in Google Maps">
+          <span class="material-symbols-outlined">near_me</span>
+        </button>
+        <button class="map-control-btn" (click)="shareTrip()" title="Share Live Trip">
+          <span class="material-symbols-outlined">share</span>
+        </button>
+      </div>
+
+      <!-- Floating Dynamic ETA & Journey Status Bar -->
+      <div class="floating-eta-card">
+        <div class="eta-left">
+          <div class="eta-headline">
+            {{ activeBooking.status === 'arrived' ? 'Driver Waiting Outside' : (activeBooking.status === 'on_trip' ? 'Heading to Destination' : 'Driver Arriving in ~3 mins') }}
+          </div>
+          <div class="eta-subtext">
+            {{ activeBooking.status === 'arrived' ? 'Please proceed to your pickup point' : (activeBooking.status === 'on_trip' ? 'Estimated arrival in 12 mins • Light traffic' : 'Driver is 0.8 miles away on route') }}
+          </div>
+        </div>
+        <div class="eta-right">
+          <div class="eta-badge-pill">
+            {{ activeBooking.status === 'arrived' ? 'READY' : (activeBooking.status === 'on_trip' ? 'ON TRIP' : '3 MIN') }}
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Bottom Driver & Trip Information Sheet -->
     <div class="driver-sheet">
-      <!-- Live Status Banner -->
-      <div class="status-banner">
-        <div class="live-dot"></div>
-        <div class="status-text-wrap">
-          <div class="status-title">
-            {{ activeBooking.status === 'driver_allocated' ? 'Driver En Route' : (activeBooking.status === 'arrived' ? 'Driver Waiting Outside' : (activeBooking.status === 'on_trip' ? 'On Trip to Destination' : 'Ride Request Dispatched')) }}
+      <!-- 4-Stage Trip Progression Stepper -->
+      <div class="trip-stepper">
+        <div class="step-item" [ngClass]="getStepStatus(0)">
+          <div class="step-dot">
+            <span class="material-symbols-outlined" *ngIf="getStepStatus(0) === 'completed'">check</span>
           </div>
-          <div class="status-sub">
-            Booking Reference: #{{ activeBooking.id }}
-          </div>
+          <span class="step-label">Dispatched</span>
         </div>
-        <span class="badge badge-primary">{{ activeBooking.status | uppercase }}</span>
+        <div class="step-line" [class.completed]="getStepStatus(1) === 'completed' || getStepStatus(1) === 'active'"></div>
+        
+        <div class="step-item" [ngClass]="getStepStatus(1)">
+          <div class="step-dot">
+            <span class="material-symbols-outlined" *ngIf="getStepStatus(1) === 'completed'">check</span>
+          </div>
+          <span class="step-label">En Route</span>
+        </div>
+        <div class="step-line" [class.completed]="getStepStatus(2) === 'completed' || getStepStatus(2) === 'active'"></div>
+
+        <div class="step-item" [ngClass]="getStepStatus(2)">
+          <div class="step-dot">
+            <span class="material-symbols-outlined" *ngIf="getStepStatus(2) === 'completed'">check</span>
+          </div>
+          <span class="step-label">Arrived</span>
+        </div>
+        <div class="step-line" [class.completed]="getStepStatus(3) === 'completed' || getStepStatus(3) === 'active'"></div>
+
+        <div class="step-item" [ngClass]="getStepStatus(3)">
+          <div class="step-dot">
+            <span class="material-symbols-outlined" *ngIf="getStepStatus(3) === 'completed'">check</span>
+          </div>
+          <span class="step-label">On Trip</span>
+        </div>
       </div>
 
-      <div class="divider"></div>
-
-      <!-- Driver & Vehicle Profile -->
-      <div class="driver-profile-row">
-        <div class="driver-avatar">
-          {{ (activeBooking.driverName || 'D').substring(0, 1).toUpperCase() }}
+      <!-- Driver & Vehicle Profile Row -->
+      <div class="driver-profile-card">
+        <div class="driver-avatar-wrap">
+          <div class="driver-avatar">
+            {{ (activeBooking.driverName || 'D').substring(0, 1).toUpperCase() }}
+          </div>
+          <span class="verified-badge" title="Verified Professional Driver">
+            <span class="material-symbols-outlined">verified</span>
+          </span>
         </div>
+
         <div class="driver-meta">
-          <div class="driver-name">{{ activeBooking.driverName || 'Allocated Driver' }}</div>
-          <div class="vehicle-model">{{ activeBooking.vehicleModel || activeBooking.vehicleType }}</div>
+          <div class="driver-name-row">
+            <span class="driver-name">{{ activeBooking.driverName || 'Ace Allocated Driver' }}</span>
+            <div class="rating-badge">
+              <span class="material-symbols-outlined star-icon">star</span>
+              <span>{{ driverRating }}</span>
+            </div>
+          </div>
+          <div class="vehicle-sub-row">
+            <span class="vehicle-model">{{ activeBooking.vehicleModel || activeBooking.vehicleType || 'Executive Saloon' }}</span>
+            <span class="trips-count">• {{ driverTripsCount }} trips</span>
+          </div>
         </div>
-        <div class="uk-plate" *ngIf="activeBooking.vehicleReg">{{ activeBooking.vehicleReg }}</div>
+
+        <div class="plate-box" *ngIf="activeBooking.vehicleReg">
+          <div class="uk-plate-gb">GB</div>
+          <div class="uk-plate-text">{{ activeBooking.vehicleReg }}</div>
+        </div>
       </div>
 
-      <!-- Route Overview -->
-      <div class="trip-route-box">
-        <div class="route-node">
-          <span class="node-dot pickup"></span>
-          <span class="node-label">{{ activeBooking.pickupAddress }}</span>
-        </div>
-        <div class="route-line"></div>
-        <div class="route-node">
-          <span class="node-dot dropoff"></span>
-          <span class="node-label">{{ activeBooking.dropoffAddress }}</span>
-        </div>
-      </div>
-
-      <!-- Fare -->
-      <div class="fare-row">
-        <span class="fare-label">Trip Fare</span>
-        <span class="fare-amount">£{{ activeBooking.fare | number:'1.2-2' }} ({{ activeBooking.paymentMethod | uppercase }})</span>
-      </div>
-
-      <!-- Contact & Action Buttons -->
-      <div class="action-buttons">
-        <button class="btn btn-action" (click)="callDriver()" [disabled]="!activeBooking.driverPhone">
-          <span class="material-symbols-outlined">call</span> Call Driver
+      <!-- Direct Action Buttons Dock -->
+      <div class="action-buttons-dock">
+        <button class="action-btn call-action" (click)="callDriver()">
+          <span class="material-symbols-outlined">call</span>
+          <span>Call Driver</span>
         </button>
-        <button class="btn btn-action" (click)="callOffice()">
-          <span class="material-symbols-outlined">support_agent</span> Call Office
+        <button class="action-btn msg-action" (click)="messageDriver()">
+          <span class="material-symbols-outlined">chat</span>
+          <span>Message</span>
+        </button>
+        <button class="action-btn share-action" (click)="shareTrip()">
+          <span class="material-symbols-outlined">share</span>
+          <span>Share Trip</span>
+        </button>
+        <button class="action-btn safety-action" (click)="toggleSafetyModal(true)">
+          <span class="material-symbols-outlined">shield</span>
+          <span>Safety</span>
         </button>
       </div>
 
-      <!-- Cancel Trip Button -->
-      <button class="btn-cancel" (click)="cancelRide()" [disabled]="isCancelling">
-        {{ isCancelling ? 'Cancelling Booking...' : 'Cancel Booking' }}
-      </button>
+      <!-- Journey Route Stepper Card -->
+      <div class="trip-route-card">
+        <div class="route-header-bar">
+          <span class="route-ref">Booking Ref #{{ activeBooking.id }}</span>
+          <span class="fare-tag">£{{ activeBooking.fare | number:'1.2-2' }} • {{ activeBooking.paymentMethod | uppercase }}</span>
+        </div>
+
+        <div class="route-row clickable-route" (click)="openGoogleMap(activeBooking.pickupAddress)">
+          <div class="route-pin pickup-pin"></div>
+          <div class="route-info">
+            <div class="route-type-label">PICKUP LOCATION</div>
+            <div class="route-address">{{ activeBooking.pickupAddress }}</div>
+          </div>
+          <span class="material-symbols-outlined map-launch-icon">open_in_new</span>
+        </div>
+
+        <div class="route-connector-stem"></div>
+
+        <div class="route-row clickable-route" (click)="openGoogleMap(activeBooking.dropoffAddress)">
+          <div class="route-pin dropoff-pin"></div>
+          <div class="route-info">
+            <div class="route-type-label">DESTINATION</div>
+            <div class="route-address">{{ activeBooking.dropoffAddress }}</div>
+          </div>
+          <span class="material-symbols-outlined map-launch-icon">open_in_new</span>
+        </div>
+      </div>
+
+      <!-- Bottom Secondary Actions -->
+      <div class="sheet-footer-actions">
+        <button class="btn-cancel-trip" (click)="cancelRide()" [disabled]="isCancelling">
+          <span class="material-symbols-outlined">cancel</span>
+          <span>{{ isCancelling ? 'Cancelling Trip...' : 'Cancel Booking' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safety Toolkit Modal Overlay -->
+  <div class="modal-overlay" *ngIf="showSafetyModal" (click)="toggleSafetyModal(false)">
+    <div class="modal-card safety-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="safety-title-wrap">
+          <span class="material-symbols-outlined safety-icon">shield</span>
+          <h3>Passenger Safety Toolkit</h3>
+        </div>
+        <button class="close-btn" (click)="toggleSafetyModal(false)">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="safety-content">
+        <p class="safety-desc">Your safety is our priority. Every trip is GPS tracked in real time by dispatch operators.</p>
+
+        <div class="safety-options">
+          <button class="safety-option-card emergency-call" (click)="callOffice()">
+            <span class="material-symbols-outlined opt-icon">support_agent</span>
+            <div class="opt-text">
+              <h4>Call 24/7 Dispatch Control</h4>
+              <p>Direct line to fleet operator for immediate assistance</p>
+            </div>
+          </button>
+
+          <button class="safety-option-card" (click)="shareTrip()">
+            <span class="material-symbols-outlined opt-icon">share_location</span>
+            <div class="opt-text">
+              <h4>Share Trip Tracking Link</h4>
+              <p>Send your live route and driver details to friends or family</p>
+            </div>
+          </button>
+
+          <button class="safety-option-card" (click)="openGoogleMap(activeBooking?.dropoffAddress)">
+            <span class="material-symbols-outlined opt-icon">navigation</span>
+            <div class="opt-text">
+              <h4>Inspect Journey in Google Maps</h4>
+              <p>Verify satellite route navigation externally</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary btn-block" (click)="toggleSafetyModal(false)">Done</button>
     </div>
   </div>
 </div>

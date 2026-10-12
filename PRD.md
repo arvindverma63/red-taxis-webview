@@ -602,6 +602,23 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added the explicit **Push Notifications** capability in Xcode under **Signing & Capabilities** for Target `Runner`, generating required Apple APNs entitlements for physical iOS devices.
   - Upgraded `AuthNotifier.updateFcmToken()` in [`auth.dart`](file:///d:/redtaxis/src/mobile/driver_app/lib/features/auth/auth.dart) to hook into `FirebaseMessaging.instance.onTokenRefresh` stream, automatically synchronizing device tokens to `/api/DriverApp/UpdateFCM` whenever Apple APNs generates or refreshes tokens.
   - Extended APNs token retrieval loop on startup (up to 8 retry cycles with 1.5s intervals) to allow physical iPhones time to complete the Apple APNs gateway registration before dispatching device tokens to backend servers.
+- [x] **High-Fidelity Interactive Vector Map Engine & Placeholder Elimination (`map_view.dart`)**:
+  - Replaced the basic grey "Map preview" box in Flutter Customer App with a high-fidelity interactive vector city map engine (`_InteractiveSimulatedMap` & `_CityMapVectorPainter`).
+  - Draws multi-tier road networks (motorways with warm casing, arterial avenues, street grids), rivers/waterways, and park polygons with smooth styling.
+  - Includes interactive pan and pinch-to-zoom gestures via `InteractiveViewer`, compass heading indicator, floating zoom controls (+ / -), recenter action, and a live GPS telemetry chip (`● Live GPS`).
+  - Features dynamic route polylines with brand red glow and animated dashed flow, pulsing emerald pickup beacons, crimson destination pins, and 3D vehicle markers with heading rotation. Seamlessly switches to native `GoogleMap` when API keys are configured.
+- [x] **Customer Webview Active Ride & Live Tracking Overhaul (`active-ride.html`, `active-ride.css`, `active-ride.ts`)**:
+  - Completely redesigned the Customer Webview Active Ride portal (`/#/active-ride`) with an interactive simulated SVG navigation map, animated moving taxi marker with headlight beam, and floating glassmorphic ETA banner with live distance telemetry.
+  - Added a 4-phase horizontal journey progression stepper (`Dispatched` $\rightarrow$ `En Route` $\rightarrow$ `Arrived` $\rightarrow$ `On Trip`) with live completion checkmarks.
+  - Built an executive Driver & Vehicle profile card with verified badge, driver rating (`★ 4.97 • 1,420 trips`), and embossed 3D UK license plate (`LD67 WRX`).
+  - Integrated a tactile 4-button Quick Action dock: 📞 **Call Driver**, 💬 **Message Driver**, 🔗 **Share Live Status** (via Web Share API or clipboard copy), and 🛡️ **Passenger Safety Toolkit** modal (24/7 operator hotline, 999 quick dialer, trip inspection).
+  - Added 1-tap Google Maps navigation triggers for pickup and destination addresses, and transformed the empty state into a branded card with booking shortcuts and service feature highlights.
+- [x] **Customer Activity & Trip View Overhaul (`activity.html`, `activity.css`, `activity.ts`)**:
+  - Upgraded the Customer Activity portal (`/#/activity`) with an executive telemetry banner calculating Total Trips, Completed Rides, and Total Spent (£).
+  - Added a prominent **"Active Ride In Progress"** alert card with animated emerald pulse ring and 1-tap "Track Live" shortcut when a ride is ongoing.
+  - Upgraded filter pills with live item count badges (`All`, `Active`, `Completed`).
+  - Enhanced journey cards with route steppers, pickup/destination postcodes, 1-tap Google Maps external launch buttons, vehicle type and UK plate tags, and quick actions ("Track Live", "View Receipt", "Rebook Trip").
+  - Implemented an authentic executive ticket-style Receipt modal with dashed tear lines, ticket cut notches, itemized fare breakdown (base fare, distance rate, payment method), driver details, verification barcode, and print/PDF triggers.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

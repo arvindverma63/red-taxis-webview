@@ -1,97 +1,300 @@
 <div class="activity-container">
+  <!-- Top Header Row -->
   <div class="header-row">
-    <h1>My Activity</h1>
-    <button class="refresh-btn" (click)="loadBookings()">
+    <div>
+      <h1 class="page-title">My Activity</h1>
+      <p class="page-subtitle">Track active trips, review past receipts, and manage bookings</p>
+    </div>
+    <button class="refresh-btn" (click)="loadBookings()" title="Refresh Bookings">
       <span class="material-symbols-outlined">refresh</span>
     </button>
   </div>
 
-  <!-- Segmented Filter Tabs -->
-  <div class="filter-pills">
-    <button class="pill" [class.active]="selectedTab === 'all'" (click)="selectedTab = 'all'">All</button>
-    <button class="pill" [class.active]="selectedTab === 'active'" (click)="selectedTab = 'active'">Active</button>
-    <button class="pill" [class.active]="selectedTab === 'completed'" (click)="selectedTab = 'completed'">Completed</button>
+  <!-- Active Ride In Progress Hero Alert -->
+  <div *ngIf="activeBooking" class="active-ride-alert-card" (click)="openBookingDetails(activeBooking)">
+    <div class="alert-pulse-aura">
+      <span class="material-symbols-outlined car-icon">local_taxi</span>
+    </div>
+    <div class="alert-info">
+      <div class="alert-title-row">
+        <span class="live-indicator"><span class="live-dot"></span> LIVE RIDE IN PROGRESS</span>
+        <span class="alert-ref">#{{ activeBooking.id }}</span>
+      </div>
+      <div class="alert-driver-text">
+        {{ activeBooking.driverName || 'Allocated Driver' }} • {{ activeBooking.vehicleModel || activeBooking.vehicleType || 'Taxi' }}
+      </div>
+      <div class="alert-route-preview">
+        Heading to: <strong>{{ activeBooking.dropoffAddress }}</strong>
+      </div>
+    </div>
+    <button class="btn btn-track-live">
+      <span>Track</span>
+      <span class="material-symbols-outlined">arrow_forward</span>
+    </button>
+  </div>
+
+  <!-- Activity Telemetry Overview Cards -->
+  <div class="activity-stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrap trips-icon">
+        <span class="material-symbols-outlined">local_taxi</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">TOTAL TRIPS</span>
+        <span class="stat-value">{{ bookings.length }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap completed-icon">
+        <span class="material-symbols-outlined">task_alt</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">COMPLETED</span>
+        <span class="stat-value">{{ completedCount }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap spent-icon">
+        <span class="material-symbols-outlined">payments</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">TOTAL SPENT</span>
+        <span class="stat-value">£{{ totalSpent | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Segmented Filter Pills -->
+  <div class="filter-pills-bar">
+    <button class="pill" [class.active]="selectedTab === 'all'" (click)="selectedTab = 'all'">
+      <span>All</span>
+      <span class="pill-count">{{ bookings.length }}</span>
+    </button>
+    <button class="pill" [class.active]="selectedTab === 'active'" (click)="selectedTab = 'active'">
+      <span>Active</span>
+      <span class="pill-count" [class.has-active]="activeCount > 0">{{ activeCount }}</span>
+    </button>
+    <button class="pill" [class.active]="selectedTab === 'completed'" (click)="selectedTab = 'completed'">
+      <span>Completed</span>
+      <span class="pill-count">{{ completedCount }}</span>
+    </button>
   </div>
 
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-state">
     <span class="material-symbols-outlined spinner-icon">progress_activity</span>
-    <p>Loading your trips...</p>
+    <h3>Loading Trip Logs</h3>
+    <p>Retrieving your passenger journey history from the server...</p>
   </div>
 
   <!-- Empty State -->
   <div *ngIf="!isLoading && filteredBookings.length === 0" class="empty-state">
-    <span class="material-symbols-outlined empty-icon">history</span>
-    <h3>No trips found</h3>
-    <p>Book a ride from the home screen to see your trip logs here.</p>
+    <div class="empty-icon-wrap">
+      <span class="material-symbols-outlined empty-icon">history_toggle_off</span>
+    </div>
+    <h3>No Trips Found</h3>
+    <p *ngIf="selectedTab === 'all'">You haven't requested any rides yet. Book a taxi to get started!</p>
+    <p *ngIf="selectedTab === 'active'">You have no active rides currently in progress.</p>
+    <p *ngIf="selectedTab === 'completed'">No completed rides recorded yet.</p>
+    <button class="btn btn-primary" (click)="rebookTrip(bookings[0])">
+      <span class="material-symbols-outlined">add_location_alt</span>
+      Book a Taxi
+    </button>
   </div>
 
-  <!-- Rides List -->
+  <!-- Rich Journey Rides List -->
   <div *ngIf="!isLoading && filteredBookings.length > 0" class="rides-list">
     <div *ngFor="let ride of filteredBookings"
-         class="card ride-card"
-         [class.live-card]="ride.status !== 'completed' && ride.status !== 'cancelled'"
+         class="ride-card"
+         [class.is-live]="ride.status !== 'completed' && ride.status !== 'cancelled'"
          (click)="openBookingDetails(ride)">
+      
+      <!-- Card Header -->
       <div class="card-header">
-        <div class="booking-id">ID: {{ ride.id }}</div>
-        <span class="badge" [ngClass]="getStatusClass(ride.status)">{{ ride.status | uppercase }}</span>
+        <div class="card-title-group">
+          <span class="booking-tag">#{{ ride.id }}</span>
+          <span class="booking-date">{{ formatDate(ride) }}</span>
+        </div>
+        <span class="status-badge" [ngClass]="getStatusClass(ride.status)">
+          <span class="badge-dot" *ngIf="ride.status !== 'completed' && ride.status !== 'cancelled'"></span>
+          {{ ride.status | uppercase }}
+        </span>
       </div>
 
-      <div class="card-body">
-        <div class="route-point">
-          <span class="dot pickup-dot"></span>
-          <div class="route-text">{{ ride.pickupAddress }}</div>
+      <!-- Route Stepper View -->
+      <div class="card-route-box">
+        <div class="route-node">
+          <span class="node-pin pickup-pin"></span>
+          <div class="node-text-wrap">
+            <span class="node-type">PICKUP</span>
+            <span class="node-address">{{ ride.pickupAddress }}</span>
+          </div>
+          <button class="map-shortcut-btn" (click)="openGoogleMap(ride.pickupAddress, $event)" title="Open in Maps">
+            <span class="material-symbols-outlined">near_me</span>
+          </button>
         </div>
-        <div class="route-line"></div>
-        <div class="route-point">
-          <span class="dot dropoff-dot"></span>
-          <div class="route-text">{{ ride.dropoffAddress }}</div>
+
+        <div class="route-stem"></div>
+
+        <div class="route-node">
+          <span class="node-pin dropoff-pin"></span>
+          <div class="node-text-wrap">
+            <span class="node-type">DESTINATION</span>
+            <span class="node-address">{{ ride.dropoffAddress }}</span>
+          </div>
+          <button class="map-shortcut-btn" (click)="openGoogleMap(ride.dropoffAddress, $event)" title="Open in Maps">
+            <span class="material-symbols-outlined">near_me</span>
+          </button>
         </div>
       </div>
 
+      <!-- Vehicle & Driver Metadata Bar -->
+      <div class="card-meta-bar">
+        <div class="driver-snippet">
+          <div class="driver-badge-circle">
+            {{ (ride.driverName || 'D').substring(0, 1).toUpperCase() }}
+          </div>
+          <div class="driver-snippet-text">
+            <span class="snippet-name">{{ ride.driverName || 'Ace Driver' }}</span>
+            <span class="snippet-car">{{ ride.vehicleModel || ride.vehicleType || 'Standard Saloon' }}</span>
+          </div>
+        </div>
+
+        <div class="uk-plate-chip" *ngIf="ride.vehicleReg">
+          {{ ride.vehicleReg }}
+        </div>
+      </div>
+
+      <!-- Card Footer Actions & Fare -->
       <div class="card-footer">
-        <div class="vehicle-info">{{ ride.vehicleType }} • {{ ride.paymentMethod | uppercase }}</div>
-        <div class="fare-amount">£{{ ride.fare | number:'1.2-2' }}</div>
+        <div class="fare-block">
+          <span class="fare-caption">TOTAL FARE ({{ ride.paymentMethod | uppercase }})</span>
+          <span class="fare-value">£{{ ride.fare | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="card-action-buttons">
+          <button *ngIf="ride.status !== 'completed' && ride.status !== 'cancelled'"
+                  class="btn-card-action track-btn"
+                  (click)="trackRide(ride, $event)">
+            <span class="material-symbols-outlined">near_me</span>
+            Track Live
+          </button>
+
+          <button *ngIf="ride.status === 'completed'"
+                  class="btn-card-action receipt-btn"
+                  (click)="openBookingDetails(ride)">
+            <span class="material-symbols-outlined">receipt_long</span>
+            Receipt
+          </button>
+
+          <button class="btn-card-action rebook-btn"
+                  (click)="rebookTrip(ride, $event)"
+                  title="Rebook this Journey">
+            <span class="material-symbols-outlined">repeat</span>
+            Rebook
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Detail Modal Dialog -->
+  <!-- Executive Trip Receipt Modal Dialog -->
   <div *ngIf="selectedBooking" class="modal-overlay" (click)="closeDetails()">
-    <div class="modal-card" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Trip Receipt</h2>
+    <div class="modal-card receipt-modal" (click)="$event.stopPropagation()">
+      <div class="receipt-cutout-left"></div>
+      <div class="receipt-cutout-right"></div>
+
+      <!-- Receipt Header -->
+      <div class="receipt-header">
+        <div class="receipt-brand-badge">
+          <span class="material-symbols-outlined">local_taxi</span>
+        </div>
+        <div class="receipt-title-wrap">
+          <h2>Official Trip Receipt</h2>
+          <span class="receipt-ref">Reference ID #{{ selectedBooking.id }}</span>
+        </div>
         <button class="close-btn" (click)="closeDetails()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="receipt-row">
-          <span>Booking Reference</span>
-          <strong>{{ selectedBooking.id }}</strong>
+
+      <div class="receipt-divider"></div>
+
+      <!-- Receipt Route Section -->
+      <div class="receipt-section">
+        <div class="receipt-route-row">
+          <div class="receipt-pin pickup"></div>
+          <div class="receipt-address-wrap">
+            <span class="receipt-sublabel">PICKUP ADDRESS</span>
+            <span class="receipt-address">{{ selectedBooking.pickupAddress }}</span>
+          </div>
         </div>
-        <div class="receipt-row">
-          <span>Pickup Address</span>
-          <span>{{ selectedBooking.pickupAddress }}</span>
-        </div>
-        <div class="receipt-row">
-          <span>Dropoff Address</span>
-          <span>{{ selectedBooking.dropoffAddress }}</span>
-        </div>
-        <div class="receipt-row">
-          <span>Driver Name</span>
-          <span>{{ selectedBooking.driverName || 'Ace Driver' }}</span>
-        </div>
-        <div class="receipt-row">
-          <span>Vehicle Reg</span>
-          <strong class="plate-badge">{{ selectedBooking.vehicleReg || 'LD67 WRX' }}</strong>
-        </div>
-        <div class="receipt-row total-row">
-          <span>Total Fare Paid</span>
-          <span class="price-highlight">£{{ selectedBooking.fare | number:'1.2-2' }}</span>
+        <div class="receipt-route-stem"></div>
+        <div class="receipt-route-row">
+          <div class="receipt-pin dropoff"></div>
+          <div class="receipt-address-wrap">
+            <span class="receipt-sublabel">DESTINATION ADDRESS</span>
+            <span class="receipt-address">{{ selectedBooking.dropoffAddress }}</span>
+          </div>
         </div>
       </div>
-      <button class="btn btn-primary btn-block" (click)="closeDetails()">Done</button>
+
+      <!-- Driver & Vehicle Details -->
+      <div class="receipt-section driver-section">
+        <div class="receipt-driver-row">
+          <div class="receipt-driver-avatar">
+            {{ (selectedBooking.driverName || 'D').substring(0, 1).toUpperCase() }}
+          </div>
+          <div class="receipt-driver-info">
+            <span class="receipt-driver-name">{{ selectedBooking.driverName || 'Ace Professional Driver' }}</span>
+            <span class="receipt-driver-car">{{ selectedBooking.vehicleModel || selectedBooking.vehicleType || 'Executive Saloon' }}</span>
+          </div>
+          <div class="receipt-plate" *ngIf="selectedBooking.vehicleReg">
+            {{ selectedBooking.vehicleReg }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Itemized Fare Breakdown -->
+      <div class="receipt-breakdown">
+        <div class="breakdown-row">
+          <span>Base Minimum Fare</span>
+          <span>£3.50</span>
+        </div>
+        <div class="breakdown-row">
+          <span>Distance & Mileage Rate</span>
+          <span>£{{ ((selectedBooking.fare || 10) - 3.50) | number:'1.2-2' }}</span>
+        </div>
+        <div class="breakdown-row">
+          <span>Payment Method</span>
+          <span class="badge-payment">{{ selectedBooking.paymentMethod | uppercase }}</span>
+        </div>
+        <div class="receipt-divider dashed"></div>
+        <div class="breakdown-row total-breakdown-row">
+          <span>Total Fare Paid</span>
+          <span class="total-price-text">£{{ selectedBooking.fare | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Simulated Verification Barcode -->
+      <div class="receipt-barcode-box">
+        <div class="barcode-lines"></div>
+        <span class="barcode-number">TAXIPASS-{{ selectedBooking.id }}-VERIFIED</span>
+      </div>
+
+      <!-- Receipt Modal Footer Actions -->
+      <div class="receipt-actions">
+        <button class="btn btn-secondary" (click)="printReceipt()">
+          <span class="material-symbols-outlined">print</span>
+          Print Receipt
+        </button>
+        <button class="btn btn-primary" (click)="rebookTrip(selectedBooking)">
+          <span class="material-symbols-outlined">repeat</span>
+          Rebook Ride
+        </button>
+      </div>
     </div>
   </div>
 </div>
