@@ -245,7 +245,10 @@ class _StatusSheet extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xl),
                 StatusTimeline(current: state.status),
                 const SizedBox(height: AppSpacing.xl),
-                _ActionButtons(hasDriver: state.status.hasDriver),
+                _ActionButtons(
+                  hasDriver: state.status.hasDriver,
+                  bookingId: state.bookingId,
+                ),
               ],
             ),
           ),
@@ -364,9 +367,13 @@ class _SheetGrabber extends StatelessWidget {
 // ── Actions ────────────────────────────────────────────────────────────────
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.hasDriver});
+  const _ActionButtons({
+    required this.hasDriver,
+    required this.bookingId,
+  });
 
   final bool hasDriver;
+  final String bookingId;
 
   void _stubCall(BuildContext context, String who) {
     // TODO(B?): wire to url_launcher tel: once support numbers land in config.
@@ -377,13 +384,29 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Driver-facing contact lives in the DriverCard's circular actions, so the
-    // sheet's primary CTA is always "Call office" (operator support line).
-    return AppButton(
-      label: 'Call office',
-      icon: Icons.support_agent_outlined,
-      variant: AppButtonVariant.secondary,
-      onPressed: () => _stubCall(context, 'the office'),
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.info_outline_rounded, size: 16),
+            label: const Text('Trip Details'),
+            onPressed: () =>
+                context.push('${Routes.bookingDetail}/$bookingId'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: AppButton(
+            label: 'Call office',
+            icon: Icons.support_agent_outlined,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => _stubCall(context, 'the office'),
+          ),
+        ),
+      ],
     );
   }
 }

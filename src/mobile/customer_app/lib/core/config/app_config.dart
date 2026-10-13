@@ -56,9 +56,13 @@ class AppConfig {
   static const bool previewMocks =
       bool.fromEnvironment('PREVIEW_MOCKS', defaultValue: false);
 
+  /// Static Google Maps API Key.
+  static const String googleMapsApiKey =
+      'AIzaSyDYnIuUlsmoiOflHvGoNC8YgYGpj470r6k';
+
   /// When true, map-bearing screens render a real GoogleMap.
   static const bool mapsEnabled =
-      bool.fromEnvironment('MAPS_ENABLED', defaultValue: false);
+      bool.fromEnvironment('MAPS_ENABLED', defaultValue: true);
 
   /// Sentry DSN for crash / error monitoring.
   static const String sentryDsn =

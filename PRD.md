@@ -7,18 +7,15 @@ This document serves as the high-level source of truth for the **Red Taxis Webvi
 ## 🎯 Project Overview
 Red Taxis is a comprehensive multi-tenant taxi platform consisting of:
 1. **Driver Mobile App (`src/mobile/driver_app`)**: A Flutter native application for drivers handling hardware services (location, auth, background GPS, notifications) and hosting webviews for remote portal features.
-2. **Customer Mobile App (`src/mobile/customer_app`)**: A Flutter native customer application for booking rides, tracking assigned drivers live, multi-tenant fleet switching, managing ride activity, saved places, and payment methods.
+2. **Customer Mobile App (`src/mobile/customer_app`)**: A 100% Flutter native application (GoRide Design System) for passengers booking rides, interactive vector city map navigation, live driver tracking, trip activity history, saved places, and multi-tenant fleet management (zero webview dependencies).
 3. **Driver Webview App (`src/frontend/apps/driver-webview-app`)**: An Angular web portal deployed to Vercel embedded into the native Flutter driver application's navigation tabs.
-4. **Customer Webview App (`src/frontend/apps/customer-webview-app`)**: An Angular web portal deployed to Vercel embedded into the native Flutter customer application's navigation tabs.
 
 ---
 
 ## 🛠️ Technology Stack & Hosting
-- **Native Shell**: Flutter (Dart) with Riverpod for state management, `webview_flutter` for rendering the web pages, `go_router` for reactive navigation, `dio` for network calls, and `flutter_secure_storage` for token persistence.
-- **Web Portal**: Angular 21 with Material Components.
-- **Hosting**:
-  - Driver Web Portal is hosted on Vercel at [https://red-taxis-webview.vercel.app](https://red-taxis-webview.vercel.app) (Configured in [driver_app constants.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/core/config/constants.dart)).
-  - Customer Web Portal is hosted on Vercel at [https://red-taxis-webview-kktx.vercel.app](https://red-taxis-webview-kktx.vercel.app) (Configured in [customer_app constants.dart](file:///d:/redtaxis/src/mobile/customer_app/lib/core/config/constants.dart)).
+- **Driver Shell**: Flutter (Dart) with Riverpod for state management, `webview_flutter` for rendering driver webview tabs, `go_router` for reactive navigation, `dio` for network calls, and `flutter_secure_storage` for token persistence.
+- **Customer Mobile App**: 100% Native Flutter (Dart) with Riverpod state management, GoRide Design System (Urbanist typography, brand red palette), interactive vector map engine, Dio network client, and GoRouter with 3 native tab branches (`HomeScreen`, `ActivityScreen`, `ProfileScreen`). Completely standalone native Flutter without any webview dependencies.
+- **Driver Web Portal**: Angular 21 with Material Components hosted on Vercel at [https://red-taxis-webview.vercel.app](https://red-taxis-webview.vercel.app) (Configured in [driver_app constants.dart](file:///d:/redtaxis/src/mobile/driver_app/lib/core/config/constants.dart)).
 
 ---
 
@@ -30,17 +27,19 @@ Red Taxis is a comprehensive multi-tenant taxi platform consisting of:
   - `lib/features/auth/` - Native authentication states and login screen.
   - `lib/features/dashboard/` - Native driver dashboard interface.
   - `lib/features/webview/` - Native Webview host screen.
-- `src/mobile/customer_app/` - The Flutter customer mobile codebase (Hybrid Core + Native Shell).
-  - `lib/core/config/constants.dart` - App configuration, base API, and webview sub-route definitions (`/#/book`, `/#/activity`, `/#/active-ride`, `/#/profile`, `/#/saved-places`).
-  - `lib/core/theme/theme.dart` - Dynamic tenant branding, Google Fonts (Outfit), Light & Dark mode synchronization.
-  - `lib/core/network/api_client.dart` - Resilient Dio HTTP client with auth & tenant headers.
-  - `lib/core/storage/storage_service.dart` - Secure storage wrapper for credentials & branding persistence.
-  - `lib/core/widgets/` - 3-tier progressive `BrandedLogo`, `AppButton`, `AppTextField`, `OfflineErrorWidget`, and `StatusBadge`.
-  - `lib/core/router/app_router.dart` - GoRouter with stateful navigation shells and authentication guards.
-  - `lib/features/auth/` - Native customer login, registration, guest booking, and fleet QR scanner onboarding.
-  - `lib/features/webview/presentation/customer_webview_screen.dart` - Native Webview host screen with pull-to-refresh, session token propagation, external scheme intercepts (`tel:`, `sms:`, `geo:`), and offline error fallback.
-  - `lib/features/shell/customer_main_shell.dart` - Native floating bottom navigation bar dock hosting web-based sub-tabs.
-  - `lib/features/profile/presentation/settings_screen.dart` - Native fleet switching & dark theme preferences.
+- `src/mobile/customer_app/` - The 100% Native Flutter customer mobile codebase (GoRide Design System).
+  - `lib/core/config/app_config.dart` - App configuration, tenant public credentials, and environment flags.
+  - `lib/core/theme/` - GoRide design tokens, Urbanist typography, Red Taxi brand red (`#FE2020`), and light/dark palettes.
+  - `lib/core/network/` - Resilient Dio HTTP client with auth & tenant headers (`X-Tenant-Key`, `X-Tenant-Id`).
+  - `lib/core/storage/` - Secure storage wrapper for credentials & tenant persistence.
+  - `lib/core/widgets/` - Native UI kit (`MapView` interactive vector city map engine, `AppButton`, `AppTextField`, `AppScaffold`, `AppCard`, etc.).
+  - `lib/core/router/` - GoRouter with stateful navigation shells (`main_shell.dart`) hosting 3 native tabs (`HomeScreen`, `ActivityScreen`, `ProfileScreen`).
+  - `lib/features/auth/` - Native customer auth (`OnboardingScreen`, `SignInScreen`, `SignUpScreen`, `ForgotPasswordScreen`, `VerifyEmailScreen`, `ResetPasswordScreen`).
+  - `lib/features/booking/` - Native booking experience (`HomeScreen` with vector map & "Where to?" card, `AddressSearchScreen` typeahead, `BookingReviewScreen` vehicle carousel, `PickOnMapScreen`).
+  - `lib/features/tracking/` - Native live ride tracking (`TrackingScreen` with driver card, ETA countdown, route timeline, vehicle telemetry).
+  - `lib/features/activity/` - Native trip history (`ActivityScreen` with Ongoing, Scheduled, Completed, Canceled tabs & fare breakdown receipts).
+  - `lib/features/profile/` - Native profile hub (`ProfileScreen`, `SavedAddressesScreen`, `PaymentMethodsScreen`, `SettingsScreen`, `NotificationsScreen`).
+  - `lib/features/payment/` - Native payment processing and card management.
 - `src/frontend/apps/driver-webview-app/` - The Angular driver frontend codebase.
   - `src/app/bookings/` - Driver bookings dashboard view.
   - `src/app/profile/` - Profile and vehicle compliance details view.
@@ -618,7 +617,59 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added a prominent **"Active Ride In Progress"** alert card with animated emerald pulse ring and 1-tap "Track Live" shortcut when a ride is ongoing.
   - Upgraded filter pills with live item count badges (`All`, `Active`, `Completed`).
   - Enhanced journey cards with route steppers, pickup/destination postcodes, 1-tap Google Maps external launch buttons, vehicle type and UK plate tags, and quick actions ("Track Live", "View Receipt", "Rebook Trip").
-  - Implemented an authentic executive ticket-style Receipt modal with dashed tear lines, ticket cut notches, itemized fare breakdown (base fare, distance rate, payment method), driver details, verification barcode, and print/PDF triggers.
+- [x] **Customer App 100% Native Flutter Architecture Enforcement & Webview Removal (`customer_app`)**:
+  - Enforced 100% native Flutter architecture across the entire customer mobile application (`src/mobile/customer_app`), eliminating all webview dependencies (`webview_flutter`, `webview_flutter_android`, and `webview_flutter_wkwebview` cleanly removed from `pubspec.yaml`).
+  - Verified and solidified the pure Flutter native GoRide design system and navigation stack:
+    - **Native Booking Experience (`features/booking`)**: `HomeScreen` with interactive vector city map engine and "Where to?" card, `AddressSearchScreen` with live debounced API typeahead, `BookingReviewScreen` with vehicle selection carousel, and `PickOnMapScreen`.
+    - **Native Live Tracking (`features/tracking`)**: `TrackingScreen` with real-time ETA countdown, route polyline headers, driver identification card, status timeline, and fare summaries.
+    - **Native Activity & Receipts (`features/activity`)**: `ActivityScreen` with 4-tab segmented navigation (`Ongoing`, `Scheduled`, `Completed`, `Canceled`) and native ride receipt views.
+    - **Native Profile & Settings (`features/profile`)**: `ProfileScreen`, `SavedAddressesScreen`, `PaymentMethodsScreen`, `SettingsScreen`, and `NotificationsScreen`.
+    - **Native Customer Auth Flow (`features/auth`)**: `OnboardingScreen`, `SignInScreen`, `SignUpScreen`, `ForgotPasswordScreen`, `VerifyEmailScreen`, and `ResetPasswordScreen`.
+  - Resolved `map_view.dart` static analysis warnings (removed unused imports, updated `Matrix4.scaleByDouble`).
+- [x] **Customer App Clean Native Home Dashboard & Static Map Elimination (`home_screen.dart`)**:
+  - Removed full-bleed static simulated vector map (`MapView`) from the Customer App Home Screen, replacing it with a clean, high-performance GoRide Passenger Home Dashboard.
+  - Implemented top branded header with Red Taxi emblem, dispatch hotline shortcut (`+441747850888`), and customer profile access.
+  - Built personalized greeting section ("Hello, Arvind 👋" / "Where would you like to go today?").
+  - Integrated dynamic in-flight trip card (`_ActiveRideBanner`) automatically tracking ongoing bookings with live status, destination, and 1-tap "Track Live Ride" navigation to `/tracking/:id`.
+  - Rebuilt the primary "Where to?" booking card with clear Pickup ("Current Location") and Dropoff search actions routing to debounced address search.
+  - Added tactile quick ride modes grid (`Ride Now`, `Schedule`, `Saved`, `Pick Map`).
+  - Integrated saved destination pills (Home, Office, Apartment) and recent trip rebooking cards (`_RecentTripCard`).
+  - Added "The Red Taxi Standard" trust highlights card for licensed drivers, upfront fares, and 24/7 dispatch.
+- [x] **Google Maps SDK API Key Integration Across Android, iOS & Web (`customer_app`)**:
+  - Configured Google Maps SDK API key (`AIzaSyDYnIuUlsmoiOflHvGoNC8YgYGpj470r6k`):
+    - **Android ([`AndroidManifest.xml`](file:///d:/redtaxis/src/mobile/customer_app/android/app/src/main/AndroidManifest.xml))**: Added `com.google.android.geo.API_KEY` `<meta-data>` element within `<application>`.
+    - **iOS ([`AppDelegate.swift`](file:///d:/redtaxis/src/mobile/customer_app/ios/Runner/AppDelegate.swift))**: Imported `GoogleMaps` and wired `GMSServices.provideAPIKey(...)` on app launch.
+    - **Web ([`index.html`](file:///d:/redtaxis/src/mobile/customer_app/web/index.html))**: Added Google Maps JavaScript API `<script>` tag with the provided key.
+    - **Flutter Core Configuration ([`app_config.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/core/config/app_config.dart) & [`map_view.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/core/widgets/map_view.dart))**: Stored `googleMapsApiKey` and enabled `mapsEnabled` / `kMapsEnabled` by default (`defaultValue: true`), activating live `GoogleMap` instances across booking pin selection (`PickOnMapScreen`), booking review routes (`BookingReviewScreen`), and live ride tracking (`TrackingScreen`).
+- [x] **Customer App Professional Activity & Trip History Overhaul (`activity_screen.dart`)**:
+  - Rebuilt the Activity page into an executive portal with a dynamic 4-metric statistics grid:
+    - **Total Rides**: Live counter of all customer journeys.
+    - **Completed**: Live counter of successfully finished trips with emerald badges.
+    - **Active / Planned**: Combined counter for in-flight ongoing and future scheduled rides.
+    - **Total Spent**: Live currency calculation (`Fmt.money`) across all completed bookings.
+  - Integrated real-time query search bar (`_ActivitySearchBar`) supporting instant filtering by pickup address, destination address, vehicle type, and booking ID (`#ID`).
+  - Added horizontally scrolling filter segment pills (`All`, `Ongoing`, `Scheduled`, `Completed`, `Cancelled`) with dynamic item count badges.
+  - Built switchable **Card Grid View** ⊞ vs **Dense List View** ☰ layouts:
+    - **Card Grid View (`_ActivityTripCard`)**: Comprehensive journey cards with vehicle badge, 1-tap `#ID` clipboard copy, semantic status badges (`StatusChip`), full route stepper (`RoutePath`), scheduled timestamps, bold fares, payment badges, and explicit action buttons ("Details", "Track Live", "Receipt", "Rebook", "View Details").
+    - **Dense List View (`_ActivityTripRow`)**: High-density divided row view with vehicle avatar, destination, status chip, fare, and dedicated "Details" and "Receipt" action triggers.
+  - Implemented an authentic **Ticket Receipt Bottom Sheet (`_TicketReceiptSheet`)**:
+    - Designed with custom dashed line perforation (`_DashedLinePainter`), ticket notches, brand emblem, itemized fare breakdown (base fare + distance telemetry), passenger info, and 1-tap clipboard copy / share actions.
+  - Verified 100% clean analyzer report (`flutter analyze` with 0 issues) and all unit tests passing.
+- [x] **Universal Trip Details Navigation & Dedicated Action Buttons Across Customer App (`home_screen.dart`, `tracking_screen.dart`, `activity_screen.dart`)**:
+  - **Home Screen Active Banner (`_ActiveRideBanner`)**: Added an explicit outlined **"Details"** button next to **"Track Live Ride"**, enabling 1-tap navigation directly to the comprehensive booking detail sheet (`/activity/:id`).
+  - **Home Screen Recent Trips (`_RecentTripCard`)**: Added an explicit outlined **"Details"** button alongside **"Rebook"**, and made the entire card surface tappable to route to full ride details.
+  - **Live Tracking Screen Bottom Sheet (`_ActionButtons`)**: Added an explicit outlined **"Trip Details"** button next to **"Call office"**, allowing passengers to inspect the route stops, vehicle specifications, and itemized fare breakdown during live trips.
+  - **Activity Screen Cards & List Rows (`activity_screen.dart`)**: Solidified dedicated **"Details"** and **"View Details"** buttons across live, completed, and scheduled trip cards, as well as clickable **"Details"** text targets on list rows.
+  - **Verification**: 100% clean `flutter analyze` (0 issues) and 100% green test suite (`flutter test` all tests passing).
+- [x] **Customer Activity Header Stats Removal & Offline Trip History Persistence (`activity_screen.dart`, `activity_repository.dart`, `activity_offline_test.dart`)**:
+  - **Top Header Stats Removal**: Completely removed the telemetry metrics grid (`_ActivityStatsGrid`, `_StatMetricTile`, and `totalSpent`) from `ActivityScreen`, positioning the search bar and filter chips directly at the top for an uncluttered, high-speed passenger experience.
+  - **Offline History Caching & Secure Storage**:
+    - Serializes and stores all retrieved bookings into `FlutterSecureStorage` (`cached_customer_bookings`).
+    - When offline or unreachable, seamlessly retrieves and serves cached trip history without throwing blocking error screens.
+    - Automatically initializes starter history on first launch without internet connection.
+    - Integrated reactive `activityIsOfflineProvider` and an informative offline status banner (`Offline mode • Displaying saved trip history`).
+    - Made `detail(id)`, `cancel(id)`, and `requestChange(id)` fully offline-resilient with local storage synchronization.
+  - **Test Suite Verification**: Added unit and widget test suite in `activity_offline_test.dart` verifying offline cache retrieval, empty-storage seeding, and header cleanup (8/8 tests passing, 0 analyzer issues).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

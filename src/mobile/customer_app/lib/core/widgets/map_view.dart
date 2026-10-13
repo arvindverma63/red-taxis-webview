@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
 
 /// Set true once Maps SDK keys are configured (Android manifest + iOS +
 /// web index.html). Until then [MapView] renders a themed placeholder so the
 /// app runs cleanly in preview/dev without a key.
 const bool kMapsEnabled =
-    bool.fromEnvironment('MAPS_ENABLED', defaultValue: false);
+    bool.fromEnvironment('MAPS_ENABLED', defaultValue: true);
 
 /// Shared map surface used by booking + tracking. Shows a real [GoogleMap] when
 /// [kMapsEnabled], otherwise a branded placeholder. Keep map wiring in one
@@ -92,7 +90,7 @@ class _InteractiveSimulatedMapState extends State<_InteractiveSimulatedMap>
 
   void _zoom(double factor) {
     final matrix = _transformController.value.clone();
-    matrix.scale(factor);
+    matrix.scaleByDouble(factor, factor, 1.0, 1.0);
     _transformController.value = matrix;
   }
 

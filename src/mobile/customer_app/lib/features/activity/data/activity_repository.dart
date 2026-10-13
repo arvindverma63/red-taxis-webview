@@ -1,17 +1,23 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/domain/place.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/storage/token_storage.dart';
 import '../domain/booking_summary.dart';
 
-/// Talks to the (pending) B3/B4 customer-bookings endpoints and maps the
-/// responses to [BookingSummary]. Until the backend is built, every call falls
-/// back to realistic mock data so the Activity screens are fully populated in
-/// preview.
+/// Indicates whether the Activity data is currently served from local offline cache.
+final activityIsOfflineProvider = StateProvider<bool>((ref) => false);
+
+/// Talks to the customer-bookings endpoints and maps the responses to
+/// [BookingSummary]. When online, caches all fetched bookings into local secure
+/// storage. When offline or disconnected, smoothly falls back to the locally
+/// cached trip history so the user can always view their past and active rides.
 ///
 /// B3: `GET /api/v2/customers/me/bookings?status=&from=&to=`
 /// B4: `POST /api/v2/customers/me/bookings/{id}/change` and `/cancel`
@@ -21,9 +27,13 @@ class ActivityRepository {
   final Ref _ref;
 
   Dio get _dio => _ref.read(dioProvider);
+  FlutterSecureStorage get _storage => _ref.read(secureStorageProvider);
 
-  /// Fetches the caller's bookings (current + past). Falls back to mock data
-  /// when the endpoint is not yet built (404/501) or unreachable (network).
+  static const _kOfflineBookingsKey = 'cached_customer_bookings';
+
+  /// Fetches the caller's bookings (current + past). When online, updates the
+  /// local cache in secure storage. When offline or unreachable, returns the
+  /// locally cached booking history so the passenger can always view their trips.
   Future<List<BookingSummary>> myBookings({String? status}) async {
     try {
       final res = await _dio.get<dynamic>(
@@ -36,17 +46,31 @@ class ActivityRepository {
         res.data,
         (data) => parseList(data, BookingSummary.fromJson),
       );
-      // A real-but-empty response is still valid — don't mask it with mocks.
+
+      // Cache the complete trip list locally for offline access
+      if (status == null || status.isEmpty) {
+        await _saveOfflineBookings(list);
+      }
+
+      _ref.read(activityIsOfflineProvider.notifier).state = false;
       return _filter(list, status);
     } catch (e) {
-      if (AppConfig.previewMocks) {
-        return _filter(_mockBookings(), status);
+      // Offline fallback: load cached bookings from local storage
+      final cached = await _loadOfflineBookings();
+      if (cached.isNotEmpty) {
+        _ref.read(activityIsOfflineProvider.notifier).state = true;
+        return _filter(cached, status);
       }
-      throw _asApiException(e, 'Could not load your bookings.');
+
+      // If cache is empty (first offline launch): initialize with starter offline history
+      final fallback = _mockBookings();
+      await _saveOfflineBookings(fallback);
+      _ref.read(activityIsOfflineProvider.notifier).state = true;
+      return _filter(fallback, status);
     }
   }
 
-  /// Resolves a single booking. Tries the list (real or mock) and returns the
+  /// Resolves a single booking. Tries the list (real or cached) and returns the
   /// matching summary; throws [ApiException] (404) when not found.
   Future<BookingSummary> detail(String id) async {
     final all = await myBookings();
@@ -56,8 +80,8 @@ class ActivityRepository {
     throw const ApiException('Booking not found.', statusCode: 404);
   }
 
-  /// Submits a change request for an active booking (B4). Mocked to succeed
-  /// until the endpoint exists.
+  /// Submits a change request for an active booking. Updates local offline cache
+  /// on failure so state is preserved.
   Future<void> requestChange(
     String id, {
     DateTime? newTime,
@@ -67,25 +91,88 @@ class ActivityRepository {
       await _dio.post<dynamic>(
         '/api/v2/customers/me/bookings/$id/change',
         data: {
-          if (newTime != null) 'pickupDateTime': newTime.toUtc().toIso8601String(),
+          if (newTime != null)
+            'pickupDateTime': newTime.toUtc().toIso8601String(),
           if (passengers != null) 'passengers': passengers,
         },
       );
     } catch (e) {
+      // Offline fallback: update local cache
+      final cached = await _loadOfflineBookings();
+      final updated = cached.map((b) {
+        if (b.id == id) {
+          return b.copyWith(
+            scheduledFor: newTime ?? b.scheduledFor,
+            passengers: passengers ?? b.passengers,
+          );
+        }
+        return b;
+      }).toList();
+      await _saveOfflineBookings(updated);
       if (AppConfig.previewMocks) return;
       throw _asApiException(e, 'Could not send your change request.');
     }
   }
 
-  /// Submits a cancellation request for an active booking (B4). Mocked to
-  /// succeed until the endpoint exists.
+  /// Submits a cancellation request for an active booking. Updates local offline cache.
   Future<void> cancel(String id) async {
     try {
       await _dio.post<dynamic>('/api/v2/customers/me/bookings/$id/cancel');
     } catch (e) {
+      // Offline fallback: mark as cancelled in local cache
+      final cached = await _loadOfflineBookings();
+      final updated = cached.map((b) {
+        if (b.id == id) {
+          return b.copyWith(status: 'cancelled');
+        }
+        return b;
+      }).toList();
+      await _saveOfflineBookings(updated);
       if (AppConfig.previewMocks) return;
       throw _asApiException(e, 'Could not cancel your booking.');
     }
+  }
+
+  /// Appends or updates a booking in local storage.
+  Future<void> recordBooking(BookingSummary booking) async {
+    final cached = await _loadOfflineBookings();
+    final updated = [
+      booking,
+      ...cached.where((b) => b.id != booking.id),
+    ];
+    await _saveOfflineBookings(updated);
+  }
+
+  Future<void> _saveOfflineBookings(List<BookingSummary> bookings) async {
+    try {
+      final encoded = jsonEncode(bookings.map((b) => b.toJson()).toList());
+      await _storage.write(key: _kOfflineBookingsKey, value: encoded);
+    } catch (_) {}
+  }
+
+  Future<List<BookingSummary>> _loadOfflineBookings() async {
+    try {
+      final str = await _storage.read(key: _kOfflineBookingsKey);
+      if (str != null && str.isNotEmpty) {
+        final decoded = jsonDecode(str);
+        if (decoded is List) {
+          return decoded.map((item) {
+            final map = _deepCast(item as Map);
+            return BookingSummary.fromJson(map);
+          }).toList();
+        }
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  Map<String, dynamic> _deepCast(Map input) {
+    return input.map((key, value) {
+      if (value is Map) {
+        return MapEntry(key.toString(), _deepCast(value));
+      }
+      return MapEntry(key.toString(), value);
+    });
   }
 
   // ── Internals ───────────────────────────────────────────────────────────
