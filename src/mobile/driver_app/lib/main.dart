@@ -16,6 +16,7 @@ import 'package:driver_app/core/notifications/notification_sound_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:driver_app/core/location/background_location_service.dart';
 import 'package:driver_app/firebase_options.dart';
+import 'package:driver_app/core/logging/remote_logger.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -37,6 +38,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("Body: ${message.notification?.body}");
   debugPrint("Data: ${message.data}");
   debugPrint("========================================================");
+  RemoteLogger.info('Push', 'Background message id=${message.messageId} hasNotification=${message.notification != null} dataKeys=${message.data.keys.toList()}');
 
   try {
     await NotificationSoundService.registerNotificationChannels();
@@ -90,6 +92,7 @@ void main() async {
     );
     debugPrint(
         'User notification permission status: ${settings.authorizationStatus}');
+    RemoteLogger.info('Push', 'Notification permission: ${settings.authorizationStatus}');
 
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,
@@ -100,8 +103,10 @@ void main() async {
     try {
       final token = await messaging.getToken();
       debugPrint('FCM Token: $token');
+      RemoteLogger.info('Push', 'Startup FCM token: ${RemoteLogger.mask(token)}');
     } catch (tokenErr) {
       debugPrint('FCM getToken notice (simulator/APNs unavailable): $tokenErr');
+      RemoteLogger.warn('Push', 'Startup FCM getToken failed: $tokenErr');
     }
 
     // FCM Foreground listener: show local heads-up notification with custom category sound and route immediately
@@ -112,6 +117,7 @@ void main() async {
       debugPrint("Body: ${message.notification?.body}");
       debugPrint("Data: ${message.data}");
       debugPrint("========================================================");
+      RemoteLogger.info('Push', 'Foreground message id=${message.messageId} hasNotification=${message.notification != null} dataKeys=${message.data.keys.toList()}');
 
       final mergedData = <String, dynamic>{
         ...message.data,
@@ -134,6 +140,7 @@ void main() async {
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint("App opened via FCM notification: payload=${message.data}");
+      RemoteLogger.info('Push', 'Opened from notification id=${message.messageId}');
       final mergedData = <String, dynamic>{
         ...message.data,
         if (message.notification?.title != null) 'title': message.notification!.title,

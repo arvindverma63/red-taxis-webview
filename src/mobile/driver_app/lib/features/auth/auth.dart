@@ -1,3 +1,4 @@
+import 'package:driver_app/core/logging/remote_logger.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
@@ -398,6 +399,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
               apnsToken = await FirebaseMessaging.instance.getAPNSToken();
               if (apnsToken != null && apnsToken.isNotEmpty) {
                 debugPrint('[Auth] APNs Token successfully acquired (attempt ${attempt + 1}): $apnsToken');
+                RemoteLogger.info('Push', 'APNs token acquired attempt ${attempt + 1}: ${RemoteLogger.mask(apnsToken)}');
                 break;
               }
             } catch (apnsErr) {
@@ -421,10 +423,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         debugPrint('[Auth] Token retrieval general notice: $err');
       }
 
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS && (apnsToken == null || apnsToken.isEmpty)) {
+        RemoteLogger.error('Push', 'No APNs token after retries (check Push capability / signing / permission). fcm=${RemoteLogger.mask(fcmToken)}');
+      }
       if (fcmToken != null && fcmToken.isNotEmpty) {
         await _sendTokenToBackend(fcmToken, apnsToken);
       } else if (apnsToken != null && apnsToken.isNotEmpty) {
-        await _sendTokenToBackend(apnsToken, apnsToken);
+        // A raw APNs token is not a valid FCM registration token, so storing it
+        // would make backend pushes fail silently. Wait for onTokenRefresh to
+        // deliver the real FCM token once Firebase can exchange the APNs token.
+        RemoteLogger.error('Push', 'APNs token present but FCM token unavailable (APNs key missing in Firebase?): ${RemoteLogger.mask(apnsToken)}');
+        debugPrint('[Auth] APNs token acquired but FCM token unavailable; check the APNs key in Firebase Console. Not uploading raw APNs token.');
       } else {
         debugPrint('[Auth] APNs/FCM token is still pending registration with Apple/Firebase.');
       }
@@ -462,7 +471,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
       );
       debugPrint('[Auth] DriverApp/UpdateFCM response status: ${response.statusCode}');
+      RemoteLogger.info('Push', 'UpdateFCM status ${response.statusCode} fcm=${RemoteLogger.mask(primaryToken)} apns=${RemoteLogger.mask(apnsToken)}');
     } catch (dErr) {
+      RemoteLogger.error('Push', 'UpdateFCM failed: $dErr');
       debugPrint('[Auth] DriverApp/UpdateFCM notice: $dErr, trying UserProfile/UpdateFCM...');
       try {
         final res2 = await _dio.post(
