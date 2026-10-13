@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -1073,8 +1073,12 @@ interface Booking {
       display: flex;
       align-items: flex-end;
       justify-content: center;
+      overscroll-behavior: contain;
+      touch-action: none;
     }
     .modal-sheet {
+      touch-action: auto;
+      overscroll-behavior: contain;
       background: #FFFFFF;
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
@@ -1256,7 +1260,12 @@ interface Booking {
     /* Sheet Scroll Area */
     .sheet-body-scroll {
       padding: 12px 16px;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -1870,7 +1879,7 @@ interface Booking {
     }
   `]
 })
-export class BookingsComponent implements OnInit {
+export class BookingsComponent implements OnInit, OnDestroy {
   @ViewChild('sliderEl') sliderEl?: ElementRef<HTMLDivElement>;
 
   tabs = ['All', 'Upcoming', 'Completed', 'Cancelled'];
@@ -1935,10 +1944,22 @@ export class BookingsComponent implements OnInit {
     this.selectedBooking = booking;
     this.sliderPosition = 0;
     this.isDragging = false;
+    this.setPageScrollLocked(true);
     this.cdr.detectChanges();
   }
 
+  ngOnDestroy(): void {
+    this.setPageScrollLocked(false);
+  }
+
+  /** Stops the page behind the details sheet from scrolling while it is open. */
+  private setPageScrollLocked(locked: boolean): void {
+    document.documentElement.style.overflow = locked ? 'hidden' : '';
+    document.body.style.overflow = locked ? 'hidden' : '';
+  }
+
   closeDetails(): void {
+    this.setPageScrollLocked(false);
     this.selectedBooking = null;
     this.sliderPosition = 0;
     this.isDragging = false;
