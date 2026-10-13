@@ -446,17 +446,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final token = state.token;
     if (token == null) return;
 
-    final payload = <String, dynamic>{
-      'fcm': primaryToken,
-      'token': primaryToken,
-      'fcmToken': primaryToken,
-      'apn': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? primaryToken : ''),
-      'apns': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? primaryToken : ''),
-      'apnsToken': apnsToken ?? (defaultTargetPlatform == TargetPlatform.iOS ? primaryToken : ''),
-      'deviceToken': primaryToken,
-      'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
-      'deviceType': defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android',
-    };
+    // Backend contract (POST /api/DriverApp/UpdateFCM) only needs the FCM token.
+    final payload = <String, dynamic>{'fcm': primaryToken};
 
     debugPrint('[Auth] Updating FCM & APNs Token to backend: $payload');
     try {

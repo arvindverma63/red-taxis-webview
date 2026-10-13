@@ -1,3 +1,4 @@
+import 'package:driver_app/core/logging/remote_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -112,12 +113,15 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
       final controller = WebViewController.fromPlatformCreationParams(
         params,
         onPermissionRequest: (WebViewPermissionRequest request) async {
-          debugPrint("WebView permission requested: $request");
+          debugPrint("WebView permission requested: ${request.types}");
           final status = await Permission.camera.request();
+          RemoteLogger.info('Camera', 'WebView camera permission: $status');
           if (status.isGranted) {
             request.grant();
           } else {
             debugPrint("WebView permission denied natively");
+            // Always answer the request; leaving it pending makes getUserMedia hang on iOS.
+            request.deny();
           }
         },
       )
