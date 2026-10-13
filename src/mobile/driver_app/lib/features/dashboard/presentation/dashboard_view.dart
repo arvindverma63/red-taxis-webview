@@ -19,7 +19,8 @@ class DriverDashboardView extends ConsumerStatefulWidget {
   const DriverDashboardView({super.key});
 
   @override
-  ConsumerState<DriverDashboardView> createState() => _DriverDashboardViewState();
+  ConsumerState<DriverDashboardView> createState() =>
+      _DriverDashboardViewState();
 }
 
 class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
@@ -27,6 +28,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
   bool _isLoading = true;
   bool _hasError = false;
   Timer? _locationTimer;
+  bool _statusCollapsed = false;
 
   @override
   void initState() {
@@ -46,12 +48,14 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       setState(() {
         _hasError = false;
         _isLoading = true;
+        _statusCollapsed = false;
       });
       final token = ref.read(authProvider).token ?? '';
       final shift = ref.read(shiftProvider);
       final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
       final themeStr = isDark ? 'dark' : 'light';
-      final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
+      final url =
+          '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
       _controller!.loadRequest(Uri.parse(url));
     }
   }
@@ -61,7 +65,9 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
     if (clean.isEmpty) return;
     final encoded = Uri.encodeComponent(clean);
     final geoUri = Uri.parse('geo:0,0?q=$encoded');
-    final webMapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+    final webMapUri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$encoded',
+    );
 
     try {
       if (await canLaunchUrl(geoUri)) {
@@ -89,7 +95,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
     final shift = ref.read(shiftProvider);
     final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
     final themeStr = isDark ? 'dark' : 'light';
-    final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
+    final url =
+        '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
 
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -105,6 +112,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             }
           },
           onPageFinished: (String url) {
+            _controller?.runJavaScript(_scrollReporterScript);
             if (mounted) {
               setState(() {
                 _isLoading = false;
@@ -112,7 +120,9 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             }
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint("Dashboard WebView Error (${error.errorCode}): ${error.description}, isForMainFrame: ${error.isForMainFrame}");
+            debugPrint(
+              "Dashboard WebView Error (${error.errorCode}): ${error.description}, isForMainFrame: ${error.isForMainFrame}",
+            );
             if (error.isForMainFrame ?? true) {
               if (mounted) {
                 setState(() {
@@ -142,12 +152,17 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                   if (url.startsWith('intent://')) {
                     final stripped = url.substring('intent://'.length);
                     final intentIndex = stripped.indexOf('#Intent');
-                    final cleanHostPath = intentIndex != -1 ? stripped.substring(0, intentIndex) : stripped;
+                    final cleanHostPath = intentIndex != -1
+                        ? stripped.substring(0, intentIndex)
+                        : stripped;
                     parsedUrl = 'https://$cleanHostPath';
                   }
                   final intentUri = Uri.parse(parsedUrl);
                   if (await canLaunchUrl(intentUri)) {
-                    await launchUrl(intentUri, mode: LaunchMode.externalApplication);
+                    await launchUrl(
+                      intentUri,
+                      mode: LaunchMode.externalApplication,
+                    );
                   }
                 } else {
                   if (await canLaunchUrl(uri)) {
@@ -168,25 +183,29 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
         onMessageReceived: (JavaScriptMessage message) {
           debugPrint("Dashboard WebView message received: ${message.message}");
           if (message.message == 'simulate_cash_booking') {
-            ref.read(tripProvider.notifier).offerJob(
-              const TripDetails(
-                id: 'sim-cash-booking',
-                pickupAddress: 'Heathrow Airport Terminal 5',
-                dropoffAddress: 'Red Taxis Office, London Central',
-                fare: 45.00,
-                paymentType: 'Cash',
-              ),
-            );
+            ref
+                .read(tripProvider.notifier)
+                .offerJob(
+                  const TripDetails(
+                    id: 'sim-cash-booking',
+                    pickupAddress: 'Heathrow Airport Terminal 5',
+                    dropoffAddress: 'Red Taxis Office, London Central',
+                    fare: 45.00,
+                    paymentType: 'Cash',
+                  ),
+                );
           } else if (message.message == 'simulate_card_booking') {
-            ref.read(tripProvider.notifier).offerJob(
-              const TripDetails(
-                id: 'sim-card-booking',
-                pickupAddress: 'Wembley Stadium Gate A',
-                dropoffAddress: 'Hilton London Metropole',
-                fare: 28.50,
-                paymentType: 'Card',
-              ),
-            );
+            ref
+                .read(tripProvider.notifier)
+                .offerJob(
+                  const TripDetails(
+                    id: 'sim-card-booking',
+                    pickupAddress: 'Wembley Stadium Gate A',
+                    dropoffAddress: 'Hilton London Metropole',
+                    fare: 28.50,
+                    paymentType: 'Card',
+                  ),
+                );
           } else if (message.message.startsWith('arrived_at_pickup')) {
             ref.read(tripProvider.notifier).markArrived();
           } else if (message.message.startsWith('start_trip')) {
@@ -197,6 +216,14 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             ref.read(shiftProvider.notifier).goOnline();
           } else if (message.message == 'go_offline') {
             ref.read(shiftProvider.notifier).goOffline();
+          } else if (message.message == 'dash_scroll:collapse') {
+            if (mounted && !_statusCollapsed) {
+              setState(() => _statusCollapsed = true);
+            }
+          } else if (message.message == 'dash_scroll:expand') {
+            if (mounted && _statusCollapsed) {
+              setState(() => _statusCollapsed = false);
+            }
           } else if (message.message == 'pull_refresh') {
             _controller?.reload();
           } else if (message.message.startsWith('open_complete_job:')) {
@@ -204,14 +231,13 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             if (parts.length >= 3) {
               final jobId = parts[1];
               final fare = parts[2];
-              ref.read(navigationProvider.notifier).openCustomWebView(
-                route: '/complete-job',
-                title: 'Complete Job',
-                params: {
-                  'jobId': jobId,
-                  'fare': fare,
-                },
-              );
+              ref
+                  .read(navigationProvider.notifier)
+                  .openCustomWebView(
+                    route: '/complete-job',
+                    title: 'Complete Job',
+                    params: {'jobId': jobId, 'fare': fare},
+                  );
             }
           } else if (message.message.startsWith('open_map:')) {
             final query = message.message.substring('open_map:'.length).trim();
@@ -237,12 +263,118 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
     WebviewRegistry.registerTab(0, controller);
   }
 
+  /// Reports page scroll direction to Flutter so the native status card can
+  /// collapse while the driver scrolls down and expand again when scrolling up.
+  static const String _scrollReporterScript = r"""
+(function () {
+  if (window.__dashScrollHook) return;
+  window.__dashScrollHook = true;
+  var last = new WeakMap();
+  var state = 'expand';
+  var lockUntil = 0;
+  function send(next) {
+    if (next === state || Date.now() < lockUntil) return;
+    state = next;
+    lockUntil = Date.now() + 450;
+    try { FlutterChannel.postMessage('dash_scroll:' + next); } catch (e) {}
+  }
+  document.addEventListener('scroll', function (e) {
+    var el = e.target === document ? (document.scrollingElement || document.documentElement) : e.target;
+    if (!el || el.scrollTop === undefined) return;
+    var top = el.scrollTop;
+    var prev = last.has(el) ? last.get(el) : top;
+    last.set(el, top);
+    var overflow = el.scrollHeight - el.clientHeight;
+    if (top <= 2) { send('expand'); return; }
+    if (top > prev + 4 && top > 40 && overflow > 220) send('collapse');
+    else if (top < prev - 4) send('expand');
+  }, true);
+})();
+""";
+
+  Future<void> _toggleShift(bool isOnline) async {
+    if (isOnline) {
+      ref.read(shiftProvider.notifier).goOffline();
+      return;
+    }
+    final branding =
+        ref.read(authProvider).tenantBranding ??
+        TenantBranding.defaultFirstTaxis();
+    final hasAccepted = await LocationDisclosureDialog.hasAccepted();
+    if (!hasAccepted && mounted) {
+      final accepted = await LocationDisclosureDialog.show(
+        context,
+        fleetName: branding.name,
+      );
+      if (!accepted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Background location consent is required to go on duty.',
+              ),
+              backgroundColor: Color(0xFFCD1A21),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    final result = await ref.read(shiftProvider.notifier).goOnline();
+    if (result != LocationPermissionResult.granted && mounted) {
+      _showLocationSettingsDialog(context, result);
+    }
+  }
+
+  Widget _buildCompactStatusBar(bool isOnline, bool isLoading) {
+    final color = isOnline ? Colors.green : Colors.grey;
+    return CustomCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isOnline ? 'ONLINE · On Duty' : 'OFFLINE · Off Duty',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const Spacer(),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: isOnline
+                  ? Colors.grey[700]
+                  : AppTheme.primaryRed,
+              minimumSize: const Size(0, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            onPressed: isLoading ? null : () => _toggleShift(isOnline),
+            child: Text(
+              isOnline ? 'Go Offline' : 'Go Online',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final shift = ref.watch(shiftProvider);
     final isOnline = shift.status == ShiftStatus.online;
     final authState = ref.watch(authProvider);
-    final branding = authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
+    final branding =
+        authState.tenantBranding ?? TenantBranding.defaultRedTaxis();
 
     // Listen for shift changes to keep the WebView URL synchronized reactively
     ref.listen(shiftProvider, (previous, next) {
@@ -251,7 +383,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
           final token = ref.read(authProvider).token ?? '';
           final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
           final themeStr = isDark ? 'dark' : 'light';
-          final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${next.status.name}#/dashboard';
+          final url =
+              '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${next.status.name}#/dashboard';
           _controller?.loadRequest(Uri.parse(url));
         } catch (e) {
           debugPrint("[Dashboard] WebView shift change reload error: $e");
@@ -268,7 +401,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
           final shift = ref.read(shiftProvider);
           final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
           final themeStr = isDark ? 'dark' : 'light';
-          final url = '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
+          final url =
+              '${AppConfig.webviewBaseUrl}/?token=$token&theme=$themeStr&shiftStatus=${shift.status.name}#/dashboard';
           _controller?.loadRequest(Uri.parse(url));
         } catch (e) {
           debugPrint("[Dashboard] WebView auth change reload error: $e");
@@ -281,7 +415,8 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       if (previous != next) {
         try {
           final themeStr = next == ThemeMode.dark ? 'dark' : 'light';
-          final jsInject = """
+          final jsInject =
+              """
             (function() {
               const theme = '$themeStr';
               if (theme === 'dark') {
@@ -351,7 +486,9 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
       ),
       body: RefreshIndicator(
         color: AppTheme.primaryRed,
-        backgroundColor: ref.watch(themeModeProvider) == ThemeMode.dark ? AppTheme.darkSurface : Colors.white,
+        backgroundColor: ref.watch(themeModeProvider) == ThemeMode.dark
+            ? AppTheme.darkSurface
+            : Colors.white,
         onRefresh: () async {
           _reloadWebView();
         },
@@ -361,138 +498,160 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             // 1. Native Shift Status Toggle Card
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: CustomCard(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: isOnline ? Colors.green : Colors.grey,
-                                shape: BoxShape.circle,
-                                boxShadow: isOnline
-                                    ? [
-                                        BoxShadow(
-                                          color: Colors.green.withValues(alpha: 0.4),
-                                          blurRadius: 8,
-                                          spreadRadius: 2,
-                                        )
-                                      ]
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              isOnline ? 'ONLINE' : 'OFFLINE',
-                              style: TextStyle(
-                                color: isOnline ? Colors.green : Colors.grey,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 11,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          isOnline ? 'On Duty' : 'Off Duty',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeInOutCubic,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  layoutBuilder: (current, previous) =>
+                      current ?? const SizedBox.shrink(),
+                  child: _statusCollapsed
+                      ? KeyedSubtree(
+                          key: const ValueKey('status_compact'),
+                          child: _buildCompactStatusBar(
+                            isOnline,
+                            shift.isLoading,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      isOnline
-                          ? 'You are active on the network and waiting to accept incoming ride offers. Live GPS tracking is active.'
-                          : 'Go online to start receiving booking requests in your area.',
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isOnline ? Colors.grey[850] : AppTheme.primaryRed,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        minimumSize: const Size.fromHeight(48),
-                        elevation: 0,
-                        disabledBackgroundColor: isOnline ? Colors.grey[800]?.withValues(alpha: 0.6) : AppTheme.primaryRed.withValues(alpha: 0.6),
-                        disabledForegroundColor: Colors.white70,
-                      ),
-                      onPressed: shift.isLoading
-                          ? null
-                          : () async {
-                              if (isOnline) {
-                                ref.read(shiftProvider.notifier).goOffline();
-                              } else {
-                                final branding = ref.read(authProvider).tenantBranding ?? TenantBranding.defaultFirstTaxis();
-                                final hasAccepted = await LocationDisclosureDialog.hasAccepted();
-                                if (!hasAccepted && context.mounted) {
-                                  final accepted = await LocationDisclosureDialog.show(
-                                    context,
-                                    fleetName: branding.name,
-                                  );
-                                  if (!accepted) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Background location consent is required to go on duty.'),
-                                          backgroundColor: Color(0xFFCD1A21),
-                                        ),
-                                      );
-                                    }
-                                    return;
-                                  }
-                                }
-
-                                final result = await ref.read(shiftProvider.notifier).goOnline();
-                                if (result != LocationPermissionResult.granted && context.mounted) {
-                                  _showLocationSettingsDialog(context, result);
-                                }
-                              }
-                            },
-                      child: shift.isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                        )
+                      : KeyedSubtree(
+                          key: const ValueKey('status_full'),
+                          child: CustomCard(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  isOnline ? Icons.power_settings_new : Icons.play_arrow,
-                                  size: 18,
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: BoxDecoration(
+                                            color: isOnline
+                                                ? Colors.green
+                                                : Colors.grey,
+                                            shape: BoxShape.circle,
+                                            boxShadow: isOnline
+                                                ? [
+                                                    BoxShadow(
+                                                      color: Colors.green
+                                                          .withValues(
+                                                            alpha: 0.4,
+                                                          ),
+                                                      blurRadius: 8,
+                                                      spreadRadius: 2,
+                                                    ),
+                                                  ]
+                                                : null,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isOnline ? 'ONLINE' : 'OFFLINE',
+                                          style: TextStyle(
+                                            color: isOnline
+                                                ? Colors.green
+                                                : Colors.grey,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 11,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      isOnline ? 'On Duty' : 'Off Duty',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(isOnline ? 'Go Offline' : 'Go Online'),
+                                const SizedBox(height: 12),
+                                Text(
+                                  isOnline
+                                      ? 'You are active on the network and waiting to accept incoming ride offers. Live GPS tracking is active.'
+                                      : 'Go online to start receiving booking requests in your area.',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isOnline
+                                        ? Colors.grey[850]
+                                        : AppTheme.primaryRed,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    minimumSize: const Size.fromHeight(48),
+                                    elevation: 0,
+                                    disabledBackgroundColor: isOnline
+                                        ? Colors.grey[800]?.withValues(
+                                            alpha: 0.6,
+                                          )
+                                        : AppTheme.primaryRed.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                    disabledForegroundColor: Colors.white70,
+                                  ),
+                                  onPressed: shift.isLoading
+                                      ? null
+                                      : () => _toggleShift(isOnline),
+                                  child: shift.isLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
+                                          ),
+                                        )
+                                      : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              isOnline
+                                                  ? Icons.power_settings_new
+                                                  : Icons.play_arrow,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              isOnline
+                                                  ? 'Go Offline'
+                                                  : 'Go Online',
+                                            ),
+                                          ],
+                                        ),
+                                ),
                               ],
                             ),
-                    ),
-                  ],
+                          ),
+                        ),
                 ),
               ),
             ),
 
             // Thin Loading bar for WebView loading state
-            if (_isLoading && !_hasError && !Platform.environment.containsKey('FLUTTER_TEST'))
+            if (_isLoading &&
+                !_hasError &&
+                !Platform.environment.containsKey('FLUTTER_TEST'))
               const SizedBox(
                 height: 3,
                 child: LinearProgressIndicator(
@@ -519,7 +678,11 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                       ),
                     ),
                   if (_controller == null)
-                    const Center(child: CircularProgressIndicator(color: AppTheme.primaryRed)),
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryRed,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -529,7 +692,10 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
     );
   }
 
-  void _showLocationSettingsDialog(BuildContext context, LocationPermissionResult result) {
+  void _showLocationSettingsDialog(
+    BuildContext context,
+    LocationPermissionResult result,
+  ) {
     if (result == LocationPermissionResult.disclosureDeclined) return;
     String title;
     String message;
@@ -537,10 +703,12 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
     if (isServiceDisabled) {
       title = 'Location Services Disabled';
-      message = 'GPS location services are disabled on your device. Please enable location services to go online.';
+      message =
+          'GPS location services are disabled on your device. Please enable location services to go online.';
     } else {
       title = 'Background Location Required';
-      message = '${ref.read(authProvider).tenantBranding?.name ?? "Red Taxis"} requires background location access to receive booking offers while on duty. Please open app settings and select "Allow all the time".';
+      message =
+          '${ref.read(authProvider).tenantBranding?.name ?? "Red Taxis"} requires background location access to receive booking offers while on duty. Please open app settings and select "Allow all the time".';
     }
 
     showDialog(
@@ -565,7 +733,10 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -577,7 +748,10 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                   _locationTimer?.cancel();
                   Navigator.of(dialogContext).pop();
                 },
-                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -596,19 +770,27 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
 
                   // 2-second periodic check loop to auto-verify settings changes
                   _locationTimer?.cancel();
-                  _locationTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+                  _locationTimer = Timer.periodic(const Duration(seconds: 2), (
+                    timer,
+                  ) async {
                     final locService = LocationService();
                     final checkResult = await locService.checkPermissions();
                     if (checkResult == LocationPermissionResult.granted) {
                       timer.cancel();
                       if (dialogContext.mounted) {
-                        Navigator.of(dialogContext).pop(); // Auto-dismiss dialog
+                        Navigator.of(
+                          dialogContext,
+                        ).pop(); // Auto-dismiss dialog
                       }
-                      ref.read(shiftProvider.notifier).goOnline(); // Auto-go online
+                      ref
+                          .read(shiftProvider.notifier)
+                          .goOnline(); // Auto-go online
                     }
                   });
                 },
-                child: Text(isServiceDisabled ? 'Open Settings' : 'App Settings'),
+                child: Text(
+                  isServiceDisabled ? 'Open Settings' : 'App Settings',
+                ),
               ),
             ],
           ),
