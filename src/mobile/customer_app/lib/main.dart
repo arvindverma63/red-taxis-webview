@@ -8,6 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'core/notifications/customer_notification_service.dart';
 import 'core/theme/theme_controller.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -67,6 +68,9 @@ void main() {
 
         // Request system notification permission via permission_handler (Android 13+ & iOS)
         await Permission.notification.request();
+
+        // Initialize Firebase Cloud Messaging (FCM) & register background handlers
+        await CustomerNotificationService.initialize();
       } catch (e) {
         debugPrint('Customer app notification init error: $e');
       }

@@ -6,6 +6,7 @@ import '../../../core/domain/auth_user.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/notifications/customer_notification_service.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/storage/token_storage.dart';
 import 'auth_dtos.dart';
@@ -209,6 +210,7 @@ class AuthRepository {
       refresh: session.refreshToken,
     );
     _session.setUser(_toAuthUser(session));
+    CustomerNotificationService.syncTokenToServer(_dio, session.token);
   }
 
   AuthUser _toAuthUser(AuthSession s) => AuthUser(

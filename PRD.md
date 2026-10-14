@@ -781,6 +781,22 @@ The Angular router guards and services parse the `token` parameter directly from
   - Added dynamic driver and vehicle telemetry extraction from nested `driver` maps and root fields (`driverName`, `vehicleReg`, `vehicleModel`, `driverLat`, `driverLng`).
   - Synchronized `TrackingScreen` to auto-refresh background activity history and update live booking models upon status transition.
 
+- [x] **Customer App Firebase Cloud Messaging (FCM) & Push Notifications Setup (`customer_notification_service.dart`, `firebase_options.dart`, `google-services.json`, `GoogleService-Info.plist`, `auth_repository.dart`, `main.dart`)**:
+  - Reused client configuration from shared driver Firebase project `red-taxi-6b302` (Project number `211474359223`).
+  - Installed and configured `firebase_core: ^3.8.0` and `firebase_messaging: ^15.2.0` in `customer_app`.
+  - Added Android configuration [`google-services.json`](file:///d:/redtaxis/src/mobile/customer_app/android/app/google-services.json) targeting `com.redtaxis.customer_app` and applied `com.google.gms.google-services` plugin in `settings.gradle.kts` and `app/build.gradle.kts`.
+  - Added iOS configuration [`GoogleService-Info.plist`](file:///d:/redtaxis/src/mobile/customer_app/ios/Runner/GoogleService-Info.plist) targeting `com.redtaxis.customerApp`.
+  - Configured [`AndroidManifest.xml`](file:///d:/redtaxis/src/mobile/customer_app/android/app/src/main/AndroidManifest.xml) with `android.permission.VIBRATE`, default notification channel `first_taxis_alerts_channel`, and notification icon.
+  - Implemented cross-platform `DefaultFirebaseOptions` in [`firebase_options.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/firebase_options.dart).
+  - Built comprehensive [`CustomerNotificationService`](file:///d:/redtaxis/src/mobile/customer_app/lib/core/notifications/customer_notification_service.dart):
+    - Top-level background message handler (`@pragma('vm:entry-point') customerFirebaseBackgroundHandler`) for background and terminated push deliveries.
+    - Dedicated high-importance Android notification channel (`first_taxis_alerts_channel` - "Ride Alerts & Updates").
+    - Foreground heads-up notification display using `FlutterLocalNotificationsPlugin`.
+    - Token generation, local caching, and `onTokenRefresh` listener.
+    - Automated push token sync to backend API endpoints (`/api/UserProfile/UpdateFCM` and `/api/DriverApp/UpdateFCM`).
+  - Integrated `CustomerNotificationService.initialize()` in [`main.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/main.dart) and auto-sync hook upon customer login in [`auth_repository.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/auth/data/auth_repository.dart).
+  - Verified static analysis with 0 issues on `dart analyze lib/`.
+
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
