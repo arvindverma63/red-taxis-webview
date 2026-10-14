@@ -8,10 +8,14 @@ import '../../../core/session/session_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../activity/application/activity_controller.dart';
+import '../../activity/data/activity_repository.dart';
+import '../../activity/domain/booking_summary.dart';
 import '../../payment/presentation/payment_routes.dart';
 import '../application/booking_draft_controller.dart';
 import '../application/quote_controller.dart';
 import '../data/booking_repository.dart';
+import '../domain/vehicle_type.dart';
 import 'widgets/widgets.dart';
 
 /// One selectable payment option. [iconBackground]/[iconColor] carry the brand
@@ -137,6 +141,29 @@ class _PaymentMethodScreenState extends ConsumerState<PaymentMethodScreen> {
       };
 
       final result = await repo.createRequest(body);
+      if (!mounted) return;
+
+      if (draft.pickup != null && draft.dropoff != null) {
+        final newBooking = BookingSummary(
+          id: result.requestId,
+          pickup: draft.pickup!,
+          dropoff: draft.dropoff!,
+          scheduledFor: draft.scheduledFor ?? DateTime.now(),
+          status: result.status.isNotEmpty ? result.status : 'requested',
+          price: (draft.paymentMethod == 'account'
+                  ? draft.quote?.priceAccount
+                  : draft.quote?.priceCash) ??
+              0.0,
+          vehicleName: vehicleById(draft.vehicleId).name,
+          passengers: draft.passengers,
+          paymentMethod: draft.paymentMethod,
+        );
+        try {
+          await ref.read(activityRepositoryProvider).recordBooking(newBooking);
+          ref.invalidate(activityControllerProvider);
+        } catch (_) {}
+      }
+
       if (!mounted) return;
 
       // Pre-pay at booking for card / Apple Pay (PRD §10). Cash + account skip

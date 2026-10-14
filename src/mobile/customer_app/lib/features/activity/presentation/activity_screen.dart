@@ -253,7 +253,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                           booking: b,
                           onTap: () => _openDetail(context, b),
                           onTrack: () =>
-                              context.push('${Routes.tracking}/${b.id}'),
+                              context.push('${Routes.tracking}/${b.id}', extra: b),
                           onReceipt: () => _showReceiptSheet(context, b),
                           onRebook: () => _rebook(context, ref, b),
                         ),
@@ -1035,21 +1035,14 @@ class _TicketReceiptSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.xs + 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.brand.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: const Icon(
-                      Icons.local_taxi_rounded,
-                      color: AppColors.brand,
-                      size: 20,
-                    ),
+                  const BrandLogo(
+                    size: 28,
+                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                    showBorder: true,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    'RED TAXI OFFICIAL RECEIPT',
+                    'FIRST TAXIS OFFICIAL RECEIPT',
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.8,
@@ -1211,7 +1204,7 @@ class _TicketReceiptSheet extends StatelessWidget {
                   label: const Text('Copy Receipt'),
                   onPressed: () {
                     final text = '''
-RED TAXI OFFICIAL RECEIPT
+FIRST TAXIS OFFICIAL RECEIPT
 Booking Ref: #${booking.id}
 Date: ${Fmt.dateTime(booking.scheduledFor)}
 From: ${booking.pickup.description}

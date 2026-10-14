@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/domain/place.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/router/route_paths.dart';
@@ -16,55 +17,156 @@ import '../../profile/application/saved_addresses_controller.dart';
 import '../application/booking_draft_controller.dart';
 import 'booking_routes.dart';
 import 'widgets/pill_chip.dart';
+import '../../guide/application/user_guide_controller.dart';
+import '../../guide/presentation/feature_discovery_overlay.dart';
+import '../../guide/presentation/widgets/guide_banner_card.dart';
 
 /// Clean, native GoRide Home Screen.
 /// Provides an intuitive passenger home dashboard with personalized greeting,
 /// destination search, quick ride modes, active ride tracking, and saved places,
 /// without rendering any static or placeholder maps.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _whereToKey = GlobalKey();
+  final _quickActionsKey = GlobalKey();
+  final _savedPlacesKey = GlobalKey();
+  final _dispatchKey = GlobalKey();
+
+  bool _tourAutoPrompted = false;
+
+  void _checkAutoStartTour() {
+    if (_tourAutoPrompted) return;
+    _tourAutoPrompted = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Future.delayed(const Duration(milliseconds: 650), () {
+        if (!mounted) return;
+        final guideSeen = ref.read(userGuideSeenProvider).valueOrNull;
+        if (guideSeen == false) {
+          _startFeatureTour(context);
+        }
+      });
+    });
+  }
+
+  void _startFeatureTour(BuildContext context, {bool markAsSeen = true}) {
+    final steps = <FeatureDiscoveryStep>[
+      FeatureDiscoveryStep(
+        targetKey: _whereToKey,
+        borderRadius: AppRadius.xl,
+        accentColor: AppColors.brand,
+        icon: Icons.search_rounded,
+        title: 'Where to? Destination Search',
+        description:
+            'Tap here to search any destination, station, or airport. Your current GPS position is automatically detected as pickup.',
+      ),
+      FeatureDiscoveryStep(
+        targetKey: _quickActionsKey,
+        borderRadius: AppRadius.lg,
+        accentColor: const Color(0xFFF79009), // Warm Amber
+        icon: Icons.speed_rounded,
+        title: 'Quick Ride Modes',
+        description:
+            'Book immediately with "Ride Now", schedule in advance, access saved addresses, or tap "Pick Map" to place an exact pin.',
+      ),
+      FeatureDiscoveryStep(
+        targetKey: _savedPlacesKey,
+        borderRadius: AppRadius.lg,
+        accentColor: const Color(0xFF12B76A), // Emerald
+        icon: Icons.bookmark_added_rounded,
+        title: '1-Tap Saved Places',
+        description:
+            'Save your home, work, or frequent spots for instantaneous one-tap journey bookings without retyping addresses.',
+      ),
+      FeatureDiscoveryStep(
+        targetKey: _dispatchKey,
+        borderRadius: AppRadius.md,
+        accentColor: const Color(0xFF2E90FA), // Blue
+        icon: Icons.headset_mic_rounded,
+        title: '24/7 Dispatch Hotline',
+        description:
+            'Need assistance or prefer telephone booking? Connect directly with our 24/7 local dispatch operator at any time.',
+      ),
+    ];
+
+    showGoogleFeatureDiscovery(
+      context: context,
+      steps: steps,
+      onComplete: () {
+        if (markAsSeen) {
+          ref.read(userGuideSeenProvider.notifier).markSeen();
+        }
+      },
+      onDismiss: () {
+        if (markAsSeen) {
+          ref.read(userGuideSeenProvider.notifier).markSeen();
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final firstName = _firstName(user?.fullName);
     final ongoingBookings = ref.watch(ongoingBookingsProvider);
     final completedBookings = ref.watch(completedBookingsProvider);
     final savedPlacesAsync = ref.watch(savedAddressesProvider);
     final savedPlaces = savedPlacesAsync.valueOrNull ?? _fallbackSavedPlaces;
+    final guideSeenAsync = ref.watch(userGuideSeenProvider);
     final theme = Theme.of(context);
+
+    // Auto-prompt feature tour if first time
+    ref.listen<AsyncValue<bool>>(userGuideSeenProvider, (_, next) {
+      if (next.valueOrNull == false && !_tourAutoPrompted) {
+        _checkAutoStartTour();
+      }
+    });
+
+    if (guideSeenAsync.valueOrNull == false && !_tourAutoPrompted) {
+      _checkAutoStartTour();
+    }
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: AppSpacing.lg,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.xs + 2),
-              decoration: BoxDecoration(
-                color: AppColors.brand.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(
-                Icons.local_taxi_rounded,
-                color: AppColors.brand,
-                size: 22,
-              ),
+            const BrandLogo(
+              size: 34,
+              showBorder: true,
+              showShadow: true,
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              'Red Taxi',
+              AppConfig.fromEnvironment().brandName,
               style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.headset_mic_outlined),
-            tooltip: 'Contact Dispatch',
-            onPressed: () => _callSupport(context),
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'Highlight Features Tour',
+            onPressed: () => _startFeatureTour(context, markAsSeen: false),
+          ),
+          KeyedSubtree(
+            key: _dispatchKey,
+            child: IconButton(
+              icon: const Icon(Icons.headset_mic_outlined),
+              tooltip: 'Contact Dispatch',
+              onPressed: () => _callSupport(context),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.person_outline_rounded),
@@ -86,7 +188,18 @@ class HomeScreen extends ConsumerWidget {
           children: [
             // 1. Personalized Greeting
             _GreetingSection(firstName: firstName),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
+
+            // First-time user guide banner
+            if (guideSeenAsync.valueOrNull == false) ...[
+              GuideBannerCard(
+                onOpenGuide: () => _startFeatureTour(context, markAsSeen: true),
+                onDismiss: () => ref
+                    .read(userGuideSeenProvider.notifier)
+                    .markSeen(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
 
             // 2. Active Trip Banner (if user has an in-flight booking)
             if (ongoingBookings.isNotEmpty) ...[
@@ -95,53 +208,67 @@ class HomeScreen extends ConsumerWidget {
             ],
 
             // 3. "Where to?" Destination Search Card
-            _WhereToCard(
-              onTapDropoff: () => _openDestinationSearch(context),
-              onTapPickup: () => _openPickupSearch(context, ref),
+            KeyedSubtree(
+              key: _whereToKey,
+              child: _WhereToCard(
+                onTapDropoff: () => _openDestinationSearch(context),
+                onTapPickup: () => _openPickupSearch(context, ref),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
 
             // 4. Quick Ride Modes (Ride Now, Schedule, Saved, Pick Map)
-            _QuickActionsGrid(
-              onRideNow: () => _openDestinationSearch(context),
-              onSchedule: () => _openDestinationSearch(context),
-              onSavedPlaces: () => context.push(Routes.savedAddresses),
-              onPickOnMap: () => context.push(kPickOnMapPath, extra: 'dropoff'),
+            KeyedSubtree(
+              key: _quickActionsKey,
+              child: _QuickActionsGrid(
+                onRideNow: () => _openDestinationSearch(context),
+                onSchedule: () => _openDestinationSearch(context),
+                onSavedPlaces: () => context.push(Routes.savedAddresses),
+                onPickOnMap: () => context.push(kPickOnMapPath, extra: 'dropoff'),
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
 
             // 5. Saved Places Shortcuts
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Saved Places',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+            KeyedSubtree(
+              key: _savedPlacesKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Saved Places',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push(Routes.savedAddresses),
+                        child: const Text('Manage'),
+                      ),
+                    ],
                   ),
-                ),
-                TextButton(
-                  onPressed: () => context.push(Routes.savedAddresses),
-                  child: const Text('Manage'),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: savedPlaces.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, i) {
-                  final saved = savedPlaces[i];
-                  return PillChip(
-                    icon: _iconFor(saved.label),
-                    label: saved.label,
-                    onTap: () => _selectDestination(context, ref, saved.place),
-                  );
-                },
+                  const SizedBox(height: AppSpacing.xs),
+                  SizedBox(
+                    height: 44,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: savedPlaces.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (context, i) {
+                        final saved = savedPlaces[i];
+                        return PillChip(
+                          icon: _iconFor(saved.label),
+                          label: saved.label,
+                          onTap: () => _selectDestination(context, ref, saved.place),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -219,13 +346,14 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Future<void> _callSupport(BuildContext context) async {
-    const phone = '+441747850888';
+    final configPhone = AppConfig.fromEnvironment().supportPhone;
+    final phone = configPhone.isNotEmpty ? configPhone : '+441747850888';
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dispatch office: $phone')),
+        SnackBar(content: Text('Dispatch office: $phone')),
       );
     }
   }
@@ -246,8 +374,9 @@ class _GreetingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final greeting =
-        firstName == null ? 'Welcome to Red Taxi' : 'Hello, $firstName 👋';
+    final greeting = firstName == null
+        ? 'Welcome to ${AppConfig.fromEnvironment().brandName}'
+        : 'Hello, $firstName 👋';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +478,7 @@ class _ActiveRideBanner extends StatelessWidget {
                   label: 'Track Live Ride',
                   icon: Icons.navigation_rounded,
                   onPressed: () =>
-                      context.push('${Routes.tracking}/${booking.id}'),
+                      context.push('${Routes.tracking}/${booking.id}', extra: booking),
                 ),
               ),
             ],
@@ -734,7 +863,7 @@ class _ServiceStandardsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'The Red Taxi Standard',
+            'The ${AppConfig.fromEnvironment().brandName} Standard',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),

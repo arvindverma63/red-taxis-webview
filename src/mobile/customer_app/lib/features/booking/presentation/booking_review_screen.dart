@@ -11,6 +11,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../application/booking_draft_controller.dart';
 import '../application/quote_controller.dart';
+import '../data/route_service.dart';
 import '../domain/booking_draft.dart';
 import '../domain/quote.dart';
 import '../domain/vehicle_type.dart';
@@ -27,13 +28,112 @@ class BookingReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
+  GoogleMapController? _mapController;
+  Set<Polyline> _polylines = {};
+  List<LatLng> _routePoints = [];
+
   @override
   void initState() {
     super.initState();
-    // Fetch an initial quote once the first frame is up (draft is ready).
+    // Fetch quote and road driving route once first frame is up
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(quoteControllerProvider.notifier).refresh();
+      _loadRoute();
     });
+  }
+
+  Future<void> _loadRoute() async {
+    final draft = ref.read(bookingDraftProvider);
+    if (!draft.hasRoute) return;
+
+    const routeService = RouteService();
+    final p = routeService.resolvePlaceDetails(draft.pickup!);
+    final d = routeService.resolvePlaceDetails(draft.dropoff!);
+
+    final start = LatLng(p.lat ?? 51.0382, p.lng ?? -2.2718);
+    final end = LatLng(d.lat ?? 51.4414, d.lng ?? -2.5973);
+
+    final routeData = await routeService.fetchRoute(start, end);
+    if (!mounted) return;
+
+    setState(() {
+      _routePoints = routeData.points;
+      _polylines = {
+        Polyline(
+          polylineId: const PolylineId('ride_route'),
+          points: routeData.points,
+          color: const Color(0xFFFE2020), // First Taxis Brand Red
+          width: 5,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ),
+      };
+    });
+
+    _fitMapBounds(routeData.points);
+  }
+
+  void _fitMapBounds(List<LatLng> points) {
+    if (_mapController == null || points.isEmpty) return;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final pt in points) {
+      if (pt.latitude < minLat) minLat = pt.latitude;
+      if (pt.latitude > maxLat) maxLat = pt.latitude;
+      if (pt.longitude < minLng) minLng = pt.longitude;
+      if (pt.longitude > maxLng) maxLng = pt.longitude;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 48.0),
+    );
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    if (_routePoints.isNotEmpty) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _fitMapBounds(_routePoints);
+      });
+    }
+  }
+
+  CameraPosition _initialCamera(BookingDraft draft) {
+    const routeService = RouteService();
+    final p = draft.pickup != null
+        ? routeService.resolvePlaceDetails(draft.pickup!)
+        : null;
+    final d = draft.dropoff != null
+        ? routeService.resolvePlaceDetails(draft.dropoff!)
+        : null;
+
+    if (p?.lat != null && d?.lat != null) {
+      final centerLat = (p!.lat! + d!.lat!) / 2;
+      final centerLng = (p.lng! + d.lng!) / 2;
+      final dist = RouteService.haversineDistanceMiles(
+        p.lat!,
+        p.lng!,
+        d.lat!,
+        d.lng!,
+      );
+      final zoom = dist > 35 ? 8.5 : (dist > 15 ? 10.5 : 12.5);
+      return CameraPosition(target: LatLng(centerLat, centerLng), zoom: zoom);
+    }
+
+    return const CameraPosition(
+      target: LatLng(51.0058, -2.1916),
+      zoom: 12,
+    );
   }
 
   void _selectVehicle(String id) {
@@ -93,10 +193,15 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
       padded: false,
       body: ListView(
         children: [
-          // Route map (pins are placeholders until Maps keys land).
+          // Route map with live route polyline and pickup/destination markers
           SizedBox(
             height: 220,
-            child: MapView(markers: _markers(draft)),
+            child: MapView(
+              markers: _markers(draft),
+              polylines: _polylines,
+              initial: _initialCamera(draft),
+              onMapCreated: _onMapCreated,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -152,21 +257,35 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
   }
 
   Set<Marker> _markers(BookingDraft draft) {
+    const routeService = RouteService();
+    final p = draft.pickup != null
+        ? routeService.resolvePlaceDetails(draft.pickup!)
+        : null;
+    final d = draft.dropoff != null
+        ? routeService.resolvePlaceDetails(draft.dropoff!)
+        : null;
+
     final markers = <Marker>{};
-    final p = draft.pickup;
-    final d = draft.dropoff;
     if (p?.lat != null && p?.lng != null) {
       markers.add(Marker(
         markerId: const MarkerId('pickup'),
         position: LatLng(p!.lat!, p.lng!),
-        infoWindow: const InfoWindow(title: 'Pickup'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(
+          title: 'Pickup',
+          snippet: p.description,
+        ),
       ));
     }
     if (d?.lat != null && d?.lng != null) {
       markers.add(Marker(
         markerId: const MarkerId('dropoff'),
         position: LatLng(d!.lat!, d.lng!),
-        infoWindow: const InfoWindow(title: 'Destination'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(
+          title: 'Destination',
+          snippet: d.description,
+        ),
       ));
     }
     return markers;

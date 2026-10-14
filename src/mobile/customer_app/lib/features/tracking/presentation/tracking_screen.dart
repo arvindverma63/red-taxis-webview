@@ -3,41 +3,56 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../../core/config/app_config.dart';
+import '../../../core/domain/place.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../activity/application/activity_controller.dart';
+import '../../activity/domain/booking_summary.dart';
+import '../../booking/data/route_service.dart';
 import '../application/tracking_controller.dart';
 import '../domain/booking_status.dart';
 import '../domain/tracking_state.dart';
 import 'widgets/tracking_widgets.dart';
 
-// Pickup point the mock driver heads toward — matches the repository's
-// constants so the marker and pickup pin converge on the same spot.
-const double _kPickupLat = 51.0058;
-const double _kPickupLng = -2.1916;
-
-// Mock route endpoints surfaced in the route header. Real pickup/destination
-// strings arrive on [TrackingState] once the booking detail is wired (PRD B4).
-const String _kPickupLabel = 'Pickup point';
-const String _kDestinationLabel = 'Destination';
-
-/// Live booking tracking, faithful to the GoRide tracking frames
-/// (`30439:403/404`, `30431:30716`, `30431:30709`): a full-bleed [MapView]
-/// with a floating route header and map controls, over a draggable bottom
-/// sheet carrying the trip status, ETA, driver card and actions. Terminal
-/// states (completed with a fare receipt, cancelled) replace the live layout.
-///
-/// Drives entirely off [trackingProvider] for [bookingId]; no business logic
-/// lives here.
+/// Live booking tracking, faithful to the GoRide tracking frames:
+/// a full-bleed [MapView] with a floating route header and map controls, over
+/// a draggable bottom sheet carrying the trip status, ETA, driver card and actions.
 class TrackingScreen extends ConsumerWidget {
-  const TrackingScreen({super.key, required this.bookingId});
+  const TrackingScreen({
+    super.key,
+    required this.bookingId,
+    this.initialBooking,
+  });
 
   final String bookingId;
+  final BookingSummary? initialBooking;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(trackingProvider(bookingId));
+
+    // Resolve the full booking details (pickup, dropoff, route points, fare)
+    final detailAsync = ref.watch(bookingDetailProvider(bookingId));
+    final activityBookings = ref.watch(activityControllerProvider).valueOrNull;
+
+    BookingSummary? booking = initialBooking ?? detailAsync.valueOrNull;
+    if (booking == null && activityBookings != null) {
+      for (final b in activityBookings) {
+        if (b.id == bookingId) {
+          booking = b;
+          break;
+        }
+      }
+      if (booking == null && activityBookings.isNotEmpty) {
+        final ongoing = activityBookings.where((b) => b.isActive).toList();
+        if (ongoing.isNotEmpty) {
+          booking = ongoing.first;
+        }
+      }
+    }
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -47,20 +62,265 @@ class TrackingScreen extends ConsumerWidget {
           message: 'We lost the connection to your trip.\n$err',
           onRetry: () => ref.invalidate(trackingProvider(bookingId)),
         ),
-        data: (state) => _TrackingBody(state: state),
+        data: (state) => _TrackingBody(
+          state: state,
+          booking: booking,
+        ),
       ),
     );
   }
 }
 
-class _TrackingBody extends StatelessWidget {
-  const _TrackingBody({required this.state});
+class _TrackingBody extends StatefulWidget {
+  const _TrackingBody({
+    required this.state,
+    this.booking,
+  });
 
   final TrackingState state;
+  final BookingSummary? booking;
+
+  @override
+  State<_TrackingBody> createState() => _TrackingBodyState();
+}
+
+class _TrackingBodyState extends State<_TrackingBody> {
+  GoogleMapController? _mapController;
+  List<LatLng> _routePoints = const [];
+  Place? _resolvedPickup;
+  Place? _resolvedDropoff;
+  String? _lastRouteKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoute();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TrackingBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.booking?.id != widget.booking?.id ||
+        oldWidget.booking?.pickup != widget.booking?.pickup ||
+        oldWidget.booking?.dropoff != widget.booking?.dropoff) {
+      _loadRoute();
+    }
+  }
+
+  Future<void> _loadRoute() async {
+    const routeService = RouteService();
+    final p = widget.booking?.pickup != null
+        ? routeService.resolvePlaceDetails(widget.booking!.pickup)
+        : routeService.resolvePlaceDetails(const Place(
+            description: 'Gillingham Station, Station Road',
+            postcode: 'SP8 4QF',
+            lat: 51.0382,
+            lng: -2.2718,
+          ));
+    final d = widget.booking?.dropoff != null
+        ? routeService.resolvePlaceDetails(widget.booking!.dropoff)
+        : routeService.resolvePlaceDetails(const Place(
+            description: 'Shaftesbury, High Street',
+            postcode: 'SP7 8JE',
+            lat: 51.0058,
+            lng: -2.1972,
+          ));
+
+    final start = LatLng(p.lat ?? 51.0382, p.lng ?? -2.2718);
+    final end = LatLng(d.lat ?? 51.0058, d.lng ?? -2.1972);
+
+    final key =
+        '${start.latitude},${start.longitude}->${end.latitude},${end.longitude}';
+    if (_lastRouteKey == key && _routePoints.isNotEmpty) {
+      return;
+    }
+    _lastRouteKey = key;
+
+    if (mounted) {
+      setState(() {
+        _resolvedPickup = p;
+        _resolvedDropoff = d;
+      });
+    }
+
+    final routeData = await routeService.fetchRoute(start, end);
+    if (!mounted) return;
+
+    setState(() {
+      _routePoints = routeData.points;
+    });
+
+    _fitMapBounds();
+  }
+
+  void _fitMapBounds() {
+    if (_mapController == null) return;
+
+    final points = <LatLng>[
+      if (_routePoints.isNotEmpty) ..._routePoints,
+      if (_resolvedPickup?.lat != null && _resolvedPickup?.lng != null)
+        LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
+      if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null)
+        LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
+      if (widget.state.driver != null)
+        LatLng(widget.state.driver!.lat, widget.state.driver!.lng),
+    ];
+
+    if (points.isEmpty) return;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final pt in points) {
+      if (pt.latitude < minLat) minLat = pt.latitude;
+      if (pt.latitude > maxLat) maxLat = pt.latitude;
+      if (pt.longitude < minLng) minLng = pt.longitude;
+      if (pt.longitude > maxLng) maxLng = pt.longitude;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    // Padding ensures pins and route line don't get cut off by header and bottom sheet
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 72),
+    );
+  }
+
+  Set<Marker> _buildMarkers(DriverInfo? driver) {
+    final markers = <Marker>{};
+
+    if (_resolvedPickup?.lat != null && _resolvedPickup?.lng != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(
+          title: 'Pickup',
+          snippet: _resolvedPickup!.description.isNotEmpty
+              ? _resolvedPickup!.description
+              : _resolvedPickup!.addressLine,
+        ),
+      ));
+    }
+
+    if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('dropoff'),
+        position: LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(
+          title: 'Destination',
+          snippet: _resolvedDropoff!.description.isNotEmpty
+              ? _resolvedDropoff!.description
+              : _resolvedDropoff!.addressLine,
+        ),
+      ));
+    }
+
+    if (driver != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('driver'),
+        position: LatLng(driver.lat, driver.lng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: InfoWindow(
+          title: driver.name,
+          snippet: '${driver.vehicle} · ${driver.plate}',
+        ),
+      ));
+    }
+
+    return markers;
+  }
+
+  Set<Polyline> _buildPolylines(DriverInfo? driver) {
+    final polylines = <Polyline>{};
+
+    // 1. Primary trip route polyline (Brand Red, 5px, rounded)
+    if (_routePoints.isNotEmpty) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('trip_route'),
+          points: _routePoints,
+          color: const Color(0xFFFE2020), // First Taxis Brand Red
+          width: 5,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ),
+      );
+    }
+
+    // 2. Driver en-route polyline (Azure dashed)
+    if (driver != null &&
+        _resolvedPickup?.lat != null &&
+        _resolvedPickup?.lng != null) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('driver_route'),
+          points: [
+            LatLng(driver.lat, driver.lng),
+            LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
+          ],
+          color: const Color(0xFF2E90FA),
+          width: 3,
+          patterns: [PatternItem.dash(12), PatternItem.gap(6)],
+        ),
+      );
+    }
+
+    return polylines;
+  }
+
+  String get _pickupLabel {
+    final b = widget.booking;
+    if (b != null) {
+      if (b.pickup.addressLine.trim().isNotEmpty) {
+        return b.pickup.addressLine.trim();
+      }
+      if (b.pickup.description.trim().isNotEmpty) {
+        return b.pickup.description.trim();
+      }
+    }
+    if (_resolvedPickup != null) {
+      if (_resolvedPickup!.addressLine.trim().isNotEmpty) {
+        return _resolvedPickup!.addressLine.trim();
+      }
+      if (_resolvedPickup!.description.trim().isNotEmpty) {
+        return _resolvedPickup!.description.trim();
+      }
+    }
+    return 'Pickup point';
+  }
+
+  String get _destinationLabel {
+    final b = widget.booking;
+    if (b != null) {
+      if (b.dropoff.addressLine.trim().isNotEmpty) {
+        return b.dropoff.addressLine.trim();
+      }
+      if (b.dropoff.description.trim().isNotEmpty) {
+        return b.dropoff.description.trim();
+      }
+    }
+    if (_resolvedDropoff != null) {
+      if (_resolvedDropoff!.addressLine.trim().isNotEmpty) {
+        return _resolvedDropoff!.addressLine.trim();
+      }
+      if (_resolvedDropoff!.description.trim().isNotEmpty) {
+        return _resolvedDropoff!.description.trim();
+      }
+    }
+    return 'Destination';
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (state.status.isCancelled) {
+    if (widget.state.status.isCancelled) {
       return const _TerminalState(
         icon: Icons.cancel_outlined,
         kind: StatusKind.danger,
@@ -69,17 +329,37 @@ class _TrackingBody extends StatelessWidget {
         showBackHome: true,
       );
     }
-    if (state.status.isComplete) {
-      return _CompletedState(state: state);
+    if (widget.state.status.isComplete) {
+      return _CompletedState(
+        state: widget.state,
+        booking: widget.booking,
+      );
     }
 
-    final driver = state.status.hasDriver ? state.driver : null;
+    final driver = widget.state.status.hasDriver ? widget.state.driver : null;
 
-    // Map fills the screen; the route header + controls float over its top,
-    // and the status sheet is draggable over the bottom (GoRide layout).
+    final initialCamera = CameraPosition(
+      target: _resolvedPickup?.lat != null && _resolvedPickup?.lng != null
+          ? LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!)
+          : const LatLng(51.0058, -2.1916),
+      zoom: 13,
+    );
+
     return Stack(
       children: [
-        Positioned.fill(child: _TrackingMap(driver: driver)),
+        Positioned.fill(
+          child: MapView(
+            initial: initialCamera,
+            markers: _buildMarkers(driver),
+            polylines: _buildPolylines(driver),
+            onMapCreated: (controller) {
+              _mapController = controller;
+              if (_routePoints.isNotEmpty) {
+                _fitMapBounds();
+              }
+            },
+          ),
+        ),
         // Floating route header + map controls, inset under the status bar.
         SafeArea(
           bottom: false,
@@ -87,9 +367,10 @@ class _TrackingBody extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               children: [
-                const RouteHeader(
-                  pickup: _kPickupLabel,
-                  destination: _kDestinationLabel,
+                RouteHeader(
+                  pickup: _pickupLabel,
+                  destination: _destinationLabel,
+                  onToggleDetail: _fitMapBounds,
                 ),
               ],
             ),
@@ -102,7 +383,7 @@ class _TrackingBody extends StatelessWidget {
           child: MapFab(
             icon: Icons.my_location,
             tooltip: 'Recenter',
-            onTap: () {},
+            onTap: _fitMapBounds,
           ),
         ),
         // Back control floats bottom-left, symmetric with recenter.
@@ -115,56 +396,11 @@ class _TrackingBody extends StatelessWidget {
             onTap: () => Navigator.of(context).maybePop(),
           ),
         ),
-        _StatusSheet(state: state),
+        _StatusSheet(
+          state: widget.state,
+          booking: widget.booking,
+        ),
       ],
-    );
-  }
-}
-
-// ── Map ──────────────────────────────────────────────────────────────────
-
-class _TrackingMap extends StatelessWidget {
-  const _TrackingMap({required this.driver});
-
-  final DriverInfo? driver;
-
-  @override
-  Widget build(BuildContext context) {
-    final markers = <Marker>{
-      const Marker(
-        markerId: MarkerId('pickup'),
-        position: LatLng(_kPickupLat, _kPickupLng),
-        infoWindow: InfoWindow(title: 'Pickup'),
-      ),
-      if (driver != null)
-        Marker(
-          markerId: const MarkerId('driver'),
-          position: LatLng(driver!.lat, driver!.lng),
-          infoWindow: InfoWindow(title: driver!.name),
-        ),
-    };
-
-    // Draw the driver→pickup route line when both ends are known.
-    final polylines = <Polyline>{
-      if (driver != null)
-        Polyline(
-          polylineId: const PolylineId('route'),
-          color: AppColors.brand,
-          width: 4,
-          points: [
-            LatLng(driver!.lat, driver!.lng),
-            const LatLng(_kPickupLat, _kPickupLng),
-          ],
-        ),
-    };
-
-    return MapView(
-      initial: const CameraPosition(
-        target: LatLng(_kPickupLat, _kPickupLng),
-        zoom: 14,
-      ),
-      markers: markers,
-      polylines: polylines,
     );
   }
 }
@@ -172,9 +408,13 @@ class _TrackingMap extends StatelessWidget {
 // ── Draggable status sheet ─────────────────────────────────────────────────
 
 class _StatusSheet extends StatelessWidget {
-  const _StatusSheet({required this.state});
+  const _StatusSheet({
+    required this.state,
+    this.booking,
+  });
 
   final TrackingState state;
+  final BookingSummary? booking;
 
   @override
   Widget build(BuildContext context) {
@@ -414,14 +654,20 @@ class _ActionButtons extends StatelessWidget {
 // ── Completed state (fare receipt) ─────────────────────────────────────────
 
 class _CompletedState extends StatelessWidget {
-  const _CompletedState({required this.state});
+  const _CompletedState({
+    required this.state,
+    this.booking,
+  });
 
   final TrackingState state;
+  final BookingSummary? booking;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final driver = state.driver;
+    final brand = AppConfig.fromEnvironment().brandName;
+    final fare = booking?.price ?? 9.50;
 
     return SafeArea(
       child: ListView(
@@ -447,7 +693,7 @@ class _CompletedState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Thanks for riding with Ace Taxis.',
+            'Thanks for riding with $brand.',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -462,16 +708,13 @@ class _CompletedState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
-          // Fare breakdown. Amounts are placeholders until the booking quote is
-          // surfaced on TrackingState (PRD B4 — fare/receipt wiring); the
-          // component is shaped so wiring is a data swap, not a layout change.
-          const FareSummary(
+          FareSummary(
             lines: [
-              FareLine('Trip fare', 9.50),
-              FareLine('Booking fee', 1.00),
-              FareLine('Total', 10.50, emphasised: true),
+              FareLine('Trip fare', fare),
+              const FareLine('Booking fee', 1.00),
+              FareLine('Total', fare + 1.00, emphasised: true),
             ],
-            paymentLabel: 'Cash',
+            paymentLabel: booking?.paymentMethod ?? 'Cash',
           ),
           const SizedBox(height: AppSpacing.xl),
           AppButton(

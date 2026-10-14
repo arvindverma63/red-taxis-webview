@@ -10,6 +10,7 @@ import '../../../core/widgets/widgets.dart';
 import 'widgets/profile_identity_card.dart';
 import 'widgets/settings_group_card.dart';
 import 'widgets/settings_row.dart';
+import '../../guide/presentation/user_guide_sheet.dart';
 
 /// Account tab root, faithful to the GoRide "Account" frame. Wired by the app
 /// shell as the `/profile` tab body — NOT a pushed route, so it has no back
@@ -25,18 +26,14 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final unread = ref.watch(unreadNotificationsCountProvider);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final isGuest = user == null;
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Account'),
-        // Brand mark in place of GoRide's logo (no asset shipped yet) — themed
-        // so a real logo swaps in here later without touching layout.
-        leading: Center(
-          child: Icon(Icons.local_taxi, color: scheme.primary, size: 28),
+        leading: const Center(
+          child: BrandLogo(size: 32, showBorder: true),
         ),
         actions: [
           // The overflow only offers Settings + Logout, both of which require a
@@ -96,9 +93,14 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () => context.push(Routes.settings),
                 ),
                 SettingsRow(
+                  icon: Icons.menu_book_rounded,
+                  label: 'First-time user guide',
+                  onTap: () => showFirstTimeUserGuide(context, markAsSeen: false),
+                ),
+                SettingsRow(
                   icon: Icons.help_outline,
                   label: 'Help & Support',
-                  onTap: () => _comingSoon(context, 'Help & Support'),
+                  onTap: () => showFirstTimeUserGuide(context, markAsSeen: false),
                 ),
                 SettingsRow(
                   icon: Icons.star_border,

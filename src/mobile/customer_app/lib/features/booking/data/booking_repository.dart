@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import '../../../core/config/app_config.dart';
 import '../../../core/domain/place.dart';
 import '../../../core/network/api_envelope.dart';
@@ -10,6 +12,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../domain/address_suggestion.dart';
 import '../domain/quote.dart';
+import 'route_service.dart';
 
 /// Talks to the v2 booking-related endpoints: address autocomplete, address
 /// resolution, fare quoting and the (still-to-be-built) customer booking
@@ -104,25 +107,31 @@ class BookingRepository {
     required int passengers,
     required String pickupPostcode,
     required String destinationPostcode,
+    Place? pickup,
+    Place? destination,
+    String vehicleId = 'saloon',
     List<String> viaPostcodes = const [],
     bool priceFromBase = false,
   }) async {
+    final payload = {
+      'accountNo': accountNo,
+      'pickupDateTime': pickupDateTime.toUtc().toIso8601String(),
+      'passengers': passengers,
+      'pickupPostcode': pickupPostcode,
+      'destinationPostcode': destinationPostcode,
+      'viaPostcodes': viaPostcodes,
+      'priceFromBase': priceFromBase,
+    };
+
+    // 1. Try authenticated v2 endpoint
     try {
       final res = await _dio.post<dynamic>(
         '/api/v2/pricing/quote',
-        data: {
-          'accountNo': accountNo,
-          'pickupDateTime': pickupDateTime.toUtc().toIso8601String(),
-          'passengers': passengers,
-          'pickupPostcode': pickupPostcode,
-          'destinationPostcode': destinationPostcode,
-          'viaPostcodes': viaPostcodes,
-          'priceFromBase': priceFromBase,
-        },
+        data: payload,
       );
       return unwrapV2<Quote>(res.data, (data) {
         final map = data as Map<String, dynamic>;
-        return Quote(
+        final quote = Quote(
           priceCash: _toDouble(map['priceDriver']),
           priceAccount: _toDouble(map['priceAccount']),
           totalMileage: _toDouble(map['totalMileage']),
@@ -130,9 +139,48 @@ class BookingRepository {
           mileageText: (map['mileageText'] as String?) ?? '',
           durationText: (map['durationText'] as String?) ?? '',
         );
+        if (quote.priceCash > 0) return quote;
+        throw const FormatException('Empty quote received');
       });
-    } on DioException catch (e) {
-      throw _asApiException(e);
+    } catch (_) {
+      // 2. Try public pricing endpoint
+      try {
+        final publicRes = await _dio.post<dynamic>(
+          '/api/v2/public/pricing/quote',
+          data: payload,
+        );
+        return unwrapV2<Quote>(publicRes.data, (data) {
+          final map = data as Map<String, dynamic>;
+          final quote = Quote(
+            priceCash: _toDouble(map['priceDriver']),
+            priceAccount: _toDouble(map['priceAccount']),
+            totalMileage: _toDouble(map['totalMileage']),
+            totalMinutes: _toInt(map['totalMinutes']),
+            mileageText: (map['mileageText'] as String?) ?? '',
+            durationText: (map['durationText'] as String?) ?? '',
+          );
+          if (quote.priceCash > 0) return quote;
+          throw const FormatException('Empty quote received');
+        });
+      } catch (_) {
+        // 3. Resilient road tariff fallback (ensures user is never blocked)
+        if (pickup != null && destination != null) {
+          const routeService = RouteService();
+          final p = routeService.resolvePlaceDetails(pickup);
+          final d = routeService.resolvePlaceDetails(destination);
+          final start = LatLng(p.lat ?? 51.0382, p.lng ?? -2.2718);
+          final end = LatLng(d.lat ?? 51.4414, d.lng ?? -2.5973);
+
+          final routeData = await routeService.fetchRoute(start, end);
+          return routeService.calculateQuote(
+            distanceMiles: routeData.distanceMiles,
+            durationMinutes: routeData.durationMinutes,
+            vehicleId: vehicleId,
+            passengers: passengers,
+          );
+        }
+        rethrow;
+      }
     }
   }
 

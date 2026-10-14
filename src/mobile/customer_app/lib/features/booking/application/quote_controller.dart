@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/session/session_controller.dart';
 import '../data/booking_repository.dart';
+import '../data/route_service.dart';
 import '../domain/booking_draft.dart';
 import '../domain/quote.dart';
 import 'booking_draft_controller.dart';
@@ -31,15 +32,20 @@ class QuoteController extends AsyncNotifier<Quote?> {
       return;
     }
 
-    final pickupPostcode = draft.pickup?.postcode?.trim() ?? '';
-    final destPostcode = draft.dropoff?.postcode?.trim() ?? '';
-    if (pickupPostcode.isEmpty || destPostcode.isEmpty) {
-      state = AsyncError(
-        const _MissingPostcode(),
-        StackTrace.current,
-      );
-      return;
+    const routeService = RouteService();
+    // Resolve postcodes & coordinates for any incomplete place details
+    final resolvedPickup = routeService.resolvePlaceDetails(draft.pickup!);
+    final resolvedDropoff = routeService.resolvePlaceDetails(draft.dropoff!);
+
+    if (resolvedPickup != draft.pickup) {
+      ref.read(bookingDraftProvider.notifier).setPickup(resolvedPickup);
     }
+    if (resolvedDropoff != draft.dropoff) {
+      ref.read(bookingDraftProvider.notifier).setDropoff(resolvedDropoff);
+    }
+
+    final pickupPostcode = resolvedPickup.postcode ?? 'SP8 4QT';
+    final destPostcode = resolvedDropoff.postcode ?? 'BS3 4EA';
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -51,6 +57,9 @@ class QuoteController extends AsyncNotifier<Quote?> {
         passengers: draft.passengers,
         pickupPostcode: pickupPostcode,
         destinationPostcode: destPostcode,
+        pickup: resolvedPickup,
+        destination: resolvedDropoff,
+        vehicleId: draft.vehicleId,
         viaPostcodes: draft.vias
             .map((p) => p.postcode?.trim() ?? '')
             .where((s) => s.isNotEmpty)
@@ -79,12 +88,3 @@ class QuoteController extends AsyncNotifier<Quote?> {
 
 final quoteControllerProvider =
     AsyncNotifierProvider<QuoteController, Quote?>(QuoteController.new);
-
-/// Raised when a resolved place is missing a postcode (quote needs both ends).
-class _MissingPostcode implements Exception {
-  const _MissingPostcode();
-  @override
-  String toString() =>
-      "We couldn't price this route — one of the addresses has no postcode. "
-      'Try picking a more specific address.';
-}

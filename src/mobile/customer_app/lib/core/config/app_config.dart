@@ -26,7 +26,7 @@ class AppConfig {
   static const String defaultApiBaseUrl = 'https://staging-api.redtaxi.co.uk';
 
   /// The static default brand name.
-  static const String defaultBrandName = 'Red Taxi';
+  static const String defaultBrandName = 'First Taxis';
 
   final String tenantOrgId;
   final String tenantKey;

@@ -11,6 +11,7 @@ import '../application/notification_prefs_controller.dart';
 import '../domain/notification_prefs.dart';
 import 'widgets/settings_group_card.dart';
 import 'widgets/settings_row.dart';
+import '../../guide/presentation/user_guide_sheet.dart';
 
 /// App settings: notification mute toggles, theme note, legal links, app
 /// version and sign out.
@@ -94,6 +95,12 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           SettingsGroupCard(
             children: [
+              SettingsRow(
+                icon: Icons.menu_book_rounded,
+                label: 'First-time user guide',
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                onTap: () => showFirstTimeUserGuide(context, markAsSeen: false),
+              ),
               SettingsRow(
                 icon: Icons.info_outline,
                 label: 'App version',

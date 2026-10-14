@@ -25,14 +25,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _OnboardPage(
       icon: Icons.local_taxi_rounded,
       title: 'Book a ride in seconds',
-      body: 'Set your pickup and destination, see the fare up front, and '
-          'request a taxi with a couple of taps.',
+      body: 'Set your pickup and destination, see guaranteed fixed fares up front, and '
+          'request a First Taxis ride with a couple of taps.',
+    ),
+    _OnboardPage(
+      icon: Icons.airport_shuttle_rounded,
+      title: 'Choose your fleet vehicle',
+      body: 'Select from Saloon, Estate, Executive, or 6/8-Seater MPVs tailored '
+          'to your passengers and luggage requirements.',
     ),
     _OnboardPage(
       icon: Icons.my_location_rounded,
       title: 'Track your driver live',
-      body: 'Watch your driver approach on the map, get status updates, and '
-          'review every trip in your history.',
+      body: 'Watch your driver approach on the live map in real time, see UK vehicle '
+          'plates, and get arrival ETA countdowns.',
+    ),
+    _OnboardPage(
+      icon: Icons.receipt_long_rounded,
+      title: 'Safe rides & official receipts',
+      body: 'Licensed local drivers, cash or card settlement, official digital receipts, '
+          'and 24/7 dedicated dispatch support.',
     ),
   ];
 

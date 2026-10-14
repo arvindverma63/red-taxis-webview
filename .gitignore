@@ -12,3 +12,8 @@ tmp/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Build outputs
+**/build/
+.gradle/
+**/android/.gradle/

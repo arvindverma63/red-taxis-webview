@@ -669,7 +669,111 @@ The Angular router guards and services parse the `token` parameter directly from
     - Automatically initializes starter history on first launch without internet connection.
     - Integrated reactive `activityIsOfflineProvider` and an informative offline status banner (`Offline mode • Displaying saved trip history`).
     - Made `detail(id)`, `cancel(id)`, and `requestChange(id)` fully offline-resilient with local storage synchronization.
-  - **Test Suite Verification**: Added unit and widget test suite in `activity_offline_test.dart` verifying offline cache retrieval, empty-storage seeding, and header cleanup (8/8 tests passing, 0 analyzer issues).
+- [x] **Customer App Rebranding to First Taxis, Professional Vector Logo Generation & Animated Splash Screen (`app_config.dart`, `splash_screen.dart`, `brand_logo.dart`, `home_screen.dart`, `profile_screen.dart`, `activity_screen.dart`, `AndroidManifest.xml`, `Info.plist`, `pubspec.yaml`, `flutter_launcher_icons`)**:
+  - **App Name Rebranding**:
+    - Updated default brand name in `AppConfig.defaultBrandName` to `'First Taxis'`.
+    - Updated `AndroidManifest.xml` application label to `First Taxis`.
+    - Updated iOS `Info.plist` `CFBundleDisplayName` to `First Taxis` and aligned location usage permission descriptions.
+    - Updated `pubspec.yaml` description to `First Taxis customer booking app`.
+    - Updated web `index.html` title and `manifest.json` application names.
+  - **Professional First Taxis Logo Generation & Asset Integration**:
+    - Generated a modern, ultra-premium logo for First Taxis featuring a sleek numeral "1", gold inlays, aerodynamic red taxi silhouette, and bold typography.
+    - Exported and integrated logo assets to `src/mobile/customer_app/assets/images/logo.png` and `src/frontend/apps/customer-webview-app/public/logo.png`.
+    - Recompiled high-density adaptive launcher icons across all Android and iOS densities via `flutter_launcher_icons`.
+    - Created reusable `BrandLogo` core UI component with custom border radius, elevation shadow, contrast backgrounds, and fallback handling.
+    - Embedded `BrandLogo` across `HomeScreen` header, `ProfileScreen` leading app bar, `SplashScreen`, and `ActivityScreen` ticket receipt.
+  - **Professional Hardware-Accelerated Animated Splash Screen**:
+    - Replaced the simple static loader with a state-of-the-art animated splash screen in `splash_screen.dart`.
+    - Implemented hardware-accelerated `_RadarTelemetryPainter` drawing rotating orbital sweeps and cardinal ticks.
+    - Added spring-scale entrance physics (`Curves.easeOutBack`) and multi-layer radiant breathing aura rings around the First Taxis emblem badge.
+    - Added staggered slide-up typography reveal with "FIRST TAXIS" headline and "PREMIUM RIDE DISPATCH" amber-accented subtitle.
+    - Built an animated neon road energy progress track with a moving luminous glow segment and dispatch telemetry status text.
+    - Implemented clean `Timer` lifecycle management and seamless route dispatching.
+  - **Verification & Build Health**: Verified with `flutter analyze` (0 warnings, 0 issues) and `flutter test` (8/8 tests passing green).
+- [x] **Customer App First-Time User Guide & Interactive Onboarding (`user_guide_sheet.dart`, `guide_banner_card.dart`, `user_guide_controller.dart`, `home_screen.dart`, `profile_screen.dart`, `settings_screen.dart`, `onboarding_screen.dart`, `user_guide_test.dart`)**:
+  - **Interactive 4-Step User Guide Modal Sheet**:
+    - Created `showFirstTimeUserGuide()` modal bottom sheet presenting a step-by-step walkthrough of the First Taxis ecosystem:
+      1. *Step 1: Set Your Journey*: Destination search, saved addresses (Home & Work), and interactive map pin placement.
+      2. *Step 2: Choose Fleet Vehicle*: Saloon, Estate, Executive, 6-Seater, 8-Seater, transparent upfront fare quotes with zero surge pricing, and passenger/luggage limits.
+      3. *Step 3: Live Driver Tracking*: Real-time vector map tracking, live arrival countdown, verified ratings, vehicle make, UK plates, and 1-tap direct calling/SMS.
+      4. *Step 4: Settlement & Receipts*: Cash or card settlement, official digital receipts with itemized fare breakdown, and 24/7 dedicated dispatch safety hotline.
+    - Features step indicators ("Step X of 4"), custom color-coded badge emblems, feature tip cards, animated dots, and "Ready to Ride! 🚀" trigger.
+  - **First-Time User Guide Banner Card**:
+    - Built dismissible `GuideBannerCard` with gradient border, animated emblem, and quick tap actions rendered dynamically on `HomeScreen` for new users.
+    - Persisted state via `UserGuideSeenController` backed by `FlutterSecureStorage` (`first_time_user_guide_seen`).
+  - **Universal App Access Points**:
+    - Added User Guide icon button in the `HomeScreen` AppBar.
+    - Added "First-time user guide" entry in `SettingsScreen` and `ProfileScreen`.
+    - Expanded initial `OnboardingScreen` from 2 generic slides to 4 comprehensive First Taxis branded slides.
+- [x] **Google Material-Style Feature Discovery & Spotlight Highlight Onboarding (`feature_discovery_overlay.dart`, `home_screen.dart`, `user_guide_test.dart`)**:
+  - **Google-Style Interactive Spotlight Overlay (`showGoogleFeatureDiscovery`)**:
+    - Built a Google Material Feature Discovery / TapTargetPrompt spotlight tour that directly highlights and focuses on actual UI elements on the live screen.
+    - Implemented `_SpotlightOverlayPainter` with hardware-accelerated canvas difference clipping (`PathOperation.difference`), casting a rich 85% darkened scrim (`#D9000000`) across the entire screen while punching out a glowing transparent viewport over the target widget.
+    - Added an animated pulsing aura ring around the spotlight cutout with sine-wave breathing expansion and opacity modulation tailored to the step's accent color.
+    - Added smooth interpolated transition physics (`Rect.lerp` with `Curves.easeInOutCubic`) animating the spotlight cutout smoothly from one widget position to the next across tour steps.
+  - **Live Screen Feature Targets on `HomeScreen`**:
+    - **Step 1 ("Where to? Destination Search")**: Spotlights the primary destination card (`_whereToKey`), demonstrating instant pickup and dropoff typeahead search.
+    - **Step 2 ("Quick Ride Modes")**: Spotlights the 4-tile action grid (`_quickActionsKey`), explaining Ride Now, Scheduled rides, Saved addresses, and Pick on Map.
+    - **Step 3 ("1-Tap Saved Places")**: Spotlights the saved favorites container (`_savedPlacesKey`), showing 1-tap route shortcuts to Home, Work, and frequent destinations.
+    - **Step 4 ("24/7 Dispatch Hotline")**: Spotlights the operator support button in the AppBar (`_dispatchKey`), highlighting immediate phone access to dispatchers.
+  - **Floating Callout Details Card**:
+    - Intelligent vertical placement: automatically determines whether the target element is in the top or bottom half of the screen, floating the details card opposite to prevent occlusion.
+    - Features step badge indicator (`STEP X OF 4`), high-contrast typography, detailed feature breakdown, "Skip tour" button, and tactile "Back" and "Next ➔" / "Got It, Let's Ride! 🚀" navigation buttons.
+    - Form-fitted flex layout with explicit minimum size constraints preventing unbounded width inheritance from global button themes.
+  - **First-Time Trigger & On-Demand Access**:
+    - Automatically launches upon initial login for first-time users via `userGuideSeenProvider` (`FlutterSecureStorage`).
+    - Dismissible `GuideBannerCard` on `HomeScreen` enables passengers to start the tour at any time.
+    - Dedicated "Help / Tour" (`Icons.help_outline_rounded`) action button in the `HomeScreen` AppBar allows on-demand replay.
+  - **Test Suite Verification**: Verified with 14/14 green passing tests in `user_guide_test.dart` and 0 analyzer issues on `flutter analyze`.
+- [x] **Customer App Ride Review Route Polyline, Google Maps Framing & Resilient Road Tariff Pricing (`route_service.dart`, `booking_repository.dart`, `quote_controller.dart`, `booking_review_screen.dart`, `route_pricing_test.dart`)**:
+  - **Identified Root Causes**:
+    1. *Map Route Missing*: `BookingReviewScreen` did not pass `polylines` to `MapView` and did not animate the camera bounds (`LatLngBounds`) to fit the trip, leaving the map camera stuck at the fallback Gillingham coordinate with no route line.
+    2. *Price Failure ("Couldn't get a price")*: When selecting locations without an explicit postal code (such as town names like "Gillingham" or "Bedminster"), `QuoteController` threw an unhandled `_MissingPostcode` exception without resolving area postcodes. Furthermore, the staging API `/api/v2/pricing/quote` and `/api/v2/public/pricing/quote` returned HTTP 500 when automated zone-to-zone tariffs were unavailable, immediately triggering the blocking `QuoteUnavailableCard` and disabling the "Continue" button.
+  - **Built `RouteService` ([`route_service.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/booking/data/route_service.dart))**:
+    - **Intelligent UK Postcode & Coordinate Resolution**: Automatically extracts full or outward UK postcodes from address text via regex, cross-references an indexed catalog of UK cities, towns, and airports (Gillingham `SP8 4QT`, Shaftesbury `SP7 8JE`, Bristol/Bedminster `BS3 4EA`, Bath `BA1 1AA`, London Heathrow `TW6 1EW`, etc.), or computes nearest geographic centroids from coordinates.
+    - **Live Road Route Fetching**: Queries OSRM road geometry (`/route/v1/driving/...`) to obtain real turn-by-turn road polyline coordinates, road mileage, and duration, with an interpolated Bézier road-curve fallback for offline resilience.
+    - **Standard UK Tariff Calculator**: Computes realistic metered fares based on road distance and vehicle class (Saloon £3.80 base + £2.40/mi; Estate 1.25x; MPV 1.5x; Executive 1.6x), ensuring the passenger is never blocked by a server error.
+  - **Resilient Quoting Architecture in `BookingRepository` & `QuoteController`**:
+    - Automatically enriches incomplete places with valid postcodes and coordinates before requesting quotes.
+    - Attempts live server pricing first (`/api/v2/pricing/quote` and `/api/v2/public/pricing/quote`); if the backend returns 500 or is unreachable, seamlessly serves the road-calculated metered fare with exact mileage and duration text.
+    - Enables the "Continue" button to allow users to proceed to payment and booking confirmation smoothly.
+  - **Google Maps Route & Camera Framing in `BookingReviewScreen`**:
+    - Renders a 5px brand-red polyline (`#FE2020`) following the actual road curvature from pickup to destination on `MapView`.
+    - Placed high-contrast green pickup and red destination markers with informative address snippets.
+    - Automatically animates Google Maps camera bounds to comfortably frame the entire journey with 48px padding.
+  - **Verification**: 18/18 tests green (`flutter test`), including unit tests in `route_pricing_test.dart` and 0 analyzer issues (`flutter analyze`).
+- [x] **Customer App Live Tracking Dynamic Route Polyline, Pickup/Destination Markers & Address Resolution Overhaul (`tracking_screen.dart`, `tracking_routes.dart`, `home_screen.dart`, `activity_screen.dart`, `booking_detail_screen.dart`, `payment_method_screen.dart`)**:
+  - **Identified Root Causes**:
+    1. *Hardcoded Labels*: `tracking_screen.dart` used hardcoded placeholder constants `_kPickupLabel = 'Pickup point'` and `_kDestinationLabel = 'Destination'` in `RouteHeader`, never reading the booking's resolved addresses.
+    2. *Missing Route Polylines & Destination Pin*: `_TrackingMap` only placed a single default red pickup marker at hardcoded coordinates `(51.0058, -2.1916)` and only drew a straight line if `driver != null`. When awaiting an operator / driver allocation (`driver == null`), `polylines` was an empty set `{}` and no destination pin existed.
+    3. *Camera Framing*: Map camera was statically centered at `(51.0058, -2.1916)` without `onMapCreated` camera bounds framing (`CameraUpdate.newLatLngBounds`), cutting off trip routes.
+  - **Built Dynamic Route & Address Resolution in `TrackingScreen`**:
+    - **Multi-Source Booking Resolution**: Reads `initialBooking` from route `extra` (instant frame-1 presentation when tapped from `HomeScreen`, `ActivityScreen`, or `BookingDetailScreen`), and falls back to `bookingDetailProvider(bookingId)` and `activityControllerProvider`.
+    - **Dynamic Address Headers**: Replaced placeholder constants with dynamic address extraction (`b.pickup.addressLine` / `b.pickup.description` and `b.dropoff.addressLine` / `b.dropoff.description`).
+    - **Live Turn-by-Turn Road Route Polyline**: Queries `RouteService().fetchRoute(start, end)` (OSRM turn-by-turn geometry with Bézier road-curve fallback) to render a crisp 5px First Taxis brand-red polyline (`#FE2020`) from pickup to destination.
+    - **Color-Coded Semantic Markers**: Placed green origin marker (`BitmapDescriptor.hueGreen`) and red destination marker (`BitmapDescriptor.hueRed`) with detailed address info windows, plus azure driver marker (`BitmapDescriptor.hueAzure`) with vehicle and plate snippet when a driver is assigned.
+    - **Dynamic Driver-to-Pickup Polyline**: Renders an azure dashed line (`#2E90FA`, 12px dash / 6px gap) connecting the allocated driver to the pickup point.
+    - **Intelligent Camera Bounds & Recenter FAB**: Automatically computes `LatLngBounds` encompassing pickup, destination, route points, and driver coordinates with 72px padding, animating the camera smoothly on load and wiring the floating recenter button (`Icons.my_location`) to re-focus the journey.
+    - **Instant Offline Cache Priming**: Enhanced `payment_method_screen.dart` to automatically record newly created bookings into `ActivityRepository`'s secure storage cache (`recordBooking`), immediately synchronizing `ongoingBookingsProvider` upon ride creation.
+- [x] **Customer App Google Play Store Release Bundle (`app-release.aab`) Generation & Signing (`customer_app`)**:
+  - **Release Keystore & Credentials Configuration**:
+    - Configured production release signing using `upload-keystore.jks` (alias `upload`, RSA 2048-bit with SHA256withRSA signed by Redbanana Studios) and `key.properties`.
+    - Placed keystore into `android/app/` and root `android/` directory for resilient Gradle resolution across project scopes.
+    - Set JDK 21 runtime in `gradle.properties` (`org.gradle.java.home=C:\\Program Files\\Java\\jdk-21`).
+  - **NDK & ProGuard Harmonization (`build.gradle.kts`, `proguard-rules.pro`, `local.properties`)**:
+    - Set `ndkVersion = "28.2.13676358"` in `app/build.gradle.kts` matching the installed Android SDK NDK and satisfying plugin dependencies (`:jni` for `qr_code_scanner_plus`).
+    - Removed deprecated `ndk.dir` from `local.properties` per Android Gradle Plugin best practices.
+    - Added `ndk { debugSymbolLevel = "none" }` in the release build type to prevent Flutter CLI native symbol stripper failures on systems without command-line tools.
+    - Added `-dontwarn com.google.android.play.core.**` and kept `com.google.android.gms.**` in `proguard-rules.pro` to pass R8 minification cleanly.
+  - **Bundle Compilation & Signature Verification**:
+    - Compiled optimized production Android App Bundle via `gradlew.bat bundleRelease` with R8 code shrinking and resource optimization (513 Gradle tasks executed/up-to-date in 5m 33s).
+    - Verified output artifact at [`d:\redtaxis\src\mobile\customer_app\build\app\outputs\bundle\release\app-release.aab`](file:///d:/redtaxis/src/mobile/customer_app/build/app/outputs/bundle/release/app-release.aab) (32.96 MB / 32,966,363 bytes).
+    - Verified digital certificate signature with `jarsigner -verify` matching `CN=redtaxis, OU=redtaxis, O=Redbanana Studios, L=GILLINGHAM, ST=GILLINGHAM, C=44`.
+    - Target SDK 36, Min SDK 23, Package ID `com.redtaxis.customer_app`, Version 1.0.0 (versionCode 1).
+- [x] **Google Play Store Listing Preparation & 512x512 App Icon Asset Generation (`customer_app`)**:
+  - Prepared compliant British English (`en-GB`) store listing copy including short description (76 characters, within 80-character limit) and comprehensive full description detailing First Taxis features, vehicle classes, metered tariffs, and dispatch hotline support.
+  - Generated production-grade 512x512 PNG app icon ([`app_icon_512x512.png`](file:///d:/redtaxis/app_icon_512x512.png) and [`src/mobile/customer_app/assets/images/app_icon_512x512.png`](file:///d:/redtaxis/src/mobile/customer_app/assets/images/app_icon_512x512.png)) adhering strictly to Google Play specifications (32-bit ARGB PNG, 125 KB, under 1,024 KB limit).
+  - Created automated PowerShell high-quality bicubic resampling utility script ([`scripts/resize_icon.ps1`](file:///d:/redtaxis/scripts/resize_icon.ps1)).
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

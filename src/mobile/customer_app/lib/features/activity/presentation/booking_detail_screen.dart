@@ -189,7 +189,7 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
       bottomBar: _BottomActions(
         booking: booking,
         busy: _busy,
-        onTrack: () => context.push('${Routes.tracking}/${booking.id}'),
+        onTrack: () => context.push('${Routes.tracking}/${booking.id}', extra: booking),
         onChange: _onRequestChange,
         onCancel: _onCancel,
         onShareReceipt: _onShareReceipt,

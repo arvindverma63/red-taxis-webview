@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/route_paths.dart';
+import '../activity/domain/booking_summary.dart';
 import 'presentation/tracking_screen.dart';
 
 /// Tracking feature routes. Assembled into the app router alongside the other
@@ -12,6 +13,10 @@ final List<RouteBase> trackingRoutes = [
     name: 'tracking',
     builder: (context, state) => TrackingScreen(
       bookingId: state.pathParameters['bookingId']!,
+      initialBooking: state.extra is BookingSummary
+          ? state.extra as BookingSummary
+          : null,
     ),
   ),
 ];
+

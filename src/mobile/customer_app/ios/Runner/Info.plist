@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Customer App</string>
+	<string>First Taxis</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -64,9 +64,9 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires photo library access for passenger profile photo selection.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Red Taxis requires location access to set your pickup point, calculate accurate fares, and show nearby drivers.</string>
+	<string>First Taxis requires location access to set your pickup point, calculate accurate fares, and show nearby drivers.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Red Taxis requires location access to track your ride in real-time and provide accurate driver arrival times.</string>
+	<string>First Taxis requires location access to track your ride in real-time and provide accurate driver arrival times.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
