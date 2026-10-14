@@ -61,7 +61,19 @@ class LocationService {
         return const LocationResult(LocationStatus.denied);
       }
 
-      final position = await Geolocator.getCurrentPosition();
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 10),
+          ),
+        );
+      } catch (_) {
+        // A fresh fix timed out (e.g. indoors): fall back to the last known one.
+        position = await Geolocator.getLastKnownPosition();
+      }
+      if (position == null) return const LocationResult(LocationStatus.error);
       return LocationResult(LocationStatus.granted, position);
     } catch (_) {
       return const LocationResult(LocationStatus.error);
@@ -69,5 +81,6 @@ class LocationService {
   }
 }
 
-final locationServiceProvider =
-    Provider<LocationService>((ref) => const LocationService());
+final locationServiceProvider = Provider<LocationService>(
+  (ref) => const LocationService(),
+);

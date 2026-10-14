@@ -1,54 +1,191 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart' as geo;
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/domain/place.dart';
+import '../../../core/location/location_service.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/map_view.dart';
 import '../../../core/widgets/widgets.dart';
 import '../application/booking_draft_controller.dart';
 import 'address_search_screen.dart';
 import 'widgets/widgets.dart';
 
-/// "Set pickup location" — GoRide frame 30439:395. A full-bleed map with a
-/// fixed centre pin, floating back / recenter controls, and a bottom
-/// confirm card ([MapPinConfirmCard]) showing the resolved address with a
-/// "Next" CTA.
+/// "Set pickup location" — a full-bleed map with a fixed centre pin. The driver
+/// pans the map and, when it settles, the pin position is reverse-geocoded into
+/// an address shown on the confirm card ([MapPinConfirmCard]).
 ///
-/// Wiring is preserved: confirming sets the chosen end on the draft (pickup or
-/// dropoff per [mode]) and routes onward exactly like the typed search flow —
-/// to review when both ends are known, otherwise to pickup. The "edit" pencil
-/// returns to the typed [AddressSearchScreen] for the same mode.
-///
-/// Note: the platform has no reverse-geocode endpoint yet, so the card reflects
-/// the end already chosen for this mode (or prompts the user to type). When
-/// reverse geocoding lands, wire the map's idle camera target through
-/// `resolveAddress` and update the card live.
-class PickOnMapScreen extends ConsumerWidget {
+/// Confirming sets the chosen end on the draft (pickup or dropoff per [mode])
+/// and routes onward exactly like the typed search flow — to review when both
+/// ends are known, otherwise to pickup. The "edit" pencil returns to the typed
+/// [AddressSearchScreen] for the same mode.
+class PickOnMapScreen extends ConsumerStatefulWidget {
   const PickOnMapScreen({super.key, required this.mode});
 
   final AddressMode mode;
 
-  bool get _isPickup => mode == AddressMode.pickup;
+  @override
+  ConsumerState<PickOnMapScreen> createState() => _PickOnMapScreenState();
+}
+
+class _PickOnMapScreenState extends ConsumerState<PickOnMapScreen> {
+  static const _fallbackCenter = LatLng(51.0058, -2.1916);
+
+  GoogleMapController? _controller;
+  LatLng? _pendingTarget;
+  late LatLng _center;
+  Place? _resolved;
+  bool _resolving = false;
+  int _lookupId = 0;
+
+  bool get _isPickup => widget.mode == AddressMode.pickup;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    final draft = ref.read(bookingDraftProvider);
+    final existing = _isPickup ? draft.pickup : draft.dropoff;
+    if (existing?.lat != null && existing?.lng != null) {
+      _center = LatLng(existing!.lat!, existing.lng!);
+      _resolved = existing;
+    } else {
+      _center = _fallbackCenter;
+      _moveToCurrentLocation(initial: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _moveToCurrentLocation({bool initial = false}) async {
+    final result = await ref.read(locationServiceProvider).currentPosition();
+    if (!mounted || !result.isGranted) {
+      if (!initial && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location unavailable. Move the map to pick a spot.'),
+          ),
+        );
+      }
+      return;
+    }
+    final target = LatLng(
+      result.position!.latitude,
+      result.position!.longitude,
+    );
+    _center = target;
+    if (_controller == null) {
+      // The map is not ready yet; move there as soon as it is created.
+      _pendingTarget = target;
+    } else {
+      await _controller!.animateCamera(CameraUpdate.newLatLngZoom(target, 17));
+    }
+    _resolveCenter();
+  }
+
+  /// Reverse-geocodes the pin position once the camera stops moving.
+  Future<void> _resolveCenter() async {
+    final id = ++_lookupId;
+    final target = _center;
+    setState(() => _resolving = true);
+    Place? place;
+    try {
+      final marks = await geo.Geocoding().placemarkFromCoordinates(
+        target.latitude,
+        target.longitude,
+      );
+      if (marks.isNotEmpty) {
+        place = _placeFrom(marks.first, target);
+      }
+    } catch (_) {
+      // Fall through: the user can still confirm the raw position or type.
+    }
+    if (!mounted || id != _lookupId) return;
+    setState(() {
+      _resolving = false;
+      _resolved =
+          place ??
+          Place(
+            description: 'Dropped pin',
+            addressLine:
+                '${target.latitude.toStringAsFixed(5)}, ${target.longitude.toStringAsFixed(5)}',
+            lat: target.latitude,
+            lng: target.longitude,
+          );
+    });
+  }
+
+  Place _placeFrom(geo.Placemark m, LatLng at) {
+    String clean(String? v) => (v ?? '').trim();
+    final street = [
+      clean(m.subThoroughfare),
+      clean(m.thoroughfare),
+    ].where((e) => e.isNotEmpty).join(' ');
+    final name = clean(m.name);
+    final title = street.isNotEmpty
+        ? street
+        : (name.isNotEmpty ? name : clean(m.locality));
+    final line = <String>[
+      if (clean(m.locality).isNotEmpty) clean(m.locality),
+      if (clean(m.administrativeArea).isNotEmpty) clean(m.administrativeArea),
+      if (clean(m.postalCode).isNotEmpty) clean(m.postalCode),
+    ].join(', ');
+    return Place(
+      description: title.isNotEmpty ? title : 'Dropped pin',
+      addressLine: line,
+      postcode: clean(m.postalCode).isEmpty ? null : clean(m.postalCode),
+      lat: at.latitude,
+      lng: at.longitude,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final draft = ref.watch(bookingDraftProvider);
-    final place = _isPickup ? draft.pickup : draft.dropoff;
+    final place = _resolved;
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
       body: Stack(
         children: [
-          const Positioned.fill(child: MapView()),
+          Positioned.fill(
+            child: MapView(
+              initial: CameraPosition(target: _center, zoom: 16),
+              myLocationEnabled: true,
+              onMapCreated: (c) {
+                _controller = c;
+                final pending = _pendingTarget;
+                if (pending != null) {
+                  _pendingTarget = null;
+                  c.moveCamera(CameraUpdate.newLatLngZoom(pending, 17));
+                }
+              },
+              onCameraMove: (pos) => _center = pos.target,
+              onCameraIdle: _resolveCenter,
+            ),
+          ),
 
           // Fixed centre pin over the map.
-          const Center(
-            child: Padding(
-              // Lift the pin tip to the visual centre.
-              padding: EdgeInsets.only(bottom: 40),
-              child: Icon(Icons.location_on, size: 48, color: AppColors.brand),
+          const IgnorePointer(
+            child: Center(
+              child: Padding(
+                // Lift the pin tip to the visual centre.
+                padding: EdgeInsets.only(bottom: 40),
+                child: Icon(
+                  Icons.location_on,
+                  size: 48,
+                  color: AppColors.brand,
+                ),
+              ),
             ),
           ),
 
@@ -67,31 +204,50 @@ class PickOnMapScreen extends ConsumerWidget {
             ),
           ),
 
+          // Recenter control top-right.
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Align(
+                alignment: Alignment.topRight,
+                child: CircleIconButton.filled(
+                  icon: Icons.my_location,
+                  onTap: _moveToCurrentLocation,
+                  tooltip: 'My location',
+                ),
+              ),
+            ),
+          ),
+
           // Confirm card pinned to the bottom.
           Align(
             alignment: Alignment.bottomCenter,
             child: MapPinConfirmCard(
               title: _isPickup ? 'Set pickup location' : 'Set destination',
-              addressTitle: place?.description ??
-                  (_isPickup ? 'Choose your pickup' : 'Choose your destination'),
+              addressTitle: _resolving
+                  ? 'Finding address…'
+                  : (place?.description ??
+                        (_isPickup
+                            ? 'Move the map to choose your pickup'
+                            : 'Move the map to choose your destination')),
               addressSubtitle: place?.addressLine.isNotEmpty == true
                   ? place!.addressLine
                   : place?.postcode,
               actionLabel: 'Next',
-              onAction: place == null
-                  ? () => _editTyped(context)
-                  : () => _confirm(context, ref, place),
-              onEdit: () => _editTyped(context),
+              isLoading: _resolving,
+              onAction: place == null || _resolving
+                  ? null
+                  : () => _confirm(context, place),
+              onEdit: _editTyped,
             ),
           ),
         ],
       ),
-      backgroundColor: theme.colorScheme.surface,
     );
   }
 
-  /// Advance using the already-chosen [place] (mirrors the typed-search routing).
-  void _confirm(BuildContext context, WidgetRef ref, Place place) {
+  /// Advance using the pinned [place] (mirrors the typed-search routing).
+  void _confirm(BuildContext context, Place place) {
     final notifier = ref.read(bookingDraftProvider.notifier);
     if (_isPickup) {
       notifier.setPickup(place);
@@ -107,7 +263,7 @@ class PickOnMapScreen extends ConsumerWidget {
   }
 
   /// Fall back to typed search for this mode (also the "edit" affordance).
-  void _editTyped(BuildContext context) {
-    context.pushReplacement(Routes.addressSearch, extra: mode.name);
+  void _editTyped() {
+    context.pushReplacement(Routes.addressSearch, extra: widget.mode.name);
   }
 }
