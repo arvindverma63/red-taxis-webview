@@ -800,7 +800,13 @@ The Angular router guards and services parse the `token` parameter directly from
   - Successfully compiled production Android App Bundle via Gradle `bundleRelease` (`BUILD SUCCESSFUL in 3m 55s`, 582 actionable tasks).
   - Package signed with production release keystore `upload-keystore.jks` (`CN=redtaxis, OU=redtaxis, O=Redbanana Studios, L=GILLINGHAM, ST=GILLINGHAM, C=44`, RSA 2048-bit with SHA256withRSA/SHA384withRSA).
   - Generated output artifact at [`d:\redtaxis\src\mobile\customer_app\build\app\outputs\bundle\release\app-release.aab`](file:///d:/redtaxis/src/mobile/customer_app/build/app/outputs/bundle/release/app-release.aab) (33.5 MB / 33,509,200 bytes).
-  - Verified bundle incorporates latest Firebase Cloud Messaging setup, default notification channels, and vibration permissions.
+- [x] **Customer App Map Pick, Reverse Geocoding & iOS Push Entitlements Merge (`feat/customer-map-pick-and-push-entitlements`)**:
+  - Merged feature branch into `main` seamlessly with 0 conflicts.
+  - **Pickup Address Search Current Location Option**: Added 1-tap "Use current location" button in [`address_search_screen.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/booking/presentation/address_search_screen.dart) integrating `LocationService`.
+  - **Review Ride Screen Navigation & Editing**: Added explicit back navigation button and in-place pickup / destination address edit shortcuts on [`booking_review_screen.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/booking/presentation/booking_review_screen.dart).
+  - **Interactive Pick-on-Map & Reverse Geocoding**: Upgraded [`pick_on_map_screen.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/booking/presentation/pick_on_map_screen.dart) and built [`reverse_geocoder.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/core/location/reverse_geocoder.dart) with `geocoding: ^5.0.0` for dynamic pinpoint drag-and-drop address resolution.
+  - **iOS Push Entitlements & Team Signing**: Configured [`Runner.entitlements`](file:///d:/redtaxis/src/mobile/customer_app/ios/Runner/Runner.entitlements) with `aps-environment` and wired Apple Developer Team in `project.pbxproj` and `Podfile`.
+  - Static analysis clean: 0 issues on `dart analyze lib/`.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
