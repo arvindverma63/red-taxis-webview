@@ -774,6 +774,12 @@ The Angular router guards and services parse the `token` parameter directly from
   - Prepared compliant British English (`en-GB`) store listing copy including short description (76 characters, within 80-character limit) and comprehensive full description detailing First Taxis features, vehicle classes, metered tariffs, and dispatch hotline support.
   - Generated production-grade 512x512 PNG app icon ([`app_icon_512x512.png`](file:///d:/redtaxis/app_icon_512x512.png) and [`src/mobile/customer_app/assets/images/app_icon_512x512.png`](file:///d:/redtaxis/src/mobile/customer_app/assets/images/app_icon_512x512.png)) adhering strictly to Google Play specifications (32-bit ARGB PNG, 125 KB, under 1,024 KB limit).
   - Created automated PowerShell high-quality bicubic resampling utility script ([`scripts/resize_icon.ps1`](file:///d:/redtaxis/scripts/resize_icon.ps1)).
+- [x] **Customer App 5-Second Real-Time Server Polling & Multi-Endpoint Status Synchronization (`tracking_repository.dart`, `tracking_screen.dart`)**:
+  - Implemented 5-second automatic polling loop in `TrackingRepository.watch` querying the live backend server continuously for booking lifecycle transitions (`requested` -> `confirmed` -> `allocated` -> `arrived` -> `inProgress` -> `completed` / `cancelled`).
+  - Added resilient multi-stage fallback resolution querying `/api/v2/customers/me/bookings/$id`, `/api/v2/customers/me/bookings` (list search), and core database route `/api/Bookings/FindById?bookingId=$id`.
+  - Expanded status normalization (`_mapStatus`) supporting integer codes (0, 1, 2, 2000, 3, 3005, 4, 3006, 5, 6, -1, 7, 8) and flexible string formats (`requested`, `confirmed`, `allocated`, `driver_allocated`, `en_route`, `arrived`, `on_trip`, etc.).
+  - Added dynamic driver and vehicle telemetry extraction from nested `driver` maps and root fields (`driverName`, `vehicleReg`, `vehicleModel`, `driverLat`, `driverLng`).
+  - Synchronized `TrackingScreen` to auto-refresh background activity history and update live booking models upon status transition.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.

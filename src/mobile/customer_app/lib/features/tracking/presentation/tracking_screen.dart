@@ -32,14 +32,24 @@ class TrackingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Listen for live status transitions to refresh global activity history in background
+    ref.listen<AsyncValue<TrackingState>>(trackingProvider(bookingId), (previous, next) {
+      final nextStatus = next.valueOrNull?.status;
+      final prevStatus = previous?.valueOrNull?.status;
+      if (nextStatus != null && nextStatus != prevStatus) {
+        ref.read(activityControllerProvider.notifier).refresh();
+        ref.invalidate(bookingDetailProvider(bookingId));
+      }
+    });
+
     final async = ref.watch(trackingProvider(bookingId));
 
     // Resolve the full booking details (pickup, dropoff, route points, fare)
     final detailAsync = ref.watch(bookingDetailProvider(bookingId));
     final activityBookings = ref.watch(activityControllerProvider).valueOrNull;
 
-    BookingSummary? booking = initialBooking ?? detailAsync.valueOrNull;
-    if (booking == null && activityBookings != null) {
+    BookingSummary? booking;
+    if (activityBookings != null) {
       for (final b in activityBookings) {
         if (b.id == bookingId) {
           booking = b;
@@ -51,6 +61,15 @@ class TrackingScreen extends ConsumerWidget {
         if (ongoing.isNotEmpty) {
           booking = ongoing.first;
         }
+      }
+    }
+    booking ??= detailAsync.valueOrNull ?? initialBooking;
+
+    // Synchronize booking status with live tracking state if available
+    if (booking != null && async.hasValue) {
+      final liveStatus = async.requireValue.status.name;
+      if (booking.status != liveStatus) {
+        booking = booking.copyWith(status: liveStatus);
       }
     }
 

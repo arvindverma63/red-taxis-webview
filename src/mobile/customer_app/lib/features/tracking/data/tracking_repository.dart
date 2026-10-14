@@ -42,14 +42,18 @@ class TrackingRepository {
   }
 
   /// Streams [TrackingState] updates for [bookingId].
+  ///
+  /// Polls the backend server every 5 seconds for live status updates, driver
+  /// assignment, and vehicle telemetry while also listening for real-time Pusher
+  /// channel events.
   Stream<TrackingState> watch(String bookingId) async* {
     if (AppConfig.previewMocks) {
       yield* _mockProgression(bookingId);
       return;
     }
 
-    // 1. Seed with the booking's current status.
-    var current = await _fetchInitial(bookingId);
+    // 1. Fetch current status from the server immediately.
+    var current = await fetchBookingState(bookingId);
     yield current;
 
     // Terminal states never change again.
@@ -58,46 +62,170 @@ class TrackingRepository {
       return;
     }
 
-    // 2. Connect and forward live status events for this booking.
-    await _ensureConnected();
-    await for (final data in _statusEvents) {
-      final evt = (data['bookingId'] ?? '').toString();
-      final req = (data['requestId'] ?? '').toString();
-      if (evt != bookingId && req != bookingId) continue;
+    // 2. Connect Pusher in the background (best effort for immediate push events).
+    _ensureConnected().catchError((_) {});
 
-      final status = _mapStatus(data['status']?.toString());
-      if (status == null) continue;
+    // Listen for incoming Pusher status events and queue them.
+    final pusherQueue = <TrackingState>[];
+    StreamSubscription? pusherSub;
+    try {
+      pusherSub = _statusEvents.listen((data) {
+        final evt = (data['bookingId'] ?? data['BookingId'] ?? '').toString();
+        final req = (data['requestId'] ?? data['RequestId'] ?? '').toString();
+        if (evt != bookingId && req != bookingId) return;
 
-      current = current.copyWith(
-        status: status,
-        driver: _parseDriver(data['driver']) ?? current.driver,
-        etaMinutes: (data['etaMinutes'] as num?)?.toInt() ?? current.etaMinutes,
-      );
-      yield current;
+        final status = _mapStatus(data['status'] ?? data['Status']);
+        if (status != null) {
+          current = current.copyWith(
+            status: status,
+            driver: _parseDriver(data['driver'] ?? data['Driver'], data) ??
+                current.driver,
+            etaMinutes:
+                (data['etaMinutes'] ?? data['eta'] as num?)?.toInt() ??
+                    current.etaMinutes,
+          );
+          pusherQueue.add(current);
+        }
+      });
 
-      if (status == BookingStatus.completed ||
-          status == BookingStatus.cancelled) {
-        return;
+      // 3. Poll backend every 5 seconds until terminal status.
+      while (true) {
+        await Future<void>.delayed(const Duration(seconds: 5));
+
+        // Flush any Pusher events that arrived during the wait.
+        while (pusherQueue.isNotEmpty) {
+          final next = pusherQueue.removeAt(0);
+          yield next;
+          if (next.status == BookingStatus.completed ||
+              next.status == BookingStatus.cancelled) {
+            return;
+          }
+        }
+
+        // Active server query every 5 seconds.
+        try {
+          final serverState = await fetchBookingState(bookingId);
+          if (serverState.status != current.status ||
+              serverState.driver != current.driver ||
+              serverState.etaMinutes != current.etaMinutes) {
+            current = serverState;
+            yield current;
+          }
+        } catch (_) {
+          // Best-effort polling; ignore transient network drops.
+        }
+
+        if (current.status == BookingStatus.completed ||
+            current.status == BookingStatus.cancelled) {
+          return;
+        }
       }
+    } finally {
+      await pusherSub?.cancel();
     }
   }
 
-  /// Fetches the booking's current status to seed the stream.
-  Future<TrackingState> _fetchInitial(String bookingId) async {
+  /// Fetches the booking's latest status and driver assignment from the server.
+  /// Tries the single-booking endpoint, the customer booking list, and the
+  /// core FindById endpoint to ensure resilient resolution across all backend variants.
+  Future<TrackingState> fetchBookingState(String bookingId) async {
+    Map<String, dynamic>? data;
+
+    // 1. Primary: /api/v2/customers/me/bookings/$bookingId
     try {
-      final res = await _dio.get<dynamic>('/api/v2/customers/me/bookings/$bookingId');
-      final body = res.data;
-      final map = (body is Map && body['data'] is Map)
-          ? body['data'] as Map<String, dynamic>
-          : (body as Map<String, dynamic>);
+      final res = await _dio.get<dynamic>(
+        '/api/v2/customers/me/bookings/$bookingId',
+      );
+      if (res.data != null) {
+        if (res.data is Map && res.data['data'] is Map) {
+          data = Map<String, dynamic>.from(res.data['data'] as Map);
+        } else if (res.data is Map && res.data['value'] is Map) {
+          data = Map<String, dynamic>.from(res.data['value'] as Map);
+        } else if (res.data is Map) {
+          data = Map<String, dynamic>.from(res.data as Map);
+        }
+      }
+    } catch (_) {
+      // Fall through to list or FindById
+    }
+
+    // 2. Secondary: search in customer's bookings list /api/v2/customers/me/bookings
+    if (data == null || data.isEmpty) {
+      try {
+        final res = await _dio.get<dynamic>(
+          '/api/v2/customers/me/bookings',
+        );
+        final body = res.data;
+        List? list;
+        if (body is List) {
+          list = body;
+        } else if (body is Map) {
+          list = (body['data'] is List)
+              ? body['data'] as List
+              : (body['bookings'] is List
+                  ? body['bookings'] as List
+                  : (body['value'] is List ? body['value'] as List : null));
+        }
+        if (list != null) {
+          for (final item in list) {
+            if (item is Map) {
+              final id = (item['id'] ??
+                      item['bookingId'] ??
+                      item['BookingId'] ??
+                      '')
+                  .toString();
+              if (id == bookingId) {
+                data = Map<String, dynamic>.from(item);
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Fallback: /api/Bookings/FindById?bookingId=
+    if (data == null || data.isEmpty) {
+      try {
+        final res = await _dio.get<dynamic>(
+          '/api/Bookings/FindById',
+          queryParameters: {'bookingId': bookingId},
+        );
+        if (res.data != null) {
+          if (res.data is Map && res.data['data'] is Map) {
+            data = Map<String, dynamic>.from(res.data['data'] as Map);
+          } else if (res.data is Map) {
+            data = Map<String, dynamic>.from(res.data as Map);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (data != null && data.isNotEmpty) {
+      final rawStatus = data['status'] ??
+          data['Status'] ??
+          data['bookingStatus'] ??
+          data['BookingStatus'] ??
+          data['jobStatus'] ??
+          data['JobStatus'];
+
+      final status = _mapStatus(rawStatus) ?? BookingStatus.requested;
+      final driver = _parseDriver(data['driver'] ?? data['Driver'], data);
+      final rawEta =
+          data['etaMinutes'] ?? data['eta'] ?? data['durationMinutes'];
+      final eta = (rawEta is num)
+          ? rawEta.toInt()
+          : (int.tryParse(rawEta?.toString() ?? ''));
+
       return TrackingState(
         bookingId: bookingId,
-        status: _mapStatus(map['status']?.toString()) ?? BookingStatus.requested,
+        status: status,
+        driver: driver,
+        etaMinutes: eta,
       );
-    } catch (_) {
-      // Unknown — assume freshly requested; live events will correct it.
-      return TrackingState(bookingId: bookingId, status: BookingStatus.requested);
     }
+
+    return TrackingState(bookingId: bookingId, status: BookingStatus.requested);
   }
 
   /// Initialises Pusher once and subscribes to the customer's private channel.
@@ -160,30 +288,157 @@ class TrackingRepository {
     _connecting = null;
   }
 
-  BookingStatus? _mapStatus(String? s) => switch (s) {
-        'requested' => BookingStatus.requested,
-        'confirmed' => BookingStatus.confirmed,
-        'allocated' => BookingStatus.allocated,
-        'arriving' => BookingStatus.arriving,
-        'arrived' => BookingStatus.arrived,
-        'inProgress' || 'in-progress' || 'in_progress' => BookingStatus.inProgress,
-        'completed' => BookingStatus.completed,
-        'cancelled' || 'canceled' => BookingStatus.cancelled,
-        _ => null,
-      };
+  BookingStatus? _mapStatus(dynamic raw) {
+    if (raw == null) return null;
+    final s = raw.toString().trim().toLowerCase();
 
-  DriverInfo? _parseDriver(dynamic d) {
-    if (d is! Map) return null;
-    final m = Map<String, dynamic>.from(d);
-    final name = m['name']?.toString();
-    if (name == null || name.isEmpty) return null;
+    // Handle numeric status codes (Ace Taxis / server enum values)
+    final n = int.tryParse(s);
+    if (n != null) {
+      if (n == 0 || n == 100) return BookingStatus.requested;
+      if (n == 1) return BookingStatus.confirmed;
+      if (n == 2 || n == 2000) return BookingStatus.allocated;
+      if (n == 3005) return BookingStatus.arrived;
+      if (n == 3006) return BookingStatus.inProgress;
+      if (n == 3) return BookingStatus.arrived;
+      if (n == 4) return BookingStatus.inProgress;
+      if (n == 5 || n == 6) return BookingStatus.completed;
+      if (n == -1 || n == 7 || n == 8) return BookingStatus.cancelled;
+    }
+
+    if (s == 'requested' ||
+        s == 'request_sent' ||
+        s == 'pending' ||
+        s == 'new' ||
+        s.contains('request')) {
+      return BookingStatus.requested;
+    }
+    if (s == 'confirmed' || s == 'accepted') {
+      return BookingStatus.confirmed;
+    }
+    if (s == 'allocated' ||
+        s.contains('allocat') ||
+        s == 'driver_assigned' ||
+        s == 'assigned' ||
+        s == 'dispatched') {
+      return BookingStatus.allocated;
+    }
+    if (s == 'arriving' ||
+        s == 'on_the_way' ||
+        s == 'on_way' ||
+        s.contains('en_route') ||
+        s.contains('enroute') ||
+        s.contains('heading')) {
+      return BookingStatus.arriving;
+    }
+    if (s == 'arrived' || s == 'at_pickup' || s == 'waiting') {
+      return BookingStatus.arrived;
+    }
+    if (s == 'inprogress' ||
+        s == 'in_progress' ||
+        s == 'in-progress' ||
+        s == 'on_trip' ||
+        s == 'ontrip' ||
+        s == 'pob' ||
+        s == 'picked_up' ||
+        s.contains('trip')) {
+      return BookingStatus.inProgress;
+    }
+    if (s == 'completed' ||
+        s == 'finished' ||
+        s == 'done' ||
+        s == 'complete') {
+      return BookingStatus.completed;
+    }
+    if (s == 'cancelled' ||
+        s == 'canceled' ||
+        s == 'rejected' ||
+        s == 'declined' ||
+        s == 'void') {
+      return BookingStatus.cancelled;
+    }
+    return null;
+  }
+
+  DriverInfo? _parseDriver(dynamic d, [Map<String, dynamic>? parent]) {
+    String? name;
+    String vehicle = '';
+    String plate = '';
+    double lat = 0.0;
+    double lng = 0.0;
+    int colorValue = 0xFF2E90FA;
+
+    if (d is Map) {
+      final m = Map<String, dynamic>.from(d);
+      name = m['name']?.toString() ??
+          m['fullName']?.toString() ??
+          m['fullname']?.toString() ??
+          m['FullName']?.toString();
+      vehicle = (m['vehicle'] ??
+              m['vehicleModel'] ??
+              m['VehicleModel'] ??
+              m['model'] ??
+              '')
+          .toString();
+      plate = (m['plate'] ??
+              m['vehicleReg'] ??
+              m['VehicleReg'] ??
+              m['regNumber'] ??
+              m['RegNumber'] ??
+              '')
+          .toString();
+      lat = (m['lat'] as num?)?.toDouble() ??
+          (m['latitude'] as num?)?.toDouble() ??
+          0.0;
+      lng = (m['lng'] as num?)?.toDouble() ??
+          (m['longitude'] as num?)?.toDouble() ??
+          0.0;
+      colorValue = (m['colorValue'] as num?)?.toInt() ?? 0xFF2E90FA;
+    }
+
+    if ((name == null || name.isEmpty) && parent != null) {
+      name = parent['driverName']?.toString() ??
+          parent['driver_name']?.toString() ??
+          parent['DriverName']?.toString() ??
+          parent['driver']?.toString();
+      if (name != null && name.startsWith('{')) {
+        name = null;
+      }
+      vehicle = (parent['vehicleModel'] ??
+              parent['VehicleModel'] ??
+              parent['vehicle'] ??
+              parent['vehicleName'] ??
+              parent['vehicleType'] ??
+              '')
+          .toString();
+      plate = (parent['vehicleReg'] ??
+              parent['VehicleReg'] ??
+              parent['plate'] ??
+              parent['registration'] ??
+              parent['regNumber'] ??
+              '')
+          .toString();
+      lat = (parent['driverLat'] ??
+              parent['driver_lat'] ??
+              parent['DriverLat'] as num?)
+          ?.toDouble() ??
+          lat;
+      lng = (parent['driverLng'] ??
+              parent['driver_lng'] ??
+              parent['DriverLng'] as num?)
+          ?.toDouble() ??
+          lng;
+    }
+
+    if (name == null || name.trim().isEmpty) return null;
+
     return DriverInfo(
-      name: name,
-      vehicle: (m['vehicle'] ?? '').toString(),
-      plate: (m['plate'] ?? '').toString(),
-      lat: (m['lat'] as num?)?.toDouble() ?? 0,
-      lng: (m['lng'] as num?)?.toDouble() ?? 0,
-      colorValue: (m['colorValue'] as num?)?.toInt() ?? 0xFF2E90FA,
+      name: name.trim(),
+      vehicle: vehicle.isNotEmpty ? vehicle.trim() : 'Saloon Taxi',
+      plate: plate.trim(),
+      lat: lat,
+      lng: lng,
+      colorValue: colorValue,
     );
   }
 
