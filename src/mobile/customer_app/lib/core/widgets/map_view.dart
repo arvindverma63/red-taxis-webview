@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-
 /// Set true once Maps SDK keys are configured (Android manifest + iOS +
 /// web index.html). Until then [MapView] renders a themed placeholder so the
 /// app runs cleanly in preview/dev without a key.
-const bool kMapsEnabled =
-    bool.fromEnvironment('MAPS_ENABLED', defaultValue: true);
+const bool kMapsEnabled = bool.fromEnvironment(
+  'MAPS_ENABLED',
+  defaultValue: true,
+);
 
 /// Shared map surface used by booking + tracking. Shows a real [GoogleMap] when
 /// [kMapsEnabled], otherwise a branded placeholder. Keep map wiring in one
@@ -18,6 +19,9 @@ class MapView extends StatelessWidget {
     this.markers = const {},
     this.polylines = const {},
     this.onMapCreated,
+    this.onCameraMove,
+    this.onCameraIdle,
+    this.myLocationEnabled = false,
     this.height,
   });
 
@@ -25,6 +29,9 @@ class MapView extends StatelessWidget {
   final Set<Marker> markers;
   final Set<Polyline> polylines;
   final void Function(GoogleMapController)? onMapCreated;
+  final void Function(CameraPosition)? onCameraMove;
+  final VoidCallback? onCameraIdle;
+  final bool myLocationEnabled;
   final double? height;
 
   static const _fallbackCamera = CameraPosition(
@@ -40,13 +47,13 @@ class MapView extends StatelessWidget {
             markers: markers,
             polylines: polylines,
             onMapCreated: onMapCreated,
+            onCameraMove: onCameraMove,
+            onCameraIdle: onCameraIdle,
+            myLocationEnabled: myLocationEnabled,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
           )
-        : _InteractiveSimulatedMap(
-            markers: markers,
-            polylines: polylines,
-          );
+        : _InteractiveSimulatedMap(markers: markers, polylines: polylines);
     return height == null ? map : SizedBox(height: height, child: map);
   }
 }
@@ -64,13 +71,15 @@ class _InteractiveSimulatedMap extends StatefulWidget {
   final Set<Polyline> polylines;
 
   @override
-  State<_InteractiveSimulatedMap> createState() => _InteractiveSimulatedMapState();
+  State<_InteractiveSimulatedMap> createState() =>
+      _InteractiveSimulatedMapState();
 }
 
 class _InteractiveSimulatedMapState extends State<_InteractiveSimulatedMap>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
-  final TransformationController _transformController = TransformationController();
+  final TransformationController _transformController =
+      TransformationController();
 
   @override
   void initState() {
@@ -120,7 +129,9 @@ class _InteractiveSimulatedMapState extends State<_InteractiveSimulatedMap>
                     isDark: isDark,
                     pulseValue: _pulseController.value,
                     hasRoute: widget.polylines.isNotEmpty,
-                    hasDriver: widget.markers.any((m) => m.markerId.value == 'driver'),
+                    hasDriver: widget.markers.any(
+                      (m) => m.markerId.value == 'driver',
+                    ),
                   ),
                 );
               },
@@ -138,7 +149,9 @@ class _InteractiveSimulatedMapState extends State<_InteractiveSimulatedMap>
               color: isDark ? const Color(0xE61E293B) : const Color(0xE6FFFFFF),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? const Color(0x3394A3B8) : const Color(0x33CBD5E1),
+                color: isDark
+                    ? const Color(0x3394A3B8)
+                    : const Color(0x33CBD5E1),
               ),
               boxShadow: const [
                 BoxShadow(
@@ -165,7 +178,9 @@ class _InteractiveSimulatedMapState extends State<_InteractiveSimulatedMap>
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
+                    color: isDark
+                        ? const Color(0xFFF1F5F9)
+                        : const Color(0xFF0F172A),
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -275,7 +290,7 @@ class _CityMapVectorPainter extends CustomPainter {
     final parkPaint = Paint()
       ..color = isDark ? const Color(0xFF132A24) : const Color(0xFFDCFCE7)
       ..style = PaintingStyle.fill;
-    
+
     // Draw pleasant green park zones
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -425,15 +440,15 @@ class _CityMapVectorPainter extends CustomPainter {
 
     // Draw car icon inside marker
     final textPainter = TextPainter(
-      text: const TextSpan(
-        text: '🚕',
-        style: TextStyle(fontSize: 14),
-      ),
+      text: const TextSpan(text: '🚕', style: TextStyle(fontSize: 14)),
       textDirection: TextDirection.ltr,
     )..layout();
     textPainter.paint(
       canvas,
-      Offset(pDriver.dx - textPainter.width / 2, pDriver.dy - textPainter.height / 2),
+      Offset(
+        pDriver.dx - textPainter.width / 2,
+        pDriver.dy - textPainter.height / 2,
+      ),
     );
   }
 
