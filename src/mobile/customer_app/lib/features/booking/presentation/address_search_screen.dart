@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/domain/place.dart';
 import '../../../core/location/location_service.dart';
+import '../../../core/location/reverse_geocoder.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
@@ -63,8 +65,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   }
 
   Future<void> _checkLocation() async {
-    final result =
-        await ref.read(locationServiceProvider).currentPosition();
+    final result = await ref.read(locationServiceProvider).currentPosition();
     if (!mounted) return;
     // A granted fix could later pre-fill pickup; for now we only need to know
     // whether to surface the manual-entry note.
@@ -88,6 +89,48 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   }
 
   bool get _isPickup => widget.mode == AddressMode.pickup;
+
+  /// Uses the device's current position as the pickup address.
+  Future<void> _useCurrentLocation() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    setState(() => _resolving = true);
+    try {
+      final result = await ref.read(locationServiceProvider).currentPosition();
+      if (!mounted) return;
+      if (!result.isGranted) {
+        setState(() => _locationOff = true);
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Location is unavailable. Enter your pickup address instead.',
+            ),
+          ),
+        );
+        return;
+      }
+      final pos = result.position!;
+      final place =
+          await reverseGeocode(pos.latitude, pos.longitude) ??
+          Place(
+            description: 'Current location',
+            addressLine:
+                '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}',
+            lat: pos.latitude,
+            lng: pos.longitude,
+          );
+      if (!mounted) return;
+      ref.read(bookingDraftProvider.notifier).setPickup(place);
+      final draft = ref.read(bookingDraftProvider);
+      if (draft.hasRoute) {
+        router.go(Routes.bookingReview);
+      } else {
+        router.pushReplacement(Routes.addressSearch, extra: 'dropoff');
+      }
+    } finally {
+      if (mounted) setState(() => _resolving = false);
+    }
+  }
 
   Future<void> _onSelect(AddressSuggestion suggestion) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -114,9 +157,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
         router.pushReplacement(Routes.addressSearch, extra: 'pickup');
       }
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(_errorText(e))),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(_errorText(e))));
     } finally {
       if (mounted) setState(() => _resolving = false);
     }
@@ -155,8 +196,9 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).maybePop(),
-                    tooltip: MaterialLocalizations.of(context)
-                        .closeButtonTooltip,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
@@ -187,8 +229,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
 
             // ── Grouped location card ──────────────────────────────────────
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: LocationSearchCard(
                 pickupLabel: _isPickup
                     ? 'Search your pickup address'
@@ -208,9 +249,16 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 children: [
+                  if (_isPickup) ...[
+                    PillChip(
+                      icon: Icons.my_location,
+                      label: 'Current location',
+                      onTap: _resolving ? () {} : _useCurrentLocation,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
                   PillChip(
                     icon: Icons.map_outlined,
                     label: 'Select from map',
@@ -237,13 +285,11 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
             // ── Recent / Suggested toggle (only before typing) ─────────────
             if (!hasQuery)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: SegmentedToggle(
                   segments: const ['Recent', 'Suggested'],
                   selectedIndex: _tab.index,
-                  onChanged: (i) =>
-                      setState(() => _tab = _Tab.values[i]),
+                  onChanged: (i) => setState(() => _tab = _Tab.values[i]),
                 ),
               ),
 
@@ -252,8 +298,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
             // ── Results ────────────────────────────────────────────────────
             Expanded(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: _SuggestionList(
                   query: query,
                   suggestionsAsync: suggestionsAsync,
@@ -307,10 +352,7 @@ class _SuggestionList extends StatelessWidget {
 
     return suggestionsAsync.when(
       loading: () => const LoadingView(),
-      error: (err, _) => ErrorView(
-        message: _message(err),
-        onRetry: onRetry,
-      ),
+      error: (err, _) => ErrorView(message: _message(err), onRetry: onRetry),
       data: (suggestions) {
         if (suggestions.isEmpty) {
           return const EmptyView(
@@ -322,16 +364,15 @@ class _SuggestionList extends StatelessWidget {
         return ListView.separated(
           padding: const EdgeInsets.only(bottom: AppSpacing.xl),
           itemCount: suggestions.length,
-          separatorBuilder: (_, __) => Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant,
-          ),
+          separatorBuilder: (_, __) =>
+              Divider(height: 1, color: theme.colorScheme.outlineVariant),
           itemBuilder: (context, i) {
             final s = suggestions[i];
             return PlaceResultRow(
               title: s.mainText.isNotEmpty ? s.mainText : s.description,
-              subtitle:
-                  s.secondaryText.isNotEmpty ? s.secondaryText : s.postcode,
+              subtitle: s.secondaryText.isNotEmpty
+                  ? s.secondaryText
+                  : s.postcode,
               onTap: onSelect == null ? null : () => onSelect!(s),
             );
           },

@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geocoding/geocoding.dart' as geo;
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/domain/place.dart';
 import '../../../core/location/location_service.dart';
+import '../../../core/location/reverse_geocoder.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -97,18 +97,7 @@ class _PickOnMapScreenState extends ConsumerState<PickOnMapScreen> {
     final id = ++_lookupId;
     final target = _center;
     setState(() => _resolving = true);
-    Place? place;
-    try {
-      final marks = await geo.Geocoding().placemarkFromCoordinates(
-        target.latitude,
-        target.longitude,
-      );
-      if (marks.isNotEmpty) {
-        place = _placeFrom(marks.first, target);
-      }
-    } catch (_) {
-      // Fall through: the user can still confirm the raw position or type.
-    }
+    final place = await reverseGeocode(target.latitude, target.longitude);
     if (!mounted || id != _lookupId) return;
     setState(() {
       _resolving = false;
@@ -122,30 +111,6 @@ class _PickOnMapScreenState extends ConsumerState<PickOnMapScreen> {
             lng: target.longitude,
           );
     });
-  }
-
-  Place _placeFrom(geo.Placemark m, LatLng at) {
-    String clean(String? v) => (v ?? '').trim();
-    final street = [
-      clean(m.subThoroughfare),
-      clean(m.thoroughfare),
-    ].where((e) => e.isNotEmpty).join(' ');
-    final name = clean(m.name);
-    final title = street.isNotEmpty
-        ? street
-        : (name.isNotEmpty ? name : clean(m.locality));
-    final line = <String>[
-      if (clean(m.locality).isNotEmpty) clean(m.locality),
-      if (clean(m.administrativeArea).isNotEmpty) clean(m.administrativeArea),
-      if (clean(m.postalCode).isNotEmpty) clean(m.postalCode),
-    ].join(', ');
-    return Place(
-      description: title.isNotEmpty ? title : 'Dropped pin',
-      addressLine: line,
-      postcode: clean(m.postalCode).isEmpty ? null : clean(m.postalCode),
-      lat: at.latitude,
-      lng: at.longitude,
-    );
   }
 
   @override
