@@ -795,7 +795,12 @@ The Angular router guards and services parse the `token` parameter directly from
     - Token generation, local caching, and `onTokenRefresh` listener.
     - Automated push token sync to backend API endpoints (`/api/UserProfile/UpdateFCM` and `/api/DriverApp/UpdateFCM`).
   - Integrated `CustomerNotificationService.initialize()` in [`main.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/main.dart) and auto-sync hook upon customer login in [`auth_repository.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/auth/data/auth_repository.dart).
-  - Verified static analysis with 0 issues on `dart analyze lib/`.
+- [x] **Customer App Google Play Store Release Bundle v1.0.1+2 Generation & Signing (`customer_app`)**:
+  - Bumped version code and version name in [`pubspec.yaml`](file:///d:/redtaxis/src/mobile/customer_app/pubspec.yaml) and `local.properties` to `1.0.1+2` (versionCode `2`, versionName `1.0.1`) for Google Play Console submission.
+  - Successfully compiled production Android App Bundle via Gradle `bundleRelease` (`BUILD SUCCESSFUL in 3m 55s`, 582 actionable tasks).
+  - Package signed with production release keystore `upload-keystore.jks` (`CN=redtaxis, OU=redtaxis, O=Redbanana Studios, L=GILLINGHAM, ST=GILLINGHAM, C=44`, RSA 2048-bit with SHA256withRSA/SHA384withRSA).
+  - Generated output artifact at [`d:\redtaxis\src\mobile\customer_app\build\app\outputs\bundle\release\app-release.aab`](file:///d:/redtaxis/src/mobile/customer_app/build/app/outputs/bundle/release/app-release.aab) (33.5 MB / 33,509,200 bytes).
+  - Verified bundle incorporates latest Firebase Cloud Messaging setup, default notification channels, and vibration permissions.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
