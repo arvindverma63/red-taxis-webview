@@ -94,9 +94,7 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
       northeast: LatLng(maxLat, maxLng),
     );
 
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 48.0),
-    );
+    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 48.0));
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -130,10 +128,7 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
       return CameraPosition(target: LatLng(centerLat, centerLng), zoom: zoom);
     }
 
-    return const CameraPosition(
-      target: LatLng(51.0058, -2.1916),
-      zoom: 12,
-    );
+    return const CameraPosition(target: LatLng(51.0058, -2.1916), zoom: 12);
   }
 
   void _selectVehicle(String id) {
@@ -168,7 +163,9 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
       time.minute,
     );
     // Guard against a past time on today's date.
-    if (scheduled.isBefore(now)) scheduled = now.add(const Duration(minutes: 15));
+    if (scheduled.isBefore(now)) {
+      scheduled = now.add(const Duration(minutes: 15));
+    }
 
     ref.read(bookingDraftProvider.notifier).setSchedule(scheduled);
     ref.read(quoteControllerProvider.notifier).refresh();
@@ -190,6 +187,17 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
 
     return AppScaffold(
       title: 'Review ride',
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(Routes.home);
+          }
+        },
+      ),
       padded: false,
       body: ListView(
         children: [
@@ -208,7 +216,13 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _RouteSummary(draft: draft),
+                _RouteSummary(
+                  draft: draft,
+                  onEditPickup: () =>
+                      context.push(Routes.addressSearch, extra: 'pickup'),
+                  onEditDropoff: () =>
+                      context.push(Routes.addressSearch, extra: 'dropoff'),
+                ),
                 const SizedBox(height: AppSpacing.xl),
 
                 Text('Vehicle', style: theme.textTheme.titleMedium),
@@ -248,7 +262,8 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
       bottomBar: AppButton(
         label: 'Continue',
         onPressed: quoteAsync.maybeWhen(
-          data: (q) => q == null ? null : () => context.push(Routes.paymentMethod),
+          data: (q) =>
+              q == null ? null : () => context.push(Routes.paymentMethod),
           orElse: () => null,
         ),
         isLoading: quoteAsync.isLoading,
@@ -267,35 +282,41 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
 
     final markers = <Marker>{};
     if (p?.lat != null && p?.lng != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: LatLng(p!.lat!, p.lng!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(
-          title: 'Pickup',
-          snippet: p.description,
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: LatLng(p!.lat!, p.lng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+          infoWindow: InfoWindow(title: 'Pickup', snippet: p.description),
         ),
-      ));
+      );
     }
     if (d?.lat != null && d?.lng != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('dropoff'),
-        position: LatLng(d!.lat!, d.lng!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(
-          title: 'Destination',
-          snippet: d.description,
+      markers.add(
+        Marker(
+          markerId: const MarkerId('dropoff'),
+          position: LatLng(d!.lat!, d.lng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: InfoWindow(title: 'Destination', snippet: d.description),
         ),
-      ));
+      );
     }
     return markers;
   }
 }
 
 class _RouteSummary extends StatelessWidget {
-  const _RouteSummary({required this.draft});
+  const _RouteSummary({
+    required this.draft,
+    required this.onEditPickup,
+    required this.onEditDropoff,
+  });
 
   final BookingDraft draft;
+  final VoidCallback onEditPickup;
+  final VoidCallback onEditDropoff;
 
   @override
   Widget build(BuildContext context) {
@@ -308,6 +329,7 @@ class _RouteSummary extends StatelessWidget {
             icon: Icons.my_location,
             label: 'Pickup',
             place: draft.pickup,
+            onEdit: onEditPickup,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -318,6 +340,7 @@ class _RouteSummary extends StatelessWidget {
             icon: Icons.location_on,
             label: 'Destination',
             place: draft.dropoff,
+            onEdit: onEditDropoff,
           ),
         ],
       ),
@@ -329,6 +352,7 @@ class _RouteSummary extends StatelessWidget {
     required IconData icon,
     required String label,
     required Place? place,
+    required VoidCallback onEdit,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,6 +374,12 @@ class _RouteSummary extends StatelessWidget {
             ],
           ),
         ),
+        IconButton(
+          icon: const Icon(Icons.edit_outlined, size: 20),
+          tooltip: 'Edit ${label.toLowerCase()}',
+          visualDensity: VisualDensity.compact,
+          onPressed: onEdit,
+        ),
       ],
     );
   }
@@ -370,8 +400,9 @@ class _VehicleSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     // Grow the row height with the system font scale so a tall card (icon +
     // name + 2-line description) never clips at large text sizes.
-    final scale =
-        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5).toDouble();
+    final scale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1.0).clamp(1.0, 1.5).toDouble();
     return SizedBox(
       height: 132 * scale,
       child: ListView.separated(
@@ -463,12 +494,12 @@ class _VehicleCard extends StatelessWidget {
 /// Resolves a [VehicleType.icon] key to a Material glyph. Keeping the mapping
 /// here (presentation) keeps the domain free of Material imports.
 IconData _vehicleIcon(String key) => switch (key) {
-      'saloon' => Icons.directions_car_outlined,
-      'estate' => Icons.directions_car_filled_outlined,
-      'mpv' => Icons.airport_shuttle_outlined,
-      'executive' => Icons.local_taxi_outlined,
-      _ => Icons.directions_car_outlined,
-    };
+  'saloon' => Icons.directions_car_outlined,
+  'estate' => Icons.directions_car_filled_outlined,
+  'mpv' => Icons.airport_shuttle_outlined,
+  'executive' => Icons.local_taxi_outlined,
+  _ => Icons.directions_car_outlined,
+};
 
 class _ScheduleSelector extends StatelessWidget {
   const _ScheduleSelector({
@@ -487,20 +518,14 @@ class _ScheduleSelector extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _ScheduleChip(
-            label: 'Now',
-            selected: isAsap,
-            onTap: onAsap,
-          ),
+          child: _ScheduleChip(label: 'Now', selected: isAsap, onTap: onAsap),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           flex: 2,
           child: _ScheduleChip(
             icon: Icons.schedule,
-            label: isAsap
-                ? 'Schedule for later'
-                : Fmt.dateTime(scheduledFor!),
+            label: isAsap ? 'Schedule for later' : Fmt.dateTime(scheduledFor!),
             selected: !isAsap,
             onTap: onPick,
           ),
@@ -592,15 +617,14 @@ class _QuoteCard extends StatelessWidget {
           child: LoadingView(message: 'Getting your fare…'),
         ),
       ),
-      error: (err, _) => QuoteUnavailableCard(
-        officePhone: officePhone,
-        onRetry: onRetry,
-      ),
+      error: (err, _) =>
+          QuoteUnavailableCard(officePhone: officePhone, onRetry: onRetry),
       data: (quote) {
         if (quote == null) {
           return AppCard(
             child: _QuoteError(
-              message: 'No fare yet. Set pickup and destination to get a price.',
+              message:
+                  'No fare yet. Set pickup and destination to get a price.',
               onRetry: onRetry,
             ),
           );
@@ -611,8 +635,9 @@ class _QuoteCard extends StatelessWidget {
   }
 
   Widget _buildFare(ThemeData theme, Quote quote) {
-    final price =
-        paymentMethod == 'account' ? quote.priceAccount : quote.priceCash;
+    final price = paymentMethod == 'account'
+        ? quote.priceAccount
+        : quote.priceCash;
     return Row(
       children: [
         Expanded(
@@ -652,9 +677,7 @@ class _QuoteError extends StatelessWidget {
       children: [
         Icon(Icons.error_outline, color: theme.colorScheme.error),
         const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Text(message, style: theme.textTheme.bodySmall),
-        ),
+        Expanded(child: Text(message, style: theme.textTheme.bodySmall)),
         TextButton(onPressed: onRetry, child: const Text('Retry')),
       ],
     );
