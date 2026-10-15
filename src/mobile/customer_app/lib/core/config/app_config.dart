@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Tenant / brand configuration.
 ///
 /// The app is tenant-config-driven with static defaults for Red Taxi / Ace Taxis.
@@ -53,42 +55,88 @@ class AppConfig {
   }
 
   /// When true, repositories fall back to local demo data on a failed API call.
-  static const bool previewMocks =
-      bool.fromEnvironment('PREVIEW_MOCKS', defaultValue: false);
+  static const bool previewMocks = bool.fromEnvironment(
+    'PREVIEW_MOCKS',
+    defaultValue: false,
+  );
 
   /// Static Google Maps API Key.
   static const String googleMapsApiKey =
       'AIzaSyDYnIuUlsmoiOflHvGoNC8YgYGpj470r6k';
 
   /// When true, map-bearing screens render a real GoogleMap.
-  static const bool mapsEnabled =
-      bool.fromEnvironment('MAPS_ENABLED', defaultValue: true);
+  static const bool mapsEnabled = bool.fromEnvironment(
+    'MAPS_ENABLED',
+    defaultValue: true,
+  );
 
   /// Sentry DSN for crash / error monitoring.
-  static const String sentryDsn =
-      String.fromEnvironment('SENTRY_DSN', defaultValue: '');
+  static const String sentryDsn = String.fromEnvironment(
+    'SENTRY_DSN',
+    defaultValue: '',
+  );
 
   /// Deployment environment tag reported to Sentry.
-  static const String environment =
-      String.fromEnvironment('APP_ENV', defaultValue: 'development');
+  static const String environment = String.fromEnvironment(
+    'APP_ENV',
+    defaultValue: 'development',
+  );
+
+  /// Google OAuth *Web* client ID. Passed to Google Sign-In as `serverClientId`
+  /// on Android so the ID token is issued for the backend to verify.
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '',
+  );
+
+  /// Google OAuth *iOS* client ID (bundle `com.redtaxis.customerApp`).
+  static const String googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+    defaultValue: '',
+  );
+
+  /// Google sign-in is only offered once its client ID is configured for this
+  /// platform, so unfinished sign-in options are never shown to users.
+  static bool get googleSignInEnabled {
+    if (kIsWeb) return false;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return googleIosClientId.isNotEmpty;
+      case TargetPlatform.android:
+        return googleServerClientId.isNotEmpty;
+      default:
+        return false;
+    }
+  }
 
   /// Resolved from `--dart-define`s with static defaults.
   factory AppConfig.fromEnvironment() {
     return const AppConfig(
-      tenantOrgId: String.fromEnvironment('TENANT_ORG_ID',
-          defaultValue: defaultTenantOrgId),
-      tenantKey: String.fromEnvironment('TENANT_KEY',
-          defaultValue: defaultTenantKey),
-      brandName: String.fromEnvironment('BRAND_NAME',
-          defaultValue: defaultBrandName),
-      supportPhone:
-          String.fromEnvironment('SUPPORT_PHONE', defaultValue: ''),
-      apiBaseUrl: String.fromEnvironment('API_BASE_URL',
-          defaultValue: defaultApiBaseUrl),
-      pusherKey: String.fromEnvironment('PUSHER_KEY',
-          defaultValue: '72a68ffd46f37a9d649a'),
-      pusherCluster:
-          String.fromEnvironment('PUSHER_CLUSTER', defaultValue: 'eu'),
+      tenantOrgId: String.fromEnvironment(
+        'TENANT_ORG_ID',
+        defaultValue: defaultTenantOrgId,
+      ),
+      tenantKey: String.fromEnvironment(
+        'TENANT_KEY',
+        defaultValue: defaultTenantKey,
+      ),
+      brandName: String.fromEnvironment(
+        'BRAND_NAME',
+        defaultValue: defaultBrandName,
+      ),
+      supportPhone: String.fromEnvironment('SUPPORT_PHONE', defaultValue: ''),
+      apiBaseUrl: String.fromEnvironment(
+        'API_BASE_URL',
+        defaultValue: defaultApiBaseUrl,
+      ),
+      pusherKey: String.fromEnvironment(
+        'PUSHER_KEY',
+        defaultValue: '72a68ffd46f37a9d649a',
+      ),
+      pusherCluster: String.fromEnvironment(
+        'PUSHER_CLUSTER',
+        defaultValue: 'eu',
+      ),
       openingHour: int.fromEnvironment('OPENING_HOUR', defaultValue: 7),
       closingHour: int.fromEnvironment('CLOSING_HOUR', defaultValue: 22),
     );

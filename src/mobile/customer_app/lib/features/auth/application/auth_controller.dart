@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/route_paths.dart';
 import '../data/auth_repository.dart';
+import '../data/google_sign_in_service.dart';
 
 /// Drives auth actions for the screens. Each method flips this notifier's
 /// [AsyncValue] to loading, runs the repository call, and lands on data (success)
@@ -36,27 +37,42 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
+  /// Signs in with Google. Returns false when the user cancels or it fails
+  /// (an error, if any, is on the controller state).
+  Future<bool> loginWithGoogle() async {
+    final token = await GoogleSignInService().getIdToken().catchError((
+      Object e,
+    ) {
+      state = AsyncValue<void>.error(
+        e is ApiException ? e : const ApiException('Google sign-in failed.'),
+        StackTrace.current,
+      );
+      return null;
+    });
+    if (token == null) return false;
+    return _run(() => _repo.loginWithGoogle(token));
+  }
+
   Future<bool> login({
     required String usernameOrEmail,
     required String password,
-  }) =>
-      _run(() => _repo.login(
-            usernameOrEmail: usernameOrEmail,
-            password: password,
-          ));
+  }) => _run(
+    () => _repo.login(usernameOrEmail: usernameOrEmail, password: password),
+  );
 
   Future<bool> registerCustomer({
     required String fullName,
     required String email,
     required String phoneNumber,
     required String password,
-  }) =>
-      _run(() => _repo.registerCustomer(
-            fullName: fullName,
-            email: email,
-            phoneNumber: phoneNumber,
-            password: password,
-          ));
+  }) => _run(
+    () => _repo.registerCustomer(
+      fullName: fullName,
+      email: email,
+      phoneNumber: phoneNumber,
+      password: password,
+    ),
+  );
 
   Future<bool> forgotPassword(String email) =>
       _run(() => _repo.forgotPassword(email));
@@ -65,17 +81,15 @@ class AuthController extends AsyncNotifier<void> {
     required String email,
     required String token,
     required String newPassword,
-  }) =>
-      _run(() => _repo.resetPassword(
-            email: email,
-            token: token,
-            newPassword: newPassword,
-          ));
+  }) => _run(
+    () => _repo.resetPassword(
+      email: email,
+      token: token,
+      newPassword: newPassword,
+    ),
+  );
 
-  Future<bool> verifyEmail({
-    required String email,
-    required String token,
-  }) =>
+  Future<bool> verifyEmail({required String email, required String token}) =>
       _run(() => _repo.verifyEmail(email: email, token: token));
 
   Future<bool> sendVerifyEmail(String email) =>
@@ -88,8 +102,9 @@ class AuthController extends AsyncNotifier<void> {
   void reset() => state = const AsyncValue<void>.data(null);
 }
 
-final authControllerProvider =
-    AsyncNotifierProvider<AuthController, void>(AuthController.new);
+final authControllerProvider = AsyncNotifierProvider<AuthController, void>(
+  AuthController.new,
+);
 
 /// Resolves the post-splash destination. Runs `restoreSession`; if a valid
 /// session is restored → Home; otherwise → Onboarding on first run, else

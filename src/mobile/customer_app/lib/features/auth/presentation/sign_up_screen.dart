@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
@@ -69,12 +70,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     FocusScope.of(context).unfocus();
     if (!_agreedToTerms) return;
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref.read(authControllerProvider.notifier).registerCustomer(
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .registerCustomer(
           fullName: _fullName.text.trim(),
           email: _email.text.trim(),
           phoneNumber: _phone.text.trim(),
           password: _password.text,
         );
+    if (!ok || !mounted) return;
+    if (widget.onComplete != null) {
+      widget.onComplete!();
+    } else {
+      context.go(Routes.home);
+    }
+  }
+
+  Future<void> _google() async {
+    FocusScope.of(context).unfocus();
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .loginWithGoogle();
     if (!ok || !mounted) return;
     if (widget.onComplete != null) {
       widget.onComplete!();
@@ -113,11 +129,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               bottom: AppSpacing.xl,
             ),
             children: [
-              const AuthHeader(
+              AuthHeader(
                 title: 'Create your account',
                 subtitle:
                     "Let's get you booked in. Enter your details to create "
-                    'your Ace Taxis account.',
+                    'your ${AppConfig.fromEnvironment().brandName} account.',
               ),
               const SizedBox(height: AppSpacing.xl),
               AuthErrorBanner(error: state.error),
@@ -195,13 +211,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: loading ? null : () => context.push(Routes.signIn),
+                    onPressed: loading
+                        ? null
+                        : () => context.push(Routes.signIn),
                     child: const Text('Sign in'),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              const SocialAuthButtons(),
+              SocialAuthButtons(onGoogle: _google, loading: loading),
             ],
           ),
         ),

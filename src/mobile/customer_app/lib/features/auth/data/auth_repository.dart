@@ -37,10 +37,10 @@ class AuthRepository {
     required String password,
   }) async {
     try {
-      final res = await _dio.post('/api/v2/customer-auth/login', data: {
-        'username': usernameOrEmail,
-        'password': password,
-      });
+      final res = await _dio.post(
+        '/api/v2/customer-auth/login',
+        data: {'username': usernameOrEmail, 'password': password},
+      );
       final session = _parseSession(res.data);
       await _applySession(session);
       return _toAuthUser(session);
@@ -48,6 +48,23 @@ class AuthRepository {
       // Surface a typed ApiException (the controller catches ApiException; a raw
       // DioException would fall through to a generic message).
       throw _asApiException(e, 'Could not sign you in. Please try again.');
+    }
+  }
+
+  /// Signs in (or auto-registers) with a Google ID token via
+  /// `POST /api/v2/customer-auth/google`. The backend verifies the token with
+  /// Google and returns the same session as the email/password login.
+  Future<AuthUser> loginWithGoogle(String idToken) async {
+    try {
+      final res = await _dio.post(
+        '/api/v2/customer-auth/google',
+        data: {'idToken': idToken},
+      );
+      final session = _parseSession(res.data);
+      await _applySession(session);
+      return _toAuthUser(session);
+    } catch (e) {
+      throw _asApiException(e, 'Could not sign you in with Google.');
     }
   }
 
@@ -62,12 +79,15 @@ class AuthRepository {
     required String password,
   }) async {
     try {
-      final res = await _dio.post('/api/v2/customer-auth/register-customer', data: {
-        'fullName': fullName,
-        'email': email,
-        'phoneNumber': phoneNumber,
-        'password': password,
-      });
+      final res = await _dio.post(
+        '/api/v2/customer-auth/register-customer',
+        data: {
+          'fullName': fullName,
+          'email': email,
+          'phoneNumber': phoneNumber,
+          'password': password,
+        },
+      );
       final session = _parseSession(res.data);
       await _applySession(session);
       return _toAuthUser(session);
@@ -79,7 +99,10 @@ class AuthRepository {
           phoneNumber: phoneNumber,
         );
       }
-      throw _asApiException(e, 'Could not create your account. Please try again.');
+      throw _asApiException(
+        e,
+        'Could not create your account. Please try again.',
+      );
     }
   }
 
@@ -90,7 +113,10 @@ class AuthRepository {
     if (e is DioException) {
       final err = e.error;
       if (err is ApiException) return err;
-      return ApiException(e.message ?? fallback, statusCode: e.response?.statusCode);
+      return ApiException(
+        e.message ?? fallback,
+        statusCode: e.response?.statusCode,
+      );
     }
     return ApiException(fallback);
   }
@@ -132,7 +158,10 @@ class AuthRepository {
     final refresh = await _ref.read(tokenStorageProvider).readRefreshToken();
     if (refresh != null && refresh.isNotEmpty) {
       try {
-        await _dio.post('/api/v2/customer-auth/logout', data: {'refreshToken': refresh});
+        await _dio.post(
+          '/api/v2/customer-auth/logout',
+          data: {'refreshToken': refresh},
+        );
       } on ApiException {
         // Best-effort — local sign-out still proceeds.
       }
@@ -148,9 +177,10 @@ class AuthRepository {
   // links emailed to the customer deep-link to /reset-password and /verify-email.
 
   Future<void> forgotPassword(String email) async {
-    await _dio.post('/api/v2/customer-auth/forgot-password', data: {
-      'email': email,
-    });
+    await _dio.post(
+      '/api/v2/customer-auth/forgot-password',
+      data: {'email': email},
+    );
   }
 
   /// Completes a password reset with the token from the emailed link.
@@ -159,33 +189,35 @@ class AuthRepository {
     required String token,
     required String newPassword,
   }) async {
-    await _dio.post('/api/v2/customer-auth/reset-password', data: {
-      'email': email,
-      'token': token,
-      'newPassword': newPassword,
-    });
+    await _dio.post(
+      '/api/v2/customer-auth/reset-password',
+      data: {'email': email, 'token': token, 'newPassword': newPassword},
+    );
   }
 
   Future<void> verifyEmail({
     required String email,
     required String token,
   }) async {
-    await _dio.post('/api/v2/customer-auth/verify-email', data: {
-      'email': email,
-      'token': token,
-    });
+    await _dio.post(
+      '/api/v2/customer-auth/verify-email',
+      data: {'email': email, 'token': token},
+    );
   }
 
   Future<void> sendVerifyEmail(String email) async {
-    await _dio.post('/api/v2/customer-auth/send-verify-email', data: {
-      'email': email,
-    });
+    await _dio.post(
+      '/api/v2/customer-auth/send-verify-email',
+      data: {'email': email},
+    );
   }
 
   // ── Onboarding-seen flag ──────────────────────────────────────────────
 
   Future<bool> hasSeenOnboarding() async {
-    final v = await _ref.read(secureStorageProvider).read(key: _onboardingSeenKey);
+    final v = await _ref
+        .read(secureStorageProvider)
+        .read(key: _onboardingSeenKey);
     return v == 'true';
   }
 
@@ -214,15 +246,15 @@ class AuthRepository {
   }
 
   AuthUser _toAuthUser(AuthSession s) => AuthUser(
-        userId: s.userId,
-        username: s.username,
-        fullName: s.fullName,
-        email: s.email,
-        phoneNumber: s.phoneNumber,
-        role: s.role,
-        isPlatformAdmin: s.isAdmin,
-        isAccount: s.role.toLowerCase() == 'account',
-      );
+    userId: s.userId,
+    username: s.username,
+    fullName: s.fullName,
+    email: s.email,
+    phoneNumber: s.phoneNumber,
+    role: s.role,
+    isPlatformAdmin: s.isAdmin,
+    isAccount: s.role.toLowerCase() == 'account',
+  );
 
   Future<AuthUser> _mockRegister({
     required String fullName,
@@ -235,7 +267,8 @@ class AuthRepository {
       refresh: 'mock-refresh-$now',
     );
     final user = AuthUser(
-      userId: -now ~/ 1000, // negative id flags a mock, never collides with real
+      userId:
+          -now ~/ 1000, // negative id flags a mock, never collides with real
       username: email,
       fullName: fullName,
       email: email,
