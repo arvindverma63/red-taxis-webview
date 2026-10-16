@@ -176,6 +176,26 @@ export class DriverService {
     );
   }
 
+  /**
+   * Updates the signed-in driver's profile (details, vehicle and optional photo).
+   * POST /api/DriverApp/UpdateProfile as multipart/form-data with fields
+   * fullName, phoneNumber, email, regNo, vehicleMake, vehicleModel,
+   * vehicleColour and photo (file). The Content-Type header is left unset so the
+   * browser adds the multipart boundary.
+   */
+  updateProfile(formData: FormData): Observable<any> {
+    console.log('API Webview Request: POST /api/DriverApp/UpdateProfile');
+    return this.http.post(`${this.baseUrl}/api/DriverApp/UpdateProfile`, formData, {
+      headers: this.getHeaders(),
+      responseType: 'text'
+    }).pipe(
+      tap({
+        next: () => console.log('API Webview Response: POST /api/DriverApp/UpdateProfile success'),
+        error: (err) => console.error('API Webview Error: POST /api/DriverApp/UpdateProfile failed:', err?.status)
+      })
+    );
+  }
+
   uploadDocument(formData: FormData, docType: number = 0, userId?: number): Observable<any> {
     let url = `${this.baseUrl}/api/DriverApp/UploadDocument?type=${docType}&documentType=${docType}`;
     if (userId) {
