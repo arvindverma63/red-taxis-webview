@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../logging/remote_logger.dart';
+
 /// Outcome of a location lookup. Lets the UI fall back to manual address entry
 /// without crashing or looping when the user has not granted location access.
 enum LocationStatus {
@@ -68,14 +70,27 @@ class LocationService {
 
   Future<LocationResult> _lookup() async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
+      final serviceOn = await Geolocator.isLocationServiceEnabled();
+      if (!serviceOn) {
+        RemoteLogger.warn(
+          'Permission',
+          'Location services are OFF on this device.',
+        );
         return const LocationResult(LocationStatus.serviceDisabled);
       }
 
       var permission = await Geolocator.checkPermission();
+      RemoteLogger.info(
+        'Permission',
+        'Location permission before prompt: ${permission.name}',
+      );
       if (permission == LocationPermission.denied) {
         // Ask exactly once. We do not re-request on a second denial.
         permission = await Geolocator.requestPermission();
+        RemoteLogger.info(
+          'Permission',
+          'Location permission after prompt: ${permission.name}',
+        );
       }
 
       if (permission == LocationPermission.deniedForever) {
@@ -99,7 +114,8 @@ class LocationService {
       }
       if (position == null) return const LocationResult(LocationStatus.error);
       return LocationResult(LocationStatus.granted, position);
-    } catch (_) {
+    } catch (e) {
+      RemoteLogger.error('Permission', 'Location lookup failed: $e');
       return const LocationResult(LocationStatus.error);
     }
   }

@@ -8,6 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'core/logging/remote_logger.dart';
 import 'core/notifications/customer_notification_service.dart';
 import 'core/theme/theme_controller.dart';
 
@@ -82,9 +83,10 @@ void main() {
   );
 }
 
-/// Sets up local + push notifications. Notification permission is requested in
-/// exactly one place ([CustomerNotificationService.initialize]); asking from
-/// several plugins at once makes iOS drop or stack the prompts.
+/// Sets up local + push notifications.
+///
+/// The iOS permission prompt is requested FIRST and on its own, so a Firebase
+/// problem can never swallow it; push registration (Firebase) comes afterwards.
 Future<void> _initNotifications() async {
   try {
     const initializationSettings = InitializationSettings(
@@ -96,8 +98,34 @@ Future<void> _initNotifications() async {
       ),
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    final ios = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    if (ios != null) {
+      final before = await ios.checkPermissions();
+      RemoteLogger.info(
+        'Permission',
+        'Notification permission before prompt: alert=${before?.isAlertEnabled} sound=${before?.isSoundEnabled} badge=${before?.isBadgeEnabled}',
+      );
+      final granted = await ios.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      RemoteLogger.info(
+        'Permission',
+        'Notification prompt result: granted=$granted',
+      );
+    }
+  } catch (e) {
+    RemoteLogger.error('Permission', 'Notification permission error: $e');
+  }
+
+  try {
     await CustomerNotificationService.initialize();
   } catch (e) {
-    debugPrint('Customer app notification init error: $e');
+    RemoteLogger.error('Permission', 'Push (Firebase) init error: $e');
   }
 }
