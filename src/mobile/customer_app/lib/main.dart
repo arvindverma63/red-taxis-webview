@@ -33,21 +33,49 @@ void main() {
       WidgetsFlutterBinding.ensureInitialized();
       DartPluginRegistrant.ensureInitialized();
 
+      // Global safety net: an uncaught error anywhere (a push handler, a
+      // real-time event, a stream, a build) is logged and swallowed instead of
+      // tearing the app down. Sentry's own handlers are chained when active.
+      final previousFlutterOnError = FlutterError.onError;
+      FlutterError.onError = (FlutterErrorDetails details) {
+        debugPrint('[FlutterError] ${details.exceptionAsString()}');
+        previousFlutterOnError?.call(details);
+      };
+      final previousPlatformOnError = PlatformDispatcher.instance.onError;
+      PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+        debugPrint('[Uncaught] $error');
+        previousPlatformOnError?.call(error, stack);
+        return true; // handled — do not crash.
+      };
+      // A widget that fails to build shows a small message, not a blank/red screen.
+      ErrorWidget.builder = (FlutterErrorDetails details) => const Material(
+        color: Colors.transparent,
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Something went wrong. Please go back and try again.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+
       // Initialize notifications and request permissions on iOS and Android
       try {
         const AndroidInitializationSettings initializationSettingsAndroid =
             AndroidInitializationSettings('@mipmap/ic_launcher');
         const DarwinInitializationSettings initializationSettingsDarwin =
             DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-        );
+              requestAlertPermission: true,
+              requestBadgePermission: true,
+              requestSoundPermission: true,
+            );
         const InitializationSettings initializationSettings =
             InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-        );
+              android: initializationSettingsAndroid,
+              iOS: initializationSettingsDarwin,
+            );
 
         await flutterLocalNotificationsPlugin.initialize(
           initializationSettings,
@@ -56,14 +84,17 @@ void main() {
         // Explicitly request iOS notification authorization
         final iosPlugin = flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<
-                IOSFlutterLocalNotificationsPlugin>();
+              IOSFlutterLocalNotificationsPlugin
+            >();
         if (iosPlugin != null) {
           final granted = await iosPlugin.requestPermissions(
             alert: true,
             badge: true,
             sound: true,
           );
-          debugPrint("iOS customer app notification permission granted: $granted");
+          debugPrint(
+            "iOS customer app notification permission granted: $granted",
+          );
         }
 
         // Request system notification permission via permission_handler (Android 13+ & iOS)

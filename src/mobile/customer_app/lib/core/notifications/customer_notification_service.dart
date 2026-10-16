@@ -25,40 +25,70 @@ Future<void> customerFirebaseBackgroundHandler(RemoteMessage message) async {
     debugPrint("[FCM Background] Firebase.initializeApp error: $e");
   }
 
-  final notification = message.notification;
-  final title =
-      notification?.title ?? message.data['title'] ?? '🚕 First Taxis';
-  final body = notification?.body ??
-      message.data['body'] ??
-      message.data['message'] ??
-      'Ride update received';
+  try {
+    final notification = message.notification;
 
-  final localPlugin = FlutterLocalNotificationsPlugin();
-  const androidDetails = AndroidNotificationDetails(
-    CustomerNotificationService.channelId,
-    CustomerNotificationService.channelName,
-    channelDescription: CustomerNotificationService.channelDesc,
-    importance: Importance.high,
-    priority: Priority.high,
-    playSound: true,
-    enableVibration: true,
-  );
-  const details = NotificationDetails(
-    android: androidDetails,
-    iOS: DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    ),
-  );
+    // On iOS the OS already displays a push that carries a `notification`
+    // block, so showing a local copy would just duplicate it.
+    if (defaultTargetPlatform == TargetPlatform.iOS && notification != null) {
+      return;
+    }
 
-  await localPlugin.show(
-    message.messageId?.hashCode ?? message.hashCode,
-    title,
-    body,
-    details,
-    payload: jsonEncode(message.data),
-  );
+    final title =
+        notification?.title ?? message.data['title'] ?? '🚕 First Taxis';
+    final body =
+        notification?.body ??
+        message.data['body'] ??
+        message.data['message'] ??
+        'Ride update received';
+
+    // This runs in its own isolate: the plugin must be initialised here before
+    // it can show anything, otherwise `show` throws.
+    final localPlugin = FlutterLocalNotificationsPlugin();
+    await localPlugin.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(),
+      ),
+    );
+
+    const androidDetails = AndroidNotificationDetails(
+      CustomerNotificationService.channelId,
+      CustomerNotificationService.channelName,
+      channelDescription: CustomerNotificationService.channelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+
+    await localPlugin.show(
+      message.messageId?.hashCode ?? message.hashCode,
+      title.toString(),
+      body.toString(),
+      details,
+      payload: _safeJson(message.data),
+    );
+  } catch (e) {
+    debugPrint('[FCM Background] handler error (ignored): $e');
+  }
+}
+
+/// JSON-encodes push data without ever throwing.
+String _safeJson(Object? data) {
+  try {
+    return jsonEncode(data);
+  } catch (_) {
+    return '{}';
+  }
 }
 
 class CustomerNotificationService {
@@ -72,13 +102,13 @@ class CustomerNotificationService {
 
   static const AndroidNotificationChannel alertsChannel =
       AndroidNotificationChannel(
-    channelId,
-    channelName,
-    description: channelDesc,
-    importance: Importance.high,
-    playSound: true,
-    enableVibration: true,
-  );
+        channelId,
+        channelName,
+        description: channelDesc,
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
 
   /// Initializes Firebase Core, Messaging listeners, and Android/iOS channels.
   static Future<void> initialize({
@@ -98,8 +128,10 @@ class CustomerNotificationService {
       FirebaseMessaging.onBackgroundMessage(customerFirebaseBackgroundHandler);
 
       // 3. Register high-importance Android channel
-      final androidPlatform = localPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlatform = localPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidPlatform != null) {
         await androidPlatform.createNotificationChannel(alertsChannel);
       }
@@ -111,7 +143,9 @@ class CustomerNotificationService {
         badge: true,
         sound: true,
       );
-      debugPrint('[FCM] Notification authorization: ${settings.authorizationStatus}');
+      debugPrint(
+        '[FCM] Notification authorization: ${settings.authorizationStatus}',
+      );
 
       // 5. Configure foreground presentation options
       await messaging.setForegroundNotificationPresentationOptions(
@@ -121,45 +155,71 @@ class CustomerNotificationService {
       );
 
       // 6. Listen for incoming foreground push notifications
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('[FCM Foreground] Received: ${message.messageId} | ${message.notification?.title}');
-        final notification = message.notification;
-        final title =
-            notification?.title ?? message.data['title'] ?? '🚕 First Taxis';
-        final body = notification?.body ??
-            message.data['body'] ??
-            message.data['message'] ??
-            'Ride update received';
+      FirebaseMessaging.onMessage.listen(
+        (RemoteMessage message) async {
+          try {
+            debugPrint(
+              '[FCM Foreground] Received: ${message.messageId} | ${message.notification?.title}',
+            );
+            final notification = message.notification;
 
-        localPlugin.show(
-          message.messageId?.hashCode ?? message.hashCode,
-          title,
-          body,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              channelId,
-              channelName,
-              channelDescription: channelDesc,
-              importance: Importance.high,
-              priority: Priority.high,
-              playSound: true,
-              enableVibration: true,
-            ),
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-          payload: jsonEncode(message.data),
-        );
-      });
+            // iOS already shows the foreground banner itself (see the
+            // presentation options above); a local copy would duplicate it.
+            if (defaultTargetPlatform == TargetPlatform.iOS &&
+                notification != null) {
+              return;
+            }
+
+            final title =
+                notification?.title ??
+                message.data['title'] ??
+                '🚕 First Taxis';
+            final body =
+                notification?.body ??
+                message.data['body'] ??
+                message.data['message'] ??
+                'Ride update received';
+
+            await localPlugin.show(
+              message.messageId?.hashCode ?? message.hashCode,
+              title.toString(),
+              body.toString(),
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  channelId,
+                  channelName,
+                  channelDescription: channelDesc,
+                  importance: Importance.high,
+                  priority: Priority.high,
+                  playSound: true,
+                  enableVibration: true,
+                ),
+                iOS: DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                ),
+              ),
+              payload: _safeJson(message.data),
+            );
+          } catch (e) {
+            debugPrint('[FCM Foreground] handler error (ignored): $e');
+          }
+        },
+        onError: (Object e) {
+          debugPrint('[FCM Foreground] stream error (ignored): $e');
+        },
+      );
 
       // 7. Handle notification taps (app opened from notification)
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint('[FCM] Notification opened app: ${message.data}');
-        if (onNotificationTapped != null) {
-          onNotificationTapped(jsonEncode(message.data));
+        try {
+          debugPrint('[FCM] Notification opened app: ${message.data}');
+          if (onNotificationTapped != null) {
+            onNotificationTapped(_safeJson(message.data));
+          }
+        } catch (e) {
+          debugPrint('[FCM] opened-app handler error (ignored): $e');
         }
       });
 
@@ -194,7 +254,9 @@ class CustomerNotificationService {
       final fcmToken = await storage.read(key: 'customer_fcm_token');
       if (fcmToken == null || fcmToken.isEmpty) return;
 
-      final platformStr = defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android';
+      final platformStr = defaultTargetPlatform == TargetPlatform.iOS
+          ? 'iOS'
+          : 'Android';
       final payload = {
         'fcm': fcmToken,
         'token': fcmToken,

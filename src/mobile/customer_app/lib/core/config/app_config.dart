@@ -92,7 +92,8 @@ class AppConfig {
   /// Google OAuth *iOS* client ID (bundle `com.redtaxis.customerApp`).
   static const String googleIosClientId = String.fromEnvironment(
     'GOOGLE_IOS_CLIENT_ID',
-    defaultValue: '',
+    defaultValue:
+        '470510245907-8u5g126rhnctn60tvv7p303bca8uc4pu.apps.googleusercontent.com',
   );
 
   /// Google sign-in is only offered once its client ID is configured for this

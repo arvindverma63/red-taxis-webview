@@ -11,6 +11,44 @@ import '../../../core/session/session_controller.dart';
 import '../domain/booking_status.dart';
 import '../domain/tracking_state.dart';
 
+/// Tolerant numeric parsing: backends return numbers as num, numeric strings
+/// ("51.4"), or null depending on the endpoint. Never throws.
+double? _asDouble(dynamic v) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v.trim());
+  return null;
+}
+
+int? _asInt(dynamic v) {
+  if (v is num) return v.toInt();
+  if (v is String) {
+    final t = v.trim();
+    return int.tryParse(t) ?? double.tryParse(t)?.toInt();
+  }
+  return null;
+}
+
+/// Accepts an ARGB int, a numeric string, or a CSS-style hex ("#2E90FA",
+/// "0xFF2E90FA", "2E90FA"). Falls back to the default azure.
+int _asColor(dynamic v) {
+  const fallback = 0xFF2E90FA;
+  if (v is num) {
+    final n = v.toInt();
+    return n <= 0xFFFFFF ? (0xFF000000 | n) : n;
+  }
+  if (v is String) {
+    var t = v.trim().toLowerCase();
+    if (t.isEmpty) return fallback;
+    if (t.startsWith('#')) t = t.substring(1);
+    if (t.startsWith('0x')) t = t.substring(2);
+    final n = int.tryParse(t, radix: 16);
+    if (n != null && t.length <= 8) {
+      return t.length <= 6 ? (0xFF000000 | n) : n;
+    }
+  }
+  return fallback;
+}
+
 /// Source of live booking-tracking updates.
 ///
 /// Real-time (B5/B6): subscribes to the customer's Pusher private channel
@@ -70,21 +108,26 @@ class TrackingRepository {
     StreamSubscription? pusherSub;
     try {
       pusherSub = _statusEvents.listen((data) {
-        final evt = (data['bookingId'] ?? data['BookingId'] ?? '').toString();
-        final req = (data['requestId'] ?? data['RequestId'] ?? '').toString();
-        if (evt != bookingId && req != bookingId) return;
+        try {
+          final evt = (data['bookingId'] ?? data['BookingId'] ?? '').toString();
+          final req = (data['requestId'] ?? data['RequestId'] ?? '').toString();
+          if (evt != bookingId && req != bookingId) return;
 
-        final status = _mapStatus(data['status'] ?? data['Status']);
-        if (status != null) {
-          current = current.copyWith(
-            status: status,
-            driver: _parseDriver(data['driver'] ?? data['Driver'], data) ??
-                current.driver,
-            etaMinutes:
-                (data['etaMinutes'] ?? data['eta'] as num?)?.toInt() ??
-                    current.etaMinutes,
-          );
-          pusherQueue.add(current);
+          final status = _mapStatus(data['status'] ?? data['Status']);
+          if (status != null) {
+            current = current.copyWith(
+              status: status,
+              driver:
+                  _parseDriver(data['driver'] ?? data['Driver'], data) ??
+                  current.driver,
+              etaMinutes:
+                  _asInt(data['etaMinutes'] ?? data['eta']) ??
+                  current.etaMinutes,
+            );
+            pusherQueue.add(current);
+          }
+        } catch (_) {
+          // A malformed push must never break tracking; the 5s poll recovers.
         }
       });
 
@@ -152,9 +195,7 @@ class TrackingRepository {
     // 2. Secondary: search in customer's bookings list /api/v2/customers/me/bookings
     if (data == null || data.isEmpty) {
       try {
-        final res = await _dio.get<dynamic>(
-          '/api/v2/customers/me/bookings',
-        );
+        final res = await _dio.get<dynamic>('/api/v2/customers/me/bookings');
         final body = res.data;
         List? list;
         if (body is List) {
@@ -163,17 +204,15 @@ class TrackingRepository {
           list = (body['data'] is List)
               ? body['data'] as List
               : (body['bookings'] is List
-                  ? body['bookings'] as List
-                  : (body['value'] is List ? body['value'] as List : null));
+                    ? body['bookings'] as List
+                    : (body['value'] is List ? body['value'] as List : null));
         }
         if (list != null) {
           for (final item in list) {
             if (item is Map) {
-              final id = (item['id'] ??
-                      item['bookingId'] ??
-                      item['BookingId'] ??
-                      '')
-                  .toString();
+              final id =
+                  (item['id'] ?? item['bookingId'] ?? item['BookingId'] ?? '')
+                      .toString();
               if (id == bookingId) {
                 data = Map<String, dynamic>.from(item);
                 break;
@@ -202,7 +241,8 @@ class TrackingRepository {
     }
 
     if (data != null && data.isNotEmpty) {
-      final rawStatus = data['status'] ??
+      final rawStatus =
+          data['status'] ??
           data['Status'] ??
           data['bookingStatus'] ??
           data['BookingStatus'] ??
@@ -211,11 +251,9 @@ class TrackingRepository {
 
       final status = _mapStatus(rawStatus) ?? BookingStatus.requested;
       final driver = _parseDriver(data['driver'] ?? data['Driver'], data);
-      final rawEta =
-          data['etaMinutes'] ?? data['eta'] ?? data['durationMinutes'];
-      final eta = (rawEta is num)
-          ? rawEta.toInt()
-          : (int.tryParse(rawEta?.toString() ?? ''));
+      final eta = _asInt(
+        data['etaMinutes'] ?? data['eta'] ?? data['durationMinutes'],
+      );
 
       return TrackingState(
         bookingId: bookingId,
@@ -282,7 +320,9 @@ class TrackingRepository {
   Future<void> dispose() async {
     try {
       await _pusher?.disconnect();
-    } catch (_) {/* best-effort */}
+    } catch (_) {
+      /* best-effort */
+    }
     await _events?.close();
     _events = null;
     _connecting = null;
@@ -344,10 +384,7 @@ class TrackingRepository {
         s.contains('trip')) {
       return BookingStatus.inProgress;
     }
-    if (s == 'completed' ||
-        s == 'finished' ||
-        s == 'done' ||
-        s == 'complete') {
+    if (s == 'completed' || s == 'finished' || s == 'done' || s == 'complete') {
       return BookingStatus.completed;
     }
     if (s == 'cancelled' ||
@@ -370,63 +407,67 @@ class TrackingRepository {
 
     if (d is Map) {
       final m = Map<String, dynamic>.from(d);
-      name = m['name']?.toString() ??
+      name =
+          m['name']?.toString() ??
           m['fullName']?.toString() ??
           m['fullname']?.toString() ??
           m['FullName']?.toString();
-      vehicle = (m['vehicle'] ??
-              m['vehicleModel'] ??
-              m['VehicleModel'] ??
-              m['model'] ??
-              '')
-          .toString();
-      plate = (m['plate'] ??
-              m['vehicleReg'] ??
-              m['VehicleReg'] ??
-              m['regNumber'] ??
-              m['RegNumber'] ??
-              '')
-          .toString();
-      lat = (m['lat'] as num?)?.toDouble() ??
-          (m['latitude'] as num?)?.toDouble() ??
-          0.0;
-      lng = (m['lng'] as num?)?.toDouble() ??
-          (m['longitude'] as num?)?.toDouble() ??
-          0.0;
-      colorValue = (m['colorValue'] as num?)?.toInt() ?? 0xFF2E90FA;
+      vehicle =
+          (m['vehicle'] ??
+                  m['vehicleModel'] ??
+                  m['VehicleModel'] ??
+                  m['model'] ??
+                  '')
+              .toString();
+      plate =
+          (m['plate'] ??
+                  m['vehicleReg'] ??
+                  m['VehicleReg'] ??
+                  m['regNumber'] ??
+                  m['RegNumber'] ??
+                  '')
+              .toString();
+      lat = _asDouble(m['lat'] ?? m['latitude']) ?? 0.0;
+      lng = _asDouble(m['lng'] ?? m['longitude'] ?? m['lon']) ?? 0.0;
+      colorValue = _asColor(
+        m['colorValue'] ?? m['colorCode'] ?? m['ColorCode'] ?? m['color'],
+      );
     }
 
     if ((name == null || name.isEmpty) && parent != null) {
-      name = parent['driverName']?.toString() ??
+      name =
+          parent['driverName']?.toString() ??
           parent['driver_name']?.toString() ??
           parent['DriverName']?.toString() ??
           parent['driver']?.toString();
       if (name != null && name.startsWith('{')) {
         name = null;
       }
-      vehicle = (parent['vehicleModel'] ??
-              parent['VehicleModel'] ??
-              parent['vehicle'] ??
-              parent['vehicleName'] ??
-              parent['vehicleType'] ??
-              '')
-          .toString();
-      plate = (parent['vehicleReg'] ??
-              parent['VehicleReg'] ??
-              parent['plate'] ??
-              parent['registration'] ??
-              parent['regNumber'] ??
-              '')
-          .toString();
-      lat = (parent['driverLat'] ??
-              parent['driver_lat'] ??
-              parent['DriverLat'] as num?)
-          ?.toDouble() ??
+      vehicle =
+          (parent['vehicleModel'] ??
+                  parent['VehicleModel'] ??
+                  parent['vehicle'] ??
+                  parent['vehicleName'] ??
+                  parent['vehicleType'] ??
+                  '')
+              .toString();
+      plate =
+          (parent['vehicleReg'] ??
+                  parent['VehicleReg'] ??
+                  parent['plate'] ??
+                  parent['registration'] ??
+                  parent['regNumber'] ??
+                  '')
+              .toString();
+      lat =
+          _asDouble(
+            parent['driverLat'] ?? parent['driver_lat'] ?? parent['DriverLat'],
+          ) ??
           lat;
-      lng = (parent['driverLng'] ??
-              parent['driver_lng'] ??
-              parent['DriverLng'] as num?)
-          ?.toDouble() ??
+      lng =
+          _asDouble(
+            parent['driverLng'] ?? parent['driver_lng'] ?? parent['DriverLng'],
+          ) ??
           lng;
     }
 
