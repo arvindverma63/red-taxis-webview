@@ -9,8 +9,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../application/activity_controller.dart';
+import '../../../core/domain/driver_directory.dart';
 import '../domain/booking_summary.dart';
+import '../../tracking/application/driver_provider.dart';
 import 'widgets/amend_booking_sheet.dart';
+import 'widgets/driver_details_card.dart';
 import 'widgets/fare_breakdown_card.dart';
 import 'widgets/ride_details_table.dart';
 import 'widgets/ride_vehicle_card.dart';
@@ -164,6 +167,11 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
   @override
   Widget build(BuildContext context) {
     final booking = _booking;
+    // Load the assigned driver's details (name, phone, plate, vehicle) once the
+    // trip has a driver; the card below reads them from the DriverDirectory.
+    if (booking.isDriverEngaged || booking.isCompleted) {
+      ref.watch(bookingDriverProvider(booking.id));
+    }
 
     return _DetailScaffold(
       body: ListView(
@@ -179,6 +187,10 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
           ],
           RideVehicleCard(booking: booking),
           const SizedBox(height: AppSpacing.md),
+          if (DriverDirectory.of(booking.id)?.hasName ?? false) ...[
+            DriverDetailsCard(booking: booking),
+            const SizedBox(height: AppSpacing.md),
+          ],
           _RouteCard(booking: booking),
           const SizedBox(height: AppSpacing.md),
           RideDetailsTable(booking: booking),
@@ -189,7 +201,8 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
       bottomBar: _BottomActions(
         booking: booking,
         busy: _busy,
-        onTrack: () => context.push('${Routes.tracking}/${booking.id}', extra: booking),
+        onTrack: () =>
+            context.push('${Routes.tracking}/${booking.id}', extra: booking),
         onChange: _onRequestChange,
         onCancel: _onCancel,
         onShareReceipt: _onShareReceipt,
@@ -248,8 +261,9 @@ class _ScheduledBanner extends StatelessWidget {
                 Flexible(
                   child: Text(
                     'We’ll notify you when a driver’s found',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: AppColors.success),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: AppColors.success,
+                    ),
                   ),
                 ),
               ],

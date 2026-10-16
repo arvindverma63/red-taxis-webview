@@ -13,7 +13,7 @@ class DriverCard extends StatelessWidget {
   const DriverCard({
     super.key,
     required this.name,
-    required this.rating,
+    this.rating,
     required this.colorValue,
     this.phone,
     this.imageUrl,
@@ -24,8 +24,8 @@ class DriverCard extends StatelessWidget {
   /// Driver's display name.
   final String name;
 
-  /// Star rating, e.g. `4.8`.
-  final double rating;
+  /// Star rating, e.g. `4.8`; hidden when the driver has no rating yet.
+  final double? rating;
 
   /// Operator-assigned driver colour (ARGB int) shown as a status dot.
   final int colorValue;
@@ -63,18 +63,21 @@ class DriverCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
-                  const Icon(Icons.star_rounded,
-                      size: 16, color: AppColors.warning),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    rating.toStringAsFixed(1),
-                    style: theme.textTheme.labelMedium,
-                  ),
-                  if (phone != null) ...[
-                    Text(
-                      '  ·  ',
-                      style: theme.textTheme.bodySmall,
+                  if (rating != null) ...[
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: AppColors.warning,
                     ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      rating!.toStringAsFixed(1),
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ],
+                  if (phone != null && phone!.isNotEmpty) ...[
+                    if (rating != null)
+                      Text('  ·  ', style: theme.textTheme.bodySmall),
                     Flexible(
                       child: Text(
                         phone!,

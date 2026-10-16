@@ -30,17 +30,52 @@ Future<bool> callOffice(BuildContext context, String phone) async {
     if (!launched) {
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('Call the office on $trimmed.')),
-        );
+        ..showSnackBar(SnackBar(content: Text('Call the office on $trimmed.')));
     }
     return launched;
   } catch (_) {
     messenger
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('Call the office on $trimmed.')),
-      );
+      ..showSnackBar(SnackBar(content: Text('Call the office on $trimmed.')));
+    return false;
+  }
+}
+
+/// Calls the assigned driver on [phone]. Shows a clear message when the driver's
+/// number isn't available or the dialler can't open.
+Future<bool> callDriver(BuildContext context, String? phone, String name) =>
+    _contactDriver(context, phone, name, 'tel', 'Call');
+
+/// Opens a text message to the assigned driver on [phone].
+Future<bool> messageDriver(BuildContext context, String? phone, String name) =>
+    _contactDriver(context, phone, name, 'sms', 'Message');
+
+Future<bool> _contactDriver(
+  BuildContext context,
+  String? phone,
+  String name,
+  String scheme,
+  String verb,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final number = (phone ?? '').replaceAll(RegExp(r'[^0-9+]'), '');
+
+  void tell(String text) => messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
+
+  if (number.isEmpty) {
+    tell(
+      "$name's phone number isn't available yet. Please contact the office.",
+    );
+    return false;
+  }
+  try {
+    final launched = await launchUrl(Uri(scheme: scheme, path: number));
+    if (!launched) tell('$verb $name on $number.');
+    return launched;
+  } catch (_) {
+    tell('$verb $name on $number.');
     return false;
   }
 }

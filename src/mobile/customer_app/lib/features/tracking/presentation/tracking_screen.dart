@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/domain/driver_directory.dart';
 import '../../../core/domain/place.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/phone_launcher.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../activity/application/activity_controller.dart';
@@ -121,6 +123,13 @@ class _TrackingBodyState extends State<_TrackingBody> {
         oldWidget.booking?.dropoff != widget.booking?.dropoff) {
       _loadRoute();
     }
+    // The driver's position usually arrives after the map has framed the route;
+    // re-frame once when it first becomes available so the driver is in view.
+    final hadDriverLocation = oldWidget.state.driver?.hasLocation ?? false;
+    final hasDriverLocation = widget.state.driver?.hasLocation ?? false;
+    if (!hadDriverLocation && hasDriverLocation) {
+      _fitMapBounds();
+    }
   }
 
   Future<void> _loadRoute() async {
@@ -173,6 +182,18 @@ class _TrackingBodyState extends State<_TrackingBody> {
     _fitMapBounds();
   }
 
+  /// True when the driver has a real position within ~200 miles of the pickup.
+  /// A wildly distant driver (bad GPS or test data) must not drag the camera out
+  /// to a world view, so framing ignores it; its marker is still drawn.
+  bool _driverNearTrip() {
+    final d = widget.state.driver;
+    final p = _resolvedPickup;
+    if (d == null || !d.hasLocation) return false;
+    if (p?.lat == null || p?.lng == null) return true;
+    return RouteService.haversineDistanceMiles(p!.lat!, p.lng!, d.lat, d.lng) <
+        200;
+  }
+
   void _fitMapBounds() {
     if (_mapController == null) return;
 
@@ -182,7 +203,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
         LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
       if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null)
         LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
-      if (widget.state.driver != null && widget.state.driver!.hasLocation)
+      if (_driverNearTrip())
         LatLng(widget.state.driver!.lat, widget.state.driver!.lng),
     ];
 
@@ -496,9 +517,10 @@ class _StatusSheet extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Text(_etaCopy(state)!, style: theme.textTheme.bodyMedium),
                 ],
-                if (state.driver != null && state.status.hasDriver) ...[
+                if (_resolveDriver(state, booking) != null &&
+                    state.status.hasDriver) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  _VehicleLine(driver: state.driver!),
+                  _VehicleLine(driver: _resolveDriver(state, booking)!),
                   const SizedBox(height: AppSpacing.lg),
                   Divider(
                     height: AppStroke.thin,
@@ -506,12 +528,20 @@ class _StatusSheet extends StatelessWidget {
                     color: theme.colorScheme.outline,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  DriverCard(
-                    name: state.driver!.name,
-                    rating: 4.8,
-                    colorValue: state.driver!.colorValue,
-                    onMessage: () => _stubCall(context, state.driver!.name),
-                    onCall: () => _stubCall(context, state.driver!.name),
+                  Builder(
+                    builder: (context) {
+                      final d = _resolveDriver(state, booking)!;
+                      return DriverCard(
+                        name: d.name,
+                        rating: d.rating,
+                        phone: d.phone,
+                        imageUrl: d.photoUrl,
+                        colorValue: d.colorValue,
+                        onMessage: () =>
+                            messageDriver(context, d.phone, d.name),
+                        onCall: () => callDriver(context, d.phone, d.name),
+                      );
+                    },
                   ),
                 ],
                 const SizedBox(height: AppSpacing.xl),
@@ -527,13 +557,6 @@ class _StatusSheet extends StatelessWidget {
         );
       },
     );
-  }
-
-  static void _stubCall(BuildContext context, String who) {
-    // TODO(B?): wire to url_launcher tel: once support numbers land in config.
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('Contacting $who…')));
   }
 
   static String? _etaCopy(TrackingState s) {
@@ -592,7 +615,7 @@ class _SheetHeadline extends StatelessWidget {
 class _VehicleLine extends StatelessWidget {
   const _VehicleLine({required this.driver});
 
-  final DriverInfo driver;
+  final _DriverView driver;
 
   @override
   Widget build(BuildContext context) {
@@ -607,7 +630,11 @@ class _VehicleLine extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
-            '${driver.vehicle}  ·  ${driver.plate}',
+            [
+              if (driver.colour.isNotEmpty) driver.colour,
+              driver.vehicle,
+              if (driver.plate.isNotEmpty) driver.plate,
+            ].join('  ·  '),
             style: theme.textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -837,4 +864,57 @@ extension _DriverLocation on DriverInfo {
       lat <= 90 &&
       lng >= -180 &&
       lng <= 180;
+}
+
+/// Everything the tracking sheet shows about the assigned driver.
+class _DriverView {
+  const _DriverView({
+    required this.name,
+    required this.vehicle,
+    required this.plate,
+    required this.colour,
+    required this.colorValue,
+    this.phone,
+    this.rating,
+    this.photoUrl,
+  });
+
+  final String name;
+  final String vehicle;
+  final String plate;
+  final String colour;
+  final int colorValue;
+  final String? phone;
+  final double? rating;
+  final String? photoUrl;
+}
+
+/// The assigned driver for a live trip: the tracking feed's driver, enriched
+/// with the phone / rating / photo / colour noted in the [DriverDirectory].
+_DriverView? _resolveDriver(TrackingState state, BookingSummary? booking) {
+  final live = state.driver;
+  final extra =
+      DriverDirectory.of(state.bookingId) ??
+      (booking == null ? null : DriverDirectory.of(booking.id));
+  final name = (live?.name ?? extra?.name ?? '').trim();
+  if (name.isEmpty) return null;
+
+  final plate = (live?.plate ?? '').trim().isNotEmpty
+      ? live!.plate.trim()
+      : (extra?.plate ?? '').trim();
+  final vehicle = (live?.vehicle ?? '').trim().isNotEmpty
+      ? live!.vehicle.trim()
+      : ((extra?.vehicleMake ?? '').trim().isNotEmpty
+            ? extra!.vehicleMake!.trim()
+            : (booking?.vehicleName ?? 'Taxi'));
+  return _DriverView(
+    name: name,
+    vehicle: vehicle,
+    plate: plate,
+    colour: (extra?.vehicleColour ?? '').trim(),
+    colorValue: live?.colorValue ?? 0xFF2E90FA,
+    phone: extra?.phone,
+    rating: extra?.rating,
+    photoUrl: extra?.photoUrl,
+  );
 }
