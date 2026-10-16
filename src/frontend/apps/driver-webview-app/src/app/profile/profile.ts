@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,6 +26,24 @@ export interface DriverDoc {
   reviewedAt?: string | null;
   rejectionReason?: string | null;
 }
+
+export interface ColourChoice { name: string; hex: string; light?: boolean; }
+
+/** Vehicle colours offered in the picker (the name is what the API receives). */
+const BASE_COLOURS: ColourChoice[] = [
+  { name: 'Black', hex: '#111827' },
+  { name: 'White', hex: '#F8FAFC', light: true },
+  { name: 'Silver', hex: '#C0C7D0', light: true },
+  { name: 'Grey', hex: '#6B7280' },
+  { name: 'Blue', hex: '#2563EB' },
+  { name: 'Red', hex: '#DC2626' },
+  { name: 'Green', hex: '#16A34A' },
+  { name: 'Yellow', hex: '#FACC15', light: true },
+  { name: 'Orange', hex: '#F97316' },
+  { name: 'Brown', hex: '#92400E' },
+  { name: 'Beige', hex: '#D6C4A5', light: true },
+  { name: 'Gold', hex: '#CA8A04' }
+];
 
 @Component({
   selector: 'app-profile',
@@ -87,42 +105,78 @@ export interface DriverDoc {
       <!-- Loaded Profile Content -->
       <div *ngIf="!isLoading" class="profile-content animated-fade-in">
         
-        <!-- 1. Real Driver Identity Hero Card -->
+        <!-- 1. Driver Profile Hero Card -->
         <div class="hero-profile-card">
+          <div class="hero-glow"></div>
           <div class="hero-inner">
             <div class="hero-top-row">
-              <!-- Driver Avatar Circle -->
               <div class="avatar-wrapper">
-                <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : '#CD1A21'">
-                  <img *ngIf="profilePhotoUrl" class="avatar-photo" [src]="profilePhotoUrl" alt="Profile photo" (error)="profilePhotoUrl = ''" />
-                  <span class="avatar-initials" *ngIf="!profilePhotoUrl">{{ getInitials() }}</span>
+                <div class="avatar-ring">
+                  <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : '#CD1A21'">
+                    <img *ngIf="profilePhotoUrl" class="avatar-photo" [src]="profilePhotoUrl" alt="Profile photo" (error)="profilePhotoUrl = ''" />
+                    <span class="avatar-initials" *ngIf="!profilePhotoUrl">{{ getInitials() }}</span>
+                  </div>
                 </div>
+                <button type="button" class="avatar-edit-badge" (click)="openEdit()" aria-label="Change profile photo">
+                  <span class="material-symbols-outlined">photo_camera</span>
+                </button>
               </div>
 
-              <!-- Driver Real Identity Info -->
               <div class="driver-identity-info">
-                <h1 class="driver-name">{{ driverName }}</h1>
-                <button type="button" class="edit-profile-btn" (click)="openEdit()">
-                  <span class="material-symbols-outlined">edit</span>
-                  <span>Edit profile</span>
-                </button>
+                <span class="hero-eyebrow">Driver profile</span>
+                <h1 class="driver-name">{{ driverName || 'Driver' }}</h1>
                 <div class="role-and-id-row">
-                  <span class="badge-pill id-badge" *ngIf="driverId">
-                    <span>ID: #DRV-{{ driverId }}</span>
-                  </span>
+                  <span class="badge-pill id-badge" *ngIf="driverId"><span>ID #DRV-{{ driverId }}</span></span>
                   <span class="badge-pill active-badge">
                     <span class="pulse-dot-inline"></span>
-                    <span>Driver Account</span>
+                    <span>Driver account</span>
                   </span>
                 </div>
               </div>
+            </div>
+
+            <!-- Contact chips -->
+            <div class="hero-chips" *ngIf="hasPhone || hasEmail">
+              <a class="hero-chip" *ngIf="hasPhone" [href]="'tel:' + phoneDigits">
+                <span class="material-symbols-outlined">call</span>
+                <span class="hero-chip-text">{{ driverPhone }}</span>
+              </a>
+              <span class="hero-chip" *ngIf="hasEmail">
+                <span class="material-symbols-outlined">mail</span>
+                <span class="hero-chip-text">{{ driverEmail }}</span>
+              </span>
+            </div>
+
+            <!-- Vehicle summary -->
+            <div class="hero-vehicle" *ngIf="hasPlate || hasVehicle">
+              <span class="hero-plate" *ngIf="hasPlate">{{ plateNumber }}</span>
+              <span class="hero-vehicle-text" *ngIf="hasVehicle">
+                <span class="hero-colour-dot" *ngIf="vehicleColourHex" [style.background-color]="vehicleColourHex"></span>
+                <span>{{ vehicleModel }}</span>
+              </span>
+            </div>
+
+            <!-- Profile completeness -->
+            <div class="hero-complete" *ngIf="profileCompletion < 100">
+              <div class="hero-complete-head">
+                <span>Profile {{ profileCompletion }}% complete</span>
+                <button type="button" class="hero-complete-link" (click)="openEdit()">Complete it</button>
+              </div>
+              <div class="hero-complete-track"><div class="hero-complete-fill" [style.width.%]="profileCompletion"></div></div>
+            </div>
+
+            <div class="hero-actions">
+              <button type="button" class="hero-edit-btn" (click)="openEdit()">
+                <span class="material-symbols-outlined">edit</span>
+                <span>Edit profile</span>
+              </button>
             </div>
 
             <!-- Last Login Timestamp (if available from API) -->
             <div class="hero-meta-bar" *ngIf="lastLogin">
               <div class="meta-item">
                 <span class="material-symbols-outlined meta-icon">schedule</span>
-                <span class="meta-text">Last Login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
+                <span class="meta-text">Last login: {{ lastLogin | date:'d MMM y, HH:mm' }}</span>
               </div>
             </div>
           </div>
@@ -447,8 +501,8 @@ export interface DriverDoc {
 
 
       <!-- Edit Profile Sheet -->
-      <div class="ep-backdrop" *ngIf="isEditOpen" (click)="closeEdit()">
-        <div class="ep-sheet" (click)="$event.stopPropagation()" role="dialog" aria-label="Edit profile">
+      <div class="ep-backdrop" [class.closing]="isEditClosing" *ngIf="isEditOpen" (click)="closeEdit()">
+        <div class="ep-sheet" [class.closing]="isEditClosing" (click)="$event.stopPropagation()" role="dialog" aria-label="Edit profile">
           <div class="ep-grabber"></div>
           <header class="ep-header">
             <h2>Edit profile</h2>
@@ -457,7 +511,7 @@ export interface DriverDoc {
             </button>
           </header>
 
-          <div class="ep-body">
+          <div class="ep-body" #epBody>
             <!-- Photo -->
             <div class="ep-photo-row">
               <div class="ep-photo">
@@ -465,64 +519,115 @@ export interface DriverDoc {
                 <span *ngIf="!photoPreview && !profilePhotoUrl" class="material-symbols-outlined">person</span>
               </div>
               <div class="ep-photo-actions">
-                <label class="ep-btn-outline">
-                  <span class="material-symbols-outlined">photo_camera</span>
-                  <span>{{ photoPreview ? 'Change photo' : 'Add photo' }}</span>
-                  <input type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden />
-                </label>
-                <button type="button" class="ep-link" *ngIf="photoPreview" (click)="clearPhoto()">Remove selected</button>
-                <span class="ep-hint">JPG or PNG, up to 5 MB</span>
+                <div class="ep-photo-buttons">
+                  <button type="button" class="ep-btn-outline" (click)="startSelfie()">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                    <span>Take selfie</span>
+                  </button>
+                  <label class="ep-btn-outline">
+                    <span class="material-symbols-outlined">image</span>
+                    <span>Choose photo</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPhotoSelected($event)" hidden />
+                  </label>
+                </div>
+                <button type="button" class="ep-link" *ngIf="photoPreview" (click)="clearPhoto()">Remove selected photo</button>
+                <span class="ep-hint">Photos only: JPG, PNG or WebP, up to 5 MB</span>
                 <span class="ep-error" *ngIf="editErrors['photo']">{{ editErrors['photo'] }}</span>
               </div>
             </div>
+            <!-- Fallback input used when the live camera is unavailable -->
+            <input #selfieFallback type="file" accept="image/*" capture="user" (change)="onPhotoSelected($event)" hidden />
 
             <h3 class="ep-section">Your details</h3>
             <label class="ep-field">
               <span>Full name *</span>
-              <input type="text" [(ngModel)]="editForm.fullName" name="fullName" autocomplete="name" maxlength="80" />
+              <input type="text" [(ngModel)]="editForm.fullName" name="fullName" autocomplete="name" maxlength="80" (focus)="onFieldFocus($event)" />
               <small class="ep-error" *ngIf="editErrors['fullName']">{{ editErrors['fullName'] }}</small>
             </label>
             <label class="ep-field">
               <span>Phone number</span>
-              <input type="tel" [(ngModel)]="editForm.phoneNumber" name="phoneNumber" placeholder="+44 7700 900123" autocomplete="tel" maxlength="20" />
+              <input type="tel" [(ngModel)]="editForm.phoneNumber" name="phoneNumber" placeholder="+44 7700 900123" autocomplete="tel" maxlength="20" (focus)="onFieldFocus($event)" />
               <small class="ep-error" *ngIf="editErrors['phoneNumber']">{{ editErrors['phoneNumber'] }}</small>
             </label>
             <label class="ep-field">
               <span>Email</span>
-              <input type="email" [(ngModel)]="editForm.email" name="email" placeholder="you@example.com" autocomplete="email" maxlength="120" />
+              <input type="email" [(ngModel)]="editForm.email" name="email" placeholder="you@example.com" autocomplete="email" maxlength="120" (focus)="onFieldFocus($event)" />
               <small class="ep-error" *ngIf="editErrors['email']">{{ editErrors['email'] }}</small>
             </label>
 
             <h3 class="ep-section">Your vehicle</h3>
             <label class="ep-field">
               <span>Number plate</span>
-              <input type="text" [(ngModel)]="editForm.regNo" name="regNo" placeholder="AB12 CDE" autocapitalize="characters" maxlength="10" />
+              <input type="text" [(ngModel)]="editForm.regNo" name="regNo" placeholder="AB12 CDE" autocapitalize="characters" maxlength="10" (focus)="onFieldFocus($event)" />
               <small class="ep-error" *ngIf="editErrors['regNo']">{{ editErrors['regNo'] }}</small>
             </label>
             <div class="ep-row">
               <label class="ep-field">
                 <span>Make</span>
-                <input type="text" [(ngModel)]="editForm.vehicleMake" name="vehicleMake" placeholder="Toyota" maxlength="40" />
+                <input type="text" [(ngModel)]="editForm.vehicleMake" name="vehicleMake" placeholder="Toyota" maxlength="40" (focus)="onFieldFocus($event)" />
               </label>
               <label class="ep-field">
                 <span>Model</span>
-                <input type="text" [(ngModel)]="editForm.vehicleModel" name="vehicleModel" placeholder="Prius" maxlength="40" />
+                <input type="text" [(ngModel)]="editForm.vehicleModel" name="vehicleModel" placeholder="Prius" maxlength="40" (focus)="onFieldFocus($event)" />
               </label>
             </div>
-            <label class="ep-field">
-              <span>Colour</span>
-              <input type="text" [(ngModel)]="editForm.vehicleColour" name="vehicleColour" placeholder="Black" maxlength="30" />
-            </label>
+
+            <div class="ep-field">
+              <span>Vehicle colour <em class="ep-picked" *ngIf="editForm.vehicleColour">· {{ editForm.vehicleColour }}</em></span>
+              <div class="ep-swatches" role="radiogroup" aria-label="Vehicle colour">
+                <button
+                  type="button"
+                  *ngFor="let c of colourChoices"
+                  class="ep-swatch"
+                  [class.selected]="isColourSelected(c.name)"
+                  [class.light]="c.light"
+                  [style.background-color]="c.hex"
+                  [attr.aria-label]="c.name"
+                  [attr.aria-checked]="isColourSelected(c.name)"
+                  role="radio"
+                  (click)="selectColour(c.name)"
+                >
+                  <span class="material-symbols-outlined ep-swatch-check" *ngIf="isColourSelected(c.name)">check</span>
+                </button>
+              </div>
+            </div>
             <p class="ep-note">Fields left blank keep their current value.</p>
           </div>
 
           <footer class="ep-footer">
             <button type="button" class="ep-btn-cancel" (click)="closeEdit()" [disabled]="isSaving">Cancel</button>
-            <button type="button" class="ep-btn-save" (click)="saveProfile()" [disabled]="isSaving">
+            <button type="button" class="ep-btn-save" [class.done]="saveDone" (click)="saveProfile()" [disabled]="isSaving || saveDone">
               <span class="ep-spinner" *ngIf="isSaving"></span>
-              <span>{{ isSaving ? 'Saving…' : 'Save changes' }}</span>
+              <span class="material-symbols-outlined" *ngIf="saveDone">check_circle</span>
+              <span>{{ saveDone ? 'Saved' : (isSaving ? 'Saving…' : 'Save changes') }}</span>
             </button>
           </footer>
+        </div>
+      </div>
+
+      <!-- Selfie camera -->
+      <div class="ep-camera" *ngIf="isCameraOpen">
+        <div class="ep-camera-top">
+          <button type="button" class="ep-camera-close" (click)="stopSelfie()" aria-label="Close camera">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <span class="ep-camera-title">Take a selfie</span>
+          <span class="ep-camera-spacer"></span>
+        </div>
+        <div class="ep-camera-stage">
+          <video #selfieVideo class="ep-camera-video" autoplay playsinline muted [class.hidden]="capturedSelfie"></video>
+          <img *ngIf="capturedSelfie" class="ep-camera-shot" [src]="capturedSelfie" alt="Selfie preview" />
+          <div class="ep-camera-guide" *ngIf="!capturedSelfie"></div>
+        </div>
+        <p class="ep-camera-hint">{{ capturedSelfie ? 'Looking good? Use this photo or retake it.' : 'Centre your face in the circle with good light.' }}</p>
+        <div class="ep-camera-actions">
+          <ng-container *ngIf="!capturedSelfie; else reviewShot">
+            <button type="button" class="ep-shutter" (click)="captureSelfie()" aria-label="Capture photo"><span></span></button>
+          </ng-container>
+          <ng-template #reviewShot>
+            <button type="button" class="ep-btn-cancel ep-camera-btn" (click)="retakeSelfie()">Retake</button>
+            <button type="button" class="ep-btn-save ep-camera-btn" (click)="useSelfie()">Use photo</button>
+          </ng-template>
         </div>
       </div>
     </div>
@@ -1366,52 +1471,152 @@ export interface DriverDoc {
     }
 
     /* ================= DARK THEME OVERRIDES ================= */
-    /* ---- Edit profile ---- */
-    .avatar-photo { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
-    .edit-profile-btn {
-      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
-      padding: 6px 12px; border: 1px solid rgba(205, 26, 33, 0.35); border-radius: 999px;
-      background: rgba(205, 26, 33, 0.08); color: #CD1A21; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    /* ---- Hero card (professional) ---- */
+    .hero-profile-card {
+      background: linear-gradient(145deg, #1E293B 0%, #0B1220 100%);
+      border-radius: 20px;
+      padding: 18px 16px 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
     }
-    .edit-profile-btn .material-symbols-outlined { font-size: 16px; }
+    .hero-glow {
+      position: absolute; top: -70px; right: -60px; width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(205, 26, 33, 0.38) 0%, rgba(205, 26, 33, 0) 70%);
+      pointer-events: none;
+    }
+    .hero-top-row { gap: 16px; align-items: center; }
+    .avatar-wrapper { position: relative; flex-shrink: 0; }
+    .avatar-ring { padding: 3px; border-radius: 50%; background: linear-gradient(135deg, #F87171, #CD1A21 55%, #7F1D1D); }
+    .avatar-circle { width: 74px; height: 74px; font-size: 26px; overflow: hidden; border: 3px solid #0F172A; box-shadow: none; }
+    .avatar-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .avatar-edit-badge {
+      position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid #0F172A; background: #FFFFFF; color: #CD1A21; cursor: pointer;
+      display: grid; place-items: center; padding: 0; transition: transform 0.15s ease;
+    }
+    .avatar-edit-badge:active { transform: scale(0.9); }
+    .avatar-edit-badge .material-symbols-outlined { font-size: 16px; }
+    .hero-eyebrow { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #94A3B8; margin-bottom: 2px; }
+    .driver-name { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin: 0 0 6px 0; }
+    .hero-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .hero-chip {
+      display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 7px 11px; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #E2E8F0; font-size: 12.5px; font-weight: 600; text-decoration: none;
+    }
+    .hero-chip .material-symbols-outlined { font-size: 16px; color: #FCA5A5; }
+    .hero-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hero-vehicle { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); }
+    .hero-plate {
+      padding: 3px 9px; border-radius: 6px; background: #F7D117; color: #000; border: 1.5px solid #000;
+      font-weight: 800; font-size: 13px; letter-spacing: 1.2px; white-space: nowrap;
+    }
+    .hero-vehicle-text { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #E2E8F0; min-width: 0; }
+    .hero-colour-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.55); flex-shrink: 0; }
+    .hero-complete { margin-top: 14px; }
+    .hero-complete-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: #CBD5E1; margin-bottom: 6px; }
+    .hero-complete-link { border: 0; background: none; padding: 0; color: #FCA5A5; font-weight: 700; font-size: 12px; cursor: pointer; }
+    .hero-complete-track { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+    .hero-complete-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #F87171, #CD1A21); transition: width 0.5s ease; }
+    .hero-actions { margin-top: 14px; }
+    .hero-edit-btn {
+      width: 100%; height: 44px; border: 0; border-radius: 12px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: #FFFFFF; color: #0F172A; font-weight: 800; font-size: 14.5px;
+      transition: transform 0.12s ease, box-shadow 0.2s ease; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+    .hero-edit-btn:active { transform: scale(0.98); }
+    .hero-edit-btn .material-symbols-outlined { font-size: 18px; color: #CD1A21; }
+
+    /* ---- Edit profile sheet ---- */
     .ep-backdrop {
       position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
       background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); overscroll-behavior: contain; touch-action: none;
+      animation: epFadeIn 0.2s ease-out both;
     }
+    .ep-backdrop.closing { animation: epFadeOut 0.2s ease-in both; }
     .ep-sheet {
       width: 100%; max-width: 600px; max-height: 92vh; display: flex; flex-direction: column;
-      background: #FFFFFF; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
-      animation: epSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); touch-action: auto;
+      background: #FFFFFF; border-radius: 22px 22px 0 0; box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.22);
+      animation: epSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; touch-action: auto;
     }
+    .ep-sheet.closing { animation: epSlideDown 0.2s ease-in both; }
     @keyframes epSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes epSlideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
+    @keyframes epFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes epFadeOut { from { opacity: 1; } to { opacity: 0; } }
     .ep-grabber { width: 40px; height: 4px; border-radius: 4px; background: #CBD5E1; margin: 8px auto 0; }
     .ep-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 4px; }
-    .ep-header h2 { margin: 0; font-size: 18px; font-weight: 800; color: #0F172A; }
-    .ep-close { border: 0; background: #F1F5F9; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: #334155; }
-    .ep-body { padding: 8px 16px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+    .ep-header h2 { margin: 0; font-size: 19px; font-weight: 800; color: #0F172A; }
+    .ep-close { border: 0; background: #F1F5F9; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: #334155; transition: transform 0.12s ease; }
+    .ep-close:active { transform: scale(0.9); }
+    .ep-body { padding: 8px 16px 18px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; scroll-behavior: smooth; }
     .ep-photo-row { display: flex; align-items: center; gap: 14px; margin: 8px 0 4px; }
-    .ep-photo { width: 76px; height: 76px; border-radius: 50%; overflow: hidden; background: #F1F5F9; display: grid; place-items: center; color: #94A3B8; flex-shrink: 0; border: 2px solid #E2E8F0; }
-    .ep-photo img { width: 100%; height: 100%; object-fit: cover; }
-    .ep-photo .material-symbols-outlined { font-size: 38px; }
-    .ep-photo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
-    .ep-btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 13px; font-weight: 700; color: #0F172A; cursor: pointer; background: #fff; }
-    .ep-btn-outline .material-symbols-outlined { font-size: 18px; }
+    .ep-photo { width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: #F1F5F9; display: grid; place-items: center; color: #94A3B8; flex-shrink: 0; border: 3px solid #E2E8F0; transition: border-color 0.2s ease; }
+    .ep-photo img { width: 100%; height: 100%; object-fit: cover; animation: epFadeIn 0.25s ease-out both; }
+    .ep-photo .material-symbols-outlined { font-size: 40px; }
+    .ep-photo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+    .ep-photo-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ep-btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 13px; font-weight: 700; color: #0F172A; cursor: pointer; background: #fff; transition: transform 0.12s ease, background 0.2s ease; }
+    .ep-btn-outline:active { transform: scale(0.96); background: #F8FAFC; }
+    .ep-btn-outline .material-symbols-outlined { font-size: 18px; color: #CD1A21; }
     .ep-link { border: 0; background: none; color: #CD1A21; font-size: 12.5px; font-weight: 700; padding: 0; cursor: pointer; }
     .ep-hint { font-size: 11.5px; color: #64748B; }
-    .ep-section { margin: 16px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: #64748B; }
-    .ep-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; flex: 1; min-width: 0; }
+    .ep-section { margin: 18px 0 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: #64748B; }
+    .ep-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; flex: 1; min-width: 0; }
     .ep-field > span { font-size: 12.5px; font-weight: 700; color: #334155; }
-    .ep-field input { height: 44px; padding: 0 12px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 15px; background: #fff; color: #0F172A; outline: none; width: 100%; box-sizing: border-box; }
-    .ep-field input:focus { border-color: #CD1A21; box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.12); }
+    .ep-picked { font-style: normal; font-weight: 600; color: #CD1A21; }
+    .ep-field input { height: 46px; padding: 0 13px; border: 1.5px solid #CBD5E1; border-radius: 12px; font-size: 16px; background: #fff; color: #0F172A; outline: none; width: 100%; box-sizing: border-box; transition: border-color 0.18s ease, box-shadow 0.18s ease; }
+    .ep-field input:focus { border-color: #CD1A21; box-shadow: 0 0 0 4px rgba(205, 26, 33, 0.12); }
     .ep-row { display: flex; gap: 10px; }
-    .ep-error { color: #DC2626; font-size: 12px; font-weight: 600; }
+    .ep-error { color: #DC2626; font-size: 12px; font-weight: 600; animation: epFadeIn 0.2s ease-out both; }
     .ep-note { margin: 4px 0 0; font-size: 12px; color: #64748B; }
+    .ep-swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 2px 0; }
+    .ep-swatch {
+      position: relative; aspect-ratio: 1 / 1; width: 100%; border-radius: 50%; padding: 0; cursor: pointer;
+      border: 2px solid rgba(15, 23, 42, 0.12); display: grid; place-items: center;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .ep-swatch.light { border-color: #CBD5E1; }
+    .ep-swatch:active { transform: scale(0.9); }
+    .ep-swatch.selected { transform: scale(1.08); border-color: #CD1A21; box-shadow: 0 0 0 3px #fff, 0 0 0 5px #CD1A21; }
+    .ep-swatch-check { font-size: 18px; color: #fff; font-variation-settings: 'wght' 700; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45)); animation: epPop 0.18s ease-out both; }
+    .ep-swatch.light .ep-swatch-check { color: #0F172A; filter: none; }
+    @keyframes epPop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .ep-footer { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #E2E8F0; background: #fff; }
-    .ep-btn-cancel { flex: 1; height: 46px; border: 1px solid #CBD5E1; border-radius: 12px; background: #fff; font-weight: 700; font-size: 15px; color: #334155; cursor: pointer; }
-    .ep-btn-save { flex: 2; height: 46px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #CD1A21, #E11D48); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-    .ep-btn-save:disabled, .ep-btn-cancel:disabled { opacity: 0.6; cursor: default; }
-    .ep-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff; border-radius: 50%; animation: epSpin 0.7s linear infinite; }
+    .ep-btn-cancel { flex: 1; height: 48px; border: 1px solid #CBD5E1; border-radius: 12px; background: #fff; font-weight: 700; font-size: 15px; color: #334155; cursor: pointer; transition: transform 0.12s ease; }
+    .ep-btn-save { flex: 2; height: 48px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #CD1A21, #E11D48); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.12s ease, background 0.25s ease; }
+    .ep-btn-save.done { background: linear-gradient(135deg, #059669, #10B981); }
+    .ep-btn-save:active:not(:disabled), .ep-btn-cancel:active:not(:disabled) { transform: scale(0.98); }
+    .ep-btn-save:disabled, .ep-btn-cancel:disabled { opacity: 0.65; cursor: default; }
+    .ep-btn-save.done:disabled { opacity: 1; }
+    .ep-spinner { width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.5); border-top-color: #fff; border-radius: 50%; animation: epSpin 0.7s linear infinite; }
     @keyframes epSpin { to { transform: rotate(360deg); } }
+
+    /* ---- Selfie camera ---- */
+    .ep-camera { position: fixed; inset: 0; z-index: 1100; background: #000; display: flex; flex-direction: column; animation: epFadeIn 0.2s ease-out both; }
+    .ep-camera-top { display: flex; align-items: center; justify-content: space-between; padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 8px; color: #fff; }
+    .ep-camera-title { font-weight: 800; font-size: 16px; }
+    .ep-camera-close { width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.16); color: #fff; display: grid; place-items: center; cursor: pointer; }
+    .ep-camera-spacer { width: 38px; }
+    .ep-camera-stage { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+    .ep-camera-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    .ep-camera-video.hidden { visibility: hidden; position: absolute; }
+    .ep-camera-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; animation: epFadeIn 0.2s ease-out both; }
+    .ep-camera-guide { position: absolute; width: min(72vw, 320px); aspect-ratio: 1 / 1; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.75); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45); pointer-events: none; }
+    .ep-camera-hint { margin: 0; padding: 10px 16px 4px; text-align: center; color: #E2E8F0; font-size: 13px; }
+    .ep-camera-actions { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 10px 20px calc(22px + env(safe-area-inset-bottom, 0px)); }
+    .ep-camera-btn { flex: 1; max-width: 170px; }
+    .ep-camera-actions .ep-btn-cancel { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.25); color: #fff; }
+    .ep-shutter { width: 72px; height: 72px; border-radius: 50%; border: 4px solid #fff; background: transparent; padding: 4px; cursor: pointer; transition: transform 0.12s ease; }
+    .ep-shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #fff; }
+    .ep-shutter:active { transform: scale(0.92); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ep-backdrop, .ep-sheet, .ep-camera, .ep-photo img, .ep-error, .ep-swatch-check { animation-duration: 0.01ms !important; }
+      .ep-swatch, .ep-field input, .ep-btn-save, .hero-complete-fill { transition-duration: 0.01ms !important; }
+    }
+
     :host-context(.dark-theme) .ep-sheet, :host-context(.dark-theme) .ep-footer { background: #1E1E24; }
     :host-context(.dark-theme) .ep-footer { border-top-color: #2D2D35; }
     :host-context(.dark-theme) .ep-header h2 { color: #F8FAFC; }
@@ -1420,6 +1625,8 @@ export interface DriverDoc {
     :host-context(.dark-theme) .ep-field input { background: #121214; border-color: #3A3A44; color: #F8FAFC; }
     :host-context(.dark-theme) .ep-btn-outline, :host-context(.dark-theme) .ep-btn-cancel { background: #2D2D35; border-color: #3A3A44; color: #F8FAFC; }
     :host-context(.dark-theme) .ep-photo { background: #2D2D35; border-color: #3A3A44; }
+    :host-context(.dark-theme) .ep-swatch.selected { box-shadow: 0 0 0 3px #1E1E24, 0 0 0 5px #F87171; border-color: #F87171; }
+    :host-context(.dark-theme) .hero-profile-card { border-color: rgba(255, 255, 255, 0.1); }
 
     :host-context(.dark-theme) {
       background-color: #121214 !important;
@@ -1513,7 +1720,7 @@ export interface DriverDoc {
     }
   `]
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   isLoading = true;
   apiError = '';
   driverName = '';
@@ -1531,7 +1738,18 @@ export class ProfileComponent implements OnInit {
 
   // Edit profile sheet
   isEditOpen = false;
+  isEditClosing = false;
   isSaving = false;
+  saveDone = false;
+  colourChoices: ColourChoice[] = [...BASE_COLOURS];
+
+  // Selfie camera
+  isCameraOpen = false;
+  capturedSelfie: string | null = null;
+  private selfieStream: MediaStream | null = null;
+  private selfieBlob: Blob | null = null;
+  @ViewChild('selfieVideo') selfieVideo?: ElementRef<HTMLVideoElement>;
+  @ViewChild('selfieFallback') selfieFallback?: ElementRef<HTMLInputElement>;
   editForm = { fullName: '', phoneNumber: '', email: '', regNo: '', vehicleMake: '', vehicleModel: '', vehicleColour: '' };
   editErrors: Record<string, string> = {};
   selectedPhoto: File | null = null;
@@ -1579,6 +1797,29 @@ export class ProfileComponent implements OnInit {
     this.loadProfile();
   }
 
+  // ---------- Hero helpers ----------
+
+  get hasPhone(): boolean { return !!this.driverPhone && this.driverPhone !== 'Not Registered'; }
+  get hasEmail(): boolean { return !!this.driverEmail && this.driverEmail !== 'Not Registered'; }
+  get hasPlate(): boolean { return !!this.plateNumber && this.plateNumber !== 'No Plate'; }
+  get hasVehicle(): boolean { return !!this.vehicleModel && this.vehicleModel !== 'No Vehicle Registered'; }
+  get phoneDigits(): string { return this.driverPhone.replace(/[^0-9+]/g, ''); }
+
+  /** Hex for the saved vehicle colour name, for the dot in the hero card. */
+  get vehicleColourHex(): string {
+    const name = this.rawProfile.vehicleColour.trim().toLowerCase();
+    const hit = BASE_COLOURS.find(c => c.name.toLowerCase() === name);
+    return hit ? hit.hex : (name ? '#9CA3AF' : '');
+  }
+
+  /** Share of the key profile fields that are filled in (real data only). */
+  get profileCompletion(): number {
+    const r = this.rawProfile;
+    const checks = [r.fullName, r.phoneNumber, r.email, r.regNo, r.vehicleMake, r.vehicleModel, r.vehicleColour, this.profilePhotoUrl];
+    const done = checks.filter(v => !!(v && String(v).trim())).length;
+    return Math.round((done / checks.length) * 100);
+  }
+
   // ---------- Edit profile ----------
 
   openEdit(): void {
@@ -1586,30 +1827,111 @@ export class ProfileComponent implements OnInit {
     this.editErrors = {};
     this.selectedPhoto = null;
     this.photoPreview = null;
+    this.saveDone = false;
+    this.isEditClosing = false;
+
+    // Offer the driver's current colour even when it isn't one of the presets.
+    const current = this.rawProfile.vehicleColour.trim();
+    this.colourChoices = [...BASE_COLOURS];
+    if (current && !BASE_COLOURS.some(c => c.name.toLowerCase() === current.toLowerCase())) {
+      this.colourChoices.push({ name: current, hex: '#9CA3AF' });
+    }
+    const match = BASE_COLOURS.find(c => c.name.toLowerCase() === current.toLowerCase());
+    if (match) this.editForm.vehicleColour = match.name;
+
+    this.lockPageScroll(true);
     this.isEditOpen = true;
   }
 
+  /** Slides the sheet down, then removes it. */
   closeEdit(): void {
-    if (this.isSaving) return;
-    this.isEditOpen = false;
-    this.selectedPhoto = null;
-    this.photoPreview = null;
+    if (this.isSaving || !this.isEditOpen || this.isEditClosing) return;
+    this.stopSelfie();
+    this.isEditClosing = true;
+    setTimeout(() => {
+      this.isEditOpen = false;
+      this.isEditClosing = false;
+      this.selectedPhoto = null;
+      this.photoPreview = null;
+      this.lockPageScroll(false);
+      this.cdr.detectChanges();
+    }, 200);
   }
 
-  onPhotoSelected(event: Event): void {
+  private lockPageScroll(locked: boolean): void {
+    try {
+      document.documentElement.style.overflow = locked ? 'hidden' : '';
+      document.body.style.overflow = locked ? 'hidden' : '';
+    } catch (_) {}
+  }
+
+  ngOnDestroy(): void {
+    this.stopSelfie();
+    this.lockPageScroll(false);
+  }
+
+  // Colour picker
+  isColourSelected(name: string): boolean {
+    return this.editForm.vehicleColour.trim().toLowerCase() === name.toLowerCase();
+  }
+
+  selectColour(name: string): void {
+    // Tapping the selected colour again clears it (the current value is kept on save).
+    this.editForm.vehicleColour = this.isColourSelected(name) ? '' : name;
+  }
+
+  /** Keeps the focused field comfortably in view above the keyboard. */
+  onFieldFocus(event: Event): void {
+    const el = event.target as HTMLElement | null;
+    if (!el) return;
+    setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 280);
+  }
+
+  // ---------- Photo: pick a file (images only) ----------
+
+  private static readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+  /** True when the file's first bytes are a real JPEG / PNG / WebP image. */
+  private async looksLikeImage(file: Blob): Promise<boolean> {
+    try {
+      const buf = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+      const jpeg = buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+      const png = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+      const webp = buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+                   buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50;
+      return jpeg || png || webp;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /** Returns an error message, or null when the file is an acceptable photo. */
+  private async photoProblem(file: File): Promise<string | null> {
+    if (file.type.startsWith('video/')) return "Videos can't be used. Please choose a photo.";
+    if (!ProfileComponent.ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return 'Only JPG, PNG or WebP photos are allowed.';
+    }
+    if (file.size > 5 * 1024 * 1024) return 'That photo is too large. Please choose one under 5 MB.';
+    if (!(await this.looksLikeImage(file))) return "That file isn't a valid photo. Please choose a JPG, PNG or WebP image.";
+    return null;
+  }
+
+  async onPhotoSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length ? input.files[0] : null;
     input.value = ''; // allow re-selecting the same file
     delete this.editErrors['photo'];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      this.editErrors['photo'] = 'Please choose an image file (JPG or PNG).';
+    const problem = await this.photoProblem(file);
+    if (problem) {
+      this.editErrors['photo'] = problem;
+      this.cdr.detectChanges();
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      this.editErrors['photo'] = 'That image is too large. Please choose one under 5 MB.';
-      return;
-    }
+    this.setPhoto(file);
+  }
+
+  private setPhoto(file: File): void {
     this.selectedPhoto = file;
     const reader = new FileReader();
     reader.onload = () => {
@@ -1624,6 +1946,95 @@ export class ProfileComponent implements OnInit {
     this.photoPreview = null;
     delete this.editErrors['photo'];
   }
+
+  // ---------- Photo: take a selfie ----------
+
+  async startSelfie(): Promise<void> {
+    delete this.editErrors['photo'];
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.selfieFallback?.nativeElement.click();
+      return;
+    }
+    try {
+      this.selfieStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1080 } },
+        audio: false
+      });
+      this.capturedSelfie = null;
+      this.selfieBlob = null;
+      this.isCameraOpen = true;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        const video = this.selfieVideo?.nativeElement;
+        if (video && this.selfieStream) {
+          video.srcObject = this.selfieStream;
+          video.play().catch(() => {});
+        }
+      }, 50);
+    } catch (err) {
+      console.warn('[Profile] Camera unavailable, using the device camera picker:', err);
+      this.releaseCamera();
+      // Fall back to the phone's own camera app via a file input (front camera).
+      this.selfieFallback?.nativeElement.click();
+    }
+  }
+
+  captureSelfie(): void {
+    const video = this.selfieVideo?.nativeElement;
+    if (!video || !video.videoWidth) return;
+    // Centre-crop to a square and cap the size, mirrored so it matches the preview.
+    const side = Math.min(video.videoWidth, video.videoHeight);
+    const out = Math.min(side, 900);
+    const canvas = document.createElement('canvas');
+    canvas.width = out;
+    canvas.height = out;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.translate(out, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, (video.videoWidth - side) / 2, (video.videoHeight - side) / 2, side, side, 0, 0, out, out);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      this.selfieBlob = blob;
+      this.capturedSelfie = canvas.toDataURL('image/jpeg', 0.9);
+      this.cdr.detectChanges();
+    }, 'image/jpeg', 0.9);
+  }
+
+  retakeSelfie(): void {
+    this.capturedSelfie = null;
+    this.selfieBlob = null;
+    setTimeout(() => {
+      const video = this.selfieVideo?.nativeElement;
+      if (video && this.selfieStream) {
+        video.srcObject = this.selfieStream;
+        video.play().catch(() => {});
+      }
+    }, 50);
+  }
+
+  useSelfie(): void {
+    if (!this.selfieBlob) return;
+    const file = new File([this.selfieBlob], 'selfie.jpg', { type: 'image/jpeg' });
+    this.stopSelfie();
+    this.setPhoto(file);
+  }
+
+  stopSelfie(): void {
+    this.releaseCamera();
+    this.isCameraOpen = false;
+    this.capturedSelfie = null;
+    this.selfieBlob = null;
+  }
+
+  private releaseCamera(): void {
+    if (this.selfieStream) {
+      this.selfieStream.getTracks().forEach(t => t.stop());
+      this.selfieStream = null;
+    }
+  }
+
+  // ---------- Validate + save ----------
 
   private validateEdit(): boolean {
     const errors: Record<string, string> = {};
@@ -1644,11 +2055,15 @@ export class ProfileComponent implements OnInit {
       errors['photo'] = this.editErrors['photo'];
     }
     this.editErrors = errors;
+    if (Object.keys(errors).length) {
+      // Bring the first problem into view.
+      setTimeout(() => document.querySelector('.ep-error')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+    }
     return Object.keys(errors).length === 0;
   }
 
   saveProfile(): void {
-    if (this.isSaving || !this.validateEdit()) return;
+    if (this.isSaving || this.saveDone || !this.validateEdit()) return;
 
     const f = this.editForm;
     const formData = new FormData();
@@ -1672,12 +2087,15 @@ export class ProfileComponent implements OnInit {
     this.driverService.updateProfile(formData).subscribe({
       next: () => {
         this.isSaving = false;
-        this.isEditOpen = false;
-        this.selectedPhoto = null;
-        this.photoPreview = null;
-        this.showToast('Profile updated');
-        this.loadProfile();
+        this.saveDone = true;
         this.cdr.detectChanges();
+        // Show the "Saved" state briefly, then slide the sheet away.
+        setTimeout(() => {
+          this.saveDone = false;
+          this.closeEdit();
+          this.showToast('Profile updated');
+          this.loadProfile();
+        }, 650);
       },
       error: (err) => {
         this.isSaving = false;
