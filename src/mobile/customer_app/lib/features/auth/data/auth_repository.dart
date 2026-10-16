@@ -56,9 +56,19 @@ class AuthRepository {
   /// Google and returns the same session as the email/password login.
   Future<AuthUser> loginWithGoogle(String idToken) async {
     try {
+      final config = AppConfig.fromEnvironment();
       final res = await _dio.post(
         '/api/v2/customer-auth/google',
-        data: {'idToken': idToken},
+        data: {
+          'idToken': idToken,
+          // The backend resolves the customer within a tenant, so send it in
+          // the body as well as the X-Tenant-Id / X-Tenant-Key headers.
+          'tenantId': config.tenantOrgId,
+        },
+        options: Options(headers: {
+          'X-Tenant-Id': config.tenantOrgId,
+          if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
+        }),
       );
       final session = _parseSession(res.data);
       await _applySession(session);

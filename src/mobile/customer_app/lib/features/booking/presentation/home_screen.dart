@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/domain/place.dart';
-import '../../../core/location/location_service.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/theme/app_colors.dart';
@@ -321,23 +320,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     context.push(Routes.addressSearch, extra: 'dropoff');
   }
 
+  /// Opens the pickup search straight away. The pickup screen itself asks for
+  /// location (once) with its own explanation, so we don't block navigation on
+  /// a system prompt here.
   Future<void> _openPickupSearch(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final result = await ref.read(locationServiceProvider).currentPosition();
-    if (result.needsManualEntry && context.mounted) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Location unavailable. Enter pickup address.'),
-          ),
-        );
-      context.push(Routes.addressSearch, extra: 'pickup');
-      return;
-    }
-    if (context.mounted) {
-      context.push(Routes.addressSearch, extra: 'pickup');
-    }
+    context.push(Routes.addressSearch, extra: 'pickup');
   }
 
   void _selectDestination(BuildContext context, WidgetRef ref, Place place) {

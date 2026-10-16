@@ -100,11 +100,21 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
       if (!mounted) return;
       if (!result.isGranted) {
         setState(() => _locationOff = true);
+        final blocked = result.status == LocationStatus.deniedForever;
         messenger.showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Location is unavailable. Enter your pickup address instead.',
+              blocked
+                  ? 'Location is turned off for First Taxis. Enable it in Settings, or enter your pickup address.'
+                  : 'Location is unavailable. Enter your pickup address instead.',
             ),
+            action: blocked
+                ? SnackBarAction(
+                    label: 'Settings',
+                    onPressed: () =>
+                        ref.read(locationServiceProvider).openSettings(),
+                  )
+                : null,
           ),
         );
         return;

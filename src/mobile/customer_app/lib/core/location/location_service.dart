@@ -42,7 +42,31 @@ class LocationResult {
 class LocationService {
   const LocationService();
 
-  Future<LocationResult> currentPosition() async {
+  /// The lookup in flight, shared by every caller. iOS (and geolocator) allow
+  /// only one permission prompt at a time: a second concurrent request throws
+  /// "permission request in progress", which used to surface as "location
+  /// unavailable" on the very first booking. Callers now await the same lookup.
+  static Future<LocationResult>? _inFlight;
+
+  Future<LocationResult> currentPosition() {
+    final pending = _inFlight;
+    if (pending != null) return pending;
+    final lookup = _lookup().whenComplete(() => _inFlight = null);
+    _inFlight = lookup;
+    return lookup;
+  }
+
+  /// Opens the system settings page for this app (used when the user has
+  /// permanently denied location).
+  Future<bool> openSettings() async {
+    try {
+      return await Geolocator.openAppSettings();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<LocationResult> _lookup() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         return const LocationResult(LocationStatus.serviceDisabled);
