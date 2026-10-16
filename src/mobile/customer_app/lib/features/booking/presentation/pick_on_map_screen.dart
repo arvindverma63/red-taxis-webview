@@ -223,7 +223,11 @@ class _PickOnMapScreenState extends ConsumerState<PickOnMapScreen> {
     if (draft.hasRoute) {
       context.go(Routes.bookingReview);
     } else {
-      context.pushReplacement(Routes.addressSearch, extra: 'pickup');
+      // Only one end set — collect the other one.
+      context.pushReplacement(
+        Routes.addressSearch,
+        extra: _isPickup ? 'dropoff' : 'pickup',
+      );
     }
   }
 
