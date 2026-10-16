@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -31,6 +32,7 @@ export interface DriverDoc {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatIconModule,
     MatDividerModule,
@@ -92,13 +94,18 @@ export interface DriverDoc {
               <!-- Driver Avatar Circle -->
               <div class="avatar-wrapper">
                 <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : '#CD1A21'">
-                  <span class="avatar-initials">{{ getInitials() }}</span>
+                  <img *ngIf="profilePhotoUrl" class="avatar-photo" [src]="profilePhotoUrl" alt="Profile photo" (error)="profilePhotoUrl = ''" />
+                  <span class="avatar-initials" *ngIf="!profilePhotoUrl">{{ getInitials() }}</span>
                 </div>
               </div>
 
               <!-- Driver Real Identity Info -->
               <div class="driver-identity-info">
                 <h1 class="driver-name">{{ driverName }}</h1>
+                <button type="button" class="edit-profile-btn" (click)="openEdit()">
+                  <span class="material-symbols-outlined">edit</span>
+                  <span>Edit profile</span>
+                </button>
                 <div class="role-and-id-row">
                   <span class="badge-pill id-badge" *ngIf="driverId">
                     <span>ID: #DRV-{{ driverId }}</span>
@@ -438,6 +445,86 @@ export interface DriverDoc {
         </div>
       </div>
 
+
+      <!-- Edit Profile Sheet -->
+      <div class="ep-backdrop" *ngIf="isEditOpen" (click)="closeEdit()">
+        <div class="ep-sheet" (click)="$event.stopPropagation()" role="dialog" aria-label="Edit profile">
+          <div class="ep-grabber"></div>
+          <header class="ep-header">
+            <h2>Edit profile</h2>
+            <button type="button" class="ep-close" (click)="closeEdit()" aria-label="Close">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </header>
+
+          <div class="ep-body">
+            <!-- Photo -->
+            <div class="ep-photo-row">
+              <div class="ep-photo">
+                <img *ngIf="photoPreview || profilePhotoUrl" [src]="photoPreview || profilePhotoUrl" alt="Photo" />
+                <span *ngIf="!photoPreview && !profilePhotoUrl" class="material-symbols-outlined">person</span>
+              </div>
+              <div class="ep-photo-actions">
+                <label class="ep-btn-outline">
+                  <span class="material-symbols-outlined">photo_camera</span>
+                  <span>{{ photoPreview ? 'Change photo' : 'Add photo' }}</span>
+                  <input type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden />
+                </label>
+                <button type="button" class="ep-link" *ngIf="photoPreview" (click)="clearPhoto()">Remove selected</button>
+                <span class="ep-hint">JPG or PNG, up to 5 MB</span>
+                <span class="ep-error" *ngIf="editErrors['photo']">{{ editErrors['photo'] }}</span>
+              </div>
+            </div>
+
+            <h3 class="ep-section">Your details</h3>
+            <label class="ep-field">
+              <span>Full name *</span>
+              <input type="text" [(ngModel)]="editForm.fullName" name="fullName" autocomplete="name" maxlength="80" />
+              <small class="ep-error" *ngIf="editErrors['fullName']">{{ editErrors['fullName'] }}</small>
+            </label>
+            <label class="ep-field">
+              <span>Phone number</span>
+              <input type="tel" [(ngModel)]="editForm.phoneNumber" name="phoneNumber" placeholder="+44 7700 900123" autocomplete="tel" maxlength="20" />
+              <small class="ep-error" *ngIf="editErrors['phoneNumber']">{{ editErrors['phoneNumber'] }}</small>
+            </label>
+            <label class="ep-field">
+              <span>Email</span>
+              <input type="email" [(ngModel)]="editForm.email" name="email" placeholder="you@example.com" autocomplete="email" maxlength="120" />
+              <small class="ep-error" *ngIf="editErrors['email']">{{ editErrors['email'] }}</small>
+            </label>
+
+            <h3 class="ep-section">Your vehicle</h3>
+            <label class="ep-field">
+              <span>Number plate</span>
+              <input type="text" [(ngModel)]="editForm.regNo" name="regNo" placeholder="AB12 CDE" autocapitalize="characters" maxlength="10" />
+              <small class="ep-error" *ngIf="editErrors['regNo']">{{ editErrors['regNo'] }}</small>
+            </label>
+            <div class="ep-row">
+              <label class="ep-field">
+                <span>Make</span>
+                <input type="text" [(ngModel)]="editForm.vehicleMake" name="vehicleMake" placeholder="Toyota" maxlength="40" />
+              </label>
+              <label class="ep-field">
+                <span>Model</span>
+                <input type="text" [(ngModel)]="editForm.vehicleModel" name="vehicleModel" placeholder="Prius" maxlength="40" />
+              </label>
+            </div>
+            <label class="ep-field">
+              <span>Colour</span>
+              <input type="text" [(ngModel)]="editForm.vehicleColour" name="vehicleColour" placeholder="Black" maxlength="30" />
+            </label>
+            <p class="ep-note">Fields left blank keep their current value.</p>
+          </div>
+
+          <footer class="ep-footer">
+            <button type="button" class="ep-btn-cancel" (click)="closeEdit()" [disabled]="isSaving">Cancel</button>
+            <button type="button" class="ep-btn-save" (click)="saveProfile()" [disabled]="isSaving">
+              <span class="ep-spinner" *ngIf="isSaving"></span>
+              <span>{{ isSaving ? 'Saving…' : 'Save changes' }}</span>
+            </button>
+          </footer>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -1279,6 +1366,61 @@ export interface DriverDoc {
     }
 
     /* ================= DARK THEME OVERRIDES ================= */
+    /* ---- Edit profile ---- */
+    .avatar-photo { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+    .edit-profile-btn {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+      padding: 6px 12px; border: 1px solid rgba(205, 26, 33, 0.35); border-radius: 999px;
+      background: rgba(205, 26, 33, 0.08); color: #CD1A21; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    }
+    .edit-profile-btn .material-symbols-outlined { font-size: 16px; }
+    .ep-backdrop {
+      position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); overscroll-behavior: contain; touch-action: none;
+    }
+    .ep-sheet {
+      width: 100%; max-width: 600px; max-height: 92vh; display: flex; flex-direction: column;
+      background: #FFFFFF; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+      animation: epSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); touch-action: auto;
+    }
+    @keyframes epSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .ep-grabber { width: 40px; height: 4px; border-radius: 4px; background: #CBD5E1; margin: 8px auto 0; }
+    .ep-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 4px; }
+    .ep-header h2 { margin: 0; font-size: 18px; font-weight: 800; color: #0F172A; }
+    .ep-close { border: 0; background: #F1F5F9; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: #334155; }
+    .ep-body { padding: 8px 16px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+    .ep-photo-row { display: flex; align-items: center; gap: 14px; margin: 8px 0 4px; }
+    .ep-photo { width: 76px; height: 76px; border-radius: 50%; overflow: hidden; background: #F1F5F9; display: grid; place-items: center; color: #94A3B8; flex-shrink: 0; border: 2px solid #E2E8F0; }
+    .ep-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .ep-photo .material-symbols-outlined { font-size: 38px; }
+    .ep-photo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+    .ep-btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 13px; font-weight: 700; color: #0F172A; cursor: pointer; background: #fff; }
+    .ep-btn-outline .material-symbols-outlined { font-size: 18px; }
+    .ep-link { border: 0; background: none; color: #CD1A21; font-size: 12.5px; font-weight: 700; padding: 0; cursor: pointer; }
+    .ep-hint { font-size: 11.5px; color: #64748B; }
+    .ep-section { margin: 16px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: #64748B; }
+    .ep-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; flex: 1; min-width: 0; }
+    .ep-field > span { font-size: 12.5px; font-weight: 700; color: #334155; }
+    .ep-field input { height: 44px; padding: 0 12px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 15px; background: #fff; color: #0F172A; outline: none; width: 100%; box-sizing: border-box; }
+    .ep-field input:focus { border-color: #CD1A21; box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.12); }
+    .ep-row { display: flex; gap: 10px; }
+    .ep-error { color: #DC2626; font-size: 12px; font-weight: 600; }
+    .ep-note { margin: 4px 0 0; font-size: 12px; color: #64748B; }
+    .ep-footer { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #E2E8F0; background: #fff; }
+    .ep-btn-cancel { flex: 1; height: 46px; border: 1px solid #CBD5E1; border-radius: 12px; background: #fff; font-weight: 700; font-size: 15px; color: #334155; cursor: pointer; }
+    .ep-btn-save { flex: 2; height: 46px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #CD1A21, #E11D48); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .ep-btn-save:disabled, .ep-btn-cancel:disabled { opacity: 0.6; cursor: default; }
+    .ep-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff; border-radius: 50%; animation: epSpin 0.7s linear infinite; }
+    @keyframes epSpin { to { transform: rotate(360deg); } }
+    :host-context(.dark-theme) .ep-sheet, :host-context(.dark-theme) .ep-footer { background: #1E1E24; }
+    :host-context(.dark-theme) .ep-footer { border-top-color: #2D2D35; }
+    :host-context(.dark-theme) .ep-header h2 { color: #F8FAFC; }
+    :host-context(.dark-theme) .ep-close { background: #2D2D35; color: #E2E8F0; }
+    :host-context(.dark-theme) .ep-field > span { color: #CBD5E1; }
+    :host-context(.dark-theme) .ep-field input { background: #121214; border-color: #3A3A44; color: #F8FAFC; }
+    :host-context(.dark-theme) .ep-btn-outline, :host-context(.dark-theme) .ep-btn-cancel { background: #2D2D35; border-color: #3A3A44; color: #F8FAFC; }
+    :host-context(.dark-theme) .ep-photo { background: #2D2D35; border-color: #3A3A44; }
+
     :host-context(.dark-theme) {
       background-color: #121214 !important;
       color: #ECEFF1 !important;
@@ -1382,6 +1524,18 @@ export class ProfileComponent implements OnInit {
   colorCode = '';
   lastLogin: string | null = null;
   driverId: number | null = null;
+  profilePhotoUrl = '';
+
+  // Raw profile values (unformatted) used to pre-fill the edit form
+  private rawProfile = { fullName: '', phoneNumber: '', email: '', regNo: '', vehicleMake: '', vehicleModel: '', vehicleColour: '' };
+
+  // Edit profile sheet
+  isEditOpen = false;
+  isSaving = false;
+  editForm = { fullName: '', phoneNumber: '', email: '', regNo: '', vehicleMake: '', vehicleModel: '', vehicleColour: '' };
+  editErrors: Record<string, string> = {};
+  selectedPhoto: File | null = null;
+  photoPreview: string | null = null;
 
   selectedDocFilter: 'all' | 'action' | 'verified' = 'all';
 
@@ -1425,6 +1579,128 @@ export class ProfileComponent implements OnInit {
     this.loadProfile();
   }
 
+  // ---------- Edit profile ----------
+
+  openEdit(): void {
+    this.editForm = { ...this.rawProfile };
+    this.editErrors = {};
+    this.selectedPhoto = null;
+    this.photoPreview = null;
+    this.isEditOpen = true;
+  }
+
+  closeEdit(): void {
+    if (this.isSaving) return;
+    this.isEditOpen = false;
+    this.selectedPhoto = null;
+    this.photoPreview = null;
+  }
+
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length ? input.files[0] : null;
+    input.value = ''; // allow re-selecting the same file
+    delete this.editErrors['photo'];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.editErrors['photo'] = 'Please choose an image file (JPG or PNG).';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.editErrors['photo'] = 'That image is too large. Please choose one under 5 MB.';
+      return;
+    }
+    this.selectedPhoto = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.photoPreview = typeof reader.result === 'string' ? reader.result : null;
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearPhoto(): void {
+    this.selectedPhoto = null;
+    this.photoPreview = null;
+    delete this.editErrors['photo'];
+  }
+
+  private validateEdit(): boolean {
+    const errors: Record<string, string> = {};
+    const f = this.editForm;
+    if (!f.fullName.trim() || f.fullName.trim().length < 2) {
+      errors['fullName'] = 'Please enter your full name.';
+    }
+    if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+      errors['email'] = 'Please enter a valid email address.';
+    }
+    if (f.phoneNumber.trim() && !/^\+?[0-9 ()-]{7,20}$/.test(f.phoneNumber.trim())) {
+      errors['phoneNumber'] = 'Please enter a valid phone number, e.g. +44 7700 900123.';
+    }
+    if (f.regNo.trim() && !/^[A-Za-z0-9 ]{2,10}$/.test(f.regNo.trim())) {
+      errors['regNo'] = 'Number plate can only contain letters and numbers.';
+    }
+    if (this.editErrors['photo']) {
+      errors['photo'] = this.editErrors['photo'];
+    }
+    this.editErrors = errors;
+    return Object.keys(errors).length === 0;
+  }
+
+  saveProfile(): void {
+    if (this.isSaving || !this.validateEdit()) return;
+
+    const f = this.editForm;
+    const formData = new FormData();
+    // Blank fields are not sent, so they keep their current value on the server.
+    const add = (key: string, value: string) => {
+      const v = value.trim();
+      if (v) formData.append(key, v);
+    };
+    add('fullName', f.fullName);
+    add('phoneNumber', f.phoneNumber);
+    add('email', f.email);
+    add('regNo', f.regNo.toUpperCase());
+    add('vehicleMake', f.vehicleMake);
+    add('vehicleModel', f.vehicleModel);
+    add('vehicleColour', f.vehicleColour);
+    if (this.selectedPhoto) {
+      formData.append('photo', this.selectedPhoto, this.selectedPhoto.name);
+    }
+
+    this.isSaving = true;
+    this.driverService.updateProfile(formData).subscribe({
+      next: () => {
+        this.isSaving = false;
+        this.isEditOpen = false;
+        this.selectedPhoto = null;
+        this.photoPreview = null;
+        this.showToast('Profile updated');
+        this.loadProfile();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isSaving = false;
+        this.showToast(this.extractProfileError(err));
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /** A short, user-safe message from an UpdateProfile failure (never a raw HTTP dump). */
+  private extractProfileError(err: any): string {
+    try {
+      const raw = err?.error;
+      const body = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      const msg = body?.errors?.[0]?.message || body?.message || body?.title;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    } catch (_) { /* not JSON */ }
+    if (err?.status === 0) return 'No connection. Check your internet and try again.';
+    if (err?.status === 401) return 'Your session has expired. Please sign in again.';
+    if (err?.status === 413) return 'That photo is too large. Please choose a smaller one.';
+    return 'Could not update your profile. Please try again.';
+  }
+
   loadProfile(): void {
     this.isLoading = true;
     const userId = this.getDriverUserId();
@@ -1463,6 +1739,18 @@ export class ProfileComponent implements OnInit {
         }
 
         this.plateNumber = profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration || 'No Plate';
+        this.profilePhotoUrl = profile.photoUrl || profile.photo || profile.imageUrl || profile.profilePhoto || profile.avatar || '';
+
+        const clean = (v: any) => (v === null || v === undefined) ? '' : String(v).trim();
+        this.rawProfile = {
+          fullName: clean(profile.fullname || profile.fullName || profile.name),
+          phoneNumber: clean(profile.telephone || profile.phone || profile.phoneNumber),
+          email: clean(profile.email),
+          regNo: clean(profile.vehicleReg || profile.regNo || profile.plateNumber || profile.registration),
+          vehicleMake: clean(vehicleMake),
+          vehicleModel: clean(vehicleModel),
+          vehicleColour: clean(vehicleColour)
+        };
       }
 
       // Fetch live documents from /api/v2/drivers/{userId}/documents
@@ -1764,6 +2052,14 @@ export class ProfileComponent implements OnInit {
     return `${day} ${months[d.getMonth()]} ${d.getFullYear()}, ${h}:${m}`;
   }
 
+  private showToast(message: string): void {
+    this.snackBar.open(message, 'OK', {
+      duration: 3000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom'
+    });
+  }
+
   copyToClipboard(text: string, message: string): void {
     if (!text || text === 'Not Registered') return;
     navigator.clipboard.writeText(text).then(() => {
@@ -1779,6 +2075,7 @@ export class ProfileComponent implements OnInit {
 
   // Touch Gestures
   onTouchStart(event: TouchEvent): void {
+    if (this.isEditOpen) return;
     if (window.scrollY === 0) {
       this.touchStartY = event.touches[0].clientY;
     }
