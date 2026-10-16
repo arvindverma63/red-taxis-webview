@@ -22,10 +22,50 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.470510245907-8u5g126rhnctn60tvv7p303bca8uc4pu</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>470510245907-8u5g126rhnctn60tvv7p303bca8uc4pu.apps.googleusercontent.com</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>telprompt</string>
+		<string>sms</string>
+		<string>mailto</string>
+		<string>maps</string>
+		<string>comgooglemaps</string>
+		<string>waze</string>
+		<string>https</string>
+		<string>http</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access to scan QR codes for fleet onboarding.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>First Taxis requires location access to track your ride in real-time and provide accurate driver arrival times.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>First Taxis requires location access to set your pickup point, calculate accurate fares, and show nearby drivers.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires photo library access for passenger profile photo selection.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -49,6 +89,11 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -59,38 +104,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>This app requires camera access to scan QR codes for fleet onboarding.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires photo library access for passenger profile photo selection.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>First Taxis requires location access to set your pickup point, calculate accurate fares, and show nearby drivers.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>First Taxis requires location access to track your ride in real-time and provide accurate driver arrival times.</string>
-	<key>UIBackgroundModes</key>
+	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>remote-notification</string>
-		<string>fetch</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>tel</string>
-		<string>telprompt</string>
-		<string>sms</string>
-		<string>mailto</string>
-		<string>maps</string>
-		<string>comgooglemaps</string>
-		<string>waze</string>
-		<string>https</string>
-		<string>http</string>
-	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
-	</dict>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 </dict>

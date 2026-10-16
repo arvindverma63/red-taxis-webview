@@ -33,7 +33,10 @@ class TrackingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Listen for live status transitions to refresh global activity history in background
-    ref.listen<AsyncValue<TrackingState>>(trackingProvider(bookingId), (previous, next) {
+    ref.listen<AsyncValue<TrackingState>>(trackingProvider(bookingId), (
+      previous,
+      next,
+    ) {
       final nextStatus = next.valueOrNull?.status;
       final prevStatus = previous?.valueOrNull?.status;
       if (nextStatus != null && nextStatus != prevStatus) {
@@ -81,20 +84,14 @@ class TrackingScreen extends ConsumerWidget {
           message: 'We lost the connection to your trip.\n$err',
           onRetry: () => ref.invalidate(trackingProvider(bookingId)),
         ),
-        data: (state) => _TrackingBody(
-          state: state,
-          booking: booking,
-        ),
+        data: (state) => _TrackingBody(state: state, booking: booking),
       ),
     );
   }
 }
 
 class _TrackingBody extends StatefulWidget {
-  const _TrackingBody({
-    required this.state,
-    this.booking,
-  });
+  const _TrackingBody({required this.state, this.booking});
 
   final TrackingState state;
   final BookingSummary? booking;
@@ -130,20 +127,24 @@ class _TrackingBodyState extends State<_TrackingBody> {
     const routeService = RouteService();
     final p = widget.booking?.pickup != null
         ? routeService.resolvePlaceDetails(widget.booking!.pickup)
-        : routeService.resolvePlaceDetails(const Place(
-            description: 'Gillingham Station, Station Road',
-            postcode: 'SP8 4QF',
-            lat: 51.0382,
-            lng: -2.2718,
-          ));
+        : routeService.resolvePlaceDetails(
+            const Place(
+              description: 'Gillingham Station, Station Road',
+              postcode: 'SP8 4QF',
+              lat: 51.0382,
+              lng: -2.2718,
+            ),
+          );
     final d = widget.booking?.dropoff != null
         ? routeService.resolvePlaceDetails(widget.booking!.dropoff)
-        : routeService.resolvePlaceDetails(const Place(
-            description: 'Shaftesbury, High Street',
-            postcode: 'SP7 8JE',
-            lat: 51.0058,
-            lng: -2.1972,
-          ));
+        : routeService.resolvePlaceDetails(
+            const Place(
+              description: 'Shaftesbury, High Street',
+              postcode: 'SP7 8JE',
+              lat: 51.0058,
+              lng: -2.1972,
+            ),
+          );
 
     final start = LatLng(p.lat ?? 51.0382, p.lng ?? -2.2718);
     final end = LatLng(d.lat ?? 51.0058, d.lng ?? -2.1972);
@@ -181,7 +182,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
         LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
       if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null)
         LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
-      if (widget.state.driver != null)
+      if (widget.state.driver != null && widget.state.driver!.hasLocation)
         LatLng(widget.state.driver!.lat, widget.state.driver!.lng),
     ];
 
@@ -204,53 +205,76 @@ class _TrackingBodyState extends State<_TrackingBody> {
       northeast: LatLng(maxLat, maxLng),
     );
 
-    // Padding ensures pins and route line don't get cut off by header and bottom sheet
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 72),
-    );
+    // Padding ensures pins and route line don't get cut off by header and bottom sheet.
+    // The map can report a zero size while the screen is still animating in, and a
+    // degenerate box over-zooms, so guard both.
+    final tiny =
+        (maxLat - minLat).abs() < 0.0005 && (maxLng - minLng).abs() < 0.0005;
+    try {
+      if (tiny) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2),
+            15,
+          ),
+        );
+      } else {
+        _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 72));
+      }
+    } catch (_) {}
   }
 
   Set<Marker> _buildMarkers(DriverInfo? driver) {
     final markers = <Marker>{};
 
     if (_resolvedPickup?.lat != null && _resolvedPickup?.lng != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(
-          title: 'Pickup',
-          snippet: _resolvedPickup!.description.isNotEmpty
-              ? _resolvedPickup!.description
-              : _resolvedPickup!.addressLine,
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+          infoWindow: InfoWindow(
+            title: 'Pickup',
+            snippet: _resolvedPickup!.description.isNotEmpty
+                ? _resolvedPickup!.description
+                : _resolvedPickup!.addressLine,
+          ),
         ),
-      ));
+      );
     }
 
     if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('dropoff'),
-        position: LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(
-          title: 'Destination',
-          snippet: _resolvedDropoff!.description.isNotEmpty
-              ? _resolvedDropoff!.description
-              : _resolvedDropoff!.addressLine,
+      markers.add(
+        Marker(
+          markerId: const MarkerId('dropoff'),
+          position: LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: InfoWindow(
+            title: 'Destination',
+            snippet: _resolvedDropoff!.description.isNotEmpty
+                ? _resolvedDropoff!.description
+                : _resolvedDropoff!.addressLine,
+          ),
         ),
-      ));
+      );
     }
 
-    if (driver != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('driver'),
-        position: LatLng(driver.lat, driver.lng),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: InfoWindow(
-          title: driver.name,
-          snippet: '${driver.vehicle} · ${driver.plate}',
+    if (driver != null && driver.hasLocation) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('driver'),
+          position: LatLng(driver.lat, driver.lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueAzure,
+          ),
+          infoWindow: InfoWindow(
+            title: driver.name,
+            snippet: '${driver.vehicle} · ${driver.plate}',
+          ),
         ),
-      ));
+      );
     }
 
     return markers;
@@ -276,6 +300,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
 
     // 2. Driver en-route polyline (Azure dashed)
     if (driver != null &&
+        driver.hasLocation &&
         _resolvedPickup?.lat != null &&
         _resolvedPickup?.lng != null) {
       polylines.add(
@@ -349,10 +374,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
       );
     }
     if (widget.state.status.isComplete) {
-      return _CompletedState(
-        state: widget.state,
-        booking: widget.booking,
-      );
+      return _CompletedState(state: widget.state, booking: widget.booking);
     }
 
     final driver = widget.state.status.hasDriver ? widget.state.driver : null;
@@ -415,10 +437,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
             onTap: () => Navigator.of(context).maybePop(),
           ),
         ),
-        _StatusSheet(
-          state: widget.state,
-          booking: widget.booking,
-        ),
+        _StatusSheet(state: widget.state, booking: widget.booking),
       ],
     );
   }
@@ -427,10 +446,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
 // ── Draggable status sheet ─────────────────────────────────────────────────
 
 class _StatusSheet extends StatelessWidget {
-  const _StatusSheet({
-    required this.state,
-    this.booking,
-  });
+  const _StatusSheet({required this.state, this.booking});
 
   final TrackingState state;
   final BookingSummary? booking;
@@ -478,10 +494,7 @@ class _StatusSheet extends StatelessWidget {
                 _SheetHeadline(state: state),
                 if (_etaCopy(state) != null) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    _etaCopy(state)!,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Text(_etaCopy(state)!, style: theme.textTheme.bodyMedium),
                 ],
                 if (state.driver != null && state.status.hasDriver) ...[
                   const SizedBox(height: AppSpacing.xs),
@@ -554,10 +567,7 @@ class _SheetHeadline extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(
-            _headline(state),
-            style: theme.textTheme.titleLarge,
-          ),
+          child: Text(_headline(state), style: theme.textTheme.titleLarge),
         ),
         const SizedBox(width: AppSpacing.sm),
         StatusChip(label: status.label, kind: status.statusKind),
@@ -566,15 +576,15 @@ class _SheetHeadline extends StatelessWidget {
   }
 
   static String _headline(TrackingState s) => switch (s.status) {
-        BookingStatus.requested => 'Sending your request…',
-        BookingStatus.confirmed => 'Booking confirmed',
-        BookingStatus.allocated => 'Driver assigned',
-        BookingStatus.arriving => 'Driver is heading to your location…',
-        BookingStatus.arrived => 'Your driver has arrived',
-        BookingStatus.inProgress => 'Enjoy your trip',
-        BookingStatus.completed => 'Trip complete',
-        BookingStatus.cancelled => 'Booking cancelled',
-      };
+    BookingStatus.requested => 'Sending your request…',
+    BookingStatus.confirmed => 'Booking confirmed',
+    BookingStatus.allocated => 'Driver assigned',
+    BookingStatus.arriving => 'Driver is heading to your location…',
+    BookingStatus.arrived => 'Your driver has arrived',
+    BookingStatus.inProgress => 'Enjoy your trip',
+    BookingStatus.completed => 'Trip complete',
+    BookingStatus.cancelled => 'Booking cancelled',
+  };
 }
 
 /// "Toyota Prius · White · AC21 TXI" style vehicle line under the headline,
@@ -589,8 +599,11 @@ class _VehicleLine extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(Icons.local_taxi_outlined,
-            size: 16, color: theme.colorScheme.onSurface),
+        Icon(
+          Icons.local_taxi_outlined,
+          size: 16,
+          color: theme.colorScheme.onSurface,
+        ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
@@ -626,10 +639,7 @@ class _SheetGrabber extends StatelessWidget {
 // ── Actions ────────────────────────────────────────────────────────────────
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
-    required this.hasDriver,
-    required this.bookingId,
-  });
+  const _ActionButtons({required this.hasDriver, required this.bookingId});
 
   final bool hasDriver;
   final String bookingId;
@@ -649,8 +659,7 @@ class _ActionButtons extends StatelessWidget {
           child: OutlinedButton.icon(
             icon: const Icon(Icons.info_outline_rounded, size: 16),
             label: const Text('Trip Details'),
-            onPressed: () =>
-                context.push('${Routes.bookingDetail}/$bookingId'),
+            onPressed: () => context.push('${Routes.bookingDetail}/$bookingId'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -673,10 +682,7 @@ class _ActionButtons extends StatelessWidget {
 // ── Completed state (fare receipt) ─────────────────────────────────────────
 
 class _CompletedState extends StatelessWidget {
-  const _CompletedState({
-    required this.state,
-    this.booking,
-  });
+  const _CompletedState({required this.state, this.booking});
 
   final TrackingState state;
   final BookingSummary? booking;
@@ -700,8 +706,11 @@ class _CompletedState extends StatelessWidget {
                 color: AppColors.success.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_outline,
-                  size: 56, color: AppColors.success),
+              child: const Icon(
+                Icons.check_circle_outline,
+                size: 56,
+                color: AppColors.success,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -765,12 +774,12 @@ class _TerminalState extends StatelessWidget {
   final bool showBackHome;
 
   Color _accent() => switch (kind) {
-        StatusKind.success => AppColors.success,
-        StatusKind.danger => AppColors.error,
-        StatusKind.active => AppColors.info,
-        StatusKind.pending => AppColors.warning,
-        StatusKind.neutral => AppColors.neutral400,
-      };
+    StatusKind.success => AppColors.success,
+    StatusKind.danger => AppColors.error,
+    StatusKind.active => AppColors.info,
+    StatusKind.pending => AppColors.warning,
+    StatusKind.neutral => AppColors.neutral400,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -817,4 +826,15 @@ class _TerminalState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A driver position is usable only when it is a real coordinate: the API
+/// reports (0, 0) when the driver's GPS has not been received yet.
+extension _DriverLocation on DriverInfo {
+  bool get hasLocation =>
+      !(lat == 0.0 && lng == 0.0) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180;
 }

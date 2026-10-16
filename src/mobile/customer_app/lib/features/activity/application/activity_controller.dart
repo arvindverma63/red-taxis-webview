@@ -32,7 +32,9 @@ class ActivityController extends AsyncNotifier<List<BookingSummary>> {
   /// Re-fetches the bookings, surfacing loading then data/error. Used by
   /// pull-to-refresh and after amend/cancel.
   Future<void> refresh() async {
-    state = const AsyncValue<List<BookingSummary>>.loading();
+    // Keep showing the previous list while reloading, so screens that watch it
+    // (e.g. live tracking, on every status change) never flash empty.
+    state = const AsyncLoading<List<BookingSummary>>().copyWithPrevious(state);
     state = await AsyncValue.guard(_repo.myBookings);
   }
 

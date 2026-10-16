@@ -35,10 +35,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref.read(authControllerProvider.notifier).login(
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .login(
           usernameOrEmail: _identifier.text.trim(),
           password: _password.text,
         );
+    if (ok && mounted) context.go(Routes.home);
+  }
+
+  Future<void> _google() async {
+    FocusScope.of(context).unfocus();
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .loginWithGoogle();
     if (ok && mounted) context.go(Routes.home);
   }
 
@@ -61,7 +71,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             children: [
               const AuthHeader(
                 title: 'Welcome back',
-                subtitle: 'Sign in to book a taxi, track your driver and see '
+                subtitle:
+                    'Sign in to book a taxi, track your driver and see '
                     'your trip history.',
                 accent: AuthAccent.wave,
               ),
@@ -87,8 +98,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed:
-                      loading ? null : () => context.push(Routes.forgotPassword),
+                  onPressed: loading
+                      ? null
+                      : () => context.push(Routes.forgotPassword),
                   child: const Text('Forgot password?'),
                 ),
               ),
@@ -109,13 +121,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: loading ? null : () => context.push(Routes.signUp),
+                    onPressed: loading
+                        ? null
+                        : () => context.push(Routes.signUp),
                     child: const Text('Create an account'),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              const SocialAuthButtons(),
+              SocialAuthButtons(onGoogle: _google, loading: loading),
             ],
           ),
         ),

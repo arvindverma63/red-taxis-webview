@@ -94,7 +94,26 @@ class _BookingReviewScreenState extends ConsumerState<BookingReviewScreen> {
       northeast: LatLng(maxLat, maxLng),
     );
 
-    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 48.0));
+    // Pickup and destination can be (almost) the same point; fitting bounds to a
+    // zero-size box over-zooms into blank tiles, so centre on it at street level.
+    final tiny =
+        (maxLat - minLat).abs() < 0.0005 && (maxLng - minLng).abs() < 0.0005;
+    try {
+      if (tiny) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2),
+            15,
+          ),
+        );
+      } else {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngBounds(bounds, 48.0),
+        );
+      }
+    } catch (_) {
+      // The map can report a zero size while the screen is still animating in.
+    }
   }
 
   void _onMapCreated(GoogleMapController controller) {
