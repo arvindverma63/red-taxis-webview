@@ -22,3 +22,8 @@
 
 # Preserve annotations and reflection signatures
 -keepattributes *Annotation*,EnclosingMethod,Signature,InnerClasses,SourceFile,LineNumberTable
+
+# Flutter's embedding references Play Core split-install / deferred-component
+# classes that this app does not use (no deferred components). R8 reports them as
+# missing; silence that so release (shrunk) builds succeed.
+-dontwarn com.google.android.play.core.**
