@@ -1,6 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/logging/remote_logger.dart';
 import '../../../core/network/api_exception.dart';
 
 /// Wraps the Google Sign-In SDK and returns the Google **ID token** that the
@@ -37,10 +39,32 @@ class GoogleSignInService {
       return token;
     } on ApiException {
       rethrow;
-    } catch (_) {
-      throw const ApiException(
-        'Google sign-in failed. Please try again or use your email.',
-      );
+    } catch (e) {
+      // Record the real reason (codes only, no account data) so a failure on a
+      // device can be diagnosed from the log service, then show a clear message.
+      final detail = e is PlatformException
+          ? 'code=${e.code} message=${e.message}'
+          : e.toString();
+      RemoteLogger.error('Google', 'Sign-in failed: $detail');
+      throw ApiException(_friendlyMessage(detail));
     }
+  }
+
+  /// Maps Google's error text to something a person can act on.
+  static String _friendlyMessage(String detail) {
+    final d = detail.toLowerCase();
+    if (d.contains('apiexception: 10') || d.contains('developer_error')) {
+      return "Google sign-in isn't set up correctly for this app build (error 10). Please use your email for now.";
+    }
+    if (d.contains('apiexception: 12500')) {
+      return 'Google sign-in could not start (12500). Update Google Play services and try again.';
+    }
+    if (d.contains('apiexception: 12501') || d.contains('sign_in_canceled')) {
+      return 'Google sign-in was cancelled.';
+    }
+    if (d.contains('network_error') || d.contains('apiexception: 7')) {
+      return 'No connection. Check your internet and try again.';
+    }
+    return 'Google sign-in failed. Please try again or use your email.';
   }
 }
