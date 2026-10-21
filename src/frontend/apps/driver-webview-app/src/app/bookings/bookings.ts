@@ -36,6 +36,8 @@ interface Booking {
   mileageText?: string;
   bookedByName?: string;
   accountNumber?: string;
+  /** Pickup time as epoch ms (0 when unknown) — used for ordering. */
+  sortTs: number;
 }
 
 @Component({
@@ -93,6 +95,12 @@ interface Booking {
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
+
+        <!-- Sort order -->
+        <button type="button" class="sort-btn" (click)="toggleSort()">
+          <span class="material-symbols-outlined">{{ sortDesc ? 'arrow_downward' : 'arrow_upward' }}</span>
+          {{ sortDesc ? 'Newest first' : 'Oldest first' }}
+        </button>
 
         <!-- Segmented Tab Chips -->
         <div class="filter-tab-bar">
@@ -673,6 +681,27 @@ interface Booking {
       transition: all 0.15s ease;
       white-space: nowrap;
       user-select: none;
+    }
+    .sort-btn {
+      align-self: flex-end;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #E2E8F0;
+      background: #FFFFFF;
+      color: #475569;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .sort-btn .material-symbols-outlined { font-size: 15px; }
+    :host-context(.dark-theme) .sort-btn {
+      background: #1E293B;
+      border-color: #334155;
+      color: #CBD5E1;
     }
     .tab-btn.active {
       background: #CD1A21;
@@ -1885,6 +1914,8 @@ export class BookingsComponent implements OnInit, OnDestroy {
   tabs = ['All', 'Upcoming', 'Completed', 'Cancelled'];
   activeTab = 'All';
   searchQuery = '';
+  /** Newest pickup first by default; toggled from the list header. */
+  sortDesc = true;
   isLoading = true;
   bookings: Booking[] = [];
   selectedBooking: Booking | null = null;
@@ -1914,6 +1945,11 @@ export class BookingsComponent implements OnInit, OnDestroy {
 
   setTab(tab: string): void {
     this.activeTab = tab;
+    this.cdr.detectChanges();
+  }
+
+  toggleSort(): void {
+    this.sortDesc = !this.sortDesc;
     this.cdr.detectChanges();
   }
 
@@ -2257,10 +2293,12 @@ export class BookingsComponent implements OnInit, OnDestroy {
           let time = job.bookingTime || job.time || '';
           let date = job.bookingDate || job.date || '';
           let fullDateTimeStr = '';
+          let sortTs = 0;
 
           if (dtStr) {
             const parsed = new Date(dtStr);
             if (!isNaN(parsed.getTime())) {
+              sortTs = parsed.getTime();
               if (!time) {
                 time = parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
               }
@@ -2305,6 +2343,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
             time,
             date,
             fullDateTimeStr,
+            sortTs,
             fare: isNaN(fare) ? 0.00 : fare,
             paymentType,
             status,
@@ -2374,7 +2413,8 @@ export class BookingsComponent implements OnInit, OnDestroy {
         (b.destinationPostCode && b.destinationPostCode.toLowerCase().includes(q))
       );
     }
-    return list;
+    const dir = this.sortDesc ? -1 : 1;
+    return [...list].sort((a, b) => dir * (a.sortTs - b.sortTs));
   }
 
   getTabCount(tab: string): number {
