@@ -2,7 +2,7 @@ name: customer_app
 description: "First Taxis customer booking app"
 publish_to: 'none'
 
-version: 1.0.1+12
+version: 1.0.1+13
 
 environment:
   sdk: ^3.11.3
