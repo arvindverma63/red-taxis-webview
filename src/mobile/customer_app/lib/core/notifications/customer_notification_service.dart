@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../firebase_options.dart';
+import '../logging/remote_logger.dart';
 
 /// Top-level background message handler executed when app is in background or terminated.
 @pragma('vm:entry-point')
@@ -146,6 +147,8 @@ class CustomerNotificationService {
       debugPrint(
         '[FCM] Notification authorization: ${settings.authorizationStatus}',
       );
+      RemoteLogger.info('Permission',
+          'FCM notification authorization: ${settings.authorizationStatus.name}');
 
       // 5. Configure foreground presentation options
       await messaging.setForegroundNotificationPresentationOptions(
@@ -236,6 +239,7 @@ class CustomerNotificationService {
       });
     } catch (e) {
       debugPrint('[FCM] CustomerNotificationService initialization notice: $e');
+      RemoteLogger.error('Permission', 'FCM initialization failed: $e');
     }
   }
 

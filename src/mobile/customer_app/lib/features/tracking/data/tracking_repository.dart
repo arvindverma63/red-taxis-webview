@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -8,6 +9,9 @@ import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/session/session_controller.dart';
+import '../../../core/domain/driver_directory.dart';
+import '../../../core/logging/remote_logger.dart';
+import '../../../core/domain/driver_fields.dart';
 import '../domain/booking_status.dart';
 import '../domain/tracking_state.dart';
 
@@ -113,6 +117,7 @@ class TrackingRepository {
           final req = (data['requestId'] ?? data['RequestId'] ?? '').toString();
           if (evt != bookingId && req != bookingId) return;
 
+          DriverDirectory.remember(bookingId, DriverFields.from(data));
           final status = _mapStatus(data['status'] ?? data['Status']);
           if (status != null) {
             current = current.copyWith(
@@ -250,7 +255,14 @@ class TrackingRepository {
           data['JobStatus'];
 
       final status = _mapStatus(rawStatus) ?? BookingStatus.requested;
-      final driver = _parseDriver(data['driver'] ?? data['Driver'], data);
+      var driver = _parseDriver(data['driver'] ?? data['Driver'], data);
+      if (_driverStatuses.contains(status)) {
+        // The booking payload carries no driver; the dedicated endpoint does.
+        final fetched = await fetchDriverDetails(bookingId);
+        if (fetched != null) driver = fetched;
+      }
+      _logDriverShape(bookingId, rawStatus, data, driver);
+      DriverDirectory.remember(bookingId, DriverFields.from(data));
       final eta = _asInt(
         data['etaMinutes'] ?? data['eta'] ?? data['durationMinutes'],
       );
@@ -264,6 +276,93 @@ class TrackingRepository {
     }
 
     return TrackingState(bookingId: bookingId, status: BookingStatus.requested);
+  }
+
+  /// Statuses where a driver exists on the booking (not yet requested/confirmed,
+  /// not cancelled).
+  static const _driverStatuses = {
+    BookingStatus.allocated,
+    BookingStatus.arriving,
+    BookingStatus.arrived,
+    BookingStatus.inProgress,
+    BookingStatus.completed,
+  };
+
+  /// Fetches the assigned driver via
+  /// `GET /api/v2/customers/me/bookings/{id}/driver` and records the details
+  /// (phone, plate, vehicle, rating, photo) in the [DriverDirectory].
+  ///
+  /// Returns the driver (with live position when the API sends one), or null
+  /// when no driver is assigned yet or the call fails. Never throws.
+  Future<DriverInfo?> fetchDriverDetails(String bookingId) async {
+    try {
+      final res = await _dio.get<dynamic>(
+        '/api/v2/customers/me/bookings/$bookingId/driver',
+      );
+      final body = res.data;
+      Map<String, dynamic>? data;
+      if (body is Map && body['data'] is Map) {
+        data = Map<String, dynamic>.from(body['data'] as Map);
+      } else if (body is Map && body['name'] != null) {
+        data = Map<String, dynamic>.from(body);
+      }
+      if (data == null || data.isEmpty) return null;
+
+      final fields = DriverFields.from(<String, dynamic>{'driver': data});
+      if (!fields.hasName) return null;
+      DriverDirectory.remember(bookingId, fields);
+
+      return DriverInfo(
+        name: fields.name!.trim(),
+        vehicle: (fields.vehicleMake ?? '').trim().isNotEmpty
+            ? fields.vehicleMake!.trim()
+            : 'Taxi',
+        plate: (fields.plate ?? '').trim(),
+        lat: _asDouble(data['lat'] ?? data['latitude']) ?? 0.0,
+        lng: _asDouble(data['lng'] ?? data['longitude'] ?? data['lon']) ?? 0.0,
+        colorValue: _asColor(data['colorValue'] ?? data['colorCode']),
+      );
+    } catch (e) {
+      debugPrint('[Driver] driver details unavailable for $bookingId: $e');
+      return null;
+    }
+  }
+
+  final Set<String> _driverShapeLogged = {};
+
+  /// One-off diagnostic: when a booking is past "requested" but no driver could
+  /// be read from it, log the payload's FIELD NAMES (never values) so the
+  /// backend's driver field names can be matched. Once per booking.
+  void _logDriverShape(
+    String bookingId,
+    dynamic rawStatus,
+    Map<String, dynamic> data,
+    DriverInfo? driver,
+  ) {
+    try {
+      if (driver != null || _driverShapeLogged.contains(bookingId)) return;
+      final status = _mapStatus(rawStatus);
+      if (status == null ||
+          status == BookingStatus.requested ||
+          status == BookingStatus.confirmed) {
+        return;
+      }
+      _driverShapeLogged.add(bookingId);
+      final keys = <String>[];
+      data.forEach((k, v) {
+        if (v is Map) {
+          keys.add('$k{${v.keys.join(',')}}');
+        } else if (v is List) {
+          keys.add('$k[]');
+        } else {
+          keys.add(k);
+        }
+      });
+      final line =
+          'Booking $bookingId status=$rawStatus has no readable driver. Fields: ${keys.join(', ')}';
+      debugPrint('[DriverShape] $line');
+      RemoteLogger.warn('Driver', line);
+    } catch (_) {}
   }
 
   /// Initialises Pusher once and subscribes to the customer's private channel.

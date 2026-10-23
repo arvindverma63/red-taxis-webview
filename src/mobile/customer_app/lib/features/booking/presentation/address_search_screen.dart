@@ -59,6 +59,11 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   @override
   void initState() {
     super.initState();
+    // The search query is shared state: clear what the previous step typed so
+    // this screen doesn't open showing that step's results under an empty box.
+    Future.microtask(() {
+      if (mounted) ref.read(addressQueryProvider.notifier).state = '';
+    });
     if (widget.mode == AddressMode.pickup) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkLocation());
     }
@@ -89,6 +94,14 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   }
 
   bool get _isPickup => widget.mode == AddressMode.pickup;
+
+  /// Label for the pickup row on the destination step: the pickup the user
+  /// actually chose, or "Your current location" when none has been set yet.
+  String _chosenPickupLabel() {
+    final pickup = ref.read(bookingDraftProvider).pickup;
+    final text = pickup?.description.trim() ?? '';
+    return text.isNotEmpty ? text : 'Your current location';
+  }
 
   /// Uses the device's current position as the pickup address.
   Future<void> _useCurrentLocation() async {
@@ -163,8 +176,12 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
         // Both ends set — go straight to review.
         router.go(Routes.bookingReview);
       } else {
-        // Only one end set — collect the other (pickup next).
-        router.pushReplacement(Routes.addressSearch, extra: 'pickup');
+        // Only one end set — collect the OTHER one: after a pickup ask for the
+        // destination, after a destination ask for the pickup.
+        router.pushReplacement(
+          Routes.addressSearch,
+          extra: _isPickup ? 'dropoff' : 'pickup',
+        );
       }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(_errorText(e))));
@@ -243,7 +260,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
               child: LocationSearchCard(
                 pickupLabel: _isPickup
                     ? 'Search your pickup address'
-                    : 'Your current location',
+                    : _chosenPickupLabel(),
                 destinationController: _controller,
                 destinationFocusNode: _focusNode,
                 destinationHint: _isPickup ? 'Pickup address' : 'Where to?',

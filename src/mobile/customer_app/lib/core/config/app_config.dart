@@ -86,7 +86,8 @@ class AppConfig {
   /// on Android so the ID token is issued for the backend to verify.
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '',
+    defaultValue:
+        '470510245907-grk8p7f35jr97mtdcrtlhnvgaif2h53t.apps.googleusercontent.com',
   );
 
   /// Google OAuth *iOS* client ID (bundle `com.redtaxis.customerApp`).

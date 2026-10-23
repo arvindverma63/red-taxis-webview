@@ -6,6 +6,7 @@ library;
 
 export 'amend_booking_sheet.dart';
 export 'booking_list_row.dart';
+export 'driver_details_card.dart';
 export 'fare_breakdown_card.dart';
 export 'ongoing_booking_card.dart';
 export 'ride_details_table.dart';

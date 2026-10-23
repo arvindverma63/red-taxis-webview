@@ -9,6 +9,8 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../core/domain/driver_directory.dart';
+import '../../../core/domain/driver_fields.dart';
 import '../domain/booking_summary.dart';
 
 /// Indicates whether the Activity data is currently served from local offline cache.
@@ -44,7 +46,8 @@ class ActivityRepository {
       );
       final list = unwrapV2(
         res.data,
-        (data) => parseList(data, BookingSummary.fromJson),
+        (data) =>
+            parseList(data, (m) => BookingSummary.fromJson(_withDriver(m))),
       );
 
       // Cache the complete trip list locally for offline access
@@ -68,6 +71,16 @@ class ActivityRepository {
       _ref.read(activityIsOfflineProvider.notifier).state = true;
       return _filter(fallback, status);
     }
+  }
+
+  /// Notes any assigned-driver details (under whatever names the API uses) in
+  /// the [DriverDirectory] and returns the booking payload unchanged.
+  static Map<String, dynamic> _withDriver(Map<String, dynamic> m) {
+    DriverDirectory.remember(
+      (m['id'] ?? m['bookingId'] ?? m['BookingId'] ?? '').toString(),
+      DriverFields.from(m),
+    );
+    return m;
   }
 
   /// Resolves a single booking. Tries the list (real or cached) and returns the
@@ -136,10 +149,7 @@ class ActivityRepository {
   /// Appends or updates a booking in local storage.
   Future<void> recordBooking(BookingSummary booking) async {
     final cached = await _loadOfflineBookings();
-    final updated = [
-      booking,
-      ...cached.where((b) => b.id != booking.id),
-    ];
+    final updated = [booking, ...cached.where((b) => b.id != booking.id)];
     await _saveOfflineBookings(updated);
   }
 
@@ -184,7 +194,10 @@ class ActivityRepository {
     if (e is DioException) {
       final err = e.error;
       if (err is ApiException) return err;
-      return ApiException(e.message ?? fallback, statusCode: e.response?.statusCode);
+      return ApiException(
+        e.message ?? fallback,
+        statusCode: e.response?.statusCode,
+      );
     }
     return ApiException(fallback);
   }
@@ -194,9 +207,7 @@ class ActivityRepository {
   List<BookingSummary> _filter(List<BookingSummary> list, String? status) {
     if (status == null || status.isEmpty) return list;
     final wanted = status.trim();
-    return list
-        .where((b) => b.status.trim() == wanted)
-        .toList(growable: false);
+    return list.where((b) => b.status.trim() == wanted).toList(growable: false);
   }
 
   /// ~6 realistic Dorset-area bookings: one upcoming/active, one arriving, four
@@ -206,8 +217,11 @@ class ActivityRepository {
     DateTime at(int days, int hour, int minute) =>
         DateTime(now.year, now.month, now.day + days, hour, minute);
 
-    Place place(String description, String postcode) =>
-        Place(description: description, postcode: postcode, addressLine: description);
+    Place place(String description, String postcode) => Place(
+      description: description,
+      postcode: postcode,
+      addressLine: description,
+    );
 
     final bookings = <BookingSummary>[
       // Upcoming, awaiting/confirmed — active.
@@ -289,5 +303,6 @@ class ActivityRepository {
   }
 }
 
-final activityRepositoryProvider =
-    Provider<ActivityRepository>(ActivityRepository.new);
+final activityRepositoryProvider = Provider<ActivityRepository>(
+  ActivityRepository.new,
+);
