@@ -8,6 +8,7 @@ import '../../../core/widgets/widgets.dart';
 import '../application/auth_controller.dart';
 import 'auth_validators.dart';
 import 'widgets/auth_widgets.dart';
+import 'widgets/apple_email_prompt.dart';
 import 'widgets/social_auth_buttons.dart';
 
 /// Email/username + password sign-in. Submits to `POST /api/v2/customer-auth/login`; on
@@ -54,9 +55,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   Future<void> _apple() async {
     FocusScope.of(context).unfocus();
-    final ok = await ref
-        .read(authControllerProvider.notifier)
-        .loginWithApple();
+    final auth = ref.read(authControllerProvider.notifier);
+    var ok = await auth.loginWithApple();
+    if (!ok && mounted && auth.appleNeedsEmail) {
+      final email = await promptForAppleEmail(context);
+      if (email != null) ok = await auth.retryAppleWithEmail(email);
+    }
     if (ok && mounted) context.go(Routes.home);
   }
 

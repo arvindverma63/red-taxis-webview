@@ -9,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../application/auth_controller.dart';
 import 'auth_validators.dart';
 import 'widgets/auth_widgets.dart';
+import 'widgets/apple_email_prompt.dart';
 import 'widgets/social_auth_buttons.dart';
 
 /// Create a public-customer account: full name, email, phone, password.
@@ -101,9 +102,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   Future<void> _apple() async {
     FocusScope.of(context).unfocus();
-    final ok = await ref
-        .read(authControllerProvider.notifier)
-        .loginWithApple();
+    final auth = ref.read(authControllerProvider.notifier);
+    var ok = await auth.loginWithApple();
+    if (!ok && mounted && auth.appleNeedsEmail) {
+      final email = await promptForAppleEmail(context);
+      if (email != null) ok = await auth.retryAppleWithEmail(email);
+    }
     if (!ok || !mounted) return;
     if (widget.onComplete != null) {
       widget.onComplete!();

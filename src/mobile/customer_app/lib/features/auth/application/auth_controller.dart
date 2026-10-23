@@ -54,6 +54,8 @@ class AuthController extends AsyncNotifier<void> {
     return _run(() => _repo.loginWithGoogle(token));
   }
 
+  AppleAuthResult? _lastApple;
+
   /// Signs in with Apple. Returns false when the user cancels or it fails.
   Future<bool> loginWithApple() async {
     final result = await AppleSignInService().authorize().catchError((
@@ -66,14 +68,39 @@ class AuthController extends AsyncNotifier<void> {
       return null;
     });
     if (result == null) return false;
-    return _run(
-      () => _repo.loginWithApple(
-        result.identityToken,
-        fullName: result.fullName,
-        email: result.email,
+    _lastApple = result;
+    return _sendApple(result);
+  }
+
+  /// True when the last Apple attempt failed only because no email was shared,
+  /// so the screen can ask the customer for one and call [retryAppleWithEmail].
+  bool get appleNeedsEmail {
+    final e = state.error;
+    return _lastApple != null &&
+        e is ApiException &&
+        e.message.toLowerCase().contains('email');
+  }
+
+  /// Re-sends the last Apple token with an email typed by the customer.
+  Future<bool> retryAppleWithEmail(String email) {
+    final last = _lastApple;
+    if (last == null) return Future.value(false);
+    return _sendApple(
+      AppleAuthResult(
+        identityToken: last.identityToken,
+        fullName: last.fullName,
+        email: email.trim(),
       ),
     );
   }
+
+  Future<bool> _sendApple(AppleAuthResult r) => _run(
+    () => _repo.loginWithApple(
+      r.identityToken,
+      fullName: r.fullName,
+      email: r.email,
+    ),
+  );
 
   Future<bool> login({
     required String usernameOrEmail,
