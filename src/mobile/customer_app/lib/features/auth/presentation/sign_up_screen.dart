@@ -99,6 +99,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
+  Future<void> _apple() async {
+    FocusScope.of(context).unfocus();
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .loginWithApple();
+    if (!ok || !mounted) return;
+    if (widget.onComplete != null) {
+      widget.onComplete!();
+    } else {
+      context.go(Routes.home);
+    }
+  }
+
   void _comingSoon(String what) {
     final theme = Theme.of(context);
     ScaffoldMessenger.of(context)
@@ -219,7 +232,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              SocialAuthButtons(onGoogle: _google, loading: loading),
+              SocialAuthButtons(
+                onGoogle: _google,
+                onApple: _apple,
+                loading: loading,
+              ),
             ],
           ),
         ),

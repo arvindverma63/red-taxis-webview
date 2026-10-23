@@ -1,35 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-/// "or" divider followed by a working "Continue with Google" button.
+/// "or" divider followed by "Sign in with Apple" (iOS) and "Continue with Google".
 ///
-/// Renders nothing until Google sign-in is configured for this platform
-/// ([AppConfig.googleSignInEnabled]), so no unfinished sign-in options are shown.
+/// Each button renders only when its provider is configured for this platform
+/// ([AppConfig.appleSignInEnabled] / [AppConfig.googleSignInEnabled]), so no
+/// unfinished sign-in options are shown.
 class SocialAuthButtons extends StatelessWidget {
   const SocialAuthButtons({
     super.key,
     required this.onGoogle,
+    this.onApple,
     this.loading = false,
   });
 
   /// Called when the user taps "Continue with Google".
   final VoidCallback onGoogle;
 
+  /// Called when the user taps "Sign in with Apple".
+  final VoidCallback? onApple;
+
   /// Disables the button while a sign-in is in progress.
   final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    if (!AppConfig.googleSignInEnabled) return const SizedBox.shrink();
+    final showApple = AppConfig.appleSignInEnabled && onApple != null;
+    final showGoogle = AppConfig.googleSignInEnabled;
+    if (!showApple && !showGoogle) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       children: [
         const _OrDivider(),
         const SizedBox(height: AppSpacing.lg),
-        SizedBox(
+        if (showApple)
+          IgnorePointer(
+            ignoring: loading,
+            child: Opacity(
+              opacity: loading ? 0.5 : 1,
+              child: SignInWithAppleButton(
+                onPressed: onApple!,
+                height: 56,
+                borderRadius: const BorderRadius.all(Radius.circular(28)),
+                style: isDark
+                    ? SignInWithAppleButtonStyle.white
+                    : SignInWithAppleButtonStyle.black,
+              ),
+            ),
+          ),
+        if (showApple && showGoogle) const SizedBox(height: AppSpacing.md),
+        if (showGoogle)
+          SizedBox(
           width: double.infinity,
           child: OutlinedButton(
             onPressed: loading ? null : onGoogle,

@@ -78,6 +78,35 @@ class AuthRepository {
     }
   }
 
+  /// Signs in (or auto-registers) with an Apple identity token via
+  /// `POST /api/v2/customer-auth/apple`. Apple only shares the name on the very
+  /// first authorisation, so [fullName] is sent when we have it.
+  Future<AuthUser> loginWithApple(
+    String identityToken, {
+    String? fullName,
+  }) async {
+    try {
+      final config = AppConfig.fromEnvironment();
+      final res = await _dio.post(
+        '/api/v2/customer-auth/apple',
+        data: {
+          'identityToken': identityToken,
+          if (fullName != null && fullName.isNotEmpty) 'fullName': fullName,
+          'tenantId': config.tenantOrgId,
+        },
+        options: Options(headers: {
+          'X-Tenant-Id': config.tenantOrgId,
+          if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
+        }),
+      );
+      final session = _parseSession(res.data);
+      await _applySession(session);
+      return _toAuthUser(session);
+    } catch (e) {
+      throw _asApiException(e, 'Could not sign you in with Apple.');
+    }
+  }
+
   /// Registers a public customer (B1) via `/api/v2/customer-auth/register-customer` and
   /// signs them in. Real API errors (e.g. "email already exists") propagate as
   /// [ApiException] for the UI to show. Only the preview/offline build falls

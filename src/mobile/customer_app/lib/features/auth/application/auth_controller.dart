@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/route_paths.dart';
+import '../data/apple_sign_in_service.dart';
 import '../data/auth_repository.dart';
 import '../data/google_sign_in_service.dart';
 
@@ -51,6 +52,23 @@ class AuthController extends AsyncNotifier<void> {
     });
     if (token == null) return false;
     return _run(() => _repo.loginWithGoogle(token));
+  }
+
+  /// Signs in with Apple. Returns false when the user cancels or it fails.
+  Future<bool> loginWithApple() async {
+    final result = await AppleSignInService().authorize().catchError((
+      Object e,
+    ) {
+      state = AsyncValue<void>.error(
+        e is ApiException ? e : const ApiException('Apple sign-in failed.'),
+        StackTrace.current,
+      );
+      return null;
+    });
+    if (result == null) return false;
+    return _run(
+      () => _repo.loginWithApple(result.identityToken, fullName: result.fullName),
+    );
   }
 
   Future<bool> login({

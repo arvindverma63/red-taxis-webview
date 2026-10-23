@@ -52,6 +52,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     if (ok && mounted) context.go(Routes.home);
   }
 
+  Future<void> _apple() async {
+    FocusScope.of(context).unfocus();
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .loginWithApple();
+    if (ok && mounted) context.go(Routes.home);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
@@ -129,7 +137,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              SocialAuthButtons(onGoogle: _google, loading: loading),
+              SocialAuthButtons(
+                onGoogle: _google,
+                onApple: _apple,
+                loading: loading,
+              ),
             ],
           ),
         ),

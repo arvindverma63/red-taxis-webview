@@ -111,6 +111,13 @@ class AppConfig {
     }
   }
 
+  /// Sign in with Apple is offered on iOS only. Set `APPLE_SIGN_IN=false` to hide
+  /// it (e.g. while a backend is not ready).
+  static bool get appleSignInEnabled {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return false;
+    return const bool.fromEnvironment('APPLE_SIGN_IN', defaultValue: true);
+  }
+
   /// Resolved from `--dart-define`s with static defaults.
   factory AppConfig.fromEnvironment() {
     return const AppConfig(
