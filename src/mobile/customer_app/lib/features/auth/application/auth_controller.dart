@@ -67,7 +67,11 @@ class AuthController extends AsyncNotifier<void> {
     });
     if (result == null) return false;
     return _run(
-      () => _repo.loginWithApple(result.identityToken, fullName: result.fullName),
+      () => _repo.loginWithApple(
+        result.identityToken,
+        fullName: result.fullName,
+        email: result.email,
+      ),
     );
   }
 

@@ -65,10 +65,12 @@ class AuthRepository {
           // the body as well as the X-Tenant-Id / X-Tenant-Key headers.
           'tenantId': config.tenantOrgId,
         },
-        options: Options(headers: {
-          'X-Tenant-Id': config.tenantOrgId,
-          if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
-        }),
+        options: Options(
+          headers: {
+            'X-Tenant-Id': config.tenantOrgId,
+            if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
+          },
+        ),
       );
       final session = _parseSession(res.data);
       await _applySession(session);
@@ -84,6 +86,7 @@ class AuthRepository {
   Future<AuthUser> loginWithApple(
     String identityToken, {
     String? fullName,
+    String? email,
   }) async {
     try {
       final config = AppConfig.fromEnvironment();
@@ -92,12 +95,15 @@ class AuthRepository {
         data: {
           'identityToken': identityToken,
           if (fullName != null && fullName.isNotEmpty) 'fullName': fullName,
+          if (email != null && email.isNotEmpty) 'email': email,
           'tenantId': config.tenantOrgId,
         },
-        options: Options(headers: {
-          'X-Tenant-Id': config.tenantOrgId,
-          if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
-        }),
+        options: Options(
+          headers: {
+            'X-Tenant-Id': config.tenantOrgId,
+            if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
+          },
+        ),
       );
       final session = _parseSession(res.data);
       await _applySession(session);
