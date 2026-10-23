@@ -807,10 +807,37 @@ The Angular router guards and services parse the `token` parameter directly from
   - **Interactive Pick-on-Map & Reverse Geocoding**: Upgraded [`pick_on_map_screen.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/booking/presentation/pick_on_map_screen.dart) and built [`reverse_geocoder.dart`](file:///d:/redtaxis/src/mobile/customer_app/lib/core/location/reverse_geocoder.dart) with `geocoding: ^5.0.0` for dynamic pinpoint drag-and-drop address resolution.
   - **iOS Push Entitlements & Team Signing**: Configured [`Runner.entitlements`](file:///d:/redtaxis/src/mobile/customer_app/ios/Runner/Runner.entitlements) with `aps-environment` and wired Apple Developer Team in `project.pbxproj` and `Podfile`.
   - Static analysis clean: 0 issues on `dart analyze lib/`.
+- [x] **Customer App Google OAuth Client ID & Keystore Certificate Mapping (`google-services.json`, `app_config.dart`)**:
+  - Configured Google OAuth Client ID `470510245907-2b6ueni73c9db4ap63oegvo9e81njh5c.apps.googleusercontent.com` inside [`google-services.json`](file:///d:/redtaxis/src/mobile/customer_app/android/app/google-services.json) under `oauth_client`.
+  - Mapped certificate hashes for both production release (`upload-keystore.jks`: `cfeeeba8e1b631c93a96ef9b5f3c7ed440cc51730`) and local debug (`debug.keystore`: `b7a004328410e096a33f892558b78bc946b7acf9`) environments.
+  - Added `googleOAuthClientId` and configured default `googleServerClientId` in [`AppConfig`](file:///d:/redtaxis/src/mobile/customer_app/lib/core/config/app_config.dart).
+- [x] **Customer App Google Sign-In Flow & App Store Release Assets Merge (`origin/feat/customer-map-pick-and-push-entitlements`)**:
+  - Merged Google Sign-In integration (`google_sign_in: ^6.2.2`) with backend verification via `POST /api/v2/customer-auth/google`.
+  - Built `GoogleSignInService` to retrieve Google ID tokens and integrated reactive Google sign-in buttons across [`SignInScreen`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/auth/presentation/sign_in_screen.dart) and [`SignUpScreen`](file:///d:/redtaxis/src/mobile/customer_app/lib/features/auth/presentation/sign_up_screen.dart).
+  - Added iPad orientations in [`Info.plist`](file:///d:/redtaxis/src/mobile/customer_app/ios/Runner/Info.plist), App Store listing metadata, and compiled release screenshot suites for 6.9" and 6.3" display profiles.
+  - Bumped version to `1.0.1+3`.
+
+- [x] **Upstream Synchronization with `origin/main` (Commits up to `62a3693`, Customer App v1.0.1+13 & Driver App v1.0.2+13)**:
+  - Fast-forwarded local `main` branch to `62a3693` (`origin/main`).
+  - **Customer App (Builds 1.0.1+7 to 1.0.1+13)**:
+    - Independent iOS notification permission requests & diagnostic reporting (`3b10eb5`).
+    - Destination selection flow fix (stops repeating pickup, clears stale searches) (`79f3a21`).
+    - Assigned driver details card integration on live tracking and booking detail screens via `/bookings/{id}/driver` (`e537621`).
+    - Detailed Google Sign-In error logging (`239e0dd`).
+    - Configured Web OAuth client ID (`470510245907-grk8p7f35jr97mtdcrtlhnvgaif2h53t.apps.googleusercontent.com`) as `serverClientId` for Android Google Sign-In verification (`6b5b76b`).
+  - **Driver App & WebView**:
+    - Silenced R8 missing Play Core classes and bumped version to `1.0.2+13` for 16 KB-page-size compliant Google Play release (`c48dfbc`, `8aca626`).
+    - Profile editing via `POST /api/DriverApp/UpdateProfile` with redesigned card, selfie capture, swatch picker (`317aa28`, `21014f9`).
+    - Driver WebView bookings list sorted newest-first with ASC/DESC toggle (`84a437d`, `894fab1`).
+  - Preserved Android `oauth_client` certificate mappings in [`google-services.json`](file:///d:/redtaxis/src/mobile/customer_app/android/app/google-services.json).
+- [x] **Google Sign-In Android `ApiException: 10` Diagnostic & Configuration Requirements**:
+  - Verified installed APK on device `ZN42226L5C` is signed with local debug key (`B7:A0:04:32:84:10:E0:96:A3:3F:89:25:58:B7:8B:C9:46:B7:AC:F9`) and confirmed successful sign-in after registering debug Android client in Google Cloud Console project `red-taxi-511612`.
+  - Retrieved Google Play App Signing SHA-1 (`CF:B5:2D:9A:D0:62:D6:23:44:A9:5B:BB:6E:54:19:C5:FF:0C:38:53`) from Play Console (`Protect with Play > Play Store protection > Manage Play app signing`) to register for Play Store release builds.
 
 ### ⏳ Remaining Work / Roadmap
 - [ ] **Customer App Live Pusher WebSocket Integration**: Connect real-time Pusher private channels to live driver coordinates and booking status events.
 - [ ] **Live Trip State Updates**: Connect Riverpod state to real-time WebSockets (e.g., Pusher) for receiving job offers instead of mock triggers.
+
 
 
 

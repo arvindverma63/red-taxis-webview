@@ -12,7 +12,32 @@
           "package_name": "com.redtaxis.customer_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "470510245907-2b6ueni73c9db4ap63oegvo9e81njh5c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.redtaxis.customer_app",
+            "certificate_hash": "cfeeeba8e1b631c93a96ef9b5f3c7ed440cc51730"
+          }
+        },
+        {
+          "client_id": "470510245907-2b6ueni73c9db4ap63oegvo9e81njh5c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.redtaxis.customer_app",
+            "certificate_hash": "b7a004328410e096a33f892558b78bc946b7acf9"
+          }
+        },
+        {
+          "client_id": "470510245907-2b6ueni73c9db4ap63oegvo9e81njh5c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.redtaxis.customer_app",
+            "certificate_hash": "cfb52d9ad062d62344a95bbb6e5419c5ff0c3853"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDYKaEJNl_hDHj2Hvf28bTM6vsJm7WtMgI"
