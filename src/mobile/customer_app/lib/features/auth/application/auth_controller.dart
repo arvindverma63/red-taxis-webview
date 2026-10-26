@@ -144,6 +144,9 @@ class AuthController extends AsyncNotifier<void> {
   Future<bool> sendVerifyEmail(String email) =>
       _run(() => _repo.sendVerifyEmail(email));
 
+  /// Deletes the account. Returns false (error on state) when it fails.
+  Future<bool> deleteAccount() => _run(() => _repo.deleteAccount());
+
   Future<bool> logout() => _run(() => _repo.logout());
 
   /// Clears any error so a screen returning to its initial state hides the

@@ -214,6 +214,21 @@ class AuthRepository {
     await _session.signOut();
   }
 
+  /// Permanently deletes the signed-in customer's account via
+  /// `DELETE /api/v2/customers/me`, then clears local tokens + session.
+  /// Throws [ApiException] when the server refuses (the session is kept).
+  Future<void> deleteAccount() async {
+    try {
+      await _dio.delete('/api/v2/customers/me');
+    } catch (e) {
+      throw _asApiException(
+        e,
+        'Could not delete your account. Please try again or contact support.',
+      );
+    }
+    await _session.signOut();
+  }
+
   // ── Password / verification (always 200; never reveal account existence) ──
   //
   // Endpoints + payloads match the backend CustomerAuthController contract:

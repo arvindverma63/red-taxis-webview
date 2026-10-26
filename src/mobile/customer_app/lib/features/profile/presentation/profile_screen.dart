@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../../core/network/api_exception.dart';
 import '../application/notifications_controller.dart';
 import '../../../core/widgets/widgets.dart';
 import 'widgets/profile_identity_card.dart';
@@ -32,9 +34,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Account'),
-        leading: const Center(
-          child: BrandLogo(size: 32, showBorder: true),
-        ),
+        leading: const Center(child: BrandLogo(size: 32, showBorder: true)),
         actions: [
           // The overflow only offers Settings + Logout, both of which require a
           // signed-in user; hide it for guests (they get the sign-in prompt).
@@ -52,73 +52,84 @@ class ProfileScreen extends ConsumerWidget {
       body: isGuest
           ? _GuestPrompt(onSignIn: () => context.go(Routes.signIn))
           : SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.xl,
-          ),
-          children: [
-            ProfileIdentityCard(
-              user: user,
-              onTapIdentity: () => _editProfile(context),
-              // Wallet/top-up isn't a built feature yet; omit the balance row
-              // until it ships rather than show a fake balance. The card
-              // degrades gracefully to identity-only.
-              balanceLabel: null,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                ),
+                children: [
+                  ProfileIdentityCard(
+                    user: user,
+                    onTapIdentity: () => _editProfile(context),
+                    // Wallet/top-up isn't a built feature yet; omit the balance row
+                    // until it ships rather than show a fake balance. The card
+                    // degrades gracefully to identity-only.
+                    balanceLabel: null,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SettingsGroupCard(
+                    children: [
+                      SettingsRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Saved addresses',
+                        onTap: () => context.push(Routes.savedAddresses),
+                      ),
+                      SettingsRow(
+                        icon: Icons.notifications_none,
+                        label: 'Notifications',
+                        trailing: unread > 0
+                            ? _CountBadge(count: unread)
+                            : null,
+                        onTap: () => context.push(Routes.notifications),
+                      ),
+                      SettingsRow(
+                        icon: Icons.credit_card,
+                        label: 'Payment methods',
+                        onTap: () => context.push(Routes.paymentMethods),
+                      ),
+                      SettingsRow(
+                        icon: Icons.tune,
+                        label: 'Settings',
+                        onTap: () => context.push(Routes.settings),
+                      ),
+                      SettingsRow(
+                        icon: Icons.menu_book_rounded,
+                        label: 'First-time user guide',
+                        onTap: () =>
+                            showFirstTimeUserGuide(context, markAsSeen: false),
+                      ),
+                      SettingsRow(
+                        icon: Icons.help_outline,
+                        label: 'Help & Support',
+                        onTap: () =>
+                            showFirstTimeUserGuide(context, markAsSeen: false),
+                      ),
+                      SettingsRow(
+                        icon: Icons.star_border,
+                        label: 'Rate us',
+                        onTap: () => _comingSoon(context, 'Rate us'),
+                      ),
+                      SettingsRow(
+                        icon: Icons.delete_forever_outlined,
+                        label: 'Delete account',
+                        destructive: true,
+                        trailing: const SizedBox.shrink(),
+                        onTap: () => _deleteAccount(context, ref),
+                      ),
+                      SettingsRow(
+                        icon: Icons.logout,
+                        label: 'Logout',
+                        destructive: true,
+                        trailing: const SizedBox.shrink(),
+                        onTap: () => _signOut(context, ref),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            SettingsGroupCard(
-              children: [
-                SettingsRow(
-                  icon: Icons.location_on_outlined,
-                  label: 'Saved addresses',
-                  onTap: () => context.push(Routes.savedAddresses),
-                ),
-                SettingsRow(
-                  icon: Icons.notifications_none,
-                  label: 'Notifications',
-                  trailing: unread > 0 ? _CountBadge(count: unread) : null,
-                  onTap: () => context.push(Routes.notifications),
-                ),
-                SettingsRow(
-                  icon: Icons.credit_card,
-                  label: 'Payment methods',
-                  onTap: () => context.push(Routes.paymentMethods),
-                ),
-                SettingsRow(
-                  icon: Icons.tune,
-                  label: 'Settings',
-                  onTap: () => context.push(Routes.settings),
-                ),
-                SettingsRow(
-                  icon: Icons.menu_book_rounded,
-                  label: 'First-time user guide',
-                  onTap: () => showFirstTimeUserGuide(context, markAsSeen: false),
-                ),
-                SettingsRow(
-                  icon: Icons.help_outline,
-                  label: 'Help & Support',
-                  onTap: () => showFirstTimeUserGuide(context, markAsSeen: false),
-                ),
-                SettingsRow(
-                  icon: Icons.star_border,
-                  label: 'Rate us',
-                  onTap: () => _comingSoon(context, 'Rate us'),
-                ),
-                SettingsRow(
-                  icon: Icons.logout,
-                  label: 'Logout',
-                  destructive: true,
-                  trailing: const SizedBox.shrink(),
-                  onTap: () => _signOut(context, ref),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -129,9 +140,9 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _comingSoon(BuildContext context, String what) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$what is coming soon.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$what is coming soon.')));
   }
 
   Future<void> _showMore(BuildContext context, WidgetRef ref) async {
@@ -150,12 +161,15 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () => Navigator.of(sheetContext).pop('settings'),
             ),
             ListTile(
-              leading: Icon(Icons.logout,
-                  color: Theme.of(sheetContext).colorScheme.error),
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(sheetContext).colorScheme.error,
+              ),
               title: Text(
                 'Logout',
                 style: TextStyle(
-                    color: Theme.of(sheetContext).colorScheme.error),
+                  color: Theme.of(sheetContext).colorScheme.error,
+                ),
               ),
               onTap: () => Navigator.of(sheetContext).pop('logout'),
             ),
@@ -169,6 +183,39 @@ class ProfileScreen extends ConsumerWidget {
         context.push(Routes.settings);
       case 'logout':
         await _signOut(context, ref);
+    }
+  }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete account?',
+      message:
+          'This permanently deletes your account and personal data. Your '
+          'saved addresses and trip history will be removed and this cannot '
+          'be undone.',
+      confirmLabel: 'Delete account',
+      destructive: true,
+    );
+    if (!confirmed || !context.mounted) return;
+    final ok = await ref.read(authControllerProvider.notifier).deleteAccount();
+    if (!context.mounted) return;
+    if (ok) {
+      context.go(Routes.signIn);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your account has been deleted.')),
+      );
+    } else {
+      final err = ref.read(authControllerProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            err is ApiException
+                ? err.message
+                : 'Could not delete your account. Please try again.',
+          ),
+        ),
+      );
     }
   }
 
@@ -187,7 +234,9 @@ class ProfileScreen extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not sign out. Please try again.')),
+          const SnackBar(
+            content: Text('Could not sign out. Please try again.'),
+          ),
         );
       }
     }
@@ -213,7 +262,8 @@ class _GuestPrompt extends StatelessWidget {
             const EmptyView(
               icon: Icons.account_circle_outlined,
               title: 'Sign in to your account',
-              subtitle: 'Sign in to manage your saved addresses, payment '
+              subtitle:
+                  'Sign in to manage your saved addresses, payment '
                   'methods and notifications.',
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -254,8 +304,9 @@ class _CountBadge extends StatelessWidget {
           ),
           child: Text(
             '$count',
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onPrimary),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimary,
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
