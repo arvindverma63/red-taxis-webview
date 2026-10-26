@@ -430,8 +430,8 @@ class _QrScannerModalState extends State<QrScannerModal>
                       const SizedBox(width: 8),
                       _buildPresetChip(
                         label: 'First Taxis',
-                        tenantId: 'org_first_taxis',
-                        tenantKey: 'tk_live_8f93c72b10a94e82b7',
+                        tenantId: 'org_ace_taxis',
+                        tenantKey: 'tk_live_ace_staging_2026',
                         icon: Icons.local_taxi_rounded,
                         color: const Color(0xFFCD1A21),
                       ),

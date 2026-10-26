@@ -43,8 +43,8 @@ class TenantBranding {
 
   factory TenantBranding.defaultFirstTaxis() {
     return const TenantBranding(
-      tenantId: 'org_first_taxis',
-      tenantKey: 'tk_live_8f93c72b10a94e82b7',
+      tenantId: 'org_ace_taxis',
+      tenantKey: 'tk_live_ace_staging_2026',
       name: 'First Taxis',
       legalName: 'First Taxis Group Ltd',
       primaryColor: Color(0xFFCD1A21),

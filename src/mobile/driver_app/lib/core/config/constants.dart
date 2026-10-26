@@ -10,9 +10,9 @@ class AppConfig {
   static String get webviewBaseUrl => useDevUrl ? devBaseUrl : prodBaseUrl;
 
   // Default fallback Tenant configuration
-  static const String defaultTenantId = 'org_red_taxis';
-  static const String defaultTenantKey = 'tk_live_red_taxis_dev';
-  static const String defaultFleetName = 'Red Taxis';
+  static const String defaultTenantId = 'org_ace_taxis';
+  static const String defaultTenantKey = 'tk_live_ace_staging_2026';
+  static const String defaultFleetName = 'First Taxis';
 
   // Secure Storage Keys
   static const String keyTenantId = 'tenant_id';
