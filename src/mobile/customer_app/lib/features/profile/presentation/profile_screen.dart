@@ -198,7 +198,16 @@ class ProfileScreen extends ConsumerWidget {
       destructive: true,
     );
     if (!confirmed || !context.mounted) return;
-    final ok = await ref.read(authControllerProvider.notifier).deleteAccount();
+    final auth = ref.read(authControllerProvider.notifier);
+    var ok = await auth.deleteAccount();
+    // Accounts with a password must confirm it; keep asking until it is right
+    // or the customer cancels.
+    while (!ok && auth.deleteNeedsPassword) {
+      if (!context.mounted) return;
+      final password = await _askPassword(context);
+      if (password == null) return;
+      ok = await auth.deleteAccount(password: password);
+    }
     if (!context.mounted) return;
     if (ok) {
       context.go(Routes.signIn);
@@ -217,6 +226,32 @@ class ProfileScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  Future<String?> _askPassword(BuildContext context) {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm your password'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          obscureText: true,
+          decoration: const InputDecoration(hintText: 'Password'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {

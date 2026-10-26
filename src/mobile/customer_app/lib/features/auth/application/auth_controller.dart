@@ -145,7 +145,16 @@ class AuthController extends AsyncNotifier<void> {
       _run(() => _repo.sendVerifyEmail(email));
 
   /// Deletes the account. Returns false (error on state) when it fails.
-  Future<bool> deleteAccount() => _run(() => _repo.deleteAccount());
+  /// Pass [password] for accounts that have one.
+  Future<bool> deleteAccount({String? password}) =>
+      _run(() => _repo.deleteAccount(password: password));
+
+  /// True when the last delete attempt failed because a password is required
+  /// (or was wrong), so the screen can ask for it and retry.
+  bool get deleteNeedsPassword {
+    final e = state.error;
+    return e is ApiException && e.message.toLowerCase().contains('password');
+  }
 
   Future<bool> logout() => _run(() => _repo.logout());
 

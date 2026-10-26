@@ -217,9 +217,19 @@ class AuthRepository {
   /// Permanently deletes the signed-in customer's account via
   /// `DELETE /api/v2/customers/me`, then clears local tokens + session.
   /// Throws [ApiException] when the server refuses (the session is kept).
-  Future<void> deleteAccount() async {
+  ///
+  /// The body must carry `confirm: "DELETE"`. Accounts that have a password
+  /// must also send it; social-login accounts (Google/Apple) omit it.
+  Future<void> deleteAccount({String? password}) async {
     try {
-      await _dio.delete('/api/v2/customers/me');
+      await _dio.delete(
+        '/api/v2/customers/me',
+        data: {
+          'confirm': 'DELETE',
+          'reason': 'user_request',
+          if (password != null && password.isNotEmpty) 'password': password,
+        },
+      );
     } catch (e) {
       throw _asApiException(
         e,
