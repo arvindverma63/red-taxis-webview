@@ -20,17 +20,21 @@ class DioClient {
     required this.tokenStorage,
     required this.onSessionExpired,
   }) {
-    dio = Dio(BaseOptions(
-      baseUrl: config.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 20),
-      contentType: Headers.jsonContentType,
-    ));
-    dio.interceptors.add(InterceptorsWrapper(
-      onRequest: _onRequest,
-      onResponse: _onResponse,
-      onError: _onError,
-    ));
+    dio = Dio(
+      BaseOptions(
+        baseUrl: config.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 20),
+        contentType: Headers.jsonContentType,
+      ),
+    );
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: _onRequest,
+        onResponse: _onResponse,
+        onError: _onError,
+      ),
+    );
   }
 
   final AppConfig config;
@@ -42,8 +46,10 @@ class DioClient {
   String? _accessToken;
   Future<bool>? _refreshing; // single-flight guard
 
-  Future<void> setTokens(
-      {required String access, required String refresh}) async {
+  Future<void> setTokens({
+    required String access,
+    required String refresh,
+  }) async {
     _accessToken = access;
     await tokenStorage.saveTokens(accessToken: access, refreshToken: refresh);
   }
@@ -54,12 +60,16 @@ class DioClient {
   }
 
   Future<void> _onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     NetworkLog.markStart(options);
-    if (config.tenantKey.isNotEmpty && options.headers['X-Tenant-Key'] == null) {
+    if (config.tenantKey.isNotEmpty &&
+        options.headers['X-Tenant-Key'] == null) {
       options.headers['X-Tenant-Key'] = config.tenantKey;
     }
-    if (config.tenantOrgId.isNotEmpty && options.headers['X-Tenant-Id'] == null) {
+    if (config.tenantOrgId.isNotEmpty &&
+        options.headers['X-Tenant-Id'] == null) {
       options.headers['X-Tenant-Id'] = config.tenantOrgId;
     }
     _accessToken ??= await tokenStorage.readAccessToken();
@@ -76,8 +86,11 @@ class DioClient {
   }
 
   Future<void> _onError(
-      DioException err, ErrorInterceptorHandler handler) async {
-    final isAuthCall = err.requestOptions.path.contains('/auth/') ||
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final isAuthCall =
+        err.requestOptions.path.contains('/auth/') ||
         err.requestOptions.path.contains('/customer-auth/');
     if (err.response?.statusCode == 401 && !isAuthCall) {
       final ok = await _runRefresh();
@@ -85,7 +98,9 @@ class DioClient {
         try {
           final clone = await _retry(err.requestOptions);
           return handler.resolve(clone);
-        } catch (_) {/* fall through to error mapping below */}
+        } catch (_) {
+          /* fall through to error mapping below */
+        }
       } else {
         onSessionExpired();
       }
@@ -111,17 +126,20 @@ class DioClient {
     if (refresh == null || access == null) return false;
     try {
       // Bare client so this request itself is never intercepted.
-      final bare = Dio(BaseOptions(
-        baseUrl: config.apiBaseUrl,
-        headers: {
-          if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
-          if (config.tenantOrgId.isNotEmpty) 'X-Tenant-Id': config.tenantOrgId,
-        },
-      ));
-      final res = await bare.post('/api/v2/customer-auth/refresh', data: {
-        'token': access,
-        'refreshToken': refresh,
-      });
+      final bare = Dio(
+        BaseOptions(
+          baseUrl: config.apiBaseUrl,
+          headers: {
+            if (config.tenantKey.isNotEmpty) 'X-Tenant-Key': config.tenantKey,
+            if (config.tenantOrgId.isNotEmpty)
+              'X-Tenant-Id': config.tenantOrgId,
+          },
+        ),
+      );
+      final res = await bare.post(
+        '/api/v2/customer-auth/refresh',
+        data: {'token': access, 'refreshToken': refresh},
+      );
       // Tolerate both the raw shape and the v2 envelope { success, data, errors }.
       final body = res.data as Map<String, dynamic>;
       final data = (body['data'] is Map<String, dynamic>)
@@ -143,10 +161,10 @@ class DioClient {
       req.path,
       data: req.data,
       queryParameters: req.queryParameters,
-      options: Options(method: req.method, headers: {
-        ...req.headers,
-        'Authorization': 'Bearer $_accessToken',
-      }),
+      options: Options(
+        method: req.method,
+        headers: {...req.headers, 'Authorization': 'Bearer $_accessToken'},
+      ),
     );
   }
 
@@ -190,7 +208,8 @@ class DioClient {
     if (res == null) {
       // No response → connection/timeout/socket. Retryable "offline".
       userMessage = 'No connection. Check your internet and try again.';
-    } else if (effectiveCode != null && _friendlyMessages.containsKey(effectiveCode)) {
+    } else if (effectiveCode != null &&
+        _friendlyMessages.containsKey(effectiveCode)) {
       userMessage = _friendlyMessages[effectiveCode]!;
     } else if (rawMessage != null && !messageIsCode) {
       userMessage = rawMessage; // a genuine human-readable message from the API
@@ -199,8 +218,11 @@ class DioClient {
     }
 
     return err.copyWith(
-      error: ApiException(userMessage,
-          statusCode: res?.statusCode, code: effectiveCode),
+      error: ApiException(
+        userMessage,
+        statusCode: res?.statusCode,
+        code: effectiveCode,
+      ),
     );
   }
 
@@ -227,11 +249,15 @@ class DioClient {
   static const Map<String, String> _friendlyMessages = {
     'SESSION_REQUIRED': 'Could not load that address. Please try again.',
     'RESOLVE_FAILED': 'Could not load that address. Please try again.',
-    'SEARCH_FAILED': 'Address search is unavailable right now. Please try again.',
+    'SEARCH_FAILED':
+        'Address search is unavailable right now. Please try again.',
     'QUERY_TOO_SHORT': 'Keep typing to search for an address.',
     'LOOKUP_FAILED': 'Could not look up that postcode. Please try again.',
     'MISSING_ID': 'Could not load that address. Please try again.',
     'UNKNOWN_ID_FORMAT': 'Could not load that address. Please try again.',
+    'PASSWORD_REQUIRED': 'Enter your password to delete your account.',
+    'INVALID_PASSWORD': 'That password is incorrect. Please try again.',
+    'WRONG_PASSWORD': 'That password is incorrect. Please try again.',
   };
 }
 

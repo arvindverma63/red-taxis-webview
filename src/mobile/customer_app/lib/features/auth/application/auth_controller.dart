@@ -153,7 +153,11 @@ class AuthController extends AsyncNotifier<void> {
   /// (or was wrong), so the screen can ask for it and retry.
   bool get deleteNeedsPassword {
     final e = state.error;
-    return e is ApiException && e.message.toLowerCase().contains('password');
+    if (e is! ApiException) return false;
+    // The network layer swaps ALL-CAPS machine codes (PASSWORD_REQUIRED, …)
+    // for generic copy, so look at the code as well as the message.
+    final text = '${e.code ?? ''} ${e.message}'.toLowerCase();
+    return text.contains('password');
   }
 
   Future<bool> logout() => _run(() => _repo.logout());
