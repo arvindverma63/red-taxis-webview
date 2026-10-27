@@ -194,6 +194,29 @@ class AuthRepository {
       await _client.clear();
       _session.clear();
       return null;
+    } on DioException catch (e) {
+      // The network layer throws DioException (ApiException is wrapped inside),
+      // so the catch above never sees real HTTP failures. A rejected token —
+      // e.g. the account was deleted, or the refresh token was revoked — must
+      // land on sign-in instead of an unrecoverable startup error. Genuine
+      // connectivity problems (no response, 5xx, timeouts) still surface so the
+      // splash can offer Retry without wiping a valid session.
+      final api = e.error;
+      final status =
+          e.response?.statusCode ??
+          (api is ApiException ? api.statusCode : null);
+      final rejected =
+          status != null &&
+          status >= 400 &&
+          status < 500 &&
+          status != 408 &&
+          status != 429;
+      if (rejected) {
+        await _client.clear();
+        _session.clear();
+        return null;
+      }
+      rethrow;
     }
   }
 

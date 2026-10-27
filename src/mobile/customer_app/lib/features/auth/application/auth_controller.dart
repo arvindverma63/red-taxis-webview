@@ -1,7 +1,9 @@
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/route_paths.dart';
+import '../../../core/storage/token_storage.dart';
 import '../data/apple_sign_in_service.dart';
 import '../data/auth_repository.dart';
 import '../data/google_sign_in_service.dart';
@@ -176,8 +178,18 @@ final authControllerProvider = AsyncNotifierProvider<AuthController, void>(
 /// → Sign in. Splash watches this and navigates once it resolves.
 final splashRedirectProvider = FutureProvider<String>((ref) async {
   final repo = ref.read(authRepositoryProvider);
-  final user = await repo.restoreSession();
-  if (user != null) return Routes.home;
-  final seen = await repo.hasSeenOnboarding();
-  return seen ? Routes.signIn : Routes.onboarding;
+  try {
+    final user = await repo.restoreSession();
+    if (user != null) return Routes.home;
+    final seen = await repo.hasSeenOnboarding();
+    return seen ? Routes.signIn : Routes.onboarding;
+  } on PlatformException {
+    // Secure storage can fail to read on a device (corrupted Keystore entry
+    // after a restore/update, etc.). That would otherwise fail every Retry, so
+    // clear it and start signed out.
+    try {
+      await ref.read(secureStorageProvider).deleteAll();
+    } catch (_) {}
+    return Routes.signIn;
+  }
 });
