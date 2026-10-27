@@ -5,6 +5,7 @@ import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/update/app_update_gate.dart';
 
 /// Root widget. Wires the light + dark themes and the user's persisted theme
 /// choice (defaults to dark; switchable in Settings → Appearance) and the router.
@@ -15,13 +16,18 @@ class CustomerApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final config = AppConfig.fromEnvironment();
     final themeMode = ref.watch(themeModeProvider);
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: config.brandName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      routerConfig: ref.watch(routerProvider),
+      routerConfig: router,
+      builder: (context, child) => AppUpdateGate(
+        navigatorKey: router.routerDelegate.navigatorKey,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
