@@ -29,6 +29,15 @@ class BookingRepository {
 
   String? get sessionToken => _sessionToken;
 
+  /// Short-lived caches so repeated queries and re-picked places don't spend
+  /// another billable autocomplete/resolve call. Search entries keep the
+  /// session token they were issued with, restored on a hit so the following
+  /// resolve still has one.
+  static const _cacheTtl = Duration(minutes: 10);
+  static const _cacheMax = 40;
+  final _searchCache = <String, _CachedSearch>{};
+  final _resolveCache = <String, _CachedPlace>{};
+
   /// Autocomplete for [query]. Optional [biasPostTown]/[biasLonLat] nudge
   /// results toward the user's area. Returns suggestions and stashes the
   /// server-issued session token for the matching [resolveAddress] call.
@@ -38,6 +47,12 @@ class BookingRepository {
     String? biasPostTown,
     ({double lon, double lat})? biasLonLat,
   }) async {
+    final cacheKey = '${query.toLowerCase()}|$limit|$biasPostTown|$biasLonLat';
+    final hit = _searchCache[cacheKey];
+    if (hit != null && DateTime.now().difference(hit.at) < _cacheTtl) {
+      _sessionToken ??= hit.token;
+      return hit.results;
+    }
     try {
       final res = await _dio.post<dynamic>(
         '/api/v2/address/search',
@@ -50,7 +65,7 @@ class BookingRepository {
             'biasLonLat': {'lon': biasLonLat.lon, 'lat': biasLonLat.lat},
         },
       );
-      return unwrapV2<List<AddressSuggestion>>(res.data, (data) {
+      final results = unwrapV2<List<AddressSuggestion>>(res.data, (data) {
         if (data is Map<String, dynamic>) {
           final token = data['sessionToken'];
           if (token is String && token.isNotEmpty) _sessionToken = token;
@@ -61,6 +76,13 @@ class BookingRepository {
         }
         return const [];
       });
+      if (results.isNotEmpty) {
+        if (_searchCache.length >= _cacheMax) {
+          _searchCache.remove(_searchCache.keys.first);
+        }
+        _searchCache[cacheKey] = _CachedSearch(results, _sessionToken);
+      }
+      return results;
     } catch (_) {
       // Falls back to local Dorset results when the API is unreachable — e.g.
       // the web preview (CORS) or offline. On device the real call succeeds.
@@ -72,6 +94,11 @@ class BookingRepository {
   /// using the active session token, then clears the token so the next search
   /// starts a fresh billable session.
   Future<Place> resolveAddress(String placeId) async {
+    final hit = _resolveCache[placeId];
+    if (hit != null && DateTime.now().difference(hit.at) < _cacheTtl) {
+      _sessionToken = null;
+      return hit.place;
+    }
     try {
       final res = await _dio.get<dynamic>(
         '/api/v2/address/resolve',
@@ -85,6 +112,10 @@ class BookingRepository {
         return _mapResolvedPlace(map);
       });
       _sessionToken = null; // selection complete — end the session
+      if (_resolveCache.length >= _cacheMax) {
+        _resolveCache.remove(_resolveCache.keys.first);
+      }
+      _resolveCache[placeId] = _CachedPlace(place);
       return place;
     } catch (_) {
       // Keep _sessionToken on failure: a failed resolve must not poison a
@@ -351,3 +382,16 @@ class BookingRepository {
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
   return BookingRepository(ref.watch(dioProvider));
 });
+
+class _CachedSearch {
+  _CachedSearch(this.results, this.token) : at = DateTime.now();
+  final List<AddressSuggestion> results;
+  final String? token;
+  final DateTime at;
+}
+
+class _CachedPlace {
+  _CachedPlace(this.place) : at = DateTime.now();
+  final Place place;
+  final DateTime at;
+}

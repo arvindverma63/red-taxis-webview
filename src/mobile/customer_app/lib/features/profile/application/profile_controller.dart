@@ -24,6 +24,17 @@ class ProfileController extends AsyncNotifier<AuthUser> {
       orElse: () {},
     );
   }
+
+  /// Upload a new profile photo from a local file path.
+  Future<void> uploadPhoto(String path) async {
+    final user = await _repo.uploadPhoto(path);
+    state = AsyncData(user);
+  }
+
+  Future<void> removePhoto() async {
+    final user = await _repo.removePhoto();
+    state = AsyncData(user);
+  }
 }
 
 final profileControllerProvider =

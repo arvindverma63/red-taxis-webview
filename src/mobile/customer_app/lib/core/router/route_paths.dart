@@ -29,6 +29,7 @@ abstract final class Routes {
   static const bookingDetail = '/activity'; // /activity/:bookingId
 
   // Profile sub-pages
+  static const editProfile = '/profile/edit';
   static const savedAddresses = '/profile/addresses';
   static const paymentMethods = '/profile/payment-methods';
   static const settings = '/profile/settings';

@@ -62,7 +62,7 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   ProfileIdentityCard(
                     user: user,
-                    onTapIdentity: () => _editProfile(context),
+                    onTapIdentity: () => context.push(Routes.editProfile),
                     // Wallet/top-up isn't a built feature yet; omit the balance row
                     // until it ships rather than show a fake balance. The card
                     // degrades gracefully to identity-only.
@@ -131,12 +131,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
     );
-  }
-
-  void _editProfile(BuildContext context) {
-    // Profile editing isn't a built sub-page yet; settings is the closest
-    // existing destination. Surface a hint rather than dead-tap.
-    _comingSoon(context, 'Edit profile');
   }
 
   void _comingSoon(BuildContext context, String what) {

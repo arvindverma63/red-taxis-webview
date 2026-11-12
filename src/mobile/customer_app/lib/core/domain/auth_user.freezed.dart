@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AuthUser {
 
- int get userId; String get username; String get fullName; String? get email; String? get phoneNumber; String get role; bool get isPlatformAdmin; bool get isAccount;
+ int get userId; String get username; String get fullName; String? get email; String? get phoneNumber; String? get photoUrl; String get role; bool get isPlatformAdmin; bool get isAccount;
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,16 @@ $AuthUserCopyWith<AuthUser> get copyWith => _$AuthUserCopyWithImpl<AuthUser>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phoneNumber, phoneNumber) || other.phoneNumber == phoneNumber)&&(identical(other.role, role) || other.role == role)&&(identical(other.isPlatformAdmin, isPlatformAdmin) || other.isPlatformAdmin == isPlatformAdmin)&&(identical(other.isAccount, isAccount) || other.isAccount == isAccount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phoneNumber, phoneNumber) || other.phoneNumber == phoneNumber)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.role, role) || other.role == role)&&(identical(other.isPlatformAdmin, isPlatformAdmin) || other.isPlatformAdmin == isPlatformAdmin)&&(identical(other.isAccount, isAccount) || other.isAccount == isAccount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,userId,username,fullName,email,phoneNumber,role,isPlatformAdmin,isAccount);
+int get hashCode => Object.hash(runtimeType,userId,username,fullName,email,phoneNumber,photoUrl,role,isPlatformAdmin,isAccount);
 
 @override
 String toString() {
-  return 'AuthUser(userId: $userId, username: $username, fullName: $fullName, email: $email, phoneNumber: $phoneNumber, role: $role, isPlatformAdmin: $isPlatformAdmin, isAccount: $isAccount)';
+  return 'AuthUser(userId: $userId, username: $username, fullName: $fullName, email: $email, phoneNumber: $phoneNumber, photoUrl: $photoUrl, role: $role, isPlatformAdmin: $isPlatformAdmin, isAccount: $isAccount)';
 }
 
 
@@ -49,7 +49,7 @@ abstract mixin class $AuthUserCopyWith<$Res>  {
   factory $AuthUserCopyWith(AuthUser value, $Res Function(AuthUser) _then) = _$AuthUserCopyWithImpl;
 @useResult
 $Res call({
- int userId, String username, String fullName, String? email, String? phoneNumber, String role, bool isPlatformAdmin, bool isAccount
+ int userId, String username, String fullName, String? email, String? phoneNumber, String? photoUrl, String role, bool isPlatformAdmin, bool isAccount
 });
 
 
@@ -66,13 +66,14 @@ class _$AuthUserCopyWithImpl<$Res>
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? username = null,Object? fullName = null,Object? email = freezed,Object? phoneNumber = freezed,Object? role = null,Object? isPlatformAdmin = null,Object? isAccount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? username = null,Object? fullName = null,Object? email = freezed,Object? phoneNumber = freezed,Object? photoUrl = freezed,Object? role = null,Object? isPlatformAdmin = null,Object? isAccount = null,}) {
   return _then(_self.copyWith(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as int,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phoneNumber: freezed == phoneNumber ? _self.phoneNumber : phoneNumber // ignore: cast_nullable_to_non_nullable
+as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,isPlatformAdmin: null == isPlatformAdmin ? _self.isPlatformAdmin : isPlatformAdmin // ignore: cast_nullable_to_non_nullable
 as bool,isAccount: null == isAccount ? _self.isAccount : isAccount // ignore: cast_nullable_to_non_nullable
@@ -87,7 +88,7 @@ as bool,
 @JsonSerializable()
 
 class _AuthUser implements AuthUser {
-  const _AuthUser({required this.userId, required this.username, required this.fullName, this.email, this.phoneNumber, this.role = '', this.isPlatformAdmin = false, this.isAccount = false});
+  const _AuthUser({required this.userId, required this.username, required this.fullName, this.email, this.phoneNumber, this.photoUrl, this.role = '', this.isPlatformAdmin = false, this.isAccount = false});
   factory _AuthUser.fromJson(Map<String, dynamic> json) => _$AuthUserFromJson(json);
 
 @override final  int userId;
@@ -95,6 +96,7 @@ class _AuthUser implements AuthUser {
 @override final  String fullName;
 @override final  String? email;
 @override final  String? phoneNumber;
+@override final  String? photoUrl;
 @override@JsonKey() final  String role;
 @override@JsonKey() final  bool isPlatformAdmin;
 @override@JsonKey() final  bool isAccount;
@@ -112,16 +114,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phoneNumber, phoneNumber) || other.phoneNumber == phoneNumber)&&(identical(other.role, role) || other.role == role)&&(identical(other.isPlatformAdmin, isPlatformAdmin) || other.isPlatformAdmin == isPlatformAdmin)&&(identical(other.isAccount, isAccount) || other.isAccount == isAccount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.username, username) || other.username == username)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phoneNumber, phoneNumber) || other.phoneNumber == phoneNumber)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.role, role) || other.role == role)&&(identical(other.isPlatformAdmin, isPlatformAdmin) || other.isPlatformAdmin == isPlatformAdmin)&&(identical(other.isAccount, isAccount) || other.isAccount == isAccount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,userId,username,fullName,email,phoneNumber,role,isPlatformAdmin,isAccount);
+int get hashCode => Object.hash(runtimeType,userId,username,fullName,email,phoneNumber,photoUrl,role,isPlatformAdmin,isAccount);
 
 @override
 String toString() {
-  return 'AuthUser(userId: $userId, username: $username, fullName: $fullName, email: $email, phoneNumber: $phoneNumber, role: $role, isPlatformAdmin: $isPlatformAdmin, isAccount: $isAccount)';
+  return 'AuthUser(userId: $userId, username: $username, fullName: $fullName, email: $email, phoneNumber: $phoneNumber, photoUrl: $photoUrl, role: $role, isPlatformAdmin: $isPlatformAdmin, isAccount: $isAccount)';
 }
 
 
@@ -132,7 +134,7 @@ abstract mixin class _$AuthUserCopyWith<$Res> implements $AuthUserCopyWith<$Res>
   factory _$AuthUserCopyWith(_AuthUser value, $Res Function(_AuthUser) _then) = __$AuthUserCopyWithImpl;
 @override @useResult
 $Res call({
- int userId, String username, String fullName, String? email, String? phoneNumber, String role, bool isPlatformAdmin, bool isAccount
+ int userId, String username, String fullName, String? email, String? phoneNumber, String? photoUrl, String role, bool isPlatformAdmin, bool isAccount
 });
 
 
@@ -149,13 +151,14 @@ class __$AuthUserCopyWithImpl<$Res>
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? username = null,Object? fullName = null,Object? email = freezed,Object? phoneNumber = freezed,Object? role = null,Object? isPlatformAdmin = null,Object? isAccount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? username = null,Object? fullName = null,Object? email = freezed,Object? phoneNumber = freezed,Object? photoUrl = freezed,Object? role = null,Object? isPlatformAdmin = null,Object? isAccount = null,}) {
   return _then(_AuthUser(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as int,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phoneNumber: freezed == phoneNumber ? _self.phoneNumber : phoneNumber // ignore: cast_nullable_to_non_nullable
+as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,isPlatformAdmin: null == isPlatformAdmin ? _self.isPlatformAdmin : isPlatformAdmin // ignore: cast_nullable_to_non_nullable
 as bool,isAccount: null == isAccount ? _self.isAccount : isAccount // ignore: cast_nullable_to_non_nullable

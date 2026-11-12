@@ -114,7 +114,7 @@ class _IdentityRow extends StatelessWidget {
 
     final content = Row(
       children: [
-        AppAvatar(name: name, imageUrl: null, size: 52),
+        AppAvatar(name: name, imageUrl: user?.photoUrl, size: 52),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(

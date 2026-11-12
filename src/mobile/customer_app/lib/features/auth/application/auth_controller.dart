@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -178,18 +179,38 @@ final authControllerProvider = AsyncNotifierProvider<AuthController, void>(
 /// → Sign in. Splash watches this and navigates once it resolves.
 final splashRedirectProvider = FutureProvider<String>((ref) async {
   final repo = ref.read(authRepositoryProvider);
-  try {
-    final user = await repo.restoreSession();
-    if (user != null) return Routes.home;
-    final seen = await repo.hasSeenOnboarding();
-    return seen ? Routes.signIn : Routes.onboarding;
-  } on PlatformException {
-    // Secure storage can fail to read on a device (corrupted Keystore entry
-    // after a restore/update, etc.). That would otherwise fail every Retry, so
-    // clear it and start signed out.
+
+  Future<String> resolve() async {
     try {
-      await ref.read(secureStorageProvider).deleteAll();
-    } catch (_) {}
-    return Routes.signIn;
+      final user = await repo.restoreSession();
+      if (user != null) return Routes.home;
+      final seen = await repo.hasSeenOnboarding();
+      return seen ? Routes.signIn : Routes.onboarding;
+    } on PlatformException {
+      // Secure storage can fail to read on a device (corrupted Keystore entry
+      // after a restore/update, etc.). That would otherwise fail every Retry,
+      // so clear it and start signed out.
+      try {
+        await ref.read(secureStorageProvider).deleteAll();
+      } catch (_) {}
+      return Routes.signIn;
+    }
+  }
+
+  // A cold start can hit a slow or dropped first request (captive network,
+  // radio waking up, brief server hiccup). Retry a couple of times before
+  // showing the Retry screen, so a blip doesn't look like a broken app.
+  for (var attempt = 0; ; attempt++) {
+    try {
+      return await resolve();
+    } on DioException {
+      if (attempt >= 2) rethrow;
+      await Future<void>.delayed(Duration(seconds: attempt + 1));
+    } catch (_) {
+      // Anything that isn't connectivity (unexpected response shape, parse
+      // error) can't be fixed by Retry and must not strand the user on the
+      // splash: start signed out instead.
+      return Routes.signIn;
+    }
   }
 });

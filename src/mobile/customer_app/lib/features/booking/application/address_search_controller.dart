@@ -7,11 +7,14 @@ import '../domain/address_suggestion.dart';
 /// updates [addressQueryProvider]; this family fetches whenever the (trimmed)
 /// query changes. An empty/too-short query short-circuits to no results so we
 /// never spend a billable autocomplete call on a single keystroke.
+/// Minimum characters before an autocomplete call is made.
+const kMinAddressQueryLength = 4;
+
 final addressSuggestionsProvider =
     FutureProvider.autoDispose.family<List<AddressSuggestion>, String>(
   (ref, query) async {
     final trimmed = query.trim();
-    if (trimmed.length < 3) return const [];
+    if (trimmed.length < kMinAddressQueryLength) return const [];
     final repo = ref.watch(bookingRepositoryProvider);
     return repo.searchAddress(trimmed);
   },

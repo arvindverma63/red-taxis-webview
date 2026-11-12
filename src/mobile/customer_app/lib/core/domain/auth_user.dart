@@ -13,6 +13,7 @@ abstract class AuthUser with _$AuthUser {
     required String fullName,
     String? email,
     String? phoneNumber,
+    String? photoUrl,
     @Default('') String role,
     @Default(false) bool isPlatformAdmin,
     @Default(false) bool isAccount, // billed-to-account user vs public customer

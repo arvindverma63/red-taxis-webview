@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/route_paths.dart';
+import 'edit_profile_screen.dart';
 import 'notifications_screen.dart';
 import 'payment_methods_screen.dart';
 import 'saved_addresses_screen.dart';
@@ -10,6 +11,11 @@ import 'settings_screen.dart';
 /// ([ProfileScreen]) is wired by the app shell against [Routes.profile], so it
 /// is intentionally NOT listed here — only the pages pushed on top of it are.
 final List<RouteBase> profileRoutes = [
+  GoRoute(
+    path: Routes.editProfile,
+    name: 'editProfile',
+    builder: (context, state) => const EditProfileScreen(),
+  ),
   GoRoute(
     path: Routes.savedAddresses,
     name: 'savedAddresses',

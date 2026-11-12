@@ -87,7 +87,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
 
   void _onChanged(String value) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), () {
+    _debounce = Timer(const Duration(milliseconds: 600), () {
       if (!mounted) return;
       ref.read(addressQueryProvider.notifier).state = value;
     });
@@ -202,7 +202,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
     final query = ref.watch(addressQueryProvider);
     final suggestionsAsync = ref.watch(addressSuggestionsProvider(query));
     final theme = Theme.of(context);
-    final hasQuery = query.trim().length >= 3;
+    final hasQuery = query.trim().length >= kMinAddressQueryLength;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -369,11 +369,11 @@ class _SuggestionList extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (query.trim().length < 3) {
+    if (query.trim().length < kMinAddressQueryLength) {
       return EmptyView(
         icon: Icons.location_searching,
         title: emptyHint,
-        subtitle: 'Enter at least 3 characters to search.',
+        subtitle: 'Enter at least $kMinAddressQueryLength characters to search.',
       );
     }
 

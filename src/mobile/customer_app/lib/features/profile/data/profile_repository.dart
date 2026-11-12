@@ -43,16 +43,7 @@ class ProfileRepository {
     try {
       final res = await _dio.get<dynamic>('/api/v2/customers/me/profile');
       final user = unwrapV2<AuthUser>(res.data, (data) {
-        final m = data as Map<String, dynamic>;
-        return AuthUser(
-          userId: (m['userId'] as num).toInt(),
-          username: (m['username'] ?? '').toString(),
-          fullName: (m['fullName'] ?? '').toString(),
-          email: m['email'] as String?,
-          phoneNumber: m['phoneNumber'] as String?,
-          role: (m['role'] ?? 'Customer').toString(),
-          isAccount: (m['role'] ?? '').toString().toLowerCase() == 'account',
-        );
+        return _userFromJson(data as Map<String, dynamic>);
       });
       _ref.read(sessionProvider.notifier).setUser(user);
       return user;
@@ -89,16 +80,7 @@ class ProfileRepository {
         },
       );
       final user = unwrapV2<AuthUser>(res.data, (data) {
-        final m = data as Map<String, dynamic>;
-        return AuthUser(
-          userId: (m['userId'] as num).toInt(),
-          username: (m['username'] ?? '').toString(),
-          fullName: (m['fullName'] ?? '').toString(),
-          email: m['email'] as String?,
-          phoneNumber: m['phoneNumber'] as String?,
-          role: (m['role'] ?? 'Customer').toString(),
-          isAccount: (m['role'] ?? '').toString().toLowerCase() == 'account',
-        );
+        return _userFromJson(data as Map<String, dynamic>);
       });
       _ref.read(sessionProvider.notifier).setUser(user);
       return user;
@@ -115,6 +97,71 @@ class ProfileRepository {
       throw _asApiException(e, 'Could not save your profile.');
     }
   }
+
+  /// POST `/api/v2/customers/me/photo` (multipart field `photo`). Returns the
+  /// refreshed profile (with `photoUrl`) and syncs the session.
+  Future<AuthUser> uploadPhoto(String path) async {
+    try {
+      final name = path.split('/').last;
+      final ext = name.contains('.') ? name.split('.').last.toLowerCase() : 'jpg';
+      final res = await _dio.post<dynamic>(
+        '/api/v2/customers/me/photo',
+        data: FormData.fromMap({
+          'photo': await MultipartFile.fromFile(
+            path,
+            filename: name,
+            contentType: DioMediaType('image', ext == 'jpg' ? 'jpeg' : ext),
+          ),
+        }),
+        options: Options(contentType: Headers.multipartFormDataContentType),
+      );
+      return _applyUser(res.data);
+    } catch (e) {
+      throw _asApiException(e, 'Could not upload your photo.');
+    }
+  }
+
+  /// DELETE `/api/v2/customers/me/photo`.
+  Future<AuthUser> removePhoto() async {
+    try {
+      final res = await _dio.delete<dynamic>('/api/v2/customers/me/photo');
+      return _applyUser(res.data);
+    } catch (e) {
+      throw _asApiException(e, 'Could not remove your photo.');
+    }
+  }
+
+  /// The photo endpoints return either the profile or `{ photoUrl, profile }`.
+  AuthUser _applyUser(dynamic body) {
+    final user = unwrapV2<AuthUser>(body, (data) {
+      final m = data as Map<String, dynamic>;
+      final profile = m['profile'];
+      if (profile is Map<String, dynamic> && profile['userId'] != null) {
+        return _userFromJson({
+          ...profile,
+          if (!profile.containsKey('photoUrl')) 'photoUrl': m['photoUrl'],
+        });
+      }
+      final current = _ref.read(currentUserProvider);
+      if (m['userId'] != null) return _userFromJson(m);
+      return (current ??
+              const AuthUser(userId: 0, username: '', fullName: ''))
+          .copyWith(photoUrl: m['photoUrl'] as String?);
+    });
+    _ref.read(sessionProvider.notifier).setUser(user);
+    return user;
+  }
+
+  AuthUser _userFromJson(Map<String, dynamic> m) => AuthUser(
+        userId: (m['userId'] as num).toInt(),
+        username: (m['username'] ?? '').toString(),
+        fullName: (m['fullName'] ?? '').toString(),
+        email: m['email'] as String?,
+        phoneNumber: m['phoneNumber'] as String?,
+        photoUrl: m['photoUrl'] as String?,
+        role: (m['role'] ?? 'Customer').toString(),
+        isAccount: (m['role'] ?? '').toString().toLowerCase() == 'account',
+      );
 
   // ── Saved addresses ───────────────────────────────────────────────────────
 
