@@ -1,8 +1,12 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+
+import 'fleet_qr_parser.dart';
+import 'qr_image_decoder.dart';
 
 class QrScannerModal extends StatefulWidget {
   const QrScannerModal({super.key});
@@ -51,102 +55,80 @@ class _QrScannerModalState extends State<QrScannerModal>
 
   @override
   void dispose() {
+    _errorTimer?.cancel();
     _laserAnimController.dispose();
     super.dispose();
+  }
+
+  Timer? _errorTimer;
+  String? _lastRejectedCode;
+  bool _importing = false;
+
+  void _showError(String message) {
+    if (!mounted) return;
+    HapticFeedback.heavyImpact();
+    _errorTimer?.cancel();
+    setState(() => _parseError = message);
+    _errorTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _parseError = null);
+    });
+  }
+
+  /// Accepts a parse result: closes with the fleet details, or explains why the
+  /// code was rejected. Returns true when accepted.
+  bool _handleResult(FleetQrResult result) {
+    if (result.isOk) {
+      _isProcessing = true;
+      HapticFeedback.mediumImpact();
+      Navigator.of(context).pop(result.payload);
+      return true;
+    }
+    _showError(result.message);
+    return false;
   }
 
   void _onQRViewCreated(QRViewController controller) {
     _controller = controller;
     controller.scannedDataStream.listen((scanData) {
       final code = scanData.code;
-      if (code != null && code.isNotEmpty && !_isProcessing) {
-        final parsed = _parseQrPayload(code);
-        if (parsed != null && mounted) {
-          _isProcessing = true;
-          HapticFeedback.mediumImpact();
-          Navigator.of(context).pop(parsed);
-        } else if (mounted) {
-          setState(() {
-            _parseError = 'Invalid QR code. Please scan a valid fleet setup code.';
-          });
-        }
+      if (code == null || code.isEmpty || _isProcessing || !mounted) return;
+      // The camera re-reports the same code every frame; only react once per
+      // distinct rejected code so the message doesn't flicker or spam.
+      if (code == _lastRejectedCode) return;
+      if (!_handleResult(parseFleetQr(code))) {
+        _lastRejectedCode = code;
+        Future<void>.delayed(const Duration(seconds: 4), () {
+          if (_lastRejectedCode == code) _lastRejectedCode = null;
+        });
       }
     }, onError: (err) {
       debugPrint('QR Scanner camera notice: $err');
     });
   }
 
-  Map<String, String>? _parseQrPayload(String raw) {
-    final clean = raw.trim();
-
-    // 1. Check if JSON payload: {"tenantId": "...", "tenantKey": "..."}
-    if (clean.startsWith('{') && clean.endsWith('}')) {
-      try {
-        final data = jsonDecode(clean);
-        if (data is Map<String, dynamic>) {
-          final tenantId = data['tenantId']?.toString() ?? data['id']?.toString() ?? data['fleetId']?.toString();
-          final tenantKey = data['tenantKey']?.toString() ?? data['key']?.toString() ?? data['apiKey']?.toString();
-          final companyName = data['companyName']?.toString() ?? data['name']?.toString() ?? data['brand']?.toString();
-          final primaryColour = data['primaryColour']?.toString() ?? data['primaryColor']?.toString() ?? data['color']?.toString();
-
-          if (tenantId != null && tenantId.isNotEmpty) {
-            return {
-              'tenantId': tenantId,
-              'tenantKey': tenantKey ?? '',
-              if (companyName != null) 'companyName': companyName,
-              if (primaryColour != null) 'primaryColour': primaryColour,
-            };
-          }
-        }
-      } catch (_) {}
-    }
-
-    // 2. Check if deep link URL: redtaxis://fleet?tenantId=org_...&tenantKey=rtk_...
-    // or https://staging.redtaxi.co.uk/driver?tenantId=org_...
-    if (clean.contains('://') || clean.contains('tenantId=')) {
-      try {
-        final uri = Uri.parse(clean);
-        final tenantId = uri.queryParameters['tenantId'] ?? uri.queryParameters['id'] ?? uri.queryParameters['tenant'];
-        final tenantKey = uri.queryParameters['tenantKey'] ?? uri.queryParameters['key'] ?? uri.queryParameters['token'];
-        final companyName = uri.queryParameters['companyName'] ?? uri.queryParameters['name'] ?? uri.queryParameters['fleet'];
-        final primaryColour = uri.queryParameters['primaryColour'] ?? uri.queryParameters['primaryColor'] ?? uri.queryParameters['color'];
-
-        if (tenantId != null && tenantId.isNotEmpty) {
-          return {
-            'tenantId': tenantId,
-            'tenantKey': tenantKey ?? '',
-            if (companyName != null) 'companyName': companyName,
-            if (primaryColour != null) 'primaryColour': primaryColour,
-          };
-        }
-      } catch (_) {}
-    }
-
-    // 3. Check if colon / pipe separated format: "org_...:rtk_pub_..." or "org_...|rtk_pub_...|companyName"
-    if (clean.contains(':') || clean.contains('|')) {
-      final delimiter = clean.contains(':') ? ':' : '|';
-      final parts = clean.split(delimiter);
-      if (parts.length >= 2) {
-        final map = {
-          'tenantId': parts[0].trim(),
-          'tenantKey': parts[1].trim(),
-        };
-        if (parts.length >= 3 && parts[2].trim().isNotEmpty) {
-          map['companyName'] = parts[2].trim();
-        }
-        return map;
+  /// Import a QR code from an image in the gallery / files.
+  Future<void> _importFromImage() async {
+    if (_importing) return;
+    setState(() => _importing = true);
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: false,
+      );
+      final path = picked?.files.single.path;
+      if (path == null) return; // cancelled
+      final text = await decodeQrFromImageFile(path);
+      if (!mounted) return;
+      if (text == null || text.trim().isEmpty) {
+        _showError(const FleetQrResult.fail(FleetQrFailure.noCodeFound).message);
+        return;
       }
+      _handleResult(parseFleetQr(text));
+    } catch (_) {
+      _showError('Could not read that image. Please try a different one.');
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
-
-    // 4. Fallback if single identifier is supplied
-    if (clean.startsWith('org_') || clean.startsWith('fleet_')) {
-      return {
-        'tenantId': clean,
-        'tenantKey': '',
-      };
-    }
-
-    return null;
   }
 
   void _selectPreset(String tenantId, String tenantKey) {
@@ -160,17 +142,11 @@ class _QrScannerModalState extends State<QrScannerModal>
   Future<void> _pasteFromClipboard() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text;
-    if (text != null && text.isNotEmpty) {
-      final parsed = _parseQrPayload(text);
-      if (parsed != null && mounted) {
-        HapticFeedback.mediumImpact();
-        Navigator.of(context).pop(parsed);
-      } else {
-        setState(() {
-          _parseError = 'Clipboard does not contain a valid fleet code or URL.';
-        });
-      }
+    if (text == null || text.trim().isEmpty) {
+      _showError('Clipboard is empty. Copy your fleet activation code or link first.');
+      return;
     }
+    _handleResult(parseFleetQr(text));
   }
 
   @override
@@ -218,7 +194,7 @@ class _QrScannerModalState extends State<QrScannerModal>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Point camera at your fleet setup QR code',
+                      'Point camera at your fleet activation QR code',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
@@ -367,6 +343,27 @@ class _QrScannerModalState extends State<QrScannerModal>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _importing ? null : _importFromImage,
+                    icon: _importing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.photo_library_outlined, size: 18),
+                    label: Text(_importing ? 'Reading image...' : 'Upload QR code image'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: primaryColor,
+                      side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
