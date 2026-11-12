@@ -7,9 +7,9 @@ import '../storage/token_storage.dart' show secureStorageProvider;
 /// Persistence key for the user's theme preference.
 const _themeModeKey = 'theme_mode';
 
-/// First-run default. Dark matches the GoRide kit's premium look; the user can
+/// First-run default. The First Taxis design is light-first; the user can
 /// switch to Light or System from Settings → Appearance and the choice persists.
-const ThemeMode kDefaultThemeMode = ThemeMode.dark;
+const ThemeMode kDefaultThemeMode = ThemeMode.light;
 
 ThemeMode _parseThemeMode(String? raw) {
   switch (raw) {

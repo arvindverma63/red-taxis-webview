@@ -147,7 +147,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             ),
             children: [
               AuthHeader(
-                title: 'Create your account',
+                title: 'Create Your Account',
                 subtitle:
                     "Let's get you booked in. Enter your details to create "
                     'your ${AppConfig.fromEnvironment().brandName} account.',
@@ -212,7 +212,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
               AppButton(
-                label: 'Sign up',
+                label: 'Create Account',
                 isLoading: loading,
                 // Disabled until the Terms are agreed.
                 onPressed: _agreedToTerms ? _submit : null,

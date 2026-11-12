@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Type scale in Urbanist (the GoRide kit typeface), served via google_fonts.
+/// Type scale in Inter, served via google_fonts.
 ///
 /// Reference token (GoRide Primary Button): `Urbanist/Large/bold` =
 /// size 16, weight 700, lineHeight 1.6, letterSpacing 0.2. The scale below
@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 abstract final class AppTypography {
   static TextStyle _u(double size, FontWeight weight,
           {double height = 1.4, double spacing = 0}) =>
-      GoogleFonts.urbanist(
+      GoogleFonts.inter(
         fontSize: size,
         fontWeight: weight,
         height: height,

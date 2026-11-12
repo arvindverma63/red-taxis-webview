@@ -5,11 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/widgets.dart';
 
-/// GoRide-style auth header: a large bold headline with a trailing sparkle
-/// accent, over a muted two-line subtitle.
-///
-/// The sparkle is rendered as a brand-tinted icon appended to the headline so
-/// it inherits the headline's baseline and scales with the text.
+/// Auth header: the centred First Taxis wordmark, a bold headline and a muted
+/// subtitle. [accent] is kept for call-site compatibility and no longer drawn.
 class AuthHeader extends StatelessWidget {
   const AuthHeader({
     super.key,
@@ -33,21 +30,12 @@ class AuthHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text.rich(
-          TextSpan(
-            text: title,
-            style: theme.textTheme.displayMedium,
-            children: [
-              const TextSpan(text: '  '),
-              WidgetSpan(
-                alignment: PlaceholderAlignment.middle,
-                child: Icon(
-                  accent.icon,
-                  size: 26,
-                  color: accent.color,
-                ),
-              ),
-            ],
+        const Center(child: BrandWordmark(height: 50)),
+        const SizedBox(height: AppSpacing.xxl),
+        Text(
+          title,
+          style: theme.textTheme.headlineLarge?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -110,6 +98,7 @@ class TermsCheckbox extends StatelessWidget {
             value: value,
             onChanged: enabled ? (v) => onChanged(v ?? false) : null,
             activeColor: AppColors.brand,
+            checkColor: AppColors.onBrand,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
@@ -177,8 +166,7 @@ class AuthErrorBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.error_outline,
-                size: 20, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 20, color: theme.colorScheme.error),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(

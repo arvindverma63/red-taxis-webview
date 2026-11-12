@@ -5,10 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../auth/application/auth_controller.dart';
-import '../../../core/network/api_exception.dart';
 import '../application/notifications_controller.dart';
 import '../../../core/widgets/widgets.dart';
+import 'account_actions.dart';
 import 'widgets/profile_identity_card.dart';
 import 'widgets/settings_group_card.dart';
 import 'widgets/settings_row.dart';
@@ -116,14 +115,14 @@ class ProfileScreen extends ConsumerWidget {
                         label: 'Delete account',
                         destructive: true,
                         trailing: const SizedBox.shrink(),
-                        onTap: () => _deleteAccount(context, ref),
+                        onTap: () => confirmAndDeleteAccount(context, ref),
                       ),
                       SettingsRow(
                         icon: Icons.logout,
                         label: 'Logout',
                         destructive: true,
                         trailing: const SizedBox.shrink(),
-                        onTap: () => _signOut(context, ref),
+                        onTap: () => confirmAndSignOut(context, ref),
                       ),
                     ],
                   ),
@@ -176,98 +175,7 @@ class ProfileScreen extends ConsumerWidget {
       case 'settings':
         context.push(Routes.settings);
       case 'logout':
-        await _signOut(context, ref);
-    }
-  }
-
-  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: 'Delete account?',
-      message:
-          'This permanently deletes your account and personal data. Your '
-          'saved addresses and trip history will be removed and this cannot '
-          'be undone.',
-      confirmLabel: 'Delete account',
-      destructive: true,
-    );
-    if (!confirmed || !context.mounted) return;
-    final auth = ref.read(authControllerProvider.notifier);
-    var ok = await auth.deleteAccount();
-    // Accounts with a password must confirm it; keep asking until it is right
-    // or the customer cancels.
-    while (!ok && auth.deleteNeedsPassword) {
-      if (!context.mounted) return;
-      final password = await _askPassword(context);
-      if (password == null) return;
-      ok = await auth.deleteAccount(password: password);
-    }
-    if (!context.mounted) return;
-    if (ok) {
-      context.go(Routes.signIn);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your account has been deleted.')),
-      );
-    } else {
-      final err = ref.read(authControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            err is ApiException
-                ? err.message
-                : 'Could not delete your account. Please try again.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<String?> _askPassword(BuildContext context) {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm your password'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          obscureText: true,
-          decoration: const InputDecoration(hintText: 'Password'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Delete account'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: 'Logout',
-      message: 'You will need to sign in again to book a taxi.',
-      confirmLabel: 'Logout',
-      destructive: true,
-    );
-    if (!confirmed || !context.mounted) return;
-    try {
-      await ref.read(sessionProvider.notifier).signOut();
-      if (context.mounted) context.go(Routes.signIn);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not sign out. Please try again.'),
-          ),
-        );
-      }
+        await confirmAndSignOut(context, ref);
     }
   }
 }

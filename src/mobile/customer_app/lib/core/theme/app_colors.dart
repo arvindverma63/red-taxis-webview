@@ -10,9 +10,9 @@ import 'package:flutter/material.dart';
 /// Do not reference raw hex outside this file — consume via [AppTheme].
 abstract final class AppColors {
   // ── Brand ───────────────────────────────────────────────────────────
-  static const brand = Color(0xFFFE2020); // Red Taxi red
-  static const brandPressed = Color(0xFFD41212);
-  static const onBrand = Color(0xFFFFFFFF); // GoRide Text/Buttons/White
+  static const brand = Color(0xFFFFD500); // First Taxis yellow
+  static const brandPressed = Color(0xFFE6BF00);
+  static const onBrand = Color(0xFF111111); // black text/icons on yellow
 
   // ── Neutral ramp (GoRide greyscale roles) ───────────────────────────
   static const neutral0 = Color(0xFFFFFFFF);
@@ -56,8 +56,8 @@ abstract final class AppColors {
   // ── Accent tint (selected / secondary fills, per GoRide) ────────────
   // Light: opaque pale-red wash. Dark: translucent red (~16%) over surface so
   // it composites correctly on the stepped dark fills.
-  static const lightAccentTint = Color(0xFFFFE9E9);
-  static const darkAccentTint = Color(0x29FE2020); // #FE2020 @ ~16% alpha
+  static const lightAccentTint = Color(0xFFFFF4BF);
+  static const darkAccentTint = Color(0x29FFD500); // brand @ ~16% alpha
 
   // ── Map overlays (both themes) — all the brand red ──────────────────
   static const mapRoute = brand; // trip route polyline

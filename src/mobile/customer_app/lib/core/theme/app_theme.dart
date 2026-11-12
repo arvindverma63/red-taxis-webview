@@ -56,44 +56,50 @@ abstract final class AppTheme {
           backgroundColor: AppColors.brand,
           foregroundColor: AppColors.onBrand,
           disabledBackgroundColor: AppColors.neutral300,
-          minimumSize: const Size.fromHeight(56),
+          minimumSize: const Size.fromHeight(52),
           elevation: 0,
           textStyle: AppTypography.labelLarge,
-          shape: const StadiumBorder(), // pill (Radius-Button-1000)
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: textPrimary,
-          minimumSize: const Size.fromHeight(56),
+          minimumSize: const Size.fromHeight(52),
           side: BorderSide(color: scheme.outline, width: AppStroke.thin),
           textStyle: AppTypography.labelLarge,
-          shape: const StadiumBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.brand,
-          textStyle: AppTypography.labelMedium,
+          foregroundColor: textPrimary,
+          textStyle: AppTypography.labelMedium.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isLight ? AppColors.lightSurfaceAlt : AppColors.darkSurfaceAlt,
+        fillColor: isLight ? AppColors.lightSurface : AppColors.darkSurfaceAlt,
         contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
         hintStyle: AppTypography.bodyMedium.copyWith(color: textDisabled),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: scheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: scheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+          borderSide: BorderSide(color: textPrimary, width: 1.5),
         ),
       ),
       cardTheme: CardThemeData(
@@ -116,10 +122,22 @@ abstract final class AppTheme {
       ),
       // Text caret + selection use the brand red, not the Material default —
       // keeps inputs on-brand in both themes (kills the stray green caret).
-      textSelectionTheme: const TextSelectionThemeData(
-        cursorColor: AppColors.brand,
-        selectionHandleColor: AppColors.brand,
-        selectionColor: Color(0x40FE2020), // brand @ ~25%
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: textPrimary,
+        selectionHandleColor: AppColors.brandPressed,
+        selectionColor: const Color(0x66FFD500), // brand @ ~40%
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? AppColors.brand
+              : Colors.transparent,
+        ),
+        checkColor: const WidgetStatePropertyAll(AppColors.onBrand),
+        side: BorderSide(color: textPrimary, width: 1.5),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.brand,
       ),
     );
   }

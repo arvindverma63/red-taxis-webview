@@ -15,3 +15,4 @@ export 'status_chip.dart';
 export 'map_view.dart';
 export 'confirm_dialog.dart';
 export 'brand_logo.dart';
+export 'brand_wordmark.dart';

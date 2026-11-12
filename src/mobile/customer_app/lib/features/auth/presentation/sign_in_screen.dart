@@ -82,7 +82,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
             children: [
               const AuthHeader(
-                title: 'Welcome back',
+                title: 'Welcome Back',
                 subtitle:
                     'Sign in to book a taxi, track your driver and see '
                     'your trip history.',
@@ -118,7 +118,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               AppButton(
-                label: 'Sign in',
+                label: 'Sign In',
                 isLoading: loading,
                 onPressed: _submit,
               ),
@@ -136,7 +136,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     onPressed: loading
                         ? null
                         : () => context.push(Routes.signUp),
-                    child: const Text('Create an account'),
+                    child: const Text('Create account'),
                   ),
                 ],
               ),
