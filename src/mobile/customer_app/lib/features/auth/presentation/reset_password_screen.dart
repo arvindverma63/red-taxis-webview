@@ -36,8 +36,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _confirm = TextEditingController();
   bool _done = false;
 
-  bool get _hasValidLink =>
-      widget.email.isNotEmpty && widget.token.isNotEmpty;
+  bool get _hasValidLink => widget.email.isNotEmpty && widget.token.isNotEmpty;
 
   @override
   void dispose() {
@@ -49,7 +48,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref.read(authControllerProvider.notifier).resetPassword(
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .resetPassword(
           email: widget.email,
           token: widget.token,
           newPassword: _password.text,
@@ -75,7 +76,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         title: 'Reset password',
         body: ErrorView(
           icon: Icons.link_off,
-          message: 'This password link is invalid or has expired. Request a '
+          message:
+              'This password link is invalid or has expired. Request a '
               'new one from the sign-in screen.',
           retryLabel: 'Go to sign in',
           onRetry: () => context.go(Routes.signIn),
@@ -90,12 +92,17 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
             const SizedBox(height: AppSpacing.xl),
-            Icon(Icons.check_circle_outline,
-                size: 64, color: theme.colorScheme.primary),
+            Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: AppSpacing.xl),
-            Text('Password updated',
-                style: theme.textTheme.headlineMedium,
-                textAlign: TextAlign.center),
+            Text(
+              'Password updated',
+              style: theme.textTheme.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Your password has been updated. Sign in with your new password.',
@@ -120,8 +127,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             children: [
-              Text('Create a new password',
-                  style: theme.textTheme.headlineMedium),
+              Text(
+                'Create a new password',
+                style: theme.textTheme.headlineMedium,
+              ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Setting a new password for ${widget.email}.',

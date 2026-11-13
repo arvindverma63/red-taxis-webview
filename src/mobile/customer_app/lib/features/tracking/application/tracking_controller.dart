@@ -7,7 +7,9 @@ import '../domain/tracking_state.dart';
 ///
 /// Family keyed by `bookingId`. The screen watches this; the repository owns
 /// the source (mock today, Pusher later — a one-method swap in the repo).
-final trackingProvider =
-    StreamProvider.family<TrackingState, String>((ref, bookingId) {
+final trackingProvider = StreamProvider.family<TrackingState, String>((
+  ref,
+  bookingId,
+) {
   return ref.watch(trackingRepositoryProvider).watch(bookingId);
 });

@@ -35,43 +35,44 @@ enum BookingStatus {
 extension BookingStatusX on BookingStatus {
   /// Customer-facing label for chips and headings.
   String get label => switch (this) {
-        BookingStatus.requested => 'Requested',
-        BookingStatus.confirmed => 'Confirmed',
-        BookingStatus.allocated => 'Driver assigned',
-        BookingStatus.arriving => 'Driver on the way',
-        BookingStatus.arrived => 'Driver arrived',
-        BookingStatus.inProgress => 'On your trip',
-        BookingStatus.completed => 'Completed',
-        BookingStatus.cancelled => 'Cancelled',
-      };
+    BookingStatus.requested => 'Requested',
+    BookingStatus.confirmed => 'Confirmed',
+    BookingStatus.allocated => 'Driver assigned',
+    BookingStatus.arriving => 'Driver on the way',
+    BookingStatus.arrived => 'Driver arrived',
+    BookingStatus.inProgress => 'On your trip',
+    BookingStatus.completed => 'Completed',
+    BookingStatus.cancelled => 'Cancelled',
+  };
 
   /// Shorter label used inside the compact timeline rows.
   String get timelineLabel => switch (this) {
-        BookingStatus.requested => 'Requested',
-        BookingStatus.confirmed => 'Confirmed',
-        BookingStatus.allocated => 'Driver assigned',
-        BookingStatus.arriving => 'On the way',
-        BookingStatus.arrived => 'Arrived',
-        BookingStatus.inProgress => 'In progress',
-        BookingStatus.completed => 'Completed',
-        BookingStatus.cancelled => 'Cancelled',
-      };
+    BookingStatus.requested => 'Requested',
+    BookingStatus.confirmed => 'Confirmed',
+    BookingStatus.allocated => 'Driver assigned',
+    BookingStatus.arriving => 'On the way',
+    BookingStatus.arrived => 'Arrived',
+    BookingStatus.inProgress => 'In progress',
+    BookingStatus.completed => 'Completed',
+    BookingStatus.cancelled => 'Cancelled',
+  };
 
   /// Semantic colour bucket for [StatusChip] / coloured dots.
   StatusKind get statusKind => switch (this) {
-        BookingStatus.requested => StatusKind.pending,
-        BookingStatus.confirmed => StatusKind.active,
-        BookingStatus.allocated => StatusKind.active,
-        BookingStatus.arriving => StatusKind.active,
-        BookingStatus.arrived => StatusKind.active,
-        BookingStatus.inProgress => StatusKind.active,
-        BookingStatus.completed => StatusKind.success,
-        BookingStatus.cancelled => StatusKind.danger,
-      };
+    BookingStatus.requested => StatusKind.pending,
+    BookingStatus.confirmed => StatusKind.active,
+    BookingStatus.allocated => StatusKind.active,
+    BookingStatus.arriving => StatusKind.active,
+    BookingStatus.arrived => StatusKind.active,
+    BookingStatus.inProgress => StatusKind.active,
+    BookingStatus.completed => StatusKind.success,
+    BookingStatus.cancelled => StatusKind.danger,
+  };
 
   /// True once a driver exists for the booking (drives map marker + driver
   /// card visibility).
-  bool get hasDriver => index >= BookingStatus.allocated.index &&
+  bool get hasDriver =>
+      index >= BookingStatus.allocated.index &&
       this != BookingStatus.cancelled &&
       this != BookingStatus.completed;
 

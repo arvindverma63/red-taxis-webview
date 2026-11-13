@@ -54,8 +54,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 children: [
-                  Text('Reset your password',
-                      style: theme.textTheme.headlineMedium),
+                  Text(
+                    'Reset your password',
+                    style: theme.textTheme.headlineMedium,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Enter the email on your account and we will send a link to '
@@ -100,8 +102,11 @@ class _Confirmation extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
         const SizedBox(height: AppSpacing.xl),
-        Icon(Icons.mark_email_read_outlined,
-            size: 64, color: theme.colorScheme.primary),
+        Icon(
+          Icons.mark_email_read_outlined,
+          size: 64,
+          color: theme.colorScheme.primary,
+        ),
         const SizedBox(height: AppSpacing.xl),
         Text(
           'Check your email',
@@ -116,10 +121,7 @@ class _Confirmation extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xxl),
-        AppButton(
-          label: 'Back to sign in',
-          onPressed: () => context.pop(),
-        ),
+        AppButton(label: 'Back to sign in', onPressed: () => context.pop()),
       ],
     );
   }

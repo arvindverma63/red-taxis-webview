@@ -57,8 +57,11 @@ class FareSummary extends StatelessWidget {
             ),
             Row(
               children: [
-                Icon(Icons.account_balance_wallet_outlined,
-                    size: 18, color: theme.colorScheme.onSurface),
+                Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 18,
+                  color: theme.colorScheme.onSurface,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(paymentLabel!, style: theme.textTheme.bodyMedium),
               ],

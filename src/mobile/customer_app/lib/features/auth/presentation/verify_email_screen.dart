@@ -40,10 +40,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   Future<void> _verify() async {
     setState(() => _verifying = true);
-    final ok = await ref.read(authControllerProvider.notifier).verifyEmail(
-          email: widget.email,
-          token: widget.token!,
-        );
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .verifyEmail(email: widget.email, token: widget.token!);
     if (!mounted) return;
     setState(() {
       _verifying = false;
@@ -81,12 +80,17 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
             const SizedBox(height: AppSpacing.xl),
-            Icon(Icons.verified_outlined,
-                size: 64, color: theme.colorScheme.primary),
+            Icon(
+              Icons.verified_outlined,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: AppSpacing.xl),
-            Text('Email verified',
-                style: theme.textTheme.headlineMedium,
-                textAlign: TextAlign.center),
+            Text(
+              'Email verified',
+              style: theme.textTheme.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Thanks — your email address is confirmed.',
@@ -111,19 +115,24 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
         children: [
           const SizedBox(height: AppSpacing.lg),
-          Icon(Icons.mark_email_unread_outlined,
-              size: 64, color: theme.colorScheme.primary),
+          Icon(
+            Icons.mark_email_unread_outlined,
+            size: 64,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(height: AppSpacing.xl),
-          Text('Verify your email',
-              style: theme.textTheme.headlineMedium,
-              textAlign: TextAlign.center),
+          Text(
+            'Verify your email',
+            style: theme.textTheme.headlineMedium,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: AppSpacing.md),
           Text(
             widget.email.isEmpty
                 ? 'Open the link in the email we sent you to confirm your '
-                    'address.'
+                      'address.'
                 : 'We sent a verification link to ${widget.email}. Open it to '
-                    'confirm your address.',
+                      'confirm your address.',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -134,8 +143,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
               child: Text(
                 'Verification email sent.',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.primary),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
