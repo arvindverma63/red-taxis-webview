@@ -43,7 +43,7 @@ class _OfflineErrorWidgetState extends ConsumerState<OfflineErrorWidget> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
-    const primaryColor = AppTheme.primaryRed;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final subtitleColor = isDark ? Colors.white70 : const Color(0xFF64748B);
 
@@ -73,7 +73,7 @@ class _OfflineErrorWidgetState extends ConsumerState<OfflineErrorWidget> {
                     width: 1.5,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.wifi_off_rounded,
                     size: 30,
@@ -162,7 +162,7 @@ class _OfflineErrorWidgetState extends ConsumerState<OfflineErrorWidget> {
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
                   Icons.wifi_off_rounded,
                   size: 42,

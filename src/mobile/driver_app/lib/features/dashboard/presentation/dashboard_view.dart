@@ -353,7 +353,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             style: TextButton.styleFrom(
               foregroundColor: isOnline
                   ? Colors.grey[700]
-                  : AppTheme.primaryRed,
+                  : Theme.of(context).colorScheme.primary,
               minimumSize: const Size(0, 32),
               padding: const EdgeInsets.symmetric(horizontal: 10),
             ),
@@ -485,7 +485,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
         ],
       ),
       body: RefreshIndicator(
-        color: AppTheme.primaryRed,
+        color: Theme.of(context).colorScheme.primary,
         backgroundColor: ref.watch(themeModeProvider) == ThemeMode.dark
             ? AppTheme.darkSurface
             : Colors.white,
@@ -590,7 +590,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isOnline
                                         ? Colors.grey[850]
-                                        : AppTheme.primaryRed,
+                                        : Theme.of(context).colorScheme.primary,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -601,7 +601,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                                         ? Colors.grey[800]?.withValues(
                                             alpha: 0.6,
                                           )
-                                        : AppTheme.primaryRed.withValues(
+                                        : Theme.of(context).colorScheme.primary.withValues(
                                             alpha: 0.6,
                                           ),
                                     disabledForegroundColor: Colors.white70,
@@ -652,10 +652,10 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
             if (_isLoading &&
                 !_hasError &&
                 !Platform.environment.containsKey('FLUTTER_TEST'))
-              const SizedBox(
+              SizedBox(
                 height: 3,
                 child: LinearProgressIndicator(
-                  color: AppTheme.primaryRed,
+                  color: Theme.of(context).colorScheme.primary,
                   backgroundColor: Colors.transparent,
                 ),
               ),
@@ -678,9 +678,9 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
                       ),
                     ),
                   if (_controller == null)
-                    const Center(
+                    Center(
                       child: CircularProgressIndicator(
-                        color: AppTheme.primaryRed,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                 ],
@@ -755,7 +755,7 @@ class _DriverDashboardViewState extends ConsumerState<DriverDashboardView> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

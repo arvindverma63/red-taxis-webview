@@ -13,8 +13,24 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:driver_app/firebase_options.dart';
 import 'package:driver_app/core/config/constants.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/features/auth/presentation/widgets/fleet_qr_parser.dart';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating }
+
+/// Outcome of refreshing the fleet's branding from the server.
+enum BrandingSyncResult {
+  /// New colours/name/logo were applied.
+  updated,
+
+  /// The server's branding matches what the app already shows.
+  unchanged,
+
+  /// The server could not be reached or sent an unusable reply; nothing changed.
+  failed,
+
+  /// No fleet is configured yet, so there is nothing to sync.
+  notConfigured,
+}
 
 class AuthState {
   final AuthStatus status;
@@ -97,9 +113,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _tryAutoLogin() async {
     try {
-      final tenantId = await _storage.read(key: AppConfig.keyTenantId);
-      final tenantKey = await _storage.read(key: AppConfig.keyTenantKey);
+      var tenantId = await _storage.read(key: AppConfig.keyTenantId);
+      var tenantKey = await _storage.read(key: AppConfig.keyTenantKey);
       final brandingJsonStr = await _storage.read(key: AppConfig.keyTenantBranding);
+
+      // Repair a fleet saved earlier with the ID and key stuck together in the
+      // ID ("org_123:rtk_pub_abc"), which the server rejects.
+      if (tenantId != null && tenantId.isNotEmpty) {
+        final fixed = normalizeTenantCredentials(tenantId, tenantKey ?? '');
+        if (fixed.tenantId != tenantId || fixed.tenantKey != (tenantKey ?? '')) {
+          tenantId = fixed.tenantId;
+          tenantKey = fixed.tenantKey;
+          await _storage.write(key: AppConfig.keyTenantId, value: tenantId);
+          await _storage.write(key: AppConfig.keyTenantKey, value: tenantKey);
+        }
+      }
       
       TenantBranding? branding;
       if (brandingJsonStr != null && brandingJsonStr.isNotEmpty) {
@@ -140,6 +168,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           isTenantConfigured: isConfigured,
         );
       }
+
+      // Pick up any branding the operator changed since the last launch.
+      // Fire-and-forget: the stored theme is already showing.
+      if (isConfigured) {
+        unawaited(syncTenantBranding());
+      }
     } catch (e) {
       state = const AuthState(status: AuthStatus.unauthenticated, isTenantConfigured: false);
     }
@@ -154,7 +188,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return TenantBranding.defaultFirstTaxis();
   }
 
-  Future<TenantBranding?> fetchTenantInfo(String tenantId, String tenantKey) async {
+  /// Raw `data` object from `GET /api/v2/public/tenant-info`, or null when the
+  /// call fails or the reply is unusable.
+  Future<Map<String, dynamic>?> _fetchTenantPayload(String tenantId, String tenantKey) async {
+    _lastTenantFetchError = null;
     try {
       final headers = <String, dynamic>{
         'Accept': 'application/json',
@@ -180,20 +217,156 @@ class AuthNotifier extends StateNotifier<AuthState> {
             : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
         if (data['success'] == true || data['data'] != null) {
-          final payload = data['data'] is Map<String, dynamic> ? data['data'] as Map<String, dynamic> : data;
-          final branding = TenantBranding.fromJson({
-            ...payload,
-            'tenantId': tenantId,
-            'tenantKey': tenantKey,
-          });
-          debugPrint('[Auth] Successfully resolved company name: ${branding.name}');
-          return branding;
+          return data['data'] is Map<String, dynamic> ? data['data'] as Map<String, dynamic> : data;
         }
+        _lastTenantFetchError = _errorFromBody(data, response.statusCode);
       }
     } catch (e) {
       debugPrint('[Auth] /api/v2/public/tenant-info query failed: $e');
+      _lastTenantFetchError = _friendlyTenantError(e);
     }
     return null;
+  }
+
+  /// Why the last tenant-info call failed, in words a driver can act on.
+  String? _lastTenantFetchError;
+
+  String _errorFromBody(dynamic body, int? status) {
+    String? code;
+    String? message;
+    if (body is Map && body['errors'] is List && (body['errors'] as List).isNotEmpty) {
+      final first = (body['errors'] as List).first;
+      if (first is Map) {
+        code = first['code']?.toString();
+        message = first['message']?.toString();
+      }
+    }
+    return tenantErrorMessage(code: code, message: message, status: status);
+  }
+
+  String _friendlyTenantError(Object e) {
+    if (e is DioException) {
+      final offline = e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout;
+      if (offline && e.response == null) {
+        return tenantErrorMessage(offline: true);
+      }
+      return _errorFromBody(e.response?.data, e.response?.statusCode);
+    }
+    return tenantErrorMessage();
+  }
+
+  /// Plain-language text for a failed fleet lookup (API error code first,
+  /// then HTTP status, then connectivity).
+  @visibleForTesting
+  static String tenantErrorMessage({String? code, String? message, int? status, bool offline = false}) {
+    if (offline) {
+      return "Can't reach the server. Check your internet connection and try again.";
+    }
+    switch (code) {
+      case 'TENANT_KEY_INVALID':
+        return "That tenant access key isn't recognised. Check the key and try again.";
+      case 'TENANT_KEY_REQUIRED':
+        return 'Enter the tenant access key for this fleet.';
+      case 'TENANT_MISMATCH':
+        return "That Tenant ID doesn't match the access key. Check both and try again.";
+    }
+    if (status == 401 || status == 403) {
+      return "The Tenant ID or access key wasn't accepted. Check both and try again.";
+    }
+    if (status == 404) {
+      return "We couldn't find that fleet. Check the Tenant ID and try again.";
+    }
+    if (message != null && message.trim().isNotEmpty) {
+      return "Couldn't connect to this fleet: ${message.trim()}";
+    }
+    return "Couldn't verify this fleet. Check the Tenant ID and key, then try again.";
+  }
+
+  /// Built-in demo fleets that have local branding to fall back on. Any other
+  /// fleet must be verified by the server — it never silently becomes
+  /// "First Taxis".
+  static const _presetTenantIds = {
+    'org_ace_taxis',
+    'org_red_taxis',
+    'org_first_taxis',
+    'org_first_taxi',
+  };
+
+  Future<TenantBranding?> fetchTenantInfo(String tenantId, String tenantKey) async {
+    final payload = await _fetchTenantPayload(tenantId, tenantKey);
+    if (payload == null) return null;
+    try {
+      final branding = TenantBranding.fromJson({
+        ...payload,
+        'tenantId': tenantId,
+        'tenantKey': tenantKey,
+      }).withAbsoluteLogos(_dio.options.baseUrl).copyWith(syncedAt: DateTime.now());
+      debugPrint('[Auth] Successfully resolved company name: ${branding.name}');
+      return branding;
+    } catch (e) {
+      debugPrint('[Auth] Could not read tenant-info payload: $e');
+      return null;
+    }
+  }
+
+  bool _syncingBranding = false;
+
+  /// Re-fetches the fleet's branding (name, colours, logo, contacts) from
+  /// `/public/tenant-info` and applies it, so changes the operator makes
+  /// later show up in the app without re-scanning the QR code. Runs on app
+  /// start and from Settings → "Sync theme now". Never throws; on any failure
+  /// the current look is kept.
+  Future<BrandingSyncResult> syncTenantBranding() async {
+    final tenantId = state.tenantId;
+    final tenantKey = state.tenantKey ?? '';
+    if (tenantId == null || tenantId.isEmpty) return BrandingSyncResult.notConfigured;
+    if (_syncingBranding) return BrandingSyncResult.unchanged;
+    _syncingBranding = true;
+    try {
+      final payload = await _fetchTenantPayload(tenantId, tenantKey);
+      if (payload == null) return BrandingSyncResult.failed;
+
+      // Logo paths from the API may be relative ("/uploads/logo.png"); make
+      // them full addresses. A blank logo stays null so the default shows.
+      var fresh = TenantBranding.fromJson({
+        ...payload,
+        'tenantId': tenantId,
+        'tenantKey': tenantKey,
+      }).withAbsoluteLogos(_dio.options.baseUrl);
+      final current = state.tenantBranding;
+
+      // A reply with no colours at all must not wipe a good theme back to the
+      // generic default: keep the current colours, refresh the rest.
+      if (current != null && !TenantBranding.payloadHasColours(payload)) {
+        fresh = fresh.copyWith(
+          primaryColor: current.primaryColor,
+          primaryDarkColor: current.primaryDarkColor,
+          primaryLightColor: current.primaryLightColor,
+          accentColor: current.accentColor,
+          secondaryColor: current.secondaryColor,
+          gradientStart: current.gradientStart,
+          gradientMid: current.gradientMid,
+          gradientEnd: current.gradientEnd,
+        );
+      }
+      fresh = fresh.copyWith(tenantId: tenantId, tenantKey: tenantKey, syncedAt: DateTime.now());
+
+      final changed = current == null || !fresh.sameLookAs(current);
+      await _storage.write(
+        key: AppConfig.keyTenantBranding,
+        value: jsonEncode(fresh.toJson()),
+      );
+      state = state.copyWith(tenantBranding: fresh);
+      return changed ? BrandingSyncResult.updated : BrandingSyncResult.unchanged;
+    } catch (e) {
+      debugPrint('[Auth] Branding sync failed: $e');
+      return BrandingSyncResult.failed;
+    } finally {
+      _syncingBranding = false;
+    }
   }
 
   Future<bool> resolveAndSaveTenant(
@@ -201,6 +374,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String tenantKey, {
     TenantBranding? customBranding,
   }) async {
+    final cleaned = normalizeTenantCredentials(tenantId, tenantKey);
+    tenantId = cleaned.tenantId;
+    tenantKey = cleaned.tenantKey;
     try {
       TenantBranding? resolvedBranding = customBranding;
 
@@ -222,14 +398,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
           if (response.statusCode == 200 && response.data != null) {
             final data = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : jsonDecode(response.data.toString());
-            resolvedBranding = TenantBranding.fromJson(data);
+            // Only trust a reply that actually names the fleet.
+            final named = data is Map<String, dynamic> &&
+                ((data['companyName'] ?? data['name'] ?? (data['data'] is Map ? data['data']['companyName'] : null)) != null);
+            if (named) resolvedBranding = TenantBranding.fromJson(data);
           }
         } catch (dioErr) {
           debugPrint('[Auth] Remote Tenant/Resolve not available or returned error: $dioErr');
         }
       }
 
-      // 3. Fallback to default local branding based on tenantId
+      // 3. Only the built-in demo fleets may fall back to local branding. For
+      // anything else, tell the driver why it failed instead of quietly
+      // showing "First Taxis" and saving a fleet that was never verified.
+      if (resolvedBranding == null && !_presetTenantIds.contains(tenantId.toLowerCase())) {
+        state = state.copyWith(
+          errorMessage: _lastTenantFetchError ?? tenantErrorMessage(),
+        );
+        return false;
+      }
       resolvedBranding ??= _resolveDefaultBrandingForTenant(tenantId, tenantKey);
 
       // Ensure tenantId and tenantKey are populated

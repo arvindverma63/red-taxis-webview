@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:driver_app/core/theme/theme.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/trip/trip.dart';
 
@@ -18,7 +17,7 @@ class ActiveTripScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     String stateTitle = '';
     String actionLabel = '';
-    Color statusColor = AppTheme.primaryRed;
+    Color statusColor = Theme.of(context).colorScheme.primary;
     VoidCallback? onAction;
 
     switch (status) {
@@ -172,7 +171,7 @@ class ActiveTripScreen extends ConsumerWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.location_on, color: AppTheme.primaryRed, size: 20),
+                            Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary, size: 20),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(

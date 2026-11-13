@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:driver_app/core/widgets/widgets.dart';
 import 'package:driver_app/features/trip/trip.dart';
 import 'package:driver_app/core/theme/theme.dart';
+import 'package:driver_app/features/auth/auth.dart';
 import 'package:driver_app/features/navigation/presentation/main_shell.dart';
 import 'package:driver_app/features/shift/shift.dart';
 import 'package:driver_app/features/navigation/presentation/navigation_notifier.dart';
@@ -179,6 +180,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (String url) {
+              _applyBrand();
               if (mounted) {
                 setState(() {
                   _isLoading = true;
@@ -193,6 +195,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                 });
                 final currentScale = ref.read(fontSizeScaleProvider).scale;
                 _applyFontScale(currentScale);
+                _applyBrand();
                 final isDarkCurrent = ref.read(themeModeProvider) == ThemeMode.dark;
                 final themeStr = isDarkCurrent ? 'dark' : 'light';
                 _controller?.runJavaScript("""
@@ -301,6 +304,30 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
     }
   }
 
+  /// Pushes the fleet's colours into the web page as CSS variables, and saves
+  /// them in the page's localStorage so the site can apply them at start-up
+  /// (no flash of the default red on the next page load).
+  void _applyBrand([TenantBranding? override]) {
+    try {
+      final branding = override ?? ref.read(authProvider).tenantBranding;
+      if (branding == null) return;
+      final vars = jsonEncode(branding.toCssVariables());
+      _controller?.runJavaScript("""
+        (function() {
+          try {
+            var vars = $vars;
+            var root = document.documentElement;
+            if (!root) return;
+            for (var k in vars) { root.style.setProperty(k, vars[k]); }
+            try { localStorage.setItem('brand_theme', JSON.stringify(vars)); } catch (e) {}
+          } catch (e) {}
+        })();
+      """);
+    } catch (e) {
+      debugPrint("[WebviewScreen] Brand colour injection error: $e");
+    }
+  }
+
   void _applyFontScale(double scale) {
     try {
       final jsInject = """
@@ -356,6 +383,12 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+
+    // Re-colour the web pages instantly when the fleet theme changes (e.g. after
+    // Settings -> Sync theme now), without reloading them.
+    ref.listen(authProvider.select((s) => s.tenantBranding), (previous, next) {
+      if (next != null && previous != next) _applyBrand(next);
+    });
 
     // Listen for font scale changes to dynamically update the webview text sizing instantly
     ref.listen(fontSizeScaleProvider, (previous, next) {
@@ -431,7 +464,7 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
               ],
             ),
       body: RefreshIndicator(
-        color: AppTheme.primaryRed,
+        color: Theme.of(context).colorScheme.primary,
         backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
         onRefresh: () async {
           _reloadWebView();
@@ -481,9 +514,9 @@ class _DriverWebviewScreenState extends ConsumerState<DriverWebviewScreen> {
                       Positioned.fill(
                         child: Container(
                           color: isDark ? AppTheme.darkBackground : Colors.white,
-                          child: const Center(
+                          child: Center(
                             child: CircularProgressIndicator(
-                              color: AppTheme.primaryRed,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),

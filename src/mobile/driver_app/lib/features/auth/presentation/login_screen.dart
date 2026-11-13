@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:driver_app/features/auth/presentation/widgets/fleet_qr_parser.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:driver_app/features/auth/auth.dart';
@@ -64,8 +65,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submitTenantConfig() async {
     FocusScope.of(context).unfocus();
-    final tenantId = _tenantIdController.text.trim();
-    final tenantKey = _tenantKeyController.text.trim();
+    final cleaned = normalizeTenantCredentials(
+      _tenantIdController.text,
+      _tenantKeyController.text,
+    );
+    final tenantId = cleaned.tenantId;
+    final tenantKey = cleaned.tenantKey;
+    // Show what is actually being used (e.g. an "id:key" paste split in two).
+    _tenantIdController.text = tenantId;
+    _tenantKeyController.text = tenantKey;
 
     if (tenantId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,6 +106,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         );
+      } else {
+        final message = ref.read(authProvider).errorMessage ??
+            "Couldn't connect to this fleet. Check the Tenant ID and key, then try again.";
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+                ],
+              ),
+            ),
+          );
       }
     }
   }
@@ -106,9 +133,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     FocusScope.of(context).unfocus();
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFFCD1A21),
-          content: Row(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          content: const Row(
             children: [
               Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
               SizedBox(width: 8),
@@ -138,11 +165,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.swap_horiz_rounded, color: Color(0xFFCD1A21)),
-            SizedBox(width: 8),
-            Text('Switch Fleet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Icon(Icons.swap_horiz_rounded, color: Theme.of(ctx).colorScheme.primary),
+            const SizedBox(width: 8),
+            const Text('Switch Fleet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         content: Text(
@@ -156,8 +183,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFCD1A21),
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(ctx).colorScheme.primary,
+              foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
@@ -310,9 +337,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               fit: BoxFit.contain,
                               fallbackIcon: Icons.local_taxi_rounded,
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.domain_rounded,
-                              color: Color(0xFFCD1A21),
+                              color: Theme.of(context).colorScheme.primary,
                               size: 42,
                             ),
                     ),
@@ -365,15 +392,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFCD1A21), Color(0xFF9E0E14)],
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFCD1A21).withValues(alpha: 0.35),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -394,9 +424,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.qr_code_scanner_rounded,
-                      color: Color(0xFFCD1A21),
+                      color: Theme.of(context).colorScheme.primary,
                       size: 30,
                     ),
                   ),
@@ -511,8 +541,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ElevatedButton(
             onPressed: _isResolvingTenant ? null : _submitTenantConfig,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFCD1A21),
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 4,
@@ -989,7 +1019,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFCD1A21), width: 1.8),
+        borderSide: BorderSide(
+          color: ref.read(authProvider).tenantBranding?.primaryColor ?? AppTheme.primaryRed,
+          width: 1.8,
+        ),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:driver_app/core/theme/theme.dart';
 
 class SlideToAccept extends StatefulWidget {
   final VoidCallback onAccept;
@@ -23,17 +22,17 @@ class _SlideToAcceptState extends State<SlideToAccept> {
       height: 60,
       padding: const EdgeInsets.all(2.0),
       decoration: BoxDecoration(
-        color: AppTheme.primaryRed.withValues(alpha: 0.08),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppTheme.primaryRed.withValues(alpha: 0.25), width: 1.5),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25), width: 1.5),
       ),
       child: Stack(
         children: [
-          const Center(
+          Center(
             child: Text(
               "Slide to Accept Job",
               style: TextStyle(
-                color: AppTheme.primaryRed,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -63,10 +62,10 @@ class _SlideToAcceptState extends State<SlideToAccept> {
               child: Container(
                 width: _thumbSize,
                 height: 54,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryRed,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
                       blurRadius: 4,

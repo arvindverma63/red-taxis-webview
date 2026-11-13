@@ -46,19 +46,30 @@ class BrandedLogo extends StatelessWidget {
     final brand = branding ?? TenantBranding.defaultFirstTaxis();
     final primary = fallbackIconColor ?? brand.primaryColor;
 
-    final logoUrl = customLogoUrl ??
-        (isDark ? brand.logoDarkUrl : brand.logoLightUrl) ??
-        brand.logoLightUrl ??
-        brand.logoDarkUrl ??
-        brand.symbolUrl;
+    // First usable web address wins; blank or non-http values are skipped so
+    // an empty "logoUrl" from the API never hides a real logo.
+    final candidates = <String?>[
+      customLogoUrl,
+      isDark ? brand.logoDarkUrl : brand.logoLightUrl,
+      brand.logoLightUrl,
+      brand.logoDarkUrl,
+      brand.symbolUrl,
+    ];
+    String? logoUrl;
+    for (final c in candidates) {
+      final t = c?.trim() ?? '';
+      final lower = t.toLowerCase();
+      if (lower.startsWith('http://') || lower.startsWith('https://')) {
+        logoUrl = t;
+        break;
+      }
+    }
 
     Widget imageWidget;
 
-    if (logoUrl != null &&
-        logoUrl.trim().isNotEmpty &&
-        (logoUrl.startsWith('http://') || logoUrl.startsWith('https://'))) {
+    if (logoUrl != null) {
       imageWidget = Image.network(
-        logoUrl.trim(),
+        logoUrl,
         width: effectiveWidth,
         height: effectiveHeight,
         fit: fit,

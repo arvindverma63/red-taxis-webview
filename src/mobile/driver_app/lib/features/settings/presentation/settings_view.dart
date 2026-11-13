@@ -27,6 +27,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   bool _smsAlerts = false;
   bool _screenAlwaysOn = true;
   bool _isLoading = true;
+  bool _syncingTheme = false;
 
   @override
   void initState() {
@@ -91,6 +92,47 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     }
   }
 
+  /// Re-fetches the fleet's brand colours/name/logo and applies them live.
+  Future<void> _syncTheme() async {
+    if (_syncingTheme) return;
+    setState(() => _syncingTheme = true);
+    final result = await ref.read(authProvider.notifier).syncTenantBranding();
+    if (!mounted) return;
+    setState(() => _syncingTheme = false);
+
+    // A replaced logo file can keep the same address, so drop cached images.
+    if (result == BrandingSyncResult.updated) {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    }
+
+    final branding = ref.read(authProvider).tenantBranding;
+    final (message, ok) = switch (result) {
+      BrandingSyncResult.updated => ('Theme updated from your fleet.', true),
+      BrandingSyncResult.unchanged => ('Theme is already up to date.', true),
+      BrandingSyncResult.failed => ('Could not reach the server. Your current theme was kept.', false),
+      BrandingSyncResult.notConfigured => ('Connect to a fleet first to sync its theme.', false),
+    };
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message, style: TextStyle(color: ok ? (branding?.onPrimaryColor ?? Colors.white) : Colors.white)),
+          backgroundColor: ok ? (branding?.primaryColor ?? Colors.black87) : Colors.red.shade700,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+  }
+
+  static String _syncedLabel(DateTime? at) {
+    if (at == null) return 'Not synced yet';
+    final d = DateTime.now().difference(at);
+    if (d.inSeconds < 60) return 'Synced just now';
+    if (d.inMinutes < 60) return 'Synced ${d.inMinutes} min ago';
+    if (d.inHours < 24) return 'Synced ${d.inHours} h ago';
+    return 'Synced ${d.inDays} d ago';
+  }
+
   Future<void> _loadSettings() async {
     try {
       final push = await _storage.read(key: 'settings_push') ?? 'true';
@@ -131,11 +173,11 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.swap_horiz_rounded, color: Color(0xFFCD1A21)),
-                SizedBox(width: 8),
-                Text('Confirm Fleet Switch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Icon(Icons.swap_horiz_rounded, color: Theme.of(ctx).colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text('Confirm Fleet Switch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
             content: Text(
@@ -149,8 +191,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFCD1A21),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(ctx).colorScheme.primary,
+                  foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -187,7 +229,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF6F8FA),
+      backgroundColor: isDark ? AppTheme.darkBackground : theme.scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -195,7 +237,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             MainShell.scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: const Text('Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+        title: Text('Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: branding.onPrimaryColor)),
         centerTitle: false,
       ),
       body: ListView(
@@ -209,6 +251,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           // 2. Compact Fleet & Organization Card
           _buildSectionHeader('FLEET & ORGANIZATION', isDark),
           _buildCompactFleetCard(authState, branding, isDark),
+
+          const SizedBox(height: 14),
+
+          // 2b. Fleet theme + manual sync (colours come from the tenant API).
+          _buildSectionHeader('FLEET THEME', isDark),
+          _buildThemeSyncCard(branding, isDark),
 
           const SizedBox(height: 14),
 
@@ -620,6 +668,61 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _swatch(Color color, bool isDark) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isDark ? Colors.white24 : Colors.black12,
+          width: 1.2,
+        ),
+      ),
+    );
+  }
+
+  /// Shows the fleet's current brand colours and a button to re-sync them.
+  Widget _buildThemeSyncCard(TenantBranding branding, bool isDark) {
+    return _buildGroupCard(
+      isDark: isDark,
+      children: [
+        _buildCompactRow(
+          icon: Icons.palette_outlined,
+          iconColor: branding.primaryColor,
+          title: 'Fleet theme',
+          subtitle: _syncedLabel(branding.syncedAt),
+          isDark: isDark,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _swatch(branding.primaryColor, isDark),
+              const SizedBox(width: 6),
+              _swatch(branding.secondaryColor, isDark),
+            ],
+          ),
+        ),
+        _buildDivider(isDark),
+        _buildCompactRow(
+          icon: Icons.sync_rounded,
+          iconColor: const Color(0xFF38BDF8),
+          title: 'Sync theme now',
+          subtitle: 'Get the latest colours, name & logo from your fleet',
+          isDark: isDark,
+          onTap: _syncingTheme ? null : _syncTheme,
+          trailing: _syncingTheme
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.4, color: branding.primaryColor),
+                )
+              : Icon(Icons.chevron_right_rounded, color: branding.primaryColor),
+        ),
+      ],
     );
   }
 

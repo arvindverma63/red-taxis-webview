@@ -526,13 +526,13 @@ class _MainShellState extends ConsumerState<MainShell> {
       child: ListTile(
         leading: Icon(
           isActive ? activeIcon : inactiveIcon,
-          color: isActive ? AppTheme.primaryRed : (isDark ? AppTheme.textDarkSecondary : Colors.grey.shade600),
+          color: isActive ? Theme.of(context).colorScheme.primary : (isDark ? AppTheme.textDarkSecondary : Colors.grey.shade600),
           size: 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isActive ? AppTheme.primaryRed : (isDark ? AppTheme.textDarkPrimary : Colors.grey.shade800),
+            color: isActive ? Theme.of(context).colorScheme.primary : (isDark ? AppTheme.textDarkPrimary : Colors.grey.shade800),
             fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
             fontSize: 14,
           ),
@@ -541,7 +541,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           borderRadius: BorderRadius.circular(14),
         ),
         selected: isActive,
-        selectedTileColor: AppTheme.primaryRed.withValues(alpha: isDark ? 0.15 : 0.08),
+        selectedTileColor: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.15 : 0.08),
         onTap: () {
           ref.read(navigationProvider.notifier).setTabIndex(index);
           Navigator.of(context).pop();

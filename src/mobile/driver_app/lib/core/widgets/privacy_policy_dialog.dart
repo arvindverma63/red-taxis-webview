@@ -79,7 +79,7 @@ class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    const primaryColor = AppTheme.primaryRed;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -108,7 +108,7 @@ class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog>
                         width: 1.5,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.shield_outlined,
                       color: primaryColor,
                       size: 22,
@@ -129,12 +129,12 @@ class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog>
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
+                        Text(
                           'Privacy Policy & Terms of Service',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.primaryRed,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ],
@@ -376,7 +376,7 @@ class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppTheme.primaryRed, size: 20),
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -432,16 +432,16 @@ class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog>
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryRed.withValues(alpha: 0.15),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Text(
                     number,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
-                      color: AppTheme.primaryRed,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),

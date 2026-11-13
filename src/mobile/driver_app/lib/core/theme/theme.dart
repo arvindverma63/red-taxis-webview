@@ -16,11 +16,18 @@ class TenantBranding {
   final Color primaryDarkColor;
   final Color primaryLightColor;
   final Color accentColor;
+
+  /// Secondary / background tint from the tenant (`secondaryHsl`). Used as the
+  /// light-mode page background when it is light enough to keep text readable.
+  final Color secondaryColor;
   final Color gradientStart;
   final Color gradientMid;
   final Color gradientEnd;
   final String? dispatchPhone;
   final String? supportEmail;
+
+  /// When the branding was last refreshed from `/public/tenant-info`.
+  final DateTime? syncedAt;
 
   const TenantBranding({
     required this.tenantId,
@@ -34,11 +41,13 @@ class TenantBranding {
     this.primaryDarkColor = const Color(0xFF9E0E14),
     this.primaryLightColor = const Color(0xFFFF5252),
     this.accentColor = const Color(0xFFF59E0B),
+    this.secondaryColor = const Color(0xFFF8F9FA),
     this.gradientStart = const Color(0xFFCD1A21),
     this.gradientMid = const Color(0xFF9E0E14),
     this.gradientEnd = const Color(0xFF6B0509),
     this.dispatchPhone,
     this.supportEmail,
+    this.syncedAt,
   });
 
   factory TenantBranding.defaultFirstTaxis() {
@@ -107,11 +116,13 @@ class TenantBranding {
     Color? primaryDarkColor,
     Color? primaryLightColor,
     Color? accentColor,
+    Color? secondaryColor,
     Color? gradientStart,
     Color? gradientMid,
     Color? gradientEnd,
     String? dispatchPhone,
     String? supportEmail,
+    DateTime? syncedAt,
   }) {
     return TenantBranding(
       tenantId: tenantId ?? this.tenantId,
@@ -125,11 +136,13 @@ class TenantBranding {
       primaryDarkColor: primaryDarkColor ?? this.primaryDarkColor,
       primaryLightColor: primaryLightColor ?? this.primaryLightColor,
       accentColor: accentColor ?? this.accentColor,
+      secondaryColor: secondaryColor ?? this.secondaryColor,
       gradientStart: gradientStart ?? this.gradientStart,
       gradientMid: gradientMid ?? this.gradientMid,
       gradientEnd: gradientEnd ?? this.gradientEnd,
       dispatchPhone: dispatchPhone ?? this.dispatchPhone,
       supportEmail: supportEmail ?? this.supportEmail,
+      syncedAt: syncedAt ?? this.syncedAt,
     );
   }
 
@@ -158,6 +171,156 @@ class TenantBranding {
     }
   }
 
+  /// First value that is a non-blank string (the API sends "" for unset).
+  static String? _firstNonBlank(Iterable<dynamic> values) {
+    for (final v in values) {
+      if (v == null) continue;
+      final t = v.toString().trim();
+      if (t.isNotEmpty) return t;
+    }
+    return null;
+  }
+
+  static final RegExp _hslPattern = RegExp(
+    r'^\s*(?:hsla?\()?\s*(-?\d+(?:\.\d+)?)(?:deg)?[\s,]+(\d+(?:\.\d+)?)%?[\s,]+'
+    r'(\d+(?:\.\d+)?)%?\s*(?:[,/]\s*[\d.]+%?\s*)?\)?\s*$',
+    caseSensitive: false,
+  );
+
+  /// Parses CSS-style HSL as the tenant API sends it: `"200 98% 39%"`, also
+  /// `"200, 98%, 39%"`, `"hsl(200 98% 39%)"` and `"hsl(200, 98%, 39%)"`.
+  /// Returns null for anything else.
+  static Color? parseHsl(dynamic value) {
+    if (value is! String) return null;
+    final m = _hslPattern.firstMatch(value);
+    if (m == null) return null;
+    final h = double.tryParse(m.group(1)!);
+    final s = double.tryParse(m.group(2)!);
+    final l = double.tryParse(m.group(3)!);
+    if (h == null || s == null || l == null) return null;
+    return HSLColor.fromAHSL(
+      1.0,
+      ((h % 360) + 360) % 360,
+      (s / 100).clamp(0.0, 1.0),
+      (l / 100).clamp(0.0, 1.0),
+    ).toColor();
+  }
+
+  /// Hex colour if one is set, otherwise the HSL value, otherwise [fallback].
+  static Color _hexOrHsl(
+    Iterable<dynamic> hexCandidates,
+    Iterable<dynamic> hslCandidates,
+    Color fallback,
+  ) {
+    final hex = _firstNonBlank(hexCandidates);
+    if (hex != null) {
+      final parsed = _parseColor(hex, const Color(0x00000000));
+      if (parsed != const Color(0x00000000)) return parsed;
+    }
+    final hsl = _firstNonBlank(hslCandidates);
+    return parseHsl(hsl) ?? fallback;
+  }
+
+  /// True when [payload] carries any usable brand colour (hex or HSL).
+  static bool payloadHasColours(Map<String, dynamic> payload) {
+    final nested = payload['branding'] is Map<String, dynamic>
+        ? payload['branding'] as Map<String, dynamic>
+        : payload;
+    final colors = nested['colors'] is Map<String, dynamic>
+        ? nested['colors'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    return _firstNonBlank([
+          colors['primary'],
+          payload['primaryColour'],
+          payload['primaryColor'],
+          payload['primaryHsl'],
+          colors['primaryHsl'],
+        ]) !=
+        null;
+  }
+
+  /// Turns a logo address from the API into a full web address: keeps
+  /// `http(s)://` URLs, adds `https:` to `//host/…`, and joins `/path` or
+  /// `path` onto [baseUrl]. Returns null for blank values.
+  static String? absoluteUrl(String? raw, String baseUrl) {
+    final t = raw?.trim() ?? '';
+    if (t.isEmpty) return null;
+    final lower = t.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return t;
+    if (t.startsWith('//')) return 'https:$t';
+    final base = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    return t.startsWith('/') ? '$base$t' : '$base/$t';
+  }
+
+  /// A copy whose logo addresses are full web addresses (see [absoluteUrl]).
+  TenantBranding withAbsoluteLogos(String baseUrl) {
+    return TenantBranding(
+      tenantId: tenantId,
+      tenantKey: tenantKey,
+      name: name,
+      legalName: legalName,
+      logoLightUrl: absoluteUrl(logoLightUrl, baseUrl),
+      logoDarkUrl: absoluteUrl(logoDarkUrl, baseUrl),
+      symbolUrl: absoluteUrl(symbolUrl, baseUrl),
+      primaryColor: primaryColor,
+      primaryDarkColor: primaryDarkColor,
+      primaryLightColor: primaryLightColor,
+      accentColor: accentColor,
+      secondaryColor: secondaryColor,
+      gradientStart: gradientStart,
+      gradientMid: gradientMid,
+      gradientEnd: gradientEnd,
+      dispatchPhone: dispatchPhone,
+      supportEmail: supportEmail,
+      syncedAt: syncedAt,
+    );
+  }
+
+  /// The fleet colours as CSS custom properties for the web pages shown inside
+  /// the app (`var(--brand-primary)` etc.). `--brand-primary-rgb` allows
+  /// translucent tints: `rgba(var(--brand-primary-rgb), 0.12)`.
+  Map<String, String> toCssVariables() {
+    String hex(Color c) => _colorToHex(c).toLowerCase();
+    int ch(double v) => (v * 255).round().clamp(0, 255);
+    final p = primaryColor;
+    return {
+      '--brand-primary': hex(p),
+      '--brand-primary-rgb': '${ch(p.r)}, ${ch(p.g)}, ${ch(p.b)}',
+      '--brand-primary-dark': hex(primaryDarkColor),
+      '--brand-primary-light': hex(primaryLightColor),
+      '--brand-on-primary': hex(onPrimaryColor),
+      '--brand-secondary': hex(secondaryColor),
+      // Page background: the secondary colour when it is light enough for dark
+      // text, otherwise the standard light grey.
+      '--brand-background': HSLColor.fromColor(secondaryColor).lightness >= 0.80
+          ? hex(secondaryColor)
+          : '#f8f9fa',
+      // Names the website already used before the brand variables existed.
+      '--primary-color': hex(p),
+      '--primary-dark': hex(primaryDarkColor),
+    };
+  }
+
+  /// Colour used for text/icons placed on the primary colour.
+  Color get onPrimaryColor =>
+      ThemeData.estimateBrightnessForColor(primaryColor) == Brightness.dark
+          ? Colors.white
+          : const Color(0xFF111827);
+
+  /// Same look (name, colours, logos, contacts) ignoring sync timestamps.
+  bool sameLookAs(TenantBranding o) =>
+      name == o.name &&
+      primaryColor == o.primaryColor &&
+      primaryDarkColor == o.primaryDarkColor &&
+      primaryLightColor == o.primaryLightColor &&
+      accentColor == o.accentColor &&
+      secondaryColor == o.secondaryColor &&
+      logoLightUrl == o.logoLightUrl &&
+      logoDarkUrl == o.logoDarkUrl &&
+      symbolUrl == o.symbolUrl &&
+      dispatchPhone == o.dispatchPhone &&
+      supportEmail == o.supportEmail;
+
   static String _colorToHex(Color color) {
     return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
   }
@@ -184,9 +347,17 @@ class TenantBranding {
         rawJson['name']?.toString() ??
         'Red Taxis';
 
-    final primaryParsed = _parseColor(
-      colors['primary'] ?? json['primaryColour'] ?? json['primaryColor'] ?? rawJson['primaryColour'] ?? rawJson['primaryColor'],
+    // The tenant API sends colours as HSL (`primaryHsl` "200 98% 39%") and
+    // leaves `primaryColour` as "" — a blank hex must not win over the HSL.
+    final primaryParsed = _hexOrHsl(
+      [colors['primary'], json['primaryColour'], json['primaryColor'], rawJson['primaryColour'], rawJson['primaryColor']],
+      [colors['primaryHsl'], json['primaryHsl'], rawJson['primaryHsl']],
       const Color(0xFFD32F2F),
+    );
+    final secondaryParsed = _hexOrHsl(
+      [colors['secondary'], json['secondaryColour'], json['secondaryColor'], rawJson['secondaryColour'], rawJson['secondaryColor']],
+      [colors['secondaryHsl'], json['secondaryHsl'], rawJson['secondaryHsl']],
+      const Color(0xFFF8F9FA),
     );
 
     return TenantBranding(
@@ -194,18 +365,20 @@ class TenantBranding {
       tenantKey: tenantKey,
       name: companyName,
       legalName: json['legalName']?.toString() ?? json['companyName']?.toString() ?? companyName,
-      logoLightUrl: logos['lightUrl']?.toString() ?? json['logoLightUrl']?.toString() ?? json['logoUrl']?.toString() ?? rawJson['logoUrl']?.toString(),
-      logoDarkUrl: logos['darkUrl']?.toString() ?? json['logoDarkUrl']?.toString() ?? json['logoUrl']?.toString(),
-      symbolUrl: logos['symbolUrl']?.toString() ?? json['symbolUrl']?.toString(),
+      logoLightUrl: _firstNonBlank([logos['lightUrl'], json['logoLightUrl'], json['logoUrl'], rawJson['logoUrl']]),
+      logoDarkUrl: _firstNonBlank([logos['darkUrl'], json['logoDarkUrl'], json['logoUrl'], rawJson['logoUrl']]),
+      symbolUrl: _firstNonBlank([logos['symbolUrl'], json['symbolUrl']]),
       primaryColor: primaryParsed,
       primaryDarkColor: _parseColor(colors['primaryDark'] ?? json['primaryDarkColor'], _darkenColor(primaryParsed, 0.18)),
       primaryLightColor: _parseColor(colors['primaryLight'] ?? json['primaryLightColor'], _lightenColor(primaryParsed, 0.18)),
       accentColor: _parseColor(colors['accent'] ?? json['accentColor'], const Color(0xFFFFA000)),
+      secondaryColor: secondaryParsed,
       gradientStart: _parseColor(colors['gradientStart'] ?? json['gradientStart'], primaryParsed),
       gradientMid: _parseColor(colors['gradientMid'] ?? json['gradientMid'], _darkenColor(primaryParsed, 0.12)),
       gradientEnd: _parseColor(colors['gradientEnd'] ?? json['gradientEnd'], _darkenColor(primaryParsed, 0.28)),
       dispatchPhone: support['dispatchPhone']?.toString() ?? json['dispatchPhone']?.toString() ?? json['phone']?.toString() ?? rawJson['phone']?.toString(),
       supportEmail: support['supportEmail']?.toString() ?? json['supportEmail']?.toString() ?? json['email']?.toString() ?? rawJson['email']?.toString(),
+      syncedAt: DateTime.tryParse(rawJson['syncedAt']?.toString() ?? json['syncedAt']?.toString() ?? ''),
     );
   }
 
@@ -215,6 +388,7 @@ class TenantBranding {
       'tenantKey': tenantKey,
       'name': name,
       'legalName': legalName,
+      'syncedAt': syncedAt?.toIso8601String(),
       'branding': {
         'logos': {
           'lightUrl': logoLightUrl,
@@ -226,6 +400,7 @@ class TenantBranding {
           'primaryDark': primaryDarkHex,
           'primaryLight': _colorToHex(primaryLightColor),
           'accent': _colorToHex(accentColor),
+          'secondary': _colorToHex(secondaryColor),
           'gradientStart': _colorToHex(gradientStart),
           'gradientMid': _colorToHex(gradientMid),
           'gradientEnd': _colorToHex(gradientEnd),
@@ -255,30 +430,41 @@ class AppTheme {
   static ThemeData get lightTheme => getDynamicLightTheme(TenantBranding.defaultFirstTaxis());
   static ThemeData get darkTheme => getDynamicDarkTheme(TenantBranding.defaultFirstTaxis());
 
+  /// The tenant's secondary colour is used as the page background in light
+  /// mode, but only when it is light enough for dark text to stay readable.
+  static Color _lightBackgroundFor(TenantBranding branding) {
+    final l = HSLColor.fromColor(branding.secondaryColor).lightness;
+    return l >= 0.80 ? branding.secondaryColor : lightBackground;
+  }
+
   static ThemeData getDynamicLightTheme(TenantBranding branding) {
     final primary = branding.primaryColor;
     final primaryDark = branding.primaryDarkColor;
+    final onPrimary = branding.onPrimaryColor;
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: primary,
-      scaffoldBackgroundColor: lightBackground,
+      scaffoldBackgroundColor: _lightBackgroundFor(branding),
       colorScheme: ColorScheme.light(
         primary: primary,
+        onPrimary: onPrimary,
         secondary: primaryDark,
+        secondaryContainer: branding.secondaryColor,
+        onSecondaryContainer: textLightPrimary,
         surface: lightSurface,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: primary,
-        foregroundColor: Colors.white,
+        foregroundColor: onPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.white, size: 22),
-        actionsIconTheme: const IconThemeData(color: Colors.white, size: 22),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
+        iconTheme: IconThemeData(color: onPrimary, size: 22),
+        actionsIconTheme: IconThemeData(color: onPrimary, size: 22),
+        titleTextStyle: TextStyle(
+          color: onPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.15,
@@ -287,7 +473,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: Colors.white,
+          foregroundColor: onPrimary,
           minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -304,6 +490,7 @@ class AppTheme {
   static ThemeData getDynamicDarkTheme(TenantBranding branding) {
     final primary = branding.primaryColor;
     final primaryDark = branding.primaryDarkColor;
+    final onPrimary = branding.onPrimaryColor;
 
     return ThemeData(
       useMaterial3: true,
@@ -312,19 +499,25 @@ class AppTheme {
       scaffoldBackgroundColor: darkBackground,
       colorScheme: ColorScheme.dark(
         primary: primary,
+        onPrimary: onPrimary,
         secondary: primaryDark,
+        secondaryContainer: Color.alphaBlend(
+          branding.secondaryColor.withValues(alpha: 0.16),
+          darkSurface,
+        ),
+        onSecondaryContainer: textDarkPrimary,
         surface: darkSurface,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: primary,
-        foregroundColor: Colors.white,
+        foregroundColor: onPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.white, size: 22),
-        actionsIconTheme: const IconThemeData(color: Colors.white, size: 22),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
+        iconTheme: IconThemeData(color: onPrimary, size: 22),
+        actionsIconTheme: IconThemeData(color: onPrimary, size: 22),
+        titleTextStyle: TextStyle(
+          color: onPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.15,
@@ -333,7 +526,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: Colors.white,
+          foregroundColor: onPrimary,
           minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

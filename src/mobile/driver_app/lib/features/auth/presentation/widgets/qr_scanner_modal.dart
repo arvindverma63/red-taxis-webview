@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 import 'fleet_qr_parser.dart';
@@ -30,6 +31,19 @@ class _QrScannerModalState extends State<QrScannerModal>
   QRViewController? _controller;
   late AnimationController _laserAnimController;
   bool _torchEnabled = false;
+
+  /// True when there is no usable camera (iOS Simulator, camera access denied).
+  /// The live viewfinder is replaced by a message and the Upload / Paste
+  /// options below keep working, instead of the native scanner being started
+  /// on a device that cannot run it.
+  bool _cameraUnavailable = _isIosSimulator;
+
+  /// The iOS Simulator has no camera. Its app binaries live under CoreSimulator
+  /// (there is no environment flag the app can read).
+  static bool get _isIosSimulator =>
+      Platform.isIOS && Platform.resolvedExecutable.contains('/CoreSimulator/');
+  String? _cameraMessage;
+  bool _cameraDenied = false;
   String? _parseError;
   bool _isProcessing = false;
 
@@ -89,21 +103,60 @@ class _QrScannerModalState extends State<QrScannerModal>
 
   void _onQRViewCreated(QRViewController controller) {
     _controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      final code = scanData.code;
-      if (code == null || code.isEmpty || _isProcessing || !mounted) return;
-      // The camera re-reports the same code every frame; only react once per
-      // distinct rejected code so the message doesn't flicker or spam.
-      if (code == _lastRejectedCode) return;
-      if (!_handleResult(parseFleetQr(code))) {
-        _lastRejectedCode = code;
-        Future<void>.delayed(const Duration(seconds: 4), () {
-          if (_lastRejectedCode == code) _lastRejectedCode = null;
-        });
-      }
-    }, onError: (err) {
-      debugPrint('QR Scanner camera notice: $err');
-    });
+    controller.scannedDataStream.listen(
+      (scanData) {
+        final code = scanData.code;
+        if (code == null || code.isEmpty || _isProcessing || !mounted) return;
+        // The camera re-reports the same code every frame; only react once per
+        // distinct rejected code so the message doesn't flicker or spam.
+        if (code == _lastRejectedCode) return;
+        if (!_handleResult(parseFleetQr(code))) {
+          _lastRejectedCode = code;
+          Future<void>.delayed(const Duration(seconds: 4), () {
+            if (_lastRejectedCode == code) _lastRejectedCode = null;
+          });
+        }
+      },
+      onError: (err) {
+        debugPrint('QR Scanner camera notice: $err');
+      },
+    );
+  }
+
+  Widget _buildCameraFallback(Color primaryColor) {
+    return SizedBox.expand(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.videocam_off_rounded, size: 52, color: primaryColor),
+            const SizedBox(height: 14),
+            Text(
+              _cameraMessage ??
+                  'No camera is available on this device. Use "Upload QR code image" or "Paste Code" below.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            if (_cameraDenied) ...[
+              const SizedBox(height: 14),
+              OutlinedButton(
+                onPressed: () => openAppSettings(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white38),
+                ),
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   /// Import a QR code from an image in the gallery / files.
@@ -120,7 +173,9 @@ class _QrScannerModalState extends State<QrScannerModal>
       final text = await decodeQrFromImageFile(path);
       if (!mounted) return;
       if (text == null || text.trim().isEmpty) {
-        _showError(const FleetQrResult.fail(FleetQrFailure.noCodeFound).message);
+        _showError(
+          const FleetQrResult.fail(FleetQrFailure.noCodeFound).message,
+        );
         return;
       }
       _handleResult(parseFleetQr(text));
@@ -133,17 +188,16 @@ class _QrScannerModalState extends State<QrScannerModal>
 
   void _selectPreset(String tenantId, String tenantKey) {
     HapticFeedback.selectionClick();
-    Navigator.of(context).pop({
-      'tenantId': tenantId,
-      'tenantKey': tenantKey,
-    });
+    Navigator.of(context).pop({'tenantId': tenantId, 'tenantKey': tenantKey});
   }
 
   Future<void> _pasteFromClipboard() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text;
     if (text == null || text.trim().isEmpty) {
-      _showError('Clipboard is empty. Copy your fleet activation code or link first.');
+      _showError(
+        'Clipboard is empty. Copy your fleet activation code or link first.',
+      );
       return;
     }
     _handleResult(parseFleetQr(text));
@@ -181,33 +235,43 @@ class _QrScannerModalState extends State<QrScannerModal>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Scan Fleet QR Code',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Scan Fleet QR Code',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Point camera at your fleet activation QR code',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Point camera at your fleet activation QR code',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? Colors.grey[400]
+                              : const Color(0xFF64748B),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Row(
                   children: [
                     IconButton(
                       icon: Icon(
-                        _torchEnabled ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                        color: _torchEnabled ? Colors.amber : (isDark ? Colors.grey[300] : Colors.grey[700]),
+                        _torchEnabled
+                            ? Icons.flash_on_rounded
+                            : Icons.flash_off_rounded,
+                        color: _torchEnabled
+                            ? Colors.amber
+                            : (isDark ? Colors.grey[300] : Colors.grey[700]),
                       ),
                       onPressed: () async {
                         try {
@@ -239,72 +303,85 @@ class _QrScannerModalState extends State<QrScannerModal>
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: QRView(
-                      key: qrKey,
-                      onQRViewCreated: _onQRViewCreated,
-                      overlay: QrScannerOverlayShape(
-                        borderColor: primaryColor,
-                        borderRadius: 16,
-                        borderLength: 30,
-                        borderWidth: 4,
-                        cutOutSize: 240,
-                      ),
-                      onPermissionSet: (ctrl, p) {
-                        if (!p && mounted) {
-                          setState(() {
-                            _parseError = 'Camera permission required to scan QR code.';
-                          });
-                        }
-                      },
-                    ),
+                    child: _cameraUnavailable
+                        ? _buildCameraFallback(primaryColor)
+                        : QRView(
+                            key: qrKey,
+                            cameraErrorMessage:
+                                'Could not start the camera. Use "Upload QR code image" or "Paste Code" below.',
+                            onQRViewCreated: _onQRViewCreated,
+                            overlay: QrScannerOverlayShape(
+                              borderColor: primaryColor,
+                              borderRadius: 16,
+                              borderLength: 30,
+                              borderWidth: 4,
+                              cutOutSize: 240,
+                            ),
+                            onPermissionSet: (ctrl, p) {
+                              if (!p && mounted) {
+                                setState(() {
+                                  _cameraUnavailable = true;
+                                  _cameraDenied = true;
+                                  _cameraMessage =
+                                      'Camera access is turned off. Allow it in Settings, or use Upload / Paste below.';
+                                });
+                              }
+                            },
+                          ),
                   ),
                 ),
 
                 // Animated scanning laser line
-                Positioned(
-                  child: SizedBox(
-                    width: 230,
-                    height: 230,
-                    child: AnimatedBuilder(
-                      animation: _laserAnimController,
-                      builder: (context, child) {
-                        return Stack(
-                          children: [
-                            Positioned(
-                              top: _laserAnimController.value * 210,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      primaryColor.withValues(alpha: 0.1),
-                                      primaryColor,
-                                      primaryColor.withValues(alpha: 0.1),
+                if (!_cameraUnavailable)
+                  Positioned(
+                    child: SizedBox(
+                      width: 230,
+                      height: 230,
+                      child: AnimatedBuilder(
+                        animation: _laserAnimController,
+                        builder: (context, child) {
+                          return Stack(
+                            children: [
+                              Positioned(
+                                top: _laserAnimController.value * 210,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        primaryColor.withValues(alpha: 0.1),
+                                        primaryColor,
+                                        primaryColor.withValues(alpha: 0.1),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: primaryColor.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                        blurRadius: 8,
+                                        spreadRadius: 2,
+                                      ),
                                     ],
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryColor.withValues(alpha: 0.6),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
 
                 // Parse error notice
                 if (_parseError != null)
@@ -313,7 +390,10 @@ class _QrScannerModalState extends State<QrScannerModal>
                     left: 32,
                     right: 32,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
@@ -321,7 +401,11 @@ class _QrScannerModalState extends State<QrScannerModal>
                       child: Text(
                         _parseError!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -336,7 +420,9 @@ class _QrScannerModalState extends State<QrScannerModal>
               color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
               border: Border(
                 top: BorderSide(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
             ),
@@ -354,12 +440,18 @@ class _QrScannerModalState extends State<QrScannerModal>
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.photo_library_outlined, size: 18),
-                    label: Text(_importing ? 'Reading image...' : 'Upload QR code image'),
+                    label: Text(
+                      _importing ? 'Reading image...' : 'Upload QR code image',
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: primaryColor,
-                      side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                      side: BorderSide(
+                        color: primaryColor.withValues(alpha: 0.5),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -373,14 +465,20 @@ class _QrScannerModalState extends State<QrScannerModal>
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
-                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                        color: isDark
+                            ? Colors.grey[400]
+                            : const Color(0xFF64748B),
                       ),
                     ),
                     InkWell(
                       onTap: _pasteFromClipboard,
                       child: Row(
                         children: [
-                          Icon(Icons.content_paste_rounded, size: 14, color: primaryColor),
+                          Icon(
+                            Icons.content_paste_rounded,
+                            size: 14,
+                            color: primaryColor,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Paste Code',
@@ -404,7 +502,8 @@ class _QrScannerModalState extends State<QrScannerModal>
                       _buildPresetChip(
                         label: 'Instacreator (Live API)',
                         tenantId: 'org_08f19f20899e43308c1c1db3',
-                        tenantKey: 'rtk_pub_a7b32fd9677198faa9d8d2f932e62b433322e97991ffa144ee8d66b22416a0db',
+                        tenantKey:
+                            'rtk_pub_a7b32fd9677198faa9d8d2f932e62b433322e97991ffa144ee8d66b22416a0db',
                         icon: Icons.business_rounded,
                         color: const Color(0xFF6366F1),
                       ),

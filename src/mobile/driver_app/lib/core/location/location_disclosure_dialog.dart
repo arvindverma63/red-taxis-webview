@@ -84,17 +84,17 @@ class LocationDisclosureDialog extends StatelessWidget {
                   width: 68,
                   height: 68,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryRed.withValues(alpha: 0.12),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppTheme.primaryRed.withValues(alpha: 0.28),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28),
                       width: 2,
                     ),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.location_on_rounded,
-                      color: AppTheme.primaryRed,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 34,
                     ),
                   ),
@@ -114,13 +114,13 @@ class LocationDisclosureDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Prominent Disclosure & Consent',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryRed,
+                  color: Theme.of(context).colorScheme.primary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -144,11 +144,11 @@ class LocationDisclosureDialog extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 2),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
                       child: Icon(
                         Icons.info_outline_rounded,
-                        color: AppTheme.primaryRed,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 20,
                       ),
                     ),
@@ -231,7 +231,7 @@ class LocationDisclosureDialog extends StatelessWidget {
               if (isReadOnly)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryRed,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
@@ -251,7 +251,7 @@ class LocationDisclosureDialog extends StatelessWidget {
                   children: [
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryRed,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(

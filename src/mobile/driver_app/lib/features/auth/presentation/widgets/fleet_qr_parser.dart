@@ -118,3 +118,50 @@ FleetQrResult parseFleetQr(String raw) {
     if (primaryColour != null) 'primaryColour': primaryColour,
   });
 }
+
+/// Cleans a Tenant ID / access key typed or pasted by hand.
+///
+/// Drivers often paste the pair as one value (`org_123:rtk_pub_abc`, or with a
+/// space / `|` / comma between), or with quotes around it. Left alone, that
+/// whole string becomes the "Tenant ID", the key stays empty and the server
+/// rejects it. This splits such input into the real ID and key, and strips
+/// quotes and stray whitespace. Anything else is returned trimmed.
+({String tenantId, String tenantKey}) normalizeTenantCredentials(
+  String rawId,
+  String rawKey,
+) {
+  String clean(String s) => s
+      .trim()
+      .replaceAll(RegExp('^[\'"“”‘’`]+|[\'"“”‘’`]+\$'), '')
+      .trim();
+
+  final separators = RegExp(r'[:|,;\s]');
+  var id = clean(rawId);
+  var key = clean(rawKey);
+
+  if (separators.hasMatch(id)) {
+    final joined = id.replaceAll(RegExp(r'[:|,;\s]+'), ':');
+    final parsed = parseFleetQr(joined);
+    if (parsed.isOk) {
+      id = parsed.payload!['tenantId']!;
+      final fromPair = parsed.payload!['tenantKey'] ?? '';
+      if (key.isEmpty && fromPair.isNotEmpty) key = fromPair;
+    } else {
+      id = id.split(separators).firstWhere((p) => p.isNotEmpty, orElse: () => id);
+    }
+  }
+
+  // The same pair pasted into the key field: "org_123:rtk_pub_abc".
+  if (separators.hasMatch(key)) {
+    final joined = key.replaceAll(RegExp(r'[:|,;\s]+'), ':');
+    final parsed = parseFleetQr(joined);
+    if (parsed.isOk && parsed.payload!['tenantKey']!.isNotEmpty) {
+      if (id.isEmpty) id = parsed.payload!['tenantId']!;
+      key = parsed.payload!['tenantKey']!;
+    } else {
+      key = key.split(separators).firstWhere((p) => p.isNotEmpty, orElse: () => key);
+    }
+  }
+
+  return (tenantId: id, tenantKey: key);
+}

@@ -69,7 +69,7 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.primaryRed.withValues(alpha: 0.8),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -85,7 +85,7 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                           color: Colors.white,
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryRed.withValues(
+                              color: Theme.of(context).colorScheme.primary.withValues(
                                 alpha: 0.15 * _pulseController.value,
                               ),
                               blurRadius: 15 * _pulseController.value,
@@ -106,7 +106,7 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                             value: _secondsRemaining / 15.0,
                             strokeWidth: 6,
                             backgroundColor: Colors.grey.shade200,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryRed),
+                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                           ),
                         ),
                         Column(
@@ -341,9 +341,9 @@ class _JobOfferScreenState extends ConsumerState<JobOfferScreen> with SingleTick
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.location_on,
-                                  color: AppTheme.primaryRed,
+                                  color: Theme.of(context).colorScheme.primary,
                                   size: 16,
                                 ),
                                 const SizedBox(width: 14),
