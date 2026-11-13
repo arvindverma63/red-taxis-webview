@@ -440,6 +440,11 @@ interface CategoryOption {
       background-color: #121214 !important;
       color: #ECEFF1 !important;
     }
+    /* The hero card's light look is a gradient set with "background:", which
+       paints over background-color; override the whole shorthand in dark mode. */
+    :host-context(.dark-theme) .hero-overview-card {
+      background: #1E1E24 !important;
+    }
     :host-context(.dark-theme) .hero-overview-card,
     :host-context(.dark-theme) .form-sheet-card,
     :host-context(.dark-theme) .expense-item-card,
@@ -475,6 +480,7 @@ interface CategoryOption {
     }
     :host-context(.dark-theme) .amount-currency-symbol,
     :host-context(.dark-theme) .total-number,
+    :host-context(.dark-theme) .status-box-val,
     :host-context(.dark-theme) .item-category-title,
     :host-context(.dark-theme) .item-amount,
     :host-context(.dark-theme) .form-sheet-title,
@@ -482,6 +488,16 @@ interface CategoryOption {
     :host-context(.dark-theme) .modal-card-title,
     :host-context(.dark-theme) .detail-val {
       color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .breakdown-wrapper {
+      border-top-color: #2D2D35 !important;
+    }
+    :host-context(.dark-theme) .empty-title {
+      color: #ECEFF1 !important;
+    }
+    :host-context(.dark-theme) .count-pill {
+      background-color: #2D2D35 !important;
+      color: #CBD5E1 !important;
     }
     :host-context(.dark-theme) .total-label,
     :host-context(.dark-theme) .status-box-title,
