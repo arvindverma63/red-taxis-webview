@@ -1528,7 +1528,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   private cameraStream: MediaStream | null = null;
 
   categoryOptions: CategoryOption[] = [
-    { value: 0, label: 'Fuel', icon: 'local_gas_station', color: '#E53935', lightColor: 'rgba(var(--brand-primary-rgb), 0.1)' },
+    { value: 0, label: 'Fuel', icon: 'local_gas_station', color: '#E53935', lightColor: 'rgba(229, 57, 53, 0.1)' },
     { value: 1, label: 'Tolls', icon: 'toll', color: '#1E88E5', lightColor: 'rgba(30, 136, 245, 0.1)' },
     { value: 2, label: 'Parking', icon: 'local_parking', color: '#43A047', lightColor: 'rgba(67, 160, 71, 0.1)' },
     { value: 3, label: 'Maintenance', icon: 'build', color: '#8E24AA', lightColor: 'rgba(142, 36, 170, 0.1)' },
@@ -1737,7 +1737,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   getCategoryColorLight(catVal: number | string): string {
     const val = Number(catVal);
     switch (val) {
-      case 0: return 'rgba(var(--brand-primary-rgb), 0.1)';
+      case 0: return 'rgba(229, 57, 53, 0.1)';
       case 1: return 'rgba(2, 132, 199, 0.1)';
       case 2: return 'rgba(22, 163, 74, 0.1)';
       case 3: return 'rgba(124, 58, 237, 0.1)';

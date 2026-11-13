@@ -112,7 +112,7 @@ const BASE_COLOURS: ColourChoice[] = [
             <div class="hero-top-row">
               <div class="avatar-wrapper">
                 <div class="avatar-ring">
-                  <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : '#CD1A21'">
+                  <div class="avatar-circle" [style.background-color]="colorCode ? (colorCode.startsWith('#') ? colorCode : '#' + colorCode) : 'var(--brand-primary)'">
                     <img *ngIf="profilePhotoUrl" class="avatar-photo" [src]="profilePhotoUrl" alt="Profile photo" (error)="profilePhotoUrl = ''" />
                     <span class="avatar-initials" *ngIf="!profilePhotoUrl">{{ getInitials() }}</span>
                   </div>
@@ -1515,7 +1515,7 @@ const BASE_COLOURS: ColourChoice[] = [
     .hero-colour-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.55); flex-shrink: 0; }
     .hero-complete { margin-top: 14px; }
     .hero-complete-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: #CBD5E1; margin-bottom: 6px; }
-    .hero-complete-link { border: 0; background: none; padding: 0; color: #FCA5A5; font-weight: 700; font-size: 12px; cursor: pointer; }
+    .hero-complete-link { border: 0; background: none; padding: 0; color: var(--brand-primary-light); font-weight: 700; font-size: 12px; cursor: pointer; }
     .hero-complete-track { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
     .hero-complete-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--brand-primary-light), var(--brand-primary)); transition: width 0.5s ease; }
     .hero-actions { margin-top: 14px; }

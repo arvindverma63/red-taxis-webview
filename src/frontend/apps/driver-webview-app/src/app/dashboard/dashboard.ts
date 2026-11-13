@@ -654,6 +654,12 @@ interface DashTotals {
       box-shadow: 0 2px 6px rgba(var(--brand-primary-rgb), 0.2);
     }
 
+    /* The ring is an SVG attribute (stroke="#CD1A21"), which cannot hold a
+       colour variable; this rule overrides it with the fleet colour. */
+    .gauge-progress {
+      stroke: var(--brand-primary);
+    }
+
     .gauge-container {
       position: relative;
       width: 180px;
