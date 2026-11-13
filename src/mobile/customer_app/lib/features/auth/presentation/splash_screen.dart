@@ -86,20 +86,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   },
                 ),
               )
-            : Column(
-                children: [
-                  const Spacer(flex: 5),
-                  const BrandWordmark(height: 52),
-                  const Spacer(flex: 4),
-                  RotationTransition(
-                    turns: _spin,
-                    child: const CustomPaint(
-                      size: Size(44, 44),
-                      painter: _DotSpinnerPainter(),
+            : SizedBox.expand(
+                child: Column(
+                  children: [
+                    const Spacer(flex: 5),
+                    const BrandWordmark(height: 52),
+                    const Spacer(flex: 4),
+                    RotationTransition(
+                      turns: _spin,
+                      child: const CustomPaint(
+                        size: Size(44, 44),
+                        painter: _DotSpinnerPainter(),
+                      ),
                     ),
-                  ),
-                  const Spacer(flex: 3),
-                ],
+                    const Spacer(flex: 3),
+                  ],
+                ),
               ),
       ),
     );

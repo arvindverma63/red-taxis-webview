@@ -49,8 +49,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublic =
           _publicRoutes.contains(loc) || loc == Routes.splash;
 
-      // Forced logout (refresh failed) → sign-in.
-      if (expired && loc != Routes.signIn) return Routes.signIn;
+      // Forced logout (refresh failed) → sign-in. Public screens (sign-up,
+      // forgot password, ...) stay reachable so the user can still use them.
+      if (expired && !isPublic) return Routes.signIn;
 
       // Gate protected routes.
       if (!loggedIn && !isPublic) return Routes.signIn;

@@ -294,8 +294,8 @@ class _PaymentMock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget row(String name, {bool selected = false}) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4.5),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(6),

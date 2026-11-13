@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -71,8 +73,9 @@ class TrackingScreen extends ConsumerWidget {
     booking ??= detailAsync.valueOrNull ?? initialBooking;
 
     // Synchronize booking status with live tracking state if available
-    if (booking != null && async.hasValue) {
-      final liveStatus = async.requireValue.status.name;
+    final liveState = async.valueOrNull;
+    if (booking != null && liveState != null) {
+      final liveStatus = liveState.status.name;
       if (booking.status != liveStatus) {
         booking = booking.copyWith(status: liveStatus);
       }
@@ -83,7 +86,8 @@ class TrackingScreen extends ConsumerWidget {
       body: async.when(
         loading: () => const LoadingView(message: 'Connecting to your trip…'),
         error: (err, _) => ErrorView(
-          message: 'We lost the connection to your trip.\n$err',
+          message:
+              'We could not load your trip right now. Check your connection and try again.',
           onRetry: () => ref.invalidate(trackingProvider(bookingId)),
         ),
         data: (state) => _TrackingBody(state: state, booking: booking),
@@ -112,7 +116,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
   @override
   void initState() {
     super.initState();
-    _loadRoute();
+    unawaited(_loadRoute());
   }
 
   @override
@@ -121,7 +125,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
     if (oldWidget.booking?.id != widget.booking?.id ||
         oldWidget.booking?.pickup != widget.booking?.pickup ||
         oldWidget.booking?.dropoff != widget.booking?.dropoff) {
-      _loadRoute();
+      unawaited(_loadRoute());
     }
     // The driver's position usually arrives after the map has framed the route;
     // re-frame once when it first becomes available so the driver is in view.
@@ -133,54 +137,81 @@ class _TrackingBodyState extends State<_TrackingBody> {
   }
 
   Future<void> _loadRoute() async {
-    const routeService = RouteService();
-    final p = widget.booking?.pickup != null
-        ? routeService.resolvePlaceDetails(widget.booking!.pickup)
-        : routeService.resolvePlaceDetails(
-            const Place(
-              description: 'Gillingham Station, Station Road',
-              postcode: 'SP8 4QF',
-              lat: 51.0382,
-              lng: -2.2718,
-            ),
-          );
-    final d = widget.booking?.dropoff != null
-        ? routeService.resolvePlaceDetails(widget.booking!.dropoff)
-        : routeService.resolvePlaceDetails(
-            const Place(
-              description: 'Shaftesbury, High Street',
-              postcode: 'SP7 8JE',
-              lat: 51.0058,
-              lng: -2.1972,
-            ),
-          );
+    // Map work must never take the screen (or the app) down: any failure just
+    // leaves the map without a route line.
+    try {
+      const routeService = RouteService();
+      final p = widget.booking?.pickup != null
+          ? routeService.resolvePlaceDetails(widget.booking!.pickup)
+          : routeService.resolvePlaceDetails(
+              const Place(
+                description: 'Gillingham Station, Station Road',
+                postcode: 'SP8 4QF',
+                lat: 51.0382,
+                lng: -2.2718,
+              ),
+            );
+      final d = widget.booking?.dropoff != null
+          ? routeService.resolvePlaceDetails(widget.booking!.dropoff)
+          : routeService.resolvePlaceDetails(
+              const Place(
+                description: 'Shaftesbury, High Street',
+                postcode: 'SP7 8JE',
+                lat: 51.0058,
+                lng: -2.1972,
+              ),
+            );
 
-    final start = LatLng(p.lat ?? 51.0382, p.lng ?? -2.2718);
-    final end = LatLng(d.lat ?? 51.0058, d.lng ?? -2.1972);
+      final start =
+          _validLatLng(p.lat, p.lng) ?? const LatLng(51.0382, -2.2718);
+      final end = _validLatLng(d.lat, d.lng) ?? const LatLng(51.0058, -2.1972);
 
-    final key =
-        '${start.latitude},${start.longitude}->${end.latitude},${end.longitude}';
-    if (_lastRouteKey == key && _routePoints.isNotEmpty) {
-      return;
-    }
-    _lastRouteKey = key;
+      final key =
+          '${start.latitude},${start.longitude}->${end.latitude},${end.longitude}';
+      if (_lastRouteKey == key && _routePoints.isNotEmpty) {
+        return;
+      }
+      _lastRouteKey = key;
 
-    if (mounted) {
+      if (mounted) {
+        setState(() {
+          _resolvedPickup = p;
+          _resolvedDropoff = d;
+        });
+      }
+
+      final routeData = await routeService.fetchRoute(start, end);
+      if (!mounted) return;
+
       setState(() {
-        _resolvedPickup = p;
-        _resolvedDropoff = d;
+        _routePoints = routeData.points.where(_isUsable).toList();
       });
+
+      _fitMapBounds();
+    } catch (e) {
+      debugPrint('[Tracking] route unavailable: $e');
     }
-
-    final routeData = await routeService.fetchRoute(start, end);
-    if (!mounted) return;
-
-    setState(() {
-      _routePoints = routeData.points;
-    });
-
-    _fitMapBounds();
   }
+
+  /// A coordinate pair the native map can safely take: finite, in range, and
+  /// not the (0, 0) "no location" placeholder. Invalid values reaching the
+  /// native Google Maps layer can abort the whole app, so everything drawn or
+  /// framed goes through this.
+  static LatLng? _validLatLng(double? lat, double? lng) {
+    if (lat == null || lng == null) return null;
+    if (!lat.isFinite || !lng.isFinite) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    if (lat == 0.0 && lng == 0.0) return null;
+    return LatLng(lat, lng);
+  }
+
+  static bool _isUsable(LatLng p) =>
+      _validLatLng(p.latitude, p.longitude) != null;
+
+  LatLng? get _pickupLatLng =>
+      _validLatLng(_resolvedPickup?.lat, _resolvedPickup?.lng);
+  LatLng? get _dropoffLatLng =>
+      _validLatLng(_resolvedDropoff?.lat, _resolvedDropoff?.lng);
 
   /// True when the driver has a real position within ~200 miles of the pickup.
   /// A wildly distant driver (bad GPS or test data) must not drag the camera out
@@ -189,22 +220,28 @@ class _TrackingBodyState extends State<_TrackingBody> {
     final d = widget.state.driver;
     final p = _resolvedPickup;
     if (d == null || !d.hasLocation) return false;
-    if (p?.lat == null || p?.lng == null) return true;
-    return RouteService.haversineDistanceMiles(p!.lat!, p.lng!, d.lat, d.lng) <
+    final pickup = _validLatLng(p?.lat, p?.lng);
+    if (pickup == null) return true;
+    return RouteService.haversineDistanceMiles(
+          pickup.latitude,
+          pickup.longitude,
+          d.lat,
+          d.lng,
+        ) <
         200;
   }
 
   void _fitMapBounds() {
     if (_mapController == null) return;
 
+    final pickup = _pickupLatLng;
+    final dropoff = _dropoffLatLng;
     final points = <LatLng>[
       if (_routePoints.isNotEmpty) ..._routePoints,
-      if (_resolvedPickup?.lat != null && _resolvedPickup?.lng != null)
-        LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
-      if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null)
-        LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
+      ?pickup,
+      ?dropoff,
       if (_driverNearTrip())
-        LatLng(widget.state.driver!.lat, widget.state.driver!.lng),
+        ?_validLatLng(widget.state.driver!.lat, widget.state.driver!.lng),
     ];
 
     if (points.isEmpty) return;
@@ -232,27 +269,39 @@ class _TrackingBodyState extends State<_TrackingBody> {
     final tiny =
         (maxLat - minLat).abs() < 0.0005 && (maxLng - minLng).abs() < 0.0005;
     try {
-      if (tiny) {
-        _mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2),
-            15,
-          ),
-        );
-      } else {
-        _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 72));
-      }
-    } catch (_) {}
+      // animateCamera is asynchronous: its failures (e.g. "map size is 0")
+      // arrive on the returned future, so they have to be caught there.
+      final Future<void> move = tiny
+          ? _mapController!.animateCamera(
+              CameraUpdate.newLatLngZoom(
+                LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2),
+                15,
+              ),
+            )
+          : _mapController!.animateCamera(
+              CameraUpdate.newLatLngBounds(bounds, 72),
+            );
+      unawaited(
+        move.catchError((Object e) {
+          debugPrint('[Tracking] camera move failed: $e');
+        }),
+      );
+    } catch (e) {
+      debugPrint('[Tracking] camera move failed: $e');
+    }
   }
 
   Set<Marker> _buildMarkers(DriverInfo? driver) {
     final markers = <Marker>{};
 
-    if (_resolvedPickup?.lat != null && _resolvedPickup?.lng != null) {
+    final pickupPos = _pickupLatLng;
+    final dropoffPos = _dropoffLatLng;
+
+    if (pickupPos != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('pickup'),
-          position: LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
+          position: pickupPos,
           icon: BitmapDescriptor.defaultMarkerWithHue(
             BitmapDescriptor.hueGreen,
           ),
@@ -266,11 +315,11 @@ class _TrackingBodyState extends State<_TrackingBody> {
       );
     }
 
-    if (_resolvedDropoff?.lat != null && _resolvedDropoff?.lng != null) {
+    if (dropoffPos != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('dropoff'),
-          position: LatLng(_resolvedDropoff!.lat!, _resolvedDropoff!.lng!),
+          position: dropoffPos,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: InfoWindow(
             title: 'Destination',
@@ -282,11 +331,14 @@ class _TrackingBodyState extends State<_TrackingBody> {
       );
     }
 
-    if (driver != null && driver.hasLocation) {
+    final driverPos = driver == null
+        ? null
+        : _validLatLng(driver.lat, driver.lng);
+    if (driver != null && driverPos != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('driver'),
-          position: LatLng(driver.lat, driver.lng),
+          position: driverPos,
           icon: BitmapDescriptor.defaultMarkerWithHue(
             BitmapDescriptor.hueAzure,
           ),
@@ -320,17 +372,15 @@ class _TrackingBodyState extends State<_TrackingBody> {
     }
 
     // 2. Driver en-route polyline (Azure dashed)
-    if (driver != null &&
-        driver.hasLocation &&
-        _resolvedPickup?.lat != null &&
-        _resolvedPickup?.lng != null) {
+    final driverPos = driver == null
+        ? null
+        : _validLatLng(driver.lat, driver.lng);
+    final pickupPos = _pickupLatLng;
+    if (driverPos != null && pickupPos != null) {
       polylines.add(
         Polyline(
           polylineId: const PolylineId('driver_route'),
-          points: [
-            LatLng(driver.lat, driver.lng),
-            LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!),
-          ],
+          points: [driverPos, pickupPos],
           color: const Color(0xFF2E90FA),
           width: 3,
           patterns: [PatternItem.dash(12), PatternItem.gap(6)],
@@ -401,9 +451,7 @@ class _TrackingBodyState extends State<_TrackingBody> {
     final driver = widget.state.status.hasDriver ? widget.state.driver : null;
 
     final initialCamera = CameraPosition(
-      target: _resolvedPickup?.lat != null && _resolvedPickup?.lng != null
-          ? LatLng(_resolvedPickup!.lat!, _resolvedPickup!.lng!)
-          : const LatLng(51.0058, -2.1916),
+      target: _pickupLatLng ?? const LatLng(51.0058, -2.1916),
       zoom: 13,
     );
 

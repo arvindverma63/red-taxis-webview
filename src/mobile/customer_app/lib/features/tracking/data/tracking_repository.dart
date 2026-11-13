@@ -94,8 +94,13 @@ class TrackingRepository {
       return;
     }
 
-    // 1. Fetch current status from the server immediately.
-    var current = await fetchBookingState(bookingId);
+    // 1. Fetch current status from the server immediately. A failure here
+    // shows "Requested" and lets the 5 s poll fill in the real state, instead
+    // of throwing the user onto an error screen.
+    var current = await fetchBookingState(bookingId).catchError(
+      (Object e) =>
+          TrackingState(bookingId: bookingId, status: BookingStatus.requested),
+    );
     yield current;
 
     // Terminal states never change again.
@@ -105,7 +110,7 @@ class TrackingRepository {
     }
 
     // 2. Connect Pusher in the background (best effort for immediate push events).
-    _ensureConnected().catchError((_) {});
+    unawaited(_ensureConnected().catchError((_) {}));
 
     // Listen for incoming Pusher status events and queue them.
     final pusherQueue = <TrackingState>[];
@@ -246,33 +251,39 @@ class TrackingRepository {
     }
 
     if (data != null && data.isNotEmpty) {
-      final rawStatus =
-          data['status'] ??
-          data['Status'] ??
-          data['bookingStatus'] ??
-          data['BookingStatus'] ??
-          data['jobStatus'] ??
-          data['JobStatus'];
+      try {
+        final rawStatus =
+            data['status'] ??
+            data['Status'] ??
+            data['bookingStatus'] ??
+            data['BookingStatus'] ??
+            data['jobStatus'] ??
+            data['JobStatus'];
 
-      final status = _mapStatus(rawStatus) ?? BookingStatus.requested;
-      var driver = _parseDriver(data['driver'] ?? data['Driver'], data);
-      if (_driverStatuses.contains(status)) {
-        // The booking payload carries no driver; the dedicated endpoint does.
-        final fetched = await fetchDriverDetails(bookingId);
-        if (fetched != null) driver = fetched;
+        final status = _mapStatus(rawStatus) ?? BookingStatus.requested;
+        var driver = _parseDriver(data['driver'] ?? data['Driver'], data);
+        if (_driverStatuses.contains(status)) {
+          // The booking payload carries no driver; the dedicated endpoint does.
+          final fetched = await fetchDriverDetails(bookingId);
+          if (fetched != null) driver = fetched;
+        }
+        _logDriverShape(bookingId, rawStatus, data, driver);
+        DriverDirectory.remember(bookingId, DriverFields.from(data));
+        final eta = _asInt(
+          data['etaMinutes'] ?? data['eta'] ?? data['durationMinutes'],
+        );
+
+        return TrackingState(
+          bookingId: bookingId,
+          status: status,
+          driver: driver,
+          etaMinutes: eta,
+        );
+      } catch (e) {
+        // Unexpected payload shape: fall back to "requested"; the next poll
+        // retries. Tracking must never throw out of here.
+        debugPrint('[Tracking] could not read booking $bookingId: $e');
       }
-      _logDriverShape(bookingId, rawStatus, data, driver);
-      DriverDirectory.remember(bookingId, DriverFields.from(data));
-      final eta = _asInt(
-        data['etaMinutes'] ?? data['eta'] ?? data['durationMinutes'],
-      );
-
-      return TrackingState(
-        bookingId: bookingId,
-        status: status,
-        driver: driver,
-        etaMinutes: eta,
-      );
     }
 
     return TrackingState(bookingId: bookingId, status: BookingStatus.requested);
@@ -365,8 +376,51 @@ class TrackingRepository {
     } catch (_) {}
   }
 
-  /// Initialises Pusher once and subscribes to the customer's private channel.
-  Future<void> _ensureConnected() => _connecting ??= _connect();
+  int? _connectedUserId;
+
+  /// Initialises Pusher once per signed-in user and subscribes to that user's
+  /// private channel. A failed attempt is forgotten so the next tracking
+  /// screen can retry instead of being stuck with a dead connection.
+  Future<void> _ensureConnected() {
+    final userId = _ref.read(currentUserProvider)?.userId;
+    if (_connecting != null && _connectedUserId != userId) {
+      // A different account signed in: drop the old connection first.
+      _connecting = null;
+      unawaited(_pusher?.disconnect().catchError((_) {}));
+    }
+    _connectedUserId = userId;
+    return _connecting ??= _connect().catchError((Object e) {
+      _connecting = null;
+      debugPrint('[Pusher] connect failed: $e');
+    });
+  }
+
+  /// Turns the backend's `/pusher/auth` reply into the exact shape the native
+  /// plugin accepts, or null when it can't be trusted.
+  ///
+  /// This matters on iOS: the plugin force-casts the reply to
+  /// `[String: String]` and force-unwraps `auth`, so an error, an empty map or
+  /// any non-string value crashes the whole app. Returning null makes it fail
+  /// the subscription quietly instead (the 5 s poll still tracks the trip).
+  @visibleForTesting
+  static Map<String, String>? safeAuthPayload(dynamic data) {
+    try {
+      var body = data;
+      if (body is String) body = jsonDecode(body);
+      if (body is! Map) return null;
+      final auth = body['auth'];
+      if (auth is! String || auth.isEmpty) return null;
+      final out = <String, String>{'auth': auth};
+      for (final key in const ['channel_data', 'shared_secret']) {
+        final v = body[key];
+        if (v == null) continue;
+        out[key] = v is String ? v : jsonEncode(v);
+      }
+      return out;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> _connect() async {
     final userId = _ref.read(currentUserProvider)?.userId;
@@ -380,15 +434,24 @@ class TrackingRepository {
       apiKey: config.pusherKey,
       cluster: config.pusherCluster,
       onEvent: _onEvent,
+      onError: (message, code, error) {
+        debugPrint('[Pusher] error: $message ($code) $error');
+      },
+      onSubscriptionError: (message, error) {
+        debugPrint('[Pusher] subscription error: $message $error');
+      },
       onAuthorizer: (channelName, socketId, options) async {
-        final res = await _dio.post<dynamic>(
-          '/api/v2/pusher/auth',
-          data: {'socketId': socketId, 'channelName': channelName},
-        );
-        final data = res.data;
-        if (data is Map<String, dynamic>) return data;
-        if (data is String) return jsonDecode(data) as Map<String, dynamic>;
-        return <String, dynamic>{};
+        // Must never throw or return a bad shape — see [safeAuthPayload].
+        try {
+          final res = await _dio.post<dynamic>(
+            '/api/v2/pusher/auth',
+            data: {'socketId': socketId, 'channelName': channelName},
+          );
+          return safeAuthPayload(res.data);
+        } catch (e) {
+          debugPrint('[Pusher] auth failed: $e');
+          return null;
+        }
       },
     );
 

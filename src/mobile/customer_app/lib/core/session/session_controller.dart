@@ -24,7 +24,11 @@ class SessionController extends Notifier<AuthUser?> {
     return null;
   }
 
-  void setUser(AuthUser user) => state = user;
+  void setUser(AuthUser user) {
+    // A fresh sign-in ends any earlier forced-logout state.
+    ref.read(sessionExpiredProvider.notifier).state = false;
+    state = user;
+  }
   void clear() => state = null;
 
   /// Client-side sign out: clears tokens + session. Callers that need the API

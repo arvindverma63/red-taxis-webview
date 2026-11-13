@@ -121,8 +121,8 @@ class TermsCheckbox extends StatelessWidget {
                     child: Text(
                       'Terms & Conditions',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.brand,
                         fontWeight: FontWeight.w700,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
                   ),

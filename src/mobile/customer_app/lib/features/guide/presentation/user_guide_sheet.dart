@@ -49,15 +49,15 @@ class _UserGuideSheetState extends State<_UserGuideSheet> {
       title: 'Set Your Journey',
       subtitle: 'Where would you like to go?',
       description:
-          'Enter your destination in the "Where to?" card, select from your saved addresses, or tap "Pick on Map" to drop an exact pin anywhere across the region.',
+          'On the home map, set your pickup and drop-off: search for an address, use your current location, or choose "Choose on First Taxis Map" to drop an exact pin.',
       tips: [
         _GuideTip(
           icon: Icons.my_location_rounded,
-          text: 'Your current GPS location is set as default pickup',
+          text: 'Tap "Use my Current Location" to set your pickup in one tap',
         ),
         _GuideTip(
           icon: Icons.bookmark_added_rounded,
-          text: 'Save Home & Work for instantaneous 1-tap booking',
+          text: 'Save Home & Work from the menu for faster booking',
         ),
       ],
     ),
@@ -68,7 +68,7 @@ class _UserGuideSheetState extends State<_UserGuideSheet> {
       title: 'Choose Fleet Vehicle',
       subtitle: 'Transparent upfront fares',
       description:
-          'Select the vehicle that fits your journey: Saloon (1-4 passengers), Estate (spacious luggage), Executive (luxury travel), or 6/8-Seater MPVs for larger groups.',
+          'Pick Saloon, Estate, MPV or Executive on the home screen, choose Now or Schedule for Later, then tap Continue Booking to see your fare.',
       tips: [
         _GuideTip(
           icon: Icons.price_check_rounded,
