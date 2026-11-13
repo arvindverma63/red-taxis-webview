@@ -244,7 +244,7 @@ interface JobDetails {
 
     .return-btn {
       width: 100%;
-      background-color: #D32F2F;
+      background-color: var(--brand-primary);
       color: #FFFFFF;
       font-weight: 800;
       font-size: 16px;
@@ -259,7 +259,7 @@ interface JobDetails {
     }
 
     .return-btn:active {
-      background-color: #B71C1C;
+      background-color: var(--brand-primary-dark);
     }
   `]
 })

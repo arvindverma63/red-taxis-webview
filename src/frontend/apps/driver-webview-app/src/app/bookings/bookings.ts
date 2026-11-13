@@ -704,9 +704,9 @@ interface Booking {
       color: #CBD5E1;
     }
     .tab-btn.active {
-      background: #CD1A21;
+      background: var(--brand-primary);
       color: #FFFFFF;
-      box-shadow: 0 2px 6px rgba(205, 26, 33, 0.25);
+      box-shadow: 0 2px 6px rgba(var(--brand-primary-rgb), 0.25);
     }
     .tab-count {
       font-size: 10px;
@@ -924,7 +924,7 @@ interface Booking {
     .currency-symbol {
       font-size: 13px;
       font-weight: 800;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
 
     /* Journey Route Visual */
@@ -1085,7 +1085,7 @@ interface Booking {
       display: flex;
       align-items: center;
       gap: 2px;
-      color: #CD1A21;
+      color: var(--brand-primary);
       font-weight: 800;
       font-size: 11.5px;
       flex-shrink: 0;
@@ -1252,9 +1252,9 @@ interface Booking {
     }
 
     .action-pill.start-trip-btn {
-      background: linear-gradient(135deg, #CD1A21 0%, #E11D48 100%);
+      background: linear-gradient(135deg, var(--brand-primary) 0%, #E11D48 100%);
       color: #FFFFFF;
-      box-shadow: 0 3px 10px rgba(205, 26, 33, 0.28);
+      box-shadow: 0 3px 10px rgba(var(--brand-primary-rgb), 0.28);
     }
     .action-pill.status-toggle {
       background: linear-gradient(135deg, #059669 0%, #10B981 100%);
@@ -1489,7 +1489,7 @@ interface Booking {
       gap: 1px;
     }
 
-    .tile-main-fare .cur { color: #CD1A21; font-size: 15px; font-weight: 900; }
+    .tile-main-fare .cur { color: var(--brand-primary); font-size: 15px; font-weight: 900; }
 
     .payment-badge-pill {
       display: inline-flex;

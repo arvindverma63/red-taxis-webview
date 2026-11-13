@@ -665,7 +665,7 @@ const BASE_COLOURS: ColourChoice[] = [
       z-index: 999;
       pointer-events: none;
       transition: opacity 0.2s ease;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .native-spin-icon {
       font-size: 22px;
@@ -1439,7 +1439,7 @@ const BASE_COLOURS: ColourChoice[] = [
       cursor: pointer;
     }
     .btn-primary {
-      background: #CD1A21;
+      background: var(--brand-primary);
       color: #FFFFFF;
       border: none;
       padding: 7px 14px;
@@ -1481,17 +1481,17 @@ const BASE_COLOURS: ColourChoice[] = [
     }
     .hero-glow {
       position: absolute; top: -70px; right: -60px; width: 220px; height: 220px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(205, 26, 33, 0.38) 0%, rgba(205, 26, 33, 0) 70%);
+      background: radial-gradient(circle, rgba(var(--brand-primary-rgb), 0.38) 0%, rgba(var(--brand-primary-rgb), 0) 70%);
       pointer-events: none;
     }
     .hero-top-row { gap: 16px; align-items: center; }
     .avatar-wrapper { position: relative; flex-shrink: 0; }
-    .avatar-ring { padding: 3px; border-radius: 50%; background: linear-gradient(135deg, #F87171, #CD1A21 55%, #7F1D1D); }
+    .avatar-ring { padding: 3px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-primary-light), var(--brand-primary) 55%, #7F1D1D); }
     .avatar-circle { width: 74px; height: 74px; font-size: 26px; overflow: hidden; border: 3px solid #0F172A; box-shadow: none; }
     .avatar-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
     .avatar-edit-badge {
       position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%;
-      border: 2px solid #0F172A; background: #FFFFFF; color: #CD1A21; cursor: pointer;
+      border: 2px solid #0F172A; background: #FFFFFF; color: var(--brand-primary); cursor: pointer;
       display: grid; place-items: center; padding: 0; transition: transform 0.15s ease;
     }
     .avatar-edit-badge:active { transform: scale(0.9); }
@@ -1517,7 +1517,7 @@ const BASE_COLOURS: ColourChoice[] = [
     .hero-complete-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: #CBD5E1; margin-bottom: 6px; }
     .hero-complete-link { border: 0; background: none; padding: 0; color: #FCA5A5; font-weight: 700; font-size: 12px; cursor: pointer; }
     .hero-complete-track { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
-    .hero-complete-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #F87171, #CD1A21); transition: width 0.5s ease; }
+    .hero-complete-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--brand-primary-light), var(--brand-primary)); transition: width 0.5s ease; }
     .hero-actions { margin-top: 14px; }
     .hero-edit-btn {
       width: 100%; height: 44px; border: 0; border-radius: 12px; cursor: pointer;
@@ -1526,7 +1526,7 @@ const BASE_COLOURS: ColourChoice[] = [
       transition: transform 0.12s ease, box-shadow 0.2s ease; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     }
     .hero-edit-btn:active { transform: scale(0.98); }
-    .hero-edit-btn .material-symbols-outlined { font-size: 18px; color: #CD1A21; }
+    .hero-edit-btn .material-symbols-outlined { font-size: 18px; color: var(--brand-primary); }
 
     /* ---- Edit profile sheet ---- */
     .ep-backdrop {
@@ -1559,15 +1559,15 @@ const BASE_COLOURS: ColourChoice[] = [
     .ep-photo-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
     .ep-btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 13px; font-weight: 700; color: #0F172A; cursor: pointer; background: #fff; transition: transform 0.12s ease, background 0.2s ease; }
     .ep-btn-outline:active { transform: scale(0.96); background: #F8FAFC; }
-    .ep-btn-outline .material-symbols-outlined { font-size: 18px; color: #CD1A21; }
-    .ep-link { border: 0; background: none; color: #CD1A21; font-size: 12.5px; font-weight: 700; padding: 0; cursor: pointer; }
+    .ep-btn-outline .material-symbols-outlined { font-size: 18px; color: var(--brand-primary); }
+    .ep-link { border: 0; background: none; color: var(--brand-primary); font-size: 12.5px; font-weight: 700; padding: 0; cursor: pointer; }
     .ep-hint { font-size: 11.5px; color: #64748B; }
     .ep-section { margin: 18px 0 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: #64748B; }
     .ep-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; flex: 1; min-width: 0; }
     .ep-field > span { font-size: 12.5px; font-weight: 700; color: #334155; }
-    .ep-picked { font-style: normal; font-weight: 600; color: #CD1A21; }
+    .ep-picked { font-style: normal; font-weight: 600; color: var(--brand-primary); }
     .ep-field input { height: 46px; padding: 0 13px; border: 1.5px solid #CBD5E1; border-radius: 12px; font-size: 16px; background: #fff; color: #0F172A; outline: none; width: 100%; box-sizing: border-box; transition: border-color 0.18s ease, box-shadow 0.18s ease; }
-    .ep-field input:focus { border-color: #CD1A21; box-shadow: 0 0 0 4px rgba(205, 26, 33, 0.12); }
+    .ep-field input:focus { border-color: var(--brand-primary); box-shadow: 0 0 0 4px rgba(var(--brand-primary-rgb), 0.12); }
     .ep-row { display: flex; gap: 10px; }
     .ep-error { color: #DC2626; font-size: 12px; font-weight: 600; animation: epFadeIn 0.2s ease-out both; }
     .ep-note { margin: 4px 0 0; font-size: 12px; color: #64748B; }
@@ -1579,13 +1579,13 @@ const BASE_COLOURS: ColourChoice[] = [
     }
     .ep-swatch.light { border-color: #CBD5E1; }
     .ep-swatch:active { transform: scale(0.9); }
-    .ep-swatch.selected { transform: scale(1.08); border-color: #CD1A21; box-shadow: 0 0 0 3px #fff, 0 0 0 5px #CD1A21; }
+    .ep-swatch.selected { transform: scale(1.08); border-color: var(--brand-primary); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--brand-primary); }
     .ep-swatch-check { font-size: 18px; color: #fff; font-variation-settings: 'wght' 700; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45)); animation: epPop 0.18s ease-out both; }
     .ep-swatch.light .ep-swatch-check { color: #0F172A; filter: none; }
     @keyframes epPop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .ep-footer { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #E2E8F0; background: #fff; }
     .ep-btn-cancel { flex: 1; height: 48px; border: 1px solid #CBD5E1; border-radius: 12px; background: #fff; font-weight: 700; font-size: 15px; color: #334155; cursor: pointer; transition: transform 0.12s ease; }
-    .ep-btn-save { flex: 2; height: 48px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #CD1A21, #E11D48); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.12s ease, background 0.25s ease; }
+    .ep-btn-save { flex: 2; height: 48px; border: 0; border-radius: 12px; background: linear-gradient(135deg, var(--brand-primary), #E11D48); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.12s ease, background 0.25s ease; }
     .ep-btn-save.done { background: linear-gradient(135deg, #059669, #10B981); }
     .ep-btn-save:active:not(:disabled), .ep-btn-cancel:active:not(:disabled) { transform: scale(0.98); }
     .ep-btn-save:disabled, .ep-btn-cancel:disabled { opacity: 0.65; cursor: default; }

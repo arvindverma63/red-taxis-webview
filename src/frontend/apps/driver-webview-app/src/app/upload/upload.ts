@@ -386,7 +386,7 @@ import { HttpEventType } from '@angular/common/http';
       margin-bottom: 12px;
     }
     .drop-zone.dragover, .drop-zone:hover {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background: #FFF5F5;
     }
     .drop-icon-wrapper {
@@ -444,9 +444,9 @@ import { HttpEventType } from '@angular/common/http';
       color: #1E293B;
     }
     .btn-camera-launch {
-      background: #CD1A21;
+      background: var(--brand-primary);
       color: #FFFFFF;
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
     }
     .btn-file-select .material-symbols-outlined,
     .btn-camera-launch .material-symbols-outlined {
@@ -470,7 +470,7 @@ import { HttpEventType } from '@angular/common/http';
     }
     .guidelines-head .material-symbols-outlined {
       font-size: 14px;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .guidelines-list {
       margin: 0;
@@ -571,7 +571,7 @@ import { HttpEventType } from '@angular/common/http';
       width: 42px;
       height: 42px;
       border-radius: 50%;
-      background: #CD1A21;
+      background: var(--brand-primary);
       color: #FFFFFF;
       display: flex;
       align-items: center;
@@ -680,7 +680,7 @@ import { HttpEventType } from '@angular/common/http';
     }
     .range-input {
       flex: 1;
-      accent-color: #CD1A21;
+      accent-color: var(--brand-primary);
     }
 
     .crop-actions-row {
@@ -816,7 +816,7 @@ import { HttpEventType } from '@angular/common/http';
     }
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #CD1A21, #EF4444);
+      background: linear-gradient(90deg, var(--brand-primary), #EF4444);
       border-radius: 3px;
       transition: width 0.3s ease;
     }
@@ -828,7 +828,7 @@ import { HttpEventType } from '@angular/common/http';
       font-weight: 600;
     }
     .progress-pct {
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
 
     /* Sticky Bottom Footer */
@@ -848,7 +848,7 @@ import { HttpEventType } from '@angular/common/http';
     .btn-submit-upload {
       max-width: 580px;
       width: 100%;
-      background: linear-gradient(135deg, #CD1A21 0%, #B71C1C 100%);
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
       color: #FFFFFF;
       border: none;
       padding: 12px;
@@ -860,7 +860,7 @@ import { HttpEventType } from '@angular/common/http';
       justify-content: center;
       gap: 8px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(205, 26, 33, 0.25);
+      box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.25);
       transition: opacity 0.15s ease;
     }
     .btn-submit-upload:disabled {

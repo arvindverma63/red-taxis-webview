@@ -428,7 +428,7 @@ interface JobDetails {
       width: 140px;
       height: 140px;
       border-radius: 50%;
-      background: radial-gradient(circle, #CD1A21 0%, transparent 70%);
+      background: radial-gradient(circle, var(--brand-primary) 0%, transparent 70%);
       opacity: 0.35;
       filter: blur(30px);
       pointer-events: none;
@@ -450,8 +450,8 @@ interface JobDetails {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(205, 26, 33, 0.2);
-      border: 1px solid rgba(205, 26, 33, 0.45);
+      background: rgba(var(--brand-primary-rgb), 0.2);
+      border: 1px solid rgba(var(--brand-primary-rgb), 0.45);
       padding: 3px 8px;
       border-radius: 6px;
       font-size: 10px;

@@ -32,6 +32,17 @@
         localStorage.setItem('theme', theme);
       }
 
+      // Fleet colours saved by the mobile app (see brand_theme): apply before
+      // the first paint so pages never flash the default red.
+      try {
+        var brand = JSON.parse(localStorage.getItem('brand_theme') || 'null');
+        if (brand) {
+          for (var key in brand) {
+            document.documentElement.style.setProperty(key, brand[key]);
+          }
+        }
+      } catch (e) {}
+
       if (!fontScale) {
         fontScale = localStorage.getItem('font_scale');
       }

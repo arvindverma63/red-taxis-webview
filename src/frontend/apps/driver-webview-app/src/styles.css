@@ -4,9 +4,19 @@
 /* Global styles and design variables compatible with Driver App themes */
 
 :root {
-  --primary-color: #E53935;
-  --primary-dark: #B71C1C;
-  --background-color: #F8F9FA;
+  /* Fleet theme. The mobile app overrides these from the fleet's colours
+     (see brand_theme in index.html); these defaults apply on their own. */
+  --brand-primary: #CD1A21;
+  --brand-primary-rgb: 205, 26, 33;
+  --brand-primary-dark: #9E0E14;
+  --brand-primary-light: #F87171;
+  --brand-on-primary: #FFFFFF;
+  --brand-secondary: #F8F9FA;
+  --brand-background: #F8F9FA;
+
+  --primary-color: var(--brand-primary);
+  --primary-dark: var(--brand-primary-dark);
+  --background-color: var(--brand-background);
   --surface-color: #FFFFFF;
   --text-primary: #263238;
   --text-secondary: #546E7A;
@@ -41,6 +51,29 @@ body {
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Buttons with an icon and a label. Angular Material wraps a button's content
+   in .mdc-button__label, so row layout, spacing and alignment must be set
+   there (setting display:flex on the button itself does nothing for them). */
+.mat-mdc-button .mdc-button__label,
+.mat-mdc-unelevated-button .mdc-button__label,
+.mat-mdc-raised-button .mdc-button__label,
+.mat-mdc-outlined-button .mdc-button__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mat-mdc-button .material-symbols-outlined,
+.mat-mdc-unelevated-button .material-symbols-outlined,
+.mat-mdc-raised-button .material-symbols-outlined,
+.mat-mdc-outlined-button .material-symbols-outlined {
+  flex: none;
+  margin: 0;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 /* Disable default tap highlight color on mobile browsers (like Webkit/Blink WebViews) for a native feel */
@@ -118,14 +151,14 @@ body {
 
 /* Selected states */
 .dark-theme .day-pill-btn.selected {
-  background-color: #E53935 !important;
+  background-color: var(--brand-primary) !important;
   color: #FFFFFF !important;
 }
 
 .dark-theme .preset-chip-btn.active {
-  background-color: #E53935 !important;
+  background-color: var(--brand-primary) !important;
   color: #FFFFFF !important;
-  border-color: #E53935 !important;
+  border-color: var(--brand-primary) !important;
 }
 
 /* Input elements inside dark theme */
@@ -200,6 +233,6 @@ body {
 .dark-theme .mode-btn.active,
 .dark-theme .tab-btn.active {
   background-color: var(--surface-color) !important;
-  color: #E53935 !important;
+  color: var(--brand-primary) !important;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
 }

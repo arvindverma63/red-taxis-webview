@@ -654,12 +654,12 @@ interface JobDetails {
     }
 
     .action-btn.on-trip {
-      background-color: #D32F2F;
+      background-color: var(--brand-primary);
       box-shadow: 0 4px 12px rgba(211, 47, 47, 0.2);
     }
     
     .action-btn.on-trip:active {
-      background-color: #B71C1C;
+      background-color: var(--brand-primary-dark);
     }
 
     .slide-complete-container {
@@ -689,7 +689,7 @@ interface JobDetails {
       left: 0;
       top: 0;
       bottom: 0;
-      background: linear-gradient(90deg, #CD1A21 0%, #E53935 100%);
+      background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-primary) 100%);
       border-radius: 26px 0 0 26px;
       z-index: 1;
       transition: width 0.05s ease;
@@ -705,14 +705,14 @@ interface JobDetails {
       pointer-events: none;
     }
     .slide-track-text.submitting {
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .slide-thumb-btn {
       position: absolute;
       left: 4px;
       width: 44px;
       height: 44px;
-      background-color: #CD1A21;
+      background-color: var(--brand-primary);
       color: #FFFFFF;
       border-radius: 50%;
       display: flex;
@@ -720,12 +720,12 @@ interface JobDetails {
       justify-content: center;
       cursor: grab;
       z-index: 3;
-      box-shadow: 0 3px 8px rgba(205, 26, 33, 0.45);
+      box-shadow: 0 3px 8px rgba(var(--brand-primary-rgb), 0.45);
       transition: transform 0.05s ease, background-color 0.2s;
     }
     .slide-thumb-btn:active {
       cursor: grabbing;
-      background-color: #B71C1C;
+      background-color: var(--brand-primary-dark);
     }
   `]
 })

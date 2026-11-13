@@ -332,9 +332,9 @@ interface DashTotals {
       border-color: #2D2D35 !important;
     }
     :host-context(.dark-theme) .filter-pill.active {
-      background-color: #CD1A21 !important;
+      background-color: var(--brand-primary) !important;
       color: #FFFFFF !important;
-      border-color: #CD1A21 !important;
+      border-color: var(--brand-primary) !important;
     }
     :host-context(.dark-theme) .active-route {
       background-color: #121214 !important;
@@ -390,7 +390,7 @@ interface DashTotals {
     }
     .native-spin-icon {
       font-size: 24px;
-      color: #CD1A21;
+      color: var(--brand-primary);
       display: inline-block;
       transition: transform 0.05s linear;
     }
@@ -417,9 +417,9 @@ interface DashTotals {
 
     /* Active Booking Card */
     .active-booking-card {
-      border: 1.5px solid #CD1A21;
+      border: 1.5px solid var(--brand-primary);
       background-color: #FFFFFF;
-      box-shadow: 0 4px 16px rgba(205, 26, 33, 0.08);
+      box-shadow: 0 4px 16px rgba(var(--brand-primary-rgb), 0.08);
       gap: 12px;
     }
     .active-badge-row {
@@ -431,7 +431,7 @@ interface DashTotals {
       display: flex;
       align-items: center;
       gap: 6px;
-      background-color: rgba(205, 26, 33, 0.1);
+      background-color: rgba(var(--brand-primary-rgb), 0.1);
       padding: 4px 10px;
       border-radius: 20px;
     }
@@ -439,7 +439,7 @@ interface DashTotals {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: #CD1A21;
+      background-color: var(--brand-primary);
       animation: pulse 1.5s infinite;
     }
     @keyframes pulse {
@@ -450,7 +450,7 @@ interface DashTotals {
     .badge-text {
       font-size: 10px;
       font-weight: 800;
-      color: #CD1A21;
+      color: var(--brand-primary);
       letter-spacing: 0.5px;
     }
     .active-fare {
@@ -468,8 +468,8 @@ interface DashTotals {
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      background-color: rgba(205, 26, 33, 0.1);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.1);
+      color: var(--brand-primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -616,12 +616,12 @@ interface DashTotals {
       padding: 10px 12px;
       border-radius: 24px;
       border: none;
-      background-color: #CD1A21;
+      background-color: var(--brand-primary);
       color: #FFFFFF;
       font-size: 12px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(205, 26, 33, 0.25);
+      box-shadow: 0 2px 8px rgba(var(--brand-primary-rgb), 0.25);
     }
 
     /* Earnings Card */
@@ -649,9 +649,9 @@ interface DashTotals {
       transition: all 0.2s ease;
     }
     .filter-pill.active {
-      background-color: #CD1A21;
+      background-color: var(--brand-primary);
       color: #FFFFFF;
-      box-shadow: 0 2px 6px rgba(205, 26, 33, 0.2);
+      box-shadow: 0 2px 6px rgba(var(--brand-primary-rgb), 0.2);
     }
 
     .gauge-container {
@@ -687,7 +687,7 @@ interface DashTotals {
     .gauge-jobs-count {
       font-size: 12px;
       font-weight: 700;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
 
     /* Booking Counts Grid */

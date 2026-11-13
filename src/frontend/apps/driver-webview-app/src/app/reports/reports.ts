@@ -669,7 +669,7 @@ export interface DashTotals {
     }
     :host-context(.dark-theme) .segment-btn.active {
       background-color: #1E1E24 !important;
-      color: #E53935 !important;
+      color: var(--brand-primary) !important;
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
     }
     :host-context(.dark-theme) .overview-chart-card,
@@ -702,7 +702,7 @@ export interface DashTotals {
       color: #90A4AE !important;
     }
     :host-context(.dark-theme) .preset-chip.active {
-      background-color: #E53935 !important;
+      background-color: var(--brand-primary) !important;
       color: #FFFFFF !important;
     }
     :host-context(.dark-theme) .btn-close,
@@ -744,14 +744,14 @@ export interface DashTotals {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .data-row.highlight-net {
-      background-color: rgba(229, 57, 53, 0.15) !important;
+      background-color: rgba(var(--brand-primary-rgb), 0.15) !important;
     }
     :host-context(.dark-theme) .info-line {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .earning-index-badge {
-      background-color: rgba(229, 57, 53, 0.15) !important;
-      color: #E53935 !important;
+      background-color: rgba(var(--brand-primary-rgb), 0.15) !important;
+      color: var(--brand-primary) !important;
     }
 
     .reports-container {
@@ -781,7 +781,7 @@ export interface DashTotals {
       transition: opacity 0.2s ease;
     }
     .native-spin-icon {
-      color: #E53935;
+      color: var(--brand-primary);
       font-size: 24px;
     }
     .native-spin-icon.spinning {
@@ -817,9 +817,9 @@ export interface DashTotals {
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .segment-btn.active {
-      background: #E53935;
+      background: var(--brand-primary);
       color: #FFFFFF;
-      box-shadow: 0 3px 8px rgba(229, 57, 53, 0.3);
+      box-shadow: 0 3px 8px rgba(var(--brand-primary-rgb), 0.3);
     }
     .seg-icon {
       font-size: 18px;
@@ -915,7 +915,7 @@ export interface DashTotals {
       margin-bottom: 16px;
     }
     .jump-card {
-      background: linear-gradient(135deg, #E53935, #B71C1C);
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
       color: #FFFFFF;
       border-radius: 18px;
       padding: 16px 14px;
@@ -924,7 +924,7 @@ export interface DashTotals {
       justify-content: space-between;
       height: 100px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.25);
+      box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.25);
       transition: transform 0.15s ease;
       position: relative;
     }
@@ -1038,7 +1038,7 @@ export interface DashTotals {
     }
     .cal-icon {
       font-size: 18px;
-      color: #E53935;
+      color: var(--brand-primary);
     }
     .date-range-text {
       font-size: 13px;
@@ -1074,7 +1074,7 @@ export interface DashTotals {
       transition: all 0.2s ease;
     }
     .preset-chip.active {
-      background: #E53935;
+      background: var(--brand-primary);
       color: #FFFFFF;
     }
 
@@ -1123,7 +1123,7 @@ export interface DashTotals {
       height: 32px;
       border-radius: 50%;
       background: #FFEBEE;
-      color: #E53935;
+      color: var(--brand-primary);
       font-weight: 800;
       font-size: 13px;
       display: flex;
@@ -1154,7 +1154,7 @@ export interface DashTotals {
       font-weight: 700;
     }
     .view-breakdown-btn {
-      background: #E53935;
+      background: var(--brand-primary);
       color: #FFFFFF;
       border: none;
       border-radius: 10px;
@@ -1192,7 +1192,7 @@ export interface DashTotals {
     }
     .stmt-badge-icon {
       font-size: 18px;
-      color: #E53935;
+      color: var(--brand-primary);
     }
     .stmt-id {
       font-size: 15px;
@@ -1248,7 +1248,7 @@ export interface DashTotals {
       color: #1B5E20;
     }
     .view-statement-btn {
-      background: #E53935;
+      background: var(--brand-primary);
       color: #FFFFFF;
       border: none;
       border-radius: 20px;
@@ -1400,7 +1400,7 @@ export interface DashTotals {
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #E53935;
+      color: var(--brand-primary);
       margin: 0 0 8px 0;
     }
     .data-grid {
@@ -1445,7 +1445,7 @@ export interface DashTotals {
     .count-num {
       font-size: 18px;
       font-weight: 900;
-      color: #E53935;
+      color: var(--brand-primary);
     }
     .count-name {
       font-size: 11px;
@@ -1495,11 +1495,11 @@ export interface DashTotals {
       color: #455A64;
     }
     .btn-apply {
-      background: #E53935;
+      background: var(--brand-primary);
       color: #FFFFFF;
     }
     .btn-download {
-      background: #E53935;
+      background: var(--brand-primary);
       color: #FFFFFF;
     }
     .btn-download:disabled {
@@ -1547,7 +1547,7 @@ export interface DashTotals {
       width: 28px;
       height: 28px;
       border: 3px solid #FFCDD2;
-      border-top-color: #E53935;
+      border-top-color: var(--brand-primary);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }

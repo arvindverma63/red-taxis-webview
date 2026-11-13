@@ -287,7 +287,7 @@ import { DriverService } from '../services/driver.service';
     :host-context(.dark-theme) .dest-input:focus,
     :host-context(.dark-theme) .field-input:focus,
     :host-context(.dark-theme) .custom-amount-input:focus {
-      border-color: #CD1A21 !important;
+      border-color: var(--brand-primary) !important;
     }
     :host-context(.dark-theme) .suggestions-overlay {
       background-color: #1E1E24 !important;
@@ -348,14 +348,14 @@ import { DriverService } from '../services/driver.service';
       left: 0;
       right: 0;
       height: 3.5px;
-      background-color: rgba(205, 26, 33, 0.15);
+      background-color: rgba(var(--brand-primary-rgb), 0.15);
       overflow: hidden;
       z-index: 999;
     }
     .loader-bar {
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, #CD1A21, #FF5252);
+      background: linear-gradient(90deg, var(--brand-primary), #FF5252);
       animation: loading-bar 1.4s infinite ease-in-out;
       transform-origin: 0% 50%;
     }
@@ -384,8 +384,8 @@ import { DriverService } from '../services/driver.service';
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      background-color: rgba(205, 26, 33, 0.08);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.08);
+      color: var(--brand-primary);
       padding: 4px 9px;
       border-radius: 20px;
       font-size: 9.5px;
@@ -475,8 +475,8 @@ import { DriverService } from '../services/driver.service';
       color: #2E7D32;
     }
     .node-icon-circle.destination {
-      background-color: rgba(205, 26, 33, 0.12);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.12);
+      color: var(--brand-primary);
     }
     .node-icon-circle .material-symbols-outlined {
       font-size: 18px;
@@ -575,9 +575,9 @@ import { DriverService } from '../services/driver.service';
       transition: all 0.2s ease;
     }
     .dest-input:focus {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.08);
+      box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.08);
     }
     .clear-btn {
       position: absolute;
@@ -599,8 +599,8 @@ import { DriverService } from '../services/driver.service';
       right: 12px;
       width: 16px;
       height: 16px;
-      border: 2px solid rgba(205, 26, 33, 0.2);
-      border-top-color: #CD1A21;
+      border: 2px solid rgba(var(--brand-primary-rgb), 0.2);
+      border-top-color: var(--brand-primary);
       border-radius: 50%;
       animation: spin 0.75s linear infinite;
     }
@@ -642,8 +642,8 @@ import { DriverService } from '../services/driver.service';
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background-color: rgba(205, 26, 33, 0.08);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.08);
+      color: var(--brand-primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -738,9 +738,9 @@ import { DriverService } from '../services/driver.service';
       transition: all 0.2s ease;
     }
     .field-input:focus {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.06);
+      box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.06);
     }
     .preset-chips-row {
       display: flex;
@@ -759,9 +759,9 @@ import { DriverService } from '../services/driver.service';
       transition: all 0.18s ease;
     }
     .preset-chip:hover, .preset-chip:active {
-      background-color: rgba(205, 26, 33, 0.08);
-      border-color: rgba(205, 26, 33, 0.25);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.08);
+      border-color: rgba(var(--brand-primary-rgb), 0.25);
+      color: var(--brand-primary);
     }
 
     /* ================= QUOTE & TELEMETRY DECK ================= */
@@ -785,7 +785,7 @@ import { DriverService } from '../services/driver.service';
     }
     .quote-title-icon {
       font-size: 18px;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .quote-title-text {
       font-size: 12.5px;
@@ -883,7 +883,7 @@ import { DriverService } from '../services/driver.service';
     .reset-link-btn {
       background: none;
       border: none;
-      color: #CD1A21;
+      color: var(--brand-primary);
       font-size: 10px;
       font-weight: 800;
       display: inline-flex;
@@ -913,9 +913,9 @@ import { DriverService } from '../services/driver.service';
       transition: all 0.16s ease;
     }
     .step-btn:active {
-      background-color: #CD1A21;
+      background-color: var(--brand-primary);
       color: #FFFFFF;
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
     }
     .custom-amount-row {
       position: relative;
@@ -942,7 +942,7 @@ import { DriverService } from '../services/driver.service';
       box-sizing: border-box;
     }
     .custom-amount-input:focus {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
     }
     .custom-amount-label {
       position: absolute;
@@ -965,12 +965,12 @@ import { DriverService } from '../services/driver.service';
     .submit-dispatch-btn {
       width: 100%;
       height: 52px;
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%) !important;
       color: #FFFFFF !important;
       border-radius: 16px !important;
       font-weight: 900 !important;
       letter-spacing: 0.3px !important;
-      box-shadow: 0 6px 20px rgba(205, 26, 33, 0.28) !important;
+      box-shadow: 0 6px 20px rgba(var(--brand-primary-rgb), 0.28) !important;
       transition: all 0.2s ease !important;
     }
     .submit-dispatch-btn:disabled {

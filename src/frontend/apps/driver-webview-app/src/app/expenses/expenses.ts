@@ -459,8 +459,8 @@ interface CategoryOption {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .filter-pill-btn.active {
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
-      border-color: #CD1A21 !important;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%) !important;
+      border-color: var(--brand-primary) !important;
       color: #FFFFFF !important;
     }
     :host-context(.dark-theme) .amount-native-input,
@@ -471,7 +471,7 @@ interface CategoryOption {
     }
     :host-context(.dark-theme) .amount-native-input:focus,
     :host-context(.dark-theme) .comments-textarea:focus {
-      border-color: #CD1A21 !important;
+      border-color: var(--brand-primary) !important;
     }
     :host-context(.dark-theme) .amount-currency-symbol,
     :host-context(.dark-theme) .total-number,
@@ -532,7 +532,7 @@ interface CategoryOption {
     }
     .native-spin-icon {
       font-size: 22px;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .native-spin-icon.spinning {
       animation: spin 0.8s linear infinite;
@@ -560,8 +560,8 @@ interface CategoryOption {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      background-color: rgba(205, 26, 33, 0.08);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.08);
+      color: var(--brand-primary);
       padding: 4px 9px;
       border-radius: 20px;
       font-size: 9.5px;
@@ -575,7 +575,7 @@ interface CategoryOption {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%);
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
       color: #FFFFFF;
       border: none;
       border-radius: 14px;
@@ -583,7 +583,7 @@ interface CategoryOption {
       font-size: 11px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 3px 10px rgba(205, 26, 33, 0.25);
+      box-shadow: 0 3px 10px rgba(var(--brand-primary-rgb), 0.25);
     }
     .quick-log-btn .material-symbols-outlined {
       font-size: 16px;
@@ -610,7 +610,7 @@ interface CategoryOption {
     .currency-sign {
       font-size: 20px;
       font-weight: 900;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .total-number {
       font-size: 28px;
@@ -691,7 +691,7 @@ interface CategoryOption {
     }
     .toggle-icon {
       font-size: 16px;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .toggle-text {
       font-size: 11px;
@@ -767,10 +767,10 @@ interface CategoryOption {
       text-align: center;
     }
     .filter-pill-btn.active {
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%);
-      border-color: #CD1A21;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
+      border-color: var(--brand-primary);
       color: #FFFFFF;
-      box-shadow: 0 2px 8px rgba(205, 26, 33, 0.22);
+      box-shadow: 0 2px 8px rgba(var(--brand-primary-rgb), 0.22);
     }
 
     /* ================= EXPENSE ROWS LIST ================= */
@@ -904,8 +904,8 @@ interface CategoryOption {
       width: 54px;
       height: 54px;
       border-radius: 50%;
-      background-color: rgba(205, 26, 33, 0.08);
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.08);
+      color: var(--brand-primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -928,7 +928,7 @@ interface CategoryOption {
       line-height: 1.4;
     }
     .empty-cta-btn {
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%) !important;
       color: #FFFFFF !important;
       border-radius: 14px !important;
       padding: 10px 20px !important;
@@ -936,10 +936,10 @@ interface CategoryOption {
       display: inline-flex !important;
       align-items: center !important;
       gap: 6px !important;
-      box-shadow: 0 4px 14px rgba(205, 26, 33, 0.25) !important;
+      box-shadow: 0 4px 14px rgba(var(--brand-primary-rgb), 0.25) !important;
     }
     .empty-cta-btn .material-symbols-outlined {
-      font-size: 18px;
+      font-size: 20px;
     }
 
     /* Skeleton Shimmer */
@@ -986,7 +986,7 @@ interface CategoryOption {
     .form-header-badge {
       font-size: 9px;
       font-weight: 900;
-      color: #CD1A21;
+      color: var(--brand-primary);
       letter-spacing: 0.6px;
     }
     .form-sheet-title {
@@ -1125,9 +1125,9 @@ interface CategoryOption {
       transition: all 0.2s ease;
     }
     .amount-native-input:focus {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.06);
+      box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.06);
     }
     .amount-presets-row {
       display: flex;
@@ -1147,9 +1147,9 @@ interface CategoryOption {
       transition: all 0.16s ease;
     }
     .amount-chip:hover {
-      background-color: rgba(205, 26, 33, 0.08);
-      color: #CD1A21;
-      border-color: rgba(205, 26, 33, 0.2);
+      background-color: rgba(var(--brand-primary-rgb), 0.08);
+      color: var(--brand-primary);
+      border-color: rgba(var(--brand-primary-rgb), 0.2);
     }
     .amount-chip.reset {
       background-color: rgba(225, 29, 72, 0.08);
@@ -1174,9 +1174,9 @@ interface CategoryOption {
       transition: all 0.2s ease;
     }
     .comments-textarea:focus {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(205, 26, 33, 0.06);
+      box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.06);
     }
 
     /* Camera viewfinder & attachment */
@@ -1228,7 +1228,7 @@ interface CategoryOption {
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%);
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
       border: 3px solid #FFFFFF;
       color: #FFFFFF;
       display: flex;
@@ -1316,9 +1316,9 @@ interface CategoryOption {
       transition: all 0.18s ease;
     }
     .camera-trigger-btn:hover {
-      background-color: rgba(205, 26, 33, 0.04);
-      border-color: #CD1A21;
-      color: #CD1A21;
+      background-color: rgba(var(--brand-primary-rgb), 0.04);
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
     }
 
     .form-submit-actions {
@@ -1337,11 +1337,11 @@ interface CategoryOption {
     .form-confirm-btn {
       flex: 2;
       height: 48px;
-      background: linear-gradient(135deg, #CD1A21 0%, #9E0E14 100%) !important;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%) !important;
       color: #FFFFFF !important;
       border-radius: 14px !important;
       font-weight: 900 !important;
-      box-shadow: 0 4px 14px rgba(205, 26, 33, 0.25) !important;
+      box-shadow: 0 4px 14px rgba(var(--brand-primary-rgb), 0.25) !important;
     }
     .form-confirm-btn:disabled {
       background: #E2E8F0 !important;
@@ -1528,7 +1528,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   private cameraStream: MediaStream | null = null;
 
   categoryOptions: CategoryOption[] = [
-    { value: 0, label: 'Fuel', icon: 'local_gas_station', color: '#E53935', lightColor: 'rgba(229, 57, 53, 0.1)' },
+    { value: 0, label: 'Fuel', icon: 'local_gas_station', color: '#E53935', lightColor: 'rgba(var(--brand-primary-rgb), 0.1)' },
     { value: 1, label: 'Tolls', icon: 'toll', color: '#1E88E5', lightColor: 'rgba(30, 136, 245, 0.1)' },
     { value: 2, label: 'Parking', icon: 'local_parking', color: '#43A047', lightColor: 'rgba(67, 160, 71, 0.1)' },
     { value: 3, label: 'Maintenance', icon: 'build', color: '#8E24AA', lightColor: 'rgba(142, 36, 170, 0.1)' },
@@ -1737,7 +1737,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   getCategoryColorLight(catVal: number | string): string {
     const val = Number(catVal);
     switch (val) {
-      case 0: return 'rgba(205, 26, 33, 0.1)';
+      case 0: return 'rgba(var(--brand-primary-rgb), 0.1)';
       case 1: return 'rgba(2, 132, 199, 0.1)';
       case 2: return 'rgba(22, 163, 74, 0.1)';
       case 3: return 'rgba(124, 58, 237, 0.1)';

@@ -469,7 +469,7 @@ export interface DriverFleetAvailability {
     }
     :host-context(.dark-theme) .mode-btn.active {
       background-color: #1E1E24 !important;
-      color: #CD1A21 !important;
+      color: var(--brand-primary) !important;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     }
     :host-context(.dark-theme) .week-nav-card,
@@ -501,8 +501,8 @@ export interface DriverFleetAvailability {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .day-pill-btn.selected {
-      background-color: #CD1A21 !important;
-      border-color: #CD1A21 !important;
+      background-color: var(--brand-primary) !important;
+      border-color: var(--brand-primary) !important;
     }
     :host-context(.dark-theme) .preset-chip-btn {
       background-color: #121214 !important;
@@ -510,8 +510,8 @@ export interface DriverFleetAvailability {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .preset-chip-btn.active {
-      background-color: #CD1A21 !important;
-      border-color: #CD1A21 !important;
+      background-color: var(--brand-primary) !important;
+      border-color: var(--brand-primary) !important;
       color: #FFFFFF !important;
     }
     :host-context(.dark-theme) .preset-chip-btn.active .preset-title,
@@ -551,7 +551,7 @@ export interface DriverFleetAvailability {
       border-color: #2D2D35 !important;
     }
     :host-context(.dark-theme) .note-text-input:focus {
-      border-color: #CD1A21 !important;
+      border-color: var(--brand-primary) !important;
       background-color: #121214 !important;
     }
     :host-context(.dark-theme) .slots-count-badge {
@@ -568,8 +568,8 @@ export interface DriverFleetAvailability {
       color: #ECEFF1 !important;
     }
     :host-context(.dark-theme) .vehicle-chip-btn.active {
-      background-color: #CD1A21 !important;
-      border-color: #CD1A21 !important;
+      background-color: var(--brand-primary) !important;
+      border-color: var(--brand-primary) !important;
       color: #FFFFFF !important;
     }
 
@@ -608,7 +608,7 @@ export interface DriverFleetAvailability {
     }
     .native-spin-icon {
       font-size: 24px;
-      color: #CD1A21;
+      color: var(--brand-primary);
       display: inline-block;
       transition: transform 0.05s linear;
     }
@@ -651,7 +651,7 @@ export interface DriverFleetAvailability {
     }
     .mode-btn.active {
       background-color: #FFFFFF;
-      color: #CD1A21;
+      color: var(--brand-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     .mode-icon {
@@ -709,7 +709,7 @@ export interface DriverFleetAvailability {
     }
     .calendar-icon {
       font-size: 19px;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .week-date-range {
       font-size: 14px;
@@ -762,8 +762,8 @@ export interface DriverFleetAvailability {
       color: #191C1E;
     }
     .day-pill-btn.selected {
-      background-color: #CD1A21;
-      border-color: #CD1A21;
+      background-color: var(--brand-primary);
+      border-color: var(--brand-primary);
     }
     .day-pill-btn.selected .day-letter,
     .day-pill-btn.selected .day-number {
@@ -803,7 +803,7 @@ export interface DriverFleetAvailability {
     }
     .card-title-icon {
       font-size: 20px;
-      color: #CD1A21;
+      color: var(--brand-primary);
     }
     .card-title-text {
       font-size: 14px;
@@ -831,7 +831,7 @@ export interface DriverFleetAvailability {
     }
     .preset-chip-btn:active,
     .preset-chip-btn.active {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background-color: #FFF2F2;
     }
     .preset-icon {
@@ -922,7 +922,7 @@ export interface DriverFleetAvailability {
       color: #455A64;
     }
     .checkbox-container input {
-      accent-color: #CD1A21;
+      accent-color: var(--brand-primary);
       width: 16px;
       height: 16px;
     }
@@ -950,7 +950,7 @@ export interface DriverFleetAvailability {
       outline: none;
     }
     .note-text-input:focus {
-      border-color: #CD1A21;
+      border-color: var(--brand-primary);
       background-color: #FFFFFF;
     }
 
@@ -1207,8 +1207,8 @@ export interface DriverFleetAvailability {
       cursor: pointer;
     }
     .vehicle-chip-btn.active {
-      background-color: #CD1A21;
-      border-color: #CD1A21;
+      background-color: var(--brand-primary);
+      border-color: var(--brand-primary);
       color: #FFFFFF;
     }
 
@@ -1236,7 +1236,7 @@ export interface DriverFleetAvailability {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background-color: #CD1A21;
+      background-color: var(--brand-primary);
       color: #FFFFFF;
       display: flex;
       align-items: center;
